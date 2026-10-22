@@ -58,6 +58,17 @@
       "id": "e8fd8922-b9c9-5ecd-9d5d-ae633fc32c80"
     },
     {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "3",
+        "value": {
+          "type": "number",
+          "value": 1
+        }
+      },
+      "id": "c405b708-f9b4-4a10-ae38-2b5a3f1a0001"
+    },
+    {
       "command": "EVENT_MUSIC_PLAY",
       "args": {
         "musicId": "6fcd550a-a2e4-5c30-93bc-0a4c11478fe2"
@@ -70,7 +81,8 @@
         "text": [
           "Move: D-pad",
           "Jump: A",
-          "B: PULL CABLE"
+          "B: CONNECT / CUT",
+          "B: PICK UP"
         ],
         "avatarId": "",
         "minHeight": 4,
@@ -114,12 +126,22 @@
     {
       "command": "EVENT_TEXT_DRAW",
       "args": {
-        "text": "HOMES %D0$01$ / 5",
+        "text": "HOMES %D1$0$ / 5",
         "x": 0,
         "y": 0,
         "location": "overlay"
       },
       "id": "bccc3913-0495-5174-9fd1-2c85f5e253f9"
+    },
+    {
+      "command": "EVENT_TEXT_DRAW",
+      "args": {
+        "text": "SPLICES %D1$3$ / 5",
+        "x": 0,
+        "y": 1,
+        "location": "overlay"
+      },
+      "id": "5a04bb0b-5544-4c16-97a5-3489c8eedb00"
     },
     {
       "command": "EVENT_SET_INPUT_SCRIPT",

@@ -4,13 +4,13 @@
   "_index": 15,
   "symbol": "npc_marta",
   "prefabId": "",
-  "name": "Marta",
+  "name": "Splice Pickup – Lower Platform",
   "coordinateType": "tiles",
-  "x": 9,
-  "y": 29,
+  "x": 5,
+  "y": 32,
   "frame": 0,
   "animate": false,
-  "spriteSheetId": "b279568d-2a55-51b9-b959-0bf0b6ce9005",
+  "spriteSheetId": "2d9ae5cd-fc3a-5103-b0c8-644a08b30f4e",
   "paletteId": "",
   "direction": "down",
   "moveSpeed": 1,
@@ -21,6 +21,34 @@
   "collisionExtraFlags": [],
   "prefabScriptOverrides": {},
   "script": [
+    {
+      "command": "EVENT_INC_VALUE",
+      "args": {
+        "variable": "3"
+      },
+      "id": "889b3b7c-dd19-4f73-85a2-b45aa03f3b43"
+    },
+    {
+      "command": "EVENT_SOUND_PLAY_EFFECT",
+      "args": {
+        "units": "time",
+        "type": "09e8b512-afe8-5b4a-a5b1-c53609e43ad6",
+        "priority": "low",
+        "pitch": 4,
+        "frequency": 200,
+        "duration": 0.5,
+        "wait": true,
+        "effect": 0
+      },
+      "id": "45587314-3b7d-48a6-8a33-545d7233dbb2"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "030e76d3-17fa-4847-82df-d25b2f50959d"
+    },
     {
       "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
       "args": {
@@ -36,7 +64,7 @@
       "command": "EVENT_TEXT",
       "args": {
         "text": [
-          "Marta: Watch out!"
+          "Splice +1"
         ],
         "avatarId": "",
         "minHeight": 4,
@@ -80,12 +108,22 @@
     {
       "command": "EVENT_TEXT_DRAW",
       "args": {
-        "text": "HOMES %D0$01$ / 5",
+        "text": "HOMES %D1$0$ / 5",
         "x": 0,
         "y": 0,
         "location": "overlay"
       },
       "id": "d37be566-3f7f-5dca-a629-d85779a08aa8"
+    },
+    {
+      "command": "EVENT_TEXT_DRAW",
+      "args": {
+        "text": "SPLICES %D1$3$ / 5",
+        "x": 0,
+        "y": 1,
+        "location": "overlay"
+      },
+      "id": "11ccbfc2-ac67-44ae-9452-98343c601246"
     }
   ],
   "startScript": [
@@ -93,7 +131,7 @@
       "command": "EVENT_ACTOR_SET_STATE",
       "args": {
         "actorId": "$self$",
-        "spriteStateId": "Marta",
+        "spriteStateId": "Splice",
         "loopAnim": true
       },
       "id": "e23c19ff-cebb-5aff-aab7-fe0b96adfe83"

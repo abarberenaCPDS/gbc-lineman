@@ -4,13 +4,13 @@
   "_index": 16,
   "symbol": "npc_rosa",
   "prefabId": "",
-  "name": "Rosa",
+  "name": "Splice Pickup – Mid Platform",
   "coordinateType": "tiles",
   "x": 11,
   "y": 23,
   "frame": 0,
   "animate": false,
-  "spriteSheetId": "b279568d-2a55-51b9-b959-0bf0b6ce9005",
+  "spriteSheetId": "2d9ae5cd-fc3a-5103-b0c8-644a08b30f4e",
   "paletteId": "",
   "direction": "down",
   "moveSpeed": 1,
@@ -21,6 +21,34 @@
   "collisionExtraFlags": [],
   "prefabScriptOverrides": {},
   "script": [
+    {
+      "command": "EVENT_INC_VALUE",
+      "args": {
+        "variable": "3"
+      },
+      "id": "40965000-3028-41e1-b2ad-e7f0f5d859f1"
+    },
+    {
+      "command": "EVENT_SOUND_PLAY_EFFECT",
+      "args": {
+        "units": "time",
+        "type": "09e8b512-afe8-5b4a-a5b1-c53609e43ad6",
+        "priority": "low",
+        "pitch": 4,
+        "frequency": 200,
+        "duration": 0.5,
+        "wait": true,
+        "effect": 0
+      },
+      "id": "d18f0016-d32d-40d5-8491-840cd37a6ecf"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "46c12ac0-7ad0-4021-90e5-ea0ff7d1516f"
+    },
     {
       "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
       "args": {
@@ -36,7 +64,7 @@
       "command": "EVENT_TEXT",
       "args": {
         "text": [
-          "Rosa: Step high!"
+          "Splice +1"
         ],
         "avatarId": "",
         "minHeight": 4,
@@ -80,12 +108,22 @@
     {
       "command": "EVENT_TEXT_DRAW",
       "args": {
-        "text": "HOMES %D0$01$ / 5",
+        "text": "HOMES %D1$0$ / 5",
         "x": 0,
         "y": 0,
         "location": "overlay"
       },
       "id": "a4e621b3-a705-5476-aadc-c95074955e0d"
+    },
+    {
+      "command": "EVENT_TEXT_DRAW",
+      "args": {
+        "text": "SPLICES %D1$3$ / 5",
+        "x": 0,
+        "y": 1,
+        "location": "overlay"
+      },
+      "id": "9477c005-0917-4b38-be92-38c659d59162"
     }
   ],
   "startScript": [
@@ -93,7 +131,7 @@
       "command": "EVENT_ACTOR_SET_STATE",
       "args": {
         "actorId": "$self$",
-        "spriteStateId": "Rosa",
+        "spriteStateId": "Splice",
         "loopAnim": true
       },
       "id": "b41869fd-d407-5285-bac3-f4de2162956e"

@@ -30,20 +30,21 @@ lives are unlimited.
 
 The active start is the 20×36 Storm Night PLATFORM scene. The separate 32×32
 top-down village remains available but is inactive. The platform scene has
-five house actors, three locals, a substation, six hazard zones, ordered
-connect/cut progression, visible cable spans, powered-house lighting, and
-respawn triggers. Cable runs are fixed vertical spans; B directly performs
-the repair interaction rather than carrying a free-form connector.
+five house actors, a substation, six hazard zones, four loose splice pickups,
+ordered connect/cut progression, visible cable spans, powered-house lighting,
+and respawn triggers. The player starts with one splice; four more are
+collected in the level, and repairs consume them while cutting refunds one.
+Cable runs are fixed vertical spans, not a free-form rope/tether.
 
 The provided sample PNGs are visual references only and remain untouched. No
 scene references a sample background; their high-color pixels are not copied
-or used as gameplay backgrounds. The HUD shows houses linked;
-sample 003's `1/10` loose-splice count is deferred until actual pickup sources and
-collection logic exist, so it is not presented as a false counter. B is mapped
- to the existing platform-interact action and prompts `PULL CABLE` at the
- repair points.
+or used as gameplay backgrounds. Their 1/10 splice motif is adapted to a
+truthful 1/5 inventory for this five-home game. B picks up splices and pulls,
+connects or cuts the fixed cable runs.
 
 The slot-4 Moss ramp is now the lime platform-edge ramp
 `0B1710, 1A3520, 347A36, 7BE35B`, selected for clear platform readability
-against the dark cave. The full win path, hazard respawn, physical Chromatic
-readability, and human audio taste review still need a dedicated play session.
+against the dark cave. The full five-home run and manual/browser review of the
+splice collection/refund loop, hazard respawn, physical Chromatic readability,
+and human audio taste still need a dedicated play session. PyBoy has confirmed
+the first pickup, repair consumption, and cut/refund state changes.
