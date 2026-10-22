@@ -34,7 +34,9 @@ five house actors, a substation, six hazard zones, four loose splice pickups,
 ordered connect/cut progression, visible cable spans, powered-house lighting,
 and respawn triggers. The player starts with one splice; four more are
 collected in the level, and repairs consume them while cutting refunds one.
-Cable runs are fixed vertical spans, not a free-form rope/tether.
+The three former standalone local actors were repurposed as pickups; residents
+remain represented in the named house interactions, but are not separate
+on-level NPCs. Cable runs are fixed vertical spans, not a free-form rope/tether.
 
 The provided sample PNGs are visual references only and remain untouched. No
 scene references a sample background; their high-color pixels are not copied
