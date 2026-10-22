@@ -124,7 +124,7 @@ BG_PALETTES = [
     # 3 - lit windows, electric glow
     ("glow", ["2A1A06", "7A4A0E", "D89424", "FFDE8A"]),
     # 4 - moss and foliage
-    ("moss", ["0B1710", "142C1C", "20492F", "3A7048"]),
+    ("moss", ["0B1710", "1A3520", "347A36", "7BE35B"]),
     # 5 - hazard: storm water, sparks
     ("hazard", ["240809", "54120F", "98251B", "D95838"]),
     # 6 - cable / conductor

@@ -65,6 +65,20 @@
                   "id": "c4c6fc08-ac71-5f76-95ec-0578c3facbb3"
                 },
                 {
+                  "command": "EVENT_SOUND_PLAY_EFFECT",
+                  "args": {
+                    "units": "time",
+                    "type": "09e8b512-afe8-5b4a-a5b1-c53609e43ad6",
+                    "priority": "low",
+                    "pitch": 4,
+                    "frequency": 200,
+                    "duration": 0.5,
+                    "wait": true,
+                    "effect": 0
+                  },
+                  "id": "d5472756-c047-56f6-a091-6f55d475715b"
+                },
+                {
                   "command": "EVENT_ACTOR_SET_STATE",
                   "args": {
                     "actorId": "$self$",
@@ -91,6 +105,20 @@
                   "command": "EVENT_SOUND_PLAY_EFFECT",
                   "args": {
                     "units": "time",
+                    "type": "65c37f2f-2624-54f4-8b2a-392b556aa3a1",
+                    "priority": "high",
+                    "pitch": 4,
+                    "frequency": 200,
+                    "duration": 0.5,
+                    "wait": true,
+                    "effect": 0
+                  },
+                  "id": "fe3ac077-831e-546f-80a6-2b3da86a6820"
+                },
+                {
+                  "command": "EVENT_SOUND_PLAY_EFFECT",
+                  "args": {
+                    "units": "time",
                     "type": "4aaccbc3-f775-5090-b007-bd5d189a487f",
                     "priority": "high",
                     "pitch": 4,
@@ -100,6 +128,92 @@
                     "effect": 0
                   },
                   "id": "0d1a914e-1db7-5e8d-b8ab-494dd6c8b9b1"
+                },
+                {
+                  "command": "EVENT_IF",
+                  "args": {
+                    "condition": {
+                      "type": "eq",
+                      "valueA": {
+                        "type": "variable",
+                        "value": "0"
+                      },
+                      "valueB": {
+                        "type": "number",
+                        "value": 2
+                      }
+                    }
+                  },
+                  "id": "696a743b-034d-50f4-8653-174e047a76a3",
+                  "children": {
+                    "true": [
+                      {
+                        "command": "EVENT_SOUND_PLAY_EFFECT",
+                        "args": {
+                          "units": "time",
+                          "type": "ffd6649b-80cd-5798-81ad-0f02363581fa",
+                          "priority": "low",
+                          "pitch": 4,
+                          "frequency": 200,
+                          "duration": 0.5,
+                          "wait": true,
+                          "effect": 0
+                        },
+                        "id": "1450c9de-301f-5c9b-b3b0-4b76ab668467"
+                      },
+                      {
+                        "command": "EVENT_MUSIC_PLAY",
+                        "args": {
+                          "musicId": "fcc508fa-ad2b-5e70-b7e0-d704479393dd"
+                        },
+                        "id": "40153b88-af07-5e04-a933-a6e472440d8a"
+                      }
+                    ],
+                    "false": []
+                  }
+                },
+                {
+                  "command": "EVENT_IF",
+                  "args": {
+                    "condition": {
+                      "type": "eq",
+                      "valueA": {
+                        "type": "variable",
+                        "value": "0"
+                      },
+                      "valueB": {
+                        "type": "number",
+                        "value": 4
+                      }
+                    }
+                  },
+                  "id": "f58ab33f-af58-5db6-a930-2e458f86258f",
+                  "children": {
+                    "true": [
+                      {
+                        "command": "EVENT_SOUND_PLAY_EFFECT",
+                        "args": {
+                          "units": "time",
+                          "type": "ffd6649b-80cd-5798-81ad-0f02363581fa",
+                          "priority": "low",
+                          "pitch": 4,
+                          "frequency": 200,
+                          "duration": 0.5,
+                          "wait": true,
+                          "effect": 0
+                        },
+                        "id": "3c9c03f2-6a20-5504-8f7e-4cab274d63df"
+                      },
+                      {
+                        "command": "EVENT_MUSIC_PLAY",
+                        "args": {
+                          "musicId": "6c7d54e4-a406-5dcf-861d-12e31cc35334"
+                        },
+                        "id": "312826e2-20bc-533b-bf3e-3aa8506d9426"
+                      }
+                    ],
+                    "false": []
+                  }
                 }
               ],
               "false": [
@@ -164,6 +278,64 @@
                           "effect": 0
                         },
                         "id": "856a1ab9-162f-58ae-afd5-2ed9df7603c7"
+                      },
+                      {
+                        "command": "EVENT_IF",
+                        "args": {
+                          "condition": {
+                            "type": "eq",
+                            "valueA": {
+                              "type": "variable",
+                              "value": "0"
+                            },
+                            "valueB": {
+                              "type": "number",
+                              "value": 1
+                            }
+                          }
+                        },
+                        "id": "4083a622-2991-5049-9792-7268e1582b09",
+                        "children": {
+                          "true": [
+                            {
+                              "command": "EVENT_MUSIC_PLAY",
+                              "args": {
+                                "musicId": "6fcd550a-a2e4-5c30-93bc-0a4c11478fe2"
+                              },
+                              "id": "1284bc97-a904-54e9-8629-ab32763e569b"
+                            }
+                          ],
+                          "false": []
+                        }
+                      },
+                      {
+                        "command": "EVENT_IF",
+                        "args": {
+                          "condition": {
+                            "type": "eq",
+                            "valueA": {
+                              "type": "variable",
+                              "value": "0"
+                            },
+                            "valueB": {
+                              "type": "number",
+                              "value": 3
+                            }
+                          }
+                        },
+                        "id": "def21598-08d2-5a15-bc74-42e18ca307e5",
+                        "children": {
+                          "true": [
+                            {
+                              "command": "EVENT_MUSIC_PLAY",
+                              "args": {
+                                "musicId": "fcc508fa-ad2b-5e70-b7e0-d704479393dd"
+                              },
+                              "id": "40153b88-af07-5e04-a933-a6e472440d8a"
+                            }
+                          ],
+                          "false": []
+                        }
                       }
                     ],
                     "false": [
@@ -244,7 +416,7 @@
                             {
                               "command": "EVENT_TEXT_DRAW",
                               "args": {
-                                "text": "STORM %D2$02$",
+                                "text": "HOMES %D0$01$ / 5",
                                 "x": 0,
                                 "y": 0,
                                 "location": "overlay"
@@ -312,7 +484,7 @@
                             {
                               "command": "EVENT_TEXT_DRAW",
                               "args": {
-                                "text": "STORM %D2$02$",
+                                "text": "HOMES %D0$01$ / 5",
                                 "x": 0,
                                 "y": 0,
                                 "location": "overlay"

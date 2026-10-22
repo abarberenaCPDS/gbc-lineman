@@ -92,6 +92,7 @@ are local and ignored by Git.
 
 - [Original gameplay brief](docs/gameplay-instructions.md)
 - [Design decisions and deferred alternatives](docs/game-design.md)
+- [GBC background and sprite audit](docs/asset-hardware-audit.md)
 - [Fast Pace reference analysis and CFE music notes](docs/music-notes.md)
 - [Local Git, worktree and SemVer workflow](docs/GIT_WORKFLOW.md)
 

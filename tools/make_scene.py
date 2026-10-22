@@ -17,12 +17,30 @@ PROJECT_DIR = TOOLS_DIR.parent
 SCENE_DIR_NAME = "storm_night"
 UUID_NAMESPACE = uuid.UUID("717f5b5a-4e17-5f80-ae10-6afbdd2827db")
 MAX_DIALOGUE_CHARS = 17
-STORM_SECONDS = 90
-
+LEGACY_ACTOR_FILES = {
+    "house_a": "martas_house",
+    "house_b": "tomass_house",
+    "house_c": "rosas_house",
+    "house_d": "kikos_house",
+    "house_e": "nurias_house",
+    "cable_house_a_1": "martas_cable_1",
+    "cable_house_a_2": "martas_cable_2",
+    "cable_house_b_1": "tomass_cable_1",
+    "cable_house_b_2": "tomass_cable_2",
+    "cable_house_c_1": "rosas_cable_1",
+    "cable_house_c_2": "rosas_cable_2",
+    "cable_house_d_1": "kikos_cable_1",
+    "cable_house_d_2": "kikos_cable_2",
+    "cable_house_e_1": "nurias_cable_1",
+    "cable_house_e_2": "nurias_cable_2",
+    "npc_marta": "marta",
+    "npc_rosa": "rosa",
+    "npc_kiko": "kiko",
+}
+LEGACY_TRIGGER_FILES = {f"trigger_hazard_{index}": f"hazard_{index}" for index in range(1, 7)}
 VARIABLES = {
     "connected": ("Connected Houses", "var_connected_houses"),
     "game_state": ("Game State", "var_game_state"),
-    "storm_seconds": ("Storm Seconds", "var_storm_seconds"),
 }
 
 sys.path.insert(0, str(TOOLS_DIR))
@@ -163,11 +181,11 @@ def text_event(lines: list[str], key: str) -> dict[str, Any]:
     )
 
 
-def storm_counter_event(storm_seconds: str, key: str) -> dict[str, Any]:
+def link_counter_event(connected: str, key: str) -> dict[str, Any]:
     return event(
         "EVENT_TEXT_DRAW",
         {
-            "text": f"STORM %D2${storm_seconds.zfill(2)}$",
+            "text": f"HOMES %D{connected}$01$ / 5",
             "x": 0,
             "y": 0,
             "location": "overlay",
@@ -184,7 +202,7 @@ def overlay_cutoff_event(y: int, key: str) -> dict[str, Any]:
     )
 
 
-def show_hud_events(storm_seconds: str, key: str) -> list[dict[str, Any]]:
+def show_hud_events(connected: str, key: str) -> list[dict[str, Any]]:
     return [
         overlay_cutoff_event(16, f"{key}:cutoff"),
         event(
@@ -192,17 +210,17 @@ def show_hud_events(storm_seconds: str, key: str) -> list[dict[str, Any]]:
             {"color": "black", "x": 0, "y": 0},
             f"{key}:overlay",
         ),
-        storm_counter_event(storm_seconds, f"{key}:counter"),
+        link_counter_event(connected, f"{key}:counter"),
     ]
 
 
 def dialogue_with_hud_events(
-    lines: list[str], storm_seconds: str, key: str
+    lines: list[str], connected: str, key: str
 ) -> list[dict[str, Any]]:
     return [
         overlay_cutoff_event(150, f"{key}:full-overlay"),
         text_event(lines, key),
-        *show_hud_events(storm_seconds, f"{key}:restore-hud"),
+        *show_hud_events(connected, f"{key}:restore-hud"),
     ]
 
 
@@ -295,6 +313,7 @@ def play_house_script(
     house_name = str(level.HOUSES[index]["name"])
     connect_events: list[dict[str, Any]] = [
         event("EVENT_INC_VALUE", {"variable": connected}, f"{key}:connect-count"),
+        sound_event(audio_ids["pickup"], f"{key}:pickup-sfx", "low"),
         *set_actor_state(f"{house_name} Powered", f"{key}:powered"),
         *[
             event(
@@ -304,12 +323,12 @@ def play_house_script(
             )
             for segment_index, actor_id in enumerate(cable_actor_ids)
         ],
+        sound_event(audio_ids["place"], f"{key}:place-sfx"),
     ]
     if index == len(level.HOUSES) - 1:
         connect_events.extend(
             [
                 set_value(game_state, 1, f"{key}:win-state"),
-                event("EVENT_TIMER_DISABLE", {"timer": 1}, f"{key}:stop-storm"),
                 sound_event(audio_ids["victory"], f"{key}:victory-sfx"),
                 event(
                     "EVENT_MUSIC_PLAY",
@@ -317,14 +336,47 @@ def play_house_script(
                     f"{key}:win-music",
                 ),
                 *dialogue_with_hud_events(
-                    short_lines("Grid restored!\nStorm beaten!"),
-                    variable_ids["storm_seconds"],
+                    short_lines("Grid restored!\nAll five are lit!"),
+                    connected,
                     f"{key}:win-text",
                 ),
+                sound_event(audio_ids["sparkle"], f"{key}:win-sparkle-sfx", "low"),
             ]
         )
     else:
-        connect_events.append(sound_event(audio_ids["connect"], f"{key}:connect-sfx"))
+        connect_events.extend(
+            [
+                sound_event(audio_ids["connect"], f"{key}:connect-sfx"),
+                if_value(
+                    connected,
+                    "eq",
+                    2,
+                    f"{key}:stage-two",
+                    [
+                        sound_event(audio_ids["sparkle"], f"{key}:stage-two-sparkle", "low"),
+                        event(
+                            "EVENT_MUSIC_PLAY",
+                            {"musicId": audio_ids["stage_two_music"]},
+                            f"{key}:stage-two-music",
+                        ),
+                    ],
+                ),
+                if_value(
+                    connected,
+                    "eq",
+                    4,
+                    f"{key}:stage-three",
+                    [
+                        sound_event(audio_ids["sparkle"], f"{key}:stage-three-sparkle", "low"),
+                        event(
+                            "EVENT_MUSIC_PLAY",
+                            {"musicId": audio_ids["stage_three_music"]},
+                            f"{key}:stage-three-music",
+                        ),
+                    ],
+                ),
+            ]
+        )
 
     cut_events = [
         event("EVENT_DEC_VALUE", {"variable": connected}, f"{key}:cut-count"),
@@ -338,15 +390,41 @@ def play_house_script(
             for segment_index, actor_id in enumerate(cable_actor_ids)
         ],
         sound_event(audio_ids["cut"], f"{key}:cut-sfx"),
+        if_value(
+            connected,
+            "eq",
+            1,
+            f"{key}:return-stage-one",
+            [
+                event(
+                    "EVENT_MUSIC_PLAY",
+                    {"musicId": audio_ids["stage_one_music"]},
+                    f"{key}:stage-one-music",
+                )
+            ],
+        ),
+        if_value(
+            connected,
+            "eq",
+            3,
+            f"{key}:return-stage-two",
+            [
+                event(
+                    "EVENT_MUSIC_PLAY",
+                    {"musicId": audio_ids["stage_two_music"]},
+                    f"{key}:stage-two-music",
+                )
+            ],
+        ),
     ]
     lower_house = dialogue_with_hud_events(
         short_lines("Link homes below."),
-        variable_ids["storm_seconds"],
+        connected,
         f"{key}:lower-first",
     )
     cut_top = dialogue_with_hud_events(
         short_lines("Cut the top wire."),
-        variable_ids["storm_seconds"],
+        connected,
         f"{key}:cut-top",
     )
     invalid = [
@@ -391,66 +469,24 @@ def scene_runtime_script(
 ) -> list[dict[str, Any]]:
     connected = variable_ids["connected"]
     game_state = variable_ids["game_state"]
-    storm_seconds = variable_ids["storm_seconds"]
-    timer_tick = [
-        if_value(
-            game_state,
-            "eq",
-            0,
-            "storm-tick-playing",
-            [
-                event("EVENT_DEC_VALUE", {"variable": storm_seconds}, "storm-countdown"),
-                storm_counter_event(storm_seconds, "draw-storm-countdown"),
-                if_value(
-                    storm_seconds,
-                    "lte",
-                    0,
-                    "storm-expired",
-                    [
-                        set_value(game_state, 2, "storm-lose-state"),
-                        event("EVENT_TIMER_DISABLE", {"timer": 1}, "storm-stop-timer"),
-                        event(
-                            "EVENT_MUSIC_PLAY",
-                            {"musicId": audio_ids["lose_music"]},
-                            "storm-lose-music",
-                        ),
-                        *dialogue_with_hud_events(
-                            short_lines("The storm wins.\nTry again."),
-                            storm_seconds,
-                            "storm-lose-text",
-                        ),
-                    ],
-                ),
-            ],
-        )
-    ]
     return [
         set_value(connected, 0, "init-connected-houses"),
         set_value(game_state, 0, "init-game-state"),
-        set_value(storm_seconds, STORM_SECONDS, "init-storm-seconds"),
         event(
             "EVENT_MUSIC_PLAY",
-            {"musicId": audio_ids["intro_music"]},
-            "play-intro-music",
+            {"musicId": audio_ids["stage_one_music"]},
+            "play-stage-one-music",
         ),
-        text_event(short_lines("B links or cuts.\nLink five. Hurry!"), "intro-controls"),
-        event(
-            "EVENT_MUSIC_PLAY",
-            {"musicId": audio_ids["main_music"]},
-            "play-main-music",
+        text_event(
+            short_lines("Move: D-pad", "Jump: A", "B: PULL CABLE"),
+            "intro-controls",
         ),
-        *show_hud_events(storm_seconds, "show-initial-hud"),
+        *show_hud_events(connected, "show-initial-hud"),
         branch_event(
             "EVENT_SET_INPUT_SCRIPT",
             {"input": ["a"], "override": False},
             "attach-jump-sound",
             {"true": [sound_event(audio_ids["jump"], "jump-sfx", "low")]},
-        ),
-        branch_event(
-            "EVENT_SET_TIMER_SCRIPT",
-            {"units": "frames", "timer": 1, "duration": 1, "frames": 60},
-            "start-storm-timer",
-            {"script": timer_tick},
         ),
     ]
 
@@ -477,17 +513,17 @@ def actor(
     state: str | None = None,
     dialogue: list[str] | None = None,
     script_events: list[dict[str, Any]] | None = None,
-    storm_seconds_id: str | None = None,
+    linked_houses_id: str | None = None,
     hide_on_start: bool = False,
 ) -> dict[str, Any]:
     if script_events is not None:
         actor_script = script_events
     elif dialogue:
-        if storm_seconds_id is None:
-            raise ValueError(f"{key}: dialogue needs the storm counter variable ID")
+        if linked_houses_id is None:
+            raise ValueError(f"{key}: dialogue needs the linked-houses variable ID")
         actor_script = dialogue_with_hud_events(
             dialogue,
-            storm_seconds_id,
+            linked_houses_id,
             f"{key}:dialogue",
         )
     else:
@@ -650,7 +686,7 @@ def build_scene(
                 sprite_id=sprite_ids["locals"],
                 key=str(npc["id"]),
                 state=name,
-                storm_seconds_id=variable_ids["storm_seconds"],
+                linked_houses_id=variable_ids["connected"],
                 dialogue=short_lines(
                     {
                         "Marta": "Marta: Watch out!",
@@ -671,7 +707,7 @@ def build_scene(
             y=int(substation["row"]),
             sprite_id=sprite_ids["substation"],
             key="substation",
-            storm_seconds_id=variable_ids["storm_seconds"],
+            linked_houses_id=variable_ids["connected"],
             dialogue=short_lines("Grid starts here."),
         )
     )
@@ -752,15 +788,18 @@ def main() -> None:
     }
     variable_ids = update_variables()
     audio_ids = {
-        "intro_music": sidecar_id("assets/music/cfe_intro.uge.gbsres", "music"),
-        "main_music": sidecar_id("assets/music/cfe_main.uge.gbsres", "music"),
+        "stage_one_music": sidecar_id("assets/music/cfe_village_1.uge.gbsres", "music"),
+        "stage_two_music": sidecar_id("assets/music/cfe_village_2.uge.gbsres", "music"),
+        "stage_three_music": sidecar_id("assets/music/cfe_village_3.uge.gbsres", "music"),
         "win_music": sidecar_id("assets/music/cfe_win.uge.gbsres", "music"),
-        "lose_music": sidecar_id("assets/music/cfe_lose.uge.gbsres", "music"),
         "connect": sidecar_id("assets/sounds/connect.wav.gbsres", "sound"),
         "cut": sidecar_id("assets/sounds/cut.wav.gbsres", "sound"),
         "death": sidecar_id("assets/sounds/death.wav.gbsres", "sound"),
         "victory": sidecar_id("assets/sounds/victory.wav.gbsres", "sound"),
         "jump": sidecar_id("assets/sounds/jump.wav.gbsres", "sound"),
+        "pickup": sidecar_id("assets/sounds/pickup.wav.gbsres", "sound"),
+        "place": sidecar_id("assets/sounds/place.wav.gbsres", "sound"),
+        "sparkle": sidecar_id("assets/sounds/sparkle.wav.gbsres", "sound"),
     }
     bg_palette_ids, sprite_palette_ids, palettes = build_palettes()
     scene, actors, triggers = build_scene(
@@ -773,7 +812,18 @@ def main() -> None:
     )
     palette_dir = PROJECT_DIR / "project" / "palettes"
     for filename, palette in palettes:
-        write_json(palette_dir / filename, palette)
+        palette_path = palette_dir / filename
+        if palette_path.exists():
+            # Palette colors are lane-authored native resources. Keep their
+            # identities for scene slot wiring, but never overwrite a tuned
+            # ramp when regenerating the level scaffold.
+            current = load_json(palette_path)
+            if current.get("id") != palette["id"]:
+                raise ValueError(
+                    f"{palette_path}: palette ID differs from the stable scene reference"
+                )
+        else:
+            write_json(palette_path, palette)
     scene_dir = PROJECT_DIR / "project" / "scenes" / SCENE_DIR_NAME
     for hazard_index in range(1, len(level.HAZARDS) + 1):
         label = f"hazard_{hazard_index}"
@@ -782,10 +832,20 @@ def main() -> None:
             resource_id(f"actor:{label}:visual"),
         )
     write_json(scene_dir / "scene.gbsres", scene)
+    actor_dir = scene_dir / "actors"
     for item in actors:
-        write_json(scene_dir / "actors" / f"{item['symbol']}.gbsres", item)
+        symbol = str(item["symbol"])
+        legacy_name = LEGACY_ACTOR_FILES.get(symbol, symbol)
+        write_json(actor_dir / f"{legacy_name}.gbsres", item)
+        if legacy_name != symbol:
+            remove_owned_resource(actor_dir / f"{symbol}.gbsres", str(item["id"]))
+    trigger_dir = scene_dir / "triggers"
     for item in triggers:
-        write_json(scene_dir / "triggers" / f"{item['symbol']}.gbsres", item)
+        symbol = str(item["symbol"])
+        legacy_name = LEGACY_TRIGGER_FILES.get(symbol, symbol)
+        write_json(trigger_dir / f"{legacy_name}.gbsres", item)
+        if legacy_name != symbol:
+            remove_owned_resource(trigger_dir / f"{symbol}.gbsres", str(item["id"]))
     update_project_settings(scene["id"], sprite_ids["player_platform"])
     print(
         f"generated {scene_dir.relative_to(PROJECT_DIR)}: "

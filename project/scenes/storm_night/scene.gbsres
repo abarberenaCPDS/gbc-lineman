@@ -32,8 +32,8 @@
   "collisions": "0081+01b+002a+01b+0035+01b+0f3+0011+0f3+0011+0f3+00!01c+004+0f3+0011+0f3+0011+0f3+003+01d+00!0f3+0011+0f3+0011+0f3+002+01f+0f3+0011+0f3+0011+0f3+01f+002+0f3+0011+0f3+0011+0f3+002+01f+0f3+0011+0f3+0011+0f4+0110+0f4+0013+0f!0013+0f!016+00d+0f28+",
   "autoFadeSpeed": 1,
   "symbol": "scene_storm_night",
-  "x": 60,
-  "y": 30,
+  "x": 0,
+  "y": 0,
   "script": [
     {
       "command": "EVENT_SET_VALUE",
@@ -58,28 +58,19 @@
       "id": "e8fd8922-b9c9-5ecd-9d5d-ae633fc32c80"
     },
     {
-      "command": "EVENT_SET_VALUE",
-      "args": {
-        "variable": "2",
-        "value": {
-          "type": "number",
-          "value": 90
-        }
-      },
-      "id": "a5313e3e-3022-54cf-8d85-93724184b75d"
-    },
-    {
       "command": "EVENT_MUSIC_PLAY",
       "args": {
-        "musicId": "ef24b514-07e8-5585-928e-905a3e924b7f"
+        "musicId": "6fcd550a-a2e4-5c30-93bc-0a4c11478fe2"
       },
-      "id": "41202c56-482b-59bc-8d71-a45939f91252"
+      "id": "82df525d-2520-5fc0-8ea1-a800c7f37dfa"
     },
     {
       "command": "EVENT_TEXT",
       "args": {
         "text": [
-          "B links or cuts.\nLink five. Hurry!"
+          "Move: D-pad",
+          "Jump: A",
+          "B: PULL CABLE"
         ],
         "avatarId": "",
         "minHeight": 4,
@@ -99,13 +90,6 @@
         "closeDelayFrames": 30
       },
       "id": "96076c93-0ce6-5b4d-bc52-5be9e8495ca9"
-    },
-    {
-      "command": "EVENT_MUSIC_PLAY",
-      "args": {
-        "musicId": "9b252cb5-9924-5220-8c9c-7f715db6b441"
-      },
-      "id": "fd156fe6-33ce-55f5-9bcb-b54f64fa4f4e"
     },
     {
       "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -130,7 +114,7 @@
     {
       "command": "EVENT_TEXT_DRAW",
       "args": {
-        "text": "STORM %D2$02$",
+        "text": "HOMES %D0$01$ / 5",
         "x": 0,
         "y": 0,
         "location": "overlay"
@@ -161,172 +145,6 @@
               "effect": 0
             },
             "id": "d7a757f9-4746-581f-b4c5-55d2e2c002c2"
-          }
-        ]
-      }
-    },
-    {
-      "command": "EVENT_SET_TIMER_SCRIPT",
-      "args": {
-        "units": "frames",
-        "timer": 1,
-        "duration": 1,
-        "frames": 60
-      },
-      "id": "4c86e740-7e54-597a-b4fa-c71d344e85ba",
-      "children": {
-        "script": [
-          {
-            "command": "EVENT_IF",
-            "args": {
-              "condition": {
-                "type": "eq",
-                "valueA": {
-                  "type": "variable",
-                  "value": "1"
-                },
-                "valueB": {
-                  "type": "number",
-                  "value": 0
-                }
-              }
-            },
-            "id": "ed4c1b58-0818-53c8-ad08-9951c1434b26",
-            "children": {
-              "true": [
-                {
-                  "command": "EVENT_DEC_VALUE",
-                  "args": {
-                    "variable": "2"
-                  },
-                  "id": "e830157f-dc33-547f-9374-5b9c3811c300"
-                },
-                {
-                  "command": "EVENT_TEXT_DRAW",
-                  "args": {
-                    "text": "STORM %D2$02$",
-                    "x": 0,
-                    "y": 0,
-                    "location": "overlay"
-                  },
-                  "id": "b9024100-0af8-5ee6-a5c1-b0214ef1d80a"
-                },
-                {
-                  "command": "EVENT_IF",
-                  "args": {
-                    "condition": {
-                      "type": "lte",
-                      "valueA": {
-                        "type": "variable",
-                        "value": "2"
-                      },
-                      "valueB": {
-                        "type": "number",
-                        "value": 0
-                      }
-                    }
-                  },
-                  "id": "74381cb3-3f0c-5bda-8723-762bf212387e",
-                  "children": {
-                    "true": [
-                      {
-                        "command": "EVENT_SET_VALUE",
-                        "args": {
-                          "variable": "1",
-                          "value": {
-                            "type": "number",
-                            "value": 2
-                          }
-                        },
-                        "id": "ced26f55-6dca-58ea-a97e-2385e85ace32"
-                      },
-                      {
-                        "command": "EVENT_TIMER_DISABLE",
-                        "args": {
-                          "timer": 1
-                        },
-                        "id": "2ca262b3-6655-5015-b1bf-b21d965cff04"
-                      },
-                      {
-                        "command": "EVENT_MUSIC_PLAY",
-                        "args": {
-                          "musicId": "621447f3-26ff-5754-a394-ffbdb45ef6f7"
-                        },
-                        "id": "92b34657-eabf-5563-9c25-12d80cff36f2"
-                      },
-                      {
-                        "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
-                        "args": {
-                          "units": "pixels",
-                          "y": {
-                            "type": "number",
-                            "value": 150
-                          }
-                        },
-                        "id": "7d0530b9-2fb8-5910-8bc7-c78d54c3b0f7"
-                      },
-                      {
-                        "command": "EVENT_TEXT",
-                        "args": {
-                          "text": [
-                            "The storm wins.\nTry again."
-                          ],
-                          "avatarId": "",
-                          "minHeight": 4,
-                          "maxHeight": 7,
-                          "textX": 1,
-                          "textY": 1,
-                          "textHeight": 5,
-                          "position": "bottom",
-                          "clearPrevious": true,
-                          "showFrame": true,
-                          "speedIn": -1,
-                          "speedOut": -1,
-                          "closeWhen": "key",
-                          "closeButton": "a",
-                          "closeDelayUnits": "time",
-                          "closeDelayTime": 0.5,
-                          "closeDelayFrames": 30
-                        },
-                        "id": "4cff1784-fe39-5c14-840b-ccf4d0b5c71b"
-                      },
-                      {
-                        "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
-                        "args": {
-                          "units": "pixels",
-                          "y": {
-                            "type": "number",
-                            "value": 16
-                          }
-                        },
-                        "id": "c63ac5d6-c159-504d-b348-3bc7279af7b1"
-                      },
-                      {
-                        "command": "EVENT_OVERLAY_SHOW",
-                        "args": {
-                          "color": "black",
-                          "x": 0,
-                          "y": 0
-                        },
-                        "id": "55292e2c-1ac2-5c27-a6b3-380c940ffab1"
-                      },
-                      {
-                        "command": "EVENT_TEXT_DRAW",
-                        "args": {
-                          "text": "STORM %D2$02$",
-                          "x": 0,
-                          "y": 0,
-                          "location": "overlay"
-                        },
-                        "id": "e99bc371-edc2-595c-bdba-b92cd55c9580"
-                      }
-                    ],
-                    "false": []
-                  }
-                }
-              ],
-              "false": []
-            }
           }
         ]
       }

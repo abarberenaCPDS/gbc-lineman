@@ -29,6 +29,7 @@ OUT_DIR = PROJECT_DIR / "assets" / "sprites"
 NAMESPACE = uuid.UUID("c31813d9-75ae-55dd-b5dc-fde97dc6516a")
 TILE = level.TILE
 FRAME_W, FRAME_H = 16, 16
+ENGINE_ANIMATION_SLOTS = 8
 TRANSPARENT = (0, 0, 0, 0)
 SPRITE_PALETTES = {
     name: tuple(
@@ -71,72 +72,109 @@ def line(
 
 
 def player_frame(sheet: Image.Image, index: int, pose: str, facing: str, phase: int = 0) -> None:
-    """Draw a 16x16 storm-climber using player-palette indices only."""
-    d = ImageDraw.Draw(sheet)
-    ox = index * FRAME_W
+    """Draw the side-on CFE lineworker in a compact 16x16 silhouette."""
+    frame = Image.new("RGBA", (FRAME_W, FRAME_H), TRANSPARENT)
+    d = ImageDraw.Draw(frame)
     p = "player"
-    # Hood and face, kept within the top 8x8 tile. The silhouette uses the
-    # palette outline and the warm skin; the scarf starts on the lower tile.
-    rect(d, (ox + 5, 1, ox + 10, 2), p, 3)
-    rect(d, (ox + 4, 2, ox + 11, 4), p, 3)
-    rect(d, (ox + 5, 3, ox + 10, 6), p, 0)
-    rect(d, (ox + 4, 4, ox + 4, 5), p, 3)
-    rect(d, (ox + 11, 4, ox + 11, 5), p, 3)
-    # A single pixel eye and nose give the two facing poses a clear direction.
-    eye_x = ox + (9 if facing == "right" else 6)
-    ink(d, eye_x, 4, p, 3)
-    ink(d, ox + (10 if facing == "right" else 5), 5, p, 1)
-    rect(d, (ox + 6, 6, ox + 9, 7), p, 1)
-    # Lower half: raincoat, teal field pack, and dark pixel contour.
-    rect(d, (ox + 5, 7, ox + 10, 8), p, 3)
-    rect(d, (ox + 4, 8, ox + 11, 11), p, 1)
-    rect(d, (ox + 3, 8, ox + 4, 10), p, 3)
-    rect(d, (ox + 11, 8, ox + 12, 10), p, 3)
-    rect(d, (ox + 2, 8, ox + 3, 10), p, 2)
-    rect(d, (ox + 4, 11, ox + 11, 12), p, 3)
-    rect(d, (ox + 5, 12, ox + 10, 14), p, 3)
+    outline, vest, workwear, light = 3, 1, 2, 0
+
+    # Hardhat, brim and profile: the cream pixels are also the face, but a
+    # one-pixel dark contour keeps the helmet distinct at native 1x.
+    rect(d, (5, 1, 10, 4), p, outline)
+    rect(d, (6, 1, 9, 2), p, light)
+    rect(d, (6, 3, 10, 3), p, light)
+    rect(d, (4, 4, 11, 4), p, outline)
+    rect(d, (7, 4, 11, 7), p, outline)
+    rect(d, (8, 5, 10, 6), p, light)
+    ink(d, 10, 5, p, outline)
+    ink(d, 8, 7, p, vest)  # reflective collar/neck
+
+    # Orange high-vis vest over dark workwear, with an explicit seam and belt.
+    rect(d, (4, 7, 11, 11), p, outline)
+    rect(d, (5, 8, 10, 10), p, vest)
+    rect(d, (7, 8, 7, 10), p, outline)
+    rect(d, (5, 11, 10, 11), p, outline)
+    rect(d, (8, 11, 8, 11), p, vest)  # belt buckle
 
     if pose == "idle":
-        rect(d, (ox + 5, 12, ox + 7, 14), p, 1)
-        rect(d, (ox + 8, 12, ox + 10, 14), p, 1)
-        rect(d, (ox + 4, 15, ox + 7, 15), p, 3)
-        rect(d, (ox + 8, 15, ox + 11, 15), p, 3)
+        # A relaxed, slightly staggered stance; one hand rests by the tool belt.
+        rect(d, (3, 8, 4, 10), p, outline)
+        ink(d, 3, 9, p, workwear)
+        rect(d, (11, 8, 12, 10), p, outline)
+        ink(d, 12, 9, p, workwear)
+        rect(d, (5, 12, 7, 14), p, outline)
+        rect(d, (6, 12, 6, 13), p, workwear)
+        rect(d, (8, 12, 10, 14), p, outline)
+        rect(d, (9, 12, 9, 13), p, workwear)
+        rect(d, (4, 14, 7, 15), p, outline)
+        rect(d, (9, 14, 12, 15), p, outline)
+        ink(d, 5, 14, p, workwear)
+        ink(d, 10, 14, p, workwear)
+        ink(d, 11, 10, p, vest)  # small insulated tool grip
     elif pose == "run":
+        # Opposed arm/leg swings give a clear walk cycle without broad jitter.
         if phase == 0:
-            rect(d, (ox + 4, 12, ox + 6, 14), p, 1)
-            rect(d, (ox + 9, 12, ox + 11, 13), p, 1)
-            rect(d, (ox + 2, 14, ox + 5, 15), p, 3)
-            rect(d, (ox + 10, 14, ox + 13, 14), p, 3)
+            rect(d, (2, 8, 4, 9), p, outline)
+            ink(d, 2, 9, p, workwear)
+            rect(d, (11, 9, 13, 10), p, outline)
+            ink(d, 13, 9, p, workwear)
+            rect(d, (4, 12, 7, 14), p, outline)
+            rect(d, (5, 12, 6, 13), p, workwear)
+            rect(d, (2, 14, 6, 15), p, outline)
+            rect(d, (9, 12, 11, 13), p, outline)
+            ink(d, 10, 12, p, workwear)
+            rect(d, (10, 13, 13, 14), p, outline)
         else:
-            rect(d, (ox + 4, 12, ox + 6, 13), p, 1)
-            rect(d, (ox + 9, 12, ox + 11, 14), p, 1)
-            rect(d, (ox + 2, 14, ox + 5, 14), p, 3)
-            rect(d, (ox + 10, 14, ox + 13, 15), p, 3)
-        # Arm swing makes motion readable at native resolution.
-        if phase == 0:
-            rect(d, (ox + 2, 7, ox + 3, 8), p, 1)
-            rect(d, (ox + 12, 9, ox + 13, 10), p, 1)
-        else:
-            rect(d, (ox + 2, 9, ox + 3, 10), p, 1)
-            rect(d, (ox + 12, 7, ox + 13, 8), p, 1)
+            rect(d, (3, 9, 5, 10), p, outline)
+            ink(d, 3, 9, p, workwear)
+            rect(d, (11, 8, 13, 9), p, outline)
+            ink(d, 13, 8, p, workwear)
+            rect(d, (4, 12, 6, 13), p, outline)
+            ink(d, 5, 12, p, workwear)
+            rect(d, (2, 13, 5, 14), p, outline)
+            rect(d, (8, 12, 11, 14), p, outline)
+            rect(d, (9, 12, 10, 13), p, workwear)
+            rect(d, (9, 14, 13, 15), p, outline)
     elif pose == "jump":
-        rect(d, (ox + 4, 12, ox + 7, 13), p, 1)
-        rect(d, (ox + 8, 12, ox + 11, 13), p, 1)
-        rect(d, (ox + 3, 14, ox + 6, 14), p, 3)
-        rect(d, (ox + 9, 14, ox + 12, 14), p, 3)
-        rect(d, (ox + 2, 6, ox + 3, 8), p, 1)
-        rect(d, (ox + 12, 6, ox + 13, 8), p, 1)
+        # Lifted arms and tucked knees read as a jump; boots separate in flight.
+        rect(d, (3, 5, 5, 7), p, outline)
+        rect(d, (4, 5, 4, 6), p, workwear)
+        rect(d, (10, 5, 12, 7), p, outline)
+        rect(d, (11, 5, 11, 6), p, workwear)
+        rect(d, (4, 12, 7, 13), p, outline)
+        rect(d, (5, 12, 6, 12), p, workwear)
+        rect(d, (8, 12, 11, 13), p, outline)
+        rect(d, (9, 12, 10, 12), p, workwear)
+        rect(d, (2, 13, 6, 14), p, outline)
+        rect(d, (9, 13, 13, 14), p, outline)
     elif pose == "climb":
-        rect(d, (ox + 5, 12, ox + 7, 14), p, 1)
-        rect(d, (ox + 8, 12, ox + 10, 14), p, 1)
-        rect(d, (ox + 4, 15, ox + 7, 15), p, 3)
-        rect(d, (ox + 8, 15, ox + 11, 15), p, 3)
+        # Alternating reaches and bent knees suggest climbing without loose parts.
         if phase == 0:
-            rect(d, (ox + 2, 5, ox + 3, 7), p, 1)
-            rect(d, (ox + 12, 9, ox + 13, 11), p, 1)
+            rect(d, (3, 5, 5, 7), p, outline)
+            rect(d, (4, 5, 4, 6), p, workwear)
+            rect(d, (11, 8, 13, 10), p, outline)
+            ink(d, 12, 9, p, workwear)
+            rect(d, (5, 12, 7, 14), p, outline)
+            ink(d, 6, 12, p, workwear)
+            rect(d, (8, 12, 10, 13), p, outline)
+            ink(d, 9, 12, p, workwear)
+            rect(d, (4, 14, 7, 15), p, outline)
+            rect(d, (8, 13, 12, 14), p, outline)
         else:
-            rect(d, (ox + 2, 9, ox + 3, 11), p, 1)
-            rect(d, (ox + 12, 5, ox + 13, 7), p, 1)
+            rect(d, (3, 8, 5, 10), p, outline)
+            ink(d, 4, 9, p, workwear)
+            rect(d, (10, 5, 12, 7), p, outline)
+            rect(d, (11, 5, 11, 6), p, workwear)
+            rect(d, (5, 12, 7, 13), p, outline)
+            ink(d, 6, 12, p, workwear)
+            rect(d, (8, 12, 10, 14), p, outline)
+            ink(d, 9, 12, p, workwear)
+            rect(d, (4, 13, 8, 14), p, outline)
+            rect(d, (8, 14, 12, 15), p, outline)
+
+    if facing == "left":
+        frame = frame.transpose(Image.Transpose.FLIP_LEFT_RIGHT)
+    sheet.paste(frame, (index * FRAME_W, 0))
 
 
 def make_player() -> tuple[Image.Image, list[dict]]:
@@ -198,19 +236,24 @@ def house_frame(sheet: Image.Image, index: int, kind: int, powered: bool = False
     p = "timber"
     # Each half uses at most three opaque palette colors (plus transparency).
     # Roof silhouette is slightly varied per house, with small chimney/eave.
-    ridge = [2, 3, 2, 4, 3][kind]
+    ridge = [2, 2, 3, 3, 2][kind]
     rect(d, (ox + 2, ridge + 2, ox + 13, 6), p, 2)
     line(d, (ox + 1, 7, ox + 6, ridge), p, 0)
     line(d, (ox + 8, ridge, ox + 14, 7), p, 3)
     ink(d, ox + 7, ridge, p, 2)
-    rect(d, (ox + 4, 6, ox + 11, 13), p, 2)
-    rect(d, (ox + 3, 7, ox + 4, 12), p, 2)
-    rect(d, (ox + 11, 7, ox + 12, 12), p, 2)
+    # Dark eaves and a warm timber face keep the roofline legible at 1x.
+    rect(d, (ox + 3, 6, ox + 12, 13), p, 0)
+    rect(d, (ox + 4, 7, ox + 11, 13), p, 2)
+    rect(d, (ox + 3, 7, ox + 3, 12), p, 2)
+    rect(d, (ox + 12, 7, ox + 12, 12), p, 2)
     left_window_color = 3 if powered else 0
-    rect(d, (ox + 5, 8, ox + 6, 10), p, left_window_color)
+    rect(d, (ox + 5, 8, ox + 6, 10), p, 3)
+    rect(d, (ox + 5, 9, ox + 5, 9), p, left_window_color)
     rect(d, (ox + 9, 8, ox + 10, 10), p, 3)
-    rect(d, (ox + 7, 10, ox + 8, 13), p, 1)
-    rect(d, (ox + 6, 12, ox + 9, 13), p, 1)
+    rect(d, (ox + 10, 9, ox + 10, 9), p, 0)
+    rect(d, (ox + 7, 10, ox + 8, 13), p, 0)
+    rect(d, (ox + 7, 11, ox + 8, 13), p, 2)
+    ink(d, ox + 8, 12, p, 3)  # door latch
     # Distinct front details: awning, gable stripe, rain barrel, or antenna.
     if kind == 0:
         line(d, (ox + 9, 5, ox + 12, 5), p, 3)
@@ -239,32 +282,42 @@ def substation_art(sheet: Image.Image) -> None:
     d = ImageDraw.Draw(sheet)
     p = "timber"
     # Compact transformer shed / power cabinet with a readable lit status lamp.
-    rect(d, (2, 3, 13, 14), p, 2)
+    rect(d, (2, 3, 13, 14), p, 0)
+    rect(d, (3, 4, 12, 13), p, 2)
     rect(d, (1, 4, 14, 5), p, 2)
     rect(d, (3, 2, 7, 3), p, 2)
     rect(d, (8, 2, 12, 3), p, 3)
     rect(d, (4, 6, 7, 12), p, 0)
-    rect(d, (8, 6, 11, 12), p, 1)
-    rect(d, (5, 7, 10, 11), p, 1)
+    rect(d, (8, 6, 11, 12), p, 0)
+    rect(d, (5, 7, 10, 11), p, 0)
     rect(d, (6, 8, 7, 8), p, 2)
-    rect(d, (8, 8, 9, 8), p, 3)
+    rect(d, (8, 8, 9, 8), p, 3)  # powered indicator
     rect(d, (6, 10, 9, 10), p, 2)
-    rect(d, (6, 12, 7, 13), p, 0)
-    rect(d, (8, 12, 9, 13), p, 1)
+    rect(d, (5, 12, 6, 12), p, 3)  # latch and lower vents
+    rect(d, (8, 12, 10, 12), p, 0)
+    rect(d, (8, 13, 10, 13), p, 0)
     # Insulator caps read as hardware, not extra palette colors.
     rect(d, (4, 1, 5, 2), p, 2)
     rect(d, (10, 1, 11, 2), p, 2)
 
 
-def cable_frame(sheet: Image.Image, index: int, kind: str) -> None:
+def cable_frame(sheet: Image.Image, index: int, kind: str, glint: int | None = None) -> None:
     d = ImageDraw.Draw(sheet)
     ox = index * FRAME_W
     p = "cable"
     if kind == "span":
         line(d, (ox + 7, 0, ox + 7, 15), p, 1)
         line(d, (ox + 8, 0, ox + 8, 15), p, 2)
-        rect(d, (ox + 6, 5, ox + 9, 6), p, 3)
-        rect(d, (ox + 6, 10, ox + 9, 11), p, 3)
+        rect(d, (ox + 6, 3, ox + 9, 4), p, 3)
+        rect(d, (ox + 6, 12, ox + 9, 13), p, 3)
+        if glint is not None:
+            # A tiny four-point glint sits on the conductor and pulses between
+            # cyan and ice-white in the existing span animation.
+            ink(d, ox + 7, 6, p, glint)
+            rect(d, (ox + 6, 7, ox + 8, 7), p, glint)
+            rect(d, (ox + 5, 8, ox + 9, 8), p, glint)
+            rect(d, (ox + 6, 9, ox + 8, 9), p, glint)
+            ink(d, ox + 7, 10, p, glint)
     elif kind == "junction":
         line(d, (ox + 7, 0, ox + 7, 15), p, 1)
         line(d, (ox + 8, 0, ox + 8, 15), p, 2)
@@ -290,12 +343,22 @@ def hazard_frame(sheet: Image.Image, index: int, kind: str) -> None:
         rect(d, (ox + 3, 10, ox + 5, 11), p, 0)
         rect(d, (ox + 10, 9, ox + 12, 10), p, 3)
         line(d, (ox + 3, 13, ox + 6, 14, ox + 10, 13, ox + 13, 14), p, 2)
-    else:  # live arc
-        line(d, (ox + 5, 1, ox + 10, 4, ox + 6, 7, ox + 11, 10, ox + 5, 14), p, 3)
-        line(d, (ox + 6, 1, ox + 11, 4, ox + 7, 7, ox + 12, 10, ox + 6, 14), p, 2)
-        rect(d, (ox + 3, 4, ox + 4, 5), p, 1)
-        rect(d, (ox + 11, 12, ox + 13, 13), p, 1)
-        ink(d, ox + 7, 7, p, 3)
+    else:  # live wire: bold, outlined warning bolt
+        d.polygon(
+            [
+                (ox + 7, 1), (ox + 12, 1), (ox + 9, 6), (ox + 13, 6),
+                (ox + 5, 15), (ox + 7, 9), (ox + 3, 9),
+            ],
+            fill=SPRITE_PALETTES[p][3],
+            outline=SPRITE_PALETTES[p][0],
+        )
+        d.polygon(
+            [
+                (ox + 8, 3), (ox + 10, 3), (ox + 8, 7), (ox + 10, 7),
+                (ox + 6, 12), (ox + 7, 8), (ox + 6, 8),
+            ],
+            fill=SPRITE_PALETTES[p][2],
+        )
 
 
 @dataclass(frozen=True)
@@ -337,10 +400,14 @@ def make_assets() -> list[Asset]:
     station_sheet = new_frame_sheet(1)
     substation_art(station_sheet)
 
-    cable_sheet = new_frame_sheet(3)
+    cable_sheet = new_frame_sheet(4)
     cable_names = ["span", "junction", "connector"]
-    for i, name in enumerate(cable_names):
-        cable_frame(cable_sheet, i, name)
+    cable_frame(cable_sheet, 0, "span", glint=2)
+    cable_frame(cable_sheet, 1, "junction")
+    cable_frame(cable_sheet, 2, "connector")
+    cable_frame(cable_sheet, 3, "span", glint=3)
+    cable_states = single_frame_states(cable_names, "cable", [0, 1, 2])
+    cable_states[0]["animations"] = [[0, 3]]
 
     hazard_sheet = new_frame_sheet(2)
     hazard_names = ["floodwater", "live_wire"]
@@ -372,7 +439,7 @@ def make_assets() -> list[Asset]:
         Asset(
             "cable",
             cable_sheet,
-            single_frame_states(cable_names, "cable", [0, 1, 2]),
+            cable_states,
         ),
         Asset(
             "hazard",
@@ -445,7 +512,12 @@ def build_sidecar(asset: Asset) -> tuple[dict, int, set[tuple[int, ...]], int]:
     for state_index, state in enumerate(asset.states):
         palette_index = PALETTE_SLOTS[state["palette"]]
         animations = []
-        for animation_index, source_frames in enumerate(state["animations"]):
+        for animation_index in range(ENGINE_ANIMATION_SLOTS):
+            source_frames = (
+                state["animations"][animation_index]
+                if animation_index < len(state["animations"])
+                else []
+            )
             metasprite_frames = []
             for animation_frame_index, source_frame in enumerate(source_frames):
                 if not 0 <= source_frame < source_frame_count:
@@ -458,6 +530,18 @@ def build_sidecar(asset: Asset) -> tuple[dict, int, set[tuple[int, ...]], int]:
                     )
                     all_tile_signatures.add(tile_signature(crop))
                     tile_reference_count += 1
+            if not metasprite_frames:
+                # GB Studio sprite states expose eight engine-facing animation
+                # slots. Keep unused slots as one blank frame, as in the
+                # authored resources, rather than truncating the state.
+                metasprite_frames.append(
+                    {
+                        "id": stable_id(
+                            f"{asset.name}:state:{state_index}:animation:{animation_index}:empty-frame"
+                        ),
+                        "tiles": [],
+                    }
+                )
             animations.append(
                 {
                     "id": stable_id(f"{asset.name}:state:{state_index}:animation:{animation_index}"),
@@ -526,9 +610,15 @@ def verify_asset(asset: Asset, sidecar: dict) -> None:
     if asset.name == "player_platform":
         state = sidecar["states"][0]
         assert state["animationType"] == "platform_player"
-        assert len(state["animations"]) == 7
+        assert len(state["animations"]) == ENGINE_ANIMATION_SLOTS
+        assert [len(animation["frames"]) for animation in state["animations"]] == [
+            1, 1, 1, 1, 2, 2, 2, 1
+        ]
         assert len(state["animations"][4]["frames"]) == 2
         assert len(state["animations"][5]["frames"]) == 2
+    assert all(
+        len(state["animations"]) == ENGINE_ANIMATION_SLOTS for state in sidecar["states"]
+    )
 
 
 def output_exists_belongs_to_us(asset_name: str, png_path: Path, sidecar_path: Path) -> bool:

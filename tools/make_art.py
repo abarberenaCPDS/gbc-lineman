@@ -10,7 +10,6 @@ toolchain Python:
 from __future__ import annotations
 
 import json
-import math
 import sys
 import uuid
 from pathlib import Path
@@ -33,6 +32,15 @@ PALETTES = {
     for name, colors in level.BG_PALETTES
 }
 PALETTE_SLOTS = {name: index for index, (name, _colors) in enumerate(level.BG_PALETTES)}
+assert PALETTE_SLOTS == {
+    "sky": 0,
+    "rock": 1,
+    "timber": 2,
+    "glow": 3,
+    "moss": 4,
+    "hazard": 5,
+    "cable": 6,
+}
 
 
 class Tile:
@@ -62,110 +70,270 @@ def variant(x: int, y: int, count: int, salt: int = 0) -> int:
 
 
 def make_sky_tile(x: int, y: int) -> Tile:
-    # Storm clouds deepen toward the horizon, while the ridges remain legible
-    # as layered silhouettes in the same sky palette.
-    base = 0 if y < 5 else 1 if y < 10 else 2
-    tile = Tile("sky", base)
-
-    # Broken cloud bands, with finite patterns so the map stays comfortably
-    # below the 384 unique-background-tile hardware budget.
-    cloud = variant(x, y, 7, 2)
-    if y in (2, 3, 7, 8, 11) and cloud in (0, 1, 2, 4):
-        start = (x * 3 + cloud) % 5
-        tile.rect(start, 1, min(7, start + 2 + cloud % 2), 1, 2)
-        if cloud % 3 == 0:
-            tile.set((start + 1) % 8, 2, 1)
-
-    # Sparse stars / rain flecks. Diagonal rain uses muted sky tones to keep
-    # every tile within this palette's four-color limit.
-    fleck = variant(x, y, 11, 5)
-    if y < 9 and fleck in (0, 4):
-        tile.set((x * 5 + y * 3) % 8, (x + y * 2) % 8, 3)
-    elif fleck in (1, 6, 9):
-        px = (x * 3 + y * 5) % 8
-        py = (x * 7 + y) % 8
-        tile.set(px, py, 1)
-        if (x + y) % 3 == 0:
-            tile.set((px + 1) % 8, (py + 2) % 8, 1)
-
-    # Two distant ridge silhouettes. Their scalloped edges create a readable
-    # mountain horizon without obscuring the playable platform silhouettes.
-    world_top = y * level.TILE
+    """Quiet cave void with a few broad, dim blue stone silhouettes."""
+    tile = Tile("sky", 0)
     for py in range(level.TILE):
-        world_y = world_top + py
-        # Smooth, overlapping silhouettes create broad mountain peaks rather
-        # than a noisy horizontal band. The ridge line rises into the sky and
-        # stays behind the foreground platform art.
-        ridge_a = 58 + int(19 * abs(math.sin((x + 1) * 0.37))) + (x % 3)
-        ridge_b = 92 + int(22 * abs(math.sin((x + 4) * 0.27))) + (x % 2)
-        if world_y >= ridge_a:
-            tile.rect(0, py, 7, py, 2)
-            if world_y == ridge_a:
-                tile.set((x * 3 + py) % 8, py, 3)
-        if world_y >= ridge_b:
-            tile.rect(0, py, 7, py, 1)
+        wy = y * level.TILE + py
+        for px in range(level.TILE):
+            wx = x * level.TILE + px
+            # A distant arch and low cavern shoulders add depth without
+            # turning the playable negative space into a patterned sky.
+            arch = 105 + int(17 * abs((wx - 74) / 74))
+            left_shoulder = wx < 31 and wy > 136 + (wx // 3)
+            right_shoulder = wx > 125 and wy > 118 + ((159 - wx) // 3)
+            if (wy > arch and wy < 193) or left_shoulder or right_shoulder:
+                tile.set(px, py, 1)
 
+    # Tiny, deliberate cave glints: one pixel at most in a tile, never rain.
+    if variant(x, y, 17, 4) == 0 and y not in (6, 7, 8, 9):
+        tile.set((x * 3 + y) % 8, (x + y * 5) % 8, 2)
     return tile
 
 
-def make_rock_tile(x: int, y: int, platform: bool, moss: bool = False) -> Tile:
-    tile = Tile("moss" if moss else "rock")
-    if platform:
-        # Bright wet lip and a darker underside align the art with the exact
-        # one-way collision row in level.PLATFORMS.
-        tile.rect(0, 0, 7, 0, 3)
-        tile.rect(0, 1, 7, 1, 2)
-        tile.rect(0, 2, 7, 7, 1)
-    else:
-        tile.rect(0, 0, 7, 7, 1)
-        tile.rect(0, 0, 7, 1, 2)
+BRIDGE_SEGMENTS = (
+    (33, 0, 6),
+    (21, 13, 18),
+    (18, 3, 5),
+    (12, 14, 16),
+)
 
-    # Deliberately repeat a small set of stone cracks and rain sheen patterns.
-    style = variant(x, y, 6, 9)
+
+def is_bridge(row: int, x: int) -> bool:
+    return any(
+        row == bridge_row and x0 <= x <= x1
+        for bridge_row, x0, x1 in BRIDGE_SEGMENTS
+    )
+
+
+def make_platform_tile(x: int, y: int) -> Tile:
+    """A one-way ledge: vivid moss lip, quiet dark face, readable underside."""
+    tile = Tile("moss", 0)
+    for px in range(8):
+        tile.set(px, 0, 3 if px % 5 else 2)
+        tile.set(px, 1, 2 if px % 3 else 1)
+    tile.rect(0, 2, 7, 7, 0)
+    style = variant(x, y, 4, 7)
+    if style in (0, 2):
+        tile.set(1 + style, 3, 1)
+        tile.set(2 + style, 4, 2)
+    if style == 3:
+        tile.set(6, 5, 1)
+    return tile
+
+
+def make_bridge_tile(x: int, y: int) -> Tile:
+    """Chunky, hand-built plank deck with beam shadow and occasional pegs."""
+    tile = Tile("timber", 0)
+    tile.rect(0, 0, 7, 0, 3)
+    tile.rect(0, 1, 7, 1, 2)
+    tile.rect(0, 2, 7, 2, 1)
+    tile.rect(0, 3, 7, 3, 0)
+    tile.rect(0, 4, 7, 4, 1)
+    tile.rect(0, 5, 7, 7, 0)
+    style = variant(x, y, 4, 13)
+    if style in (0, 2):
+        seam = 2 + style
+        tile.rect(seam, 0, seam, 2, 1)
+        tile.set((seam + 1) % 8, 1, 3)
+    if style == 1:
+        tile.set(1, 0, 2)
+        tile.set(6, 0, 2)
+    if (x + y) % 3 == 0:
+        tile.set((x * 3) % 8, 2, 3)
+    return tile
+
+
+def make_solid_tile(x: int, y: int, top: bool, left: bool, right: bool) -> Tile:
+    """Vertical cave walls and floor, with restrained green edge lighting."""
+    if top or left or right:
+        tile = Tile("moss", 0)
+        if top:
+            tile.rect(0, 0, 7, 0, 3)
+            tile.set((x + 2) % 8, 1, 2)
+        if left:
+            for py in range(1, 8):
+                tile.set(0, py, 3 if py % 3 == 0 else 2)
+        if right:
+            for py in range(1, 8):
+                tile.set(7, py, 3 if py % 3 == 0 else 2)
+        tile.set((x * 3 + y) % 8, 5, 1)
+        return tile
+
+    tile = Tile("rock", 0)
+    tile.rect(0, 0, 7, 7, 1)
+    style = variant(x, y, 5, 9)
     if style in (0, 3):
-        tile.set(1 + style % 3, 3, 0)
-        tile.set(2 + style % 3, 4, 2)
-    elif style in (1, 5):
-        tile.set(5, 2 + style % 3, 3 if platform else 2)
-        tile.set(4, 3 + style % 2, 2)
-    if moss:
-        # Small lush patches stand out against slate; the entire tile still
-        # uses only the declared moss palette.
-        tile.set(2 + style % 4, 2 + (style // 2), 2)
-        tile.set(3 + style % 4, 3 + (style // 2), 3)
+        tile.rect(1, 3, 3, 3, 0)
+        tile.set(3, 4, 2)
+    elif style == 1:
+        tile.set(5, 2, 2)
+        tile.set(4, 3, 1)
     return tile
 
 
 def make_hazard_tile(x: int, y: int, flood: bool) -> Tile:
-    tile = Tile("hazard", 0)
     if flood:
-        tile.rect(0, 5, 7, 7, 1)
-        wave = variant(x, y, 3, 15)
+        tile = Tile("cable", 0)
+        tile.rect(0, 6, 7, 7, 1)
+        wave = variant(x, y, 4, 15)
         for px in range(8):
             if (px + wave) % 4 in (0, 1):
-                tile.set(px, 4, 2)
-        tile.set((x + y) % 8, 3, 3)
+                tile.set(px, 5, 2)
+        tile.set((x + y) % 8, 4, 3)
+        return tile
+
+    # Small, sharp spike clusters read as hazards without filling their gap.
+    tile = Tile("hazard", 0)
+    for center, height in ((1, 2), (4, 4), (7, 3)):
+        for rise in range(height):
+            py = 6 - rise
+            half_width = max(0, (rise - 1) // 2)
+            for px in range(
+                max(0, center - half_width), min(7, center + half_width) + 1
+            ):
+                tile.set(px, py, 3 if rise == height - 1 else 2)
+    tile.rect(0, 7, 7, 7, 1)
+    return tile
+
+
+def make_house_wall(x: int, y: int) -> Tile:
+    tile = Tile("timber", 0)
+    tile.rect(0, 0, 7, 7, 1)
+    style = variant(x, y, 4, 22)
+    # Upright corner posts and a few broad, quiet plank seams.
+    if x in (13, 18):
+        tile.rect(0 if x == 13 else 6, 0, 1 if x == 13 else 7, 7, 3)
     else:
-        # A crackling diagonal live-wire spark, placed in the clear gap between
-        # platform rows as specified by level.HAZARDS.
-        offset = variant(x, y, 4, 21)
-        for i in range(5):
-            px = (i + offset) % 8
-            py = 1 + i
-            tile.set(px, py, 2)
-            tile.set(px, py + 1, 1)
-        tile.set((offset + 5) % 8, 6, 3)
+        tile.set(0, 2 + style, 2)
+        tile.rect(2, 5 + (style % 2), 5, 5 + (style % 2), 0)
     return tile
 
 
-def make_beacon_tile() -> Tile:
+def make_house_roof(x: int, y: int) -> Tile:
+    tile = Tile("rock", 0)
+    tile.rect(0, 3, 7, 7, 1)
+    tile.rect(0, 2, 7, 2, 2)
+    tile.rect(0, 1, 7, 1, 1)
+    tile.set((x + y) % 8, 0, 2)
+    tile.set((x * 3 + 2) % 8, 3, 3)
+    return tile
+
+
+def make_window_tile() -> Tile:
     tile = Tile("glow", 0)
-    tile.rect(2, 4, 5, 6, 1)
-    tile.set(3, 4, 2)
-    tile.set(4, 4, 3)
-    tile.set(1, 7, 2)
-    tile.set(6, 7, 2)
+    tile.rect(1, 1, 6, 6, 1)
+    tile.rect(2, 2, 5, 5, 3)
+    tile.rect(3, 2, 4, 5, 2)
+    tile.set(3, 3, 3)
     return tile
+
+
+def make_door_tile(side: str) -> Tile:
+    tile = Tile("timber", 1)
+    tile.rect(0, 0, 7, 0, 2)
+    tile.rect(0, 1, 0, 7, 2)
+    tile.rect(7, 1, 7, 7, 2)
+    if side == "left":
+        tile.rect(1, 1, 3, 7, 0)
+        tile.set(3, 4, 3)
+    else:
+        tile.rect(4, 1, 6, 7, 0)
+        tile.set(4, 4, 3)
+    return tile
+
+
+def make_pine_tile(tile_x: int, tile_y: int, origin_x: int, origin_y: int) -> Tile:
+    """One 8x8 slice of a low-contrast, three-tile distant pine silhouette."""
+    tile = Tile("moss", 0)
+    for py in range(8):
+        world_y = (tile_y - origin_y) * 8 + py
+        for px in range(8):
+            world_x = (tile_x - origin_x) * 8 + px
+            if world_y < 19:
+                half = min(11, 1 + world_y * 3 // 5)
+                inside = abs(world_x - 11) <= half
+                branch_edge = abs(world_x - 11) == half
+                if inside:
+                    tile.set(px, py, 2 if branch_edge and world_y % 3 == 0 else 1)
+            elif world_y < 24 and 10 <= world_x <= 12:
+                tile.set(px, py, 1)
+    return tile
+
+
+def put_cable_scene(tiles: list[list[Tile]]) -> None:
+    """Paint one little pole-to-pole cyan span in otherwise open cave space."""
+    cable_cells: dict[tuple[int, int], Tile] = {}
+
+    def cable_pixel(px: int, py: int, color: int) -> None:
+        tx, ty = px // 8, py // 8
+        if not (0 <= tx < level.MAP_W and 0 <= ty < level.MAP_H):
+            return
+        key = (ty, tx)
+        if key not in cable_cells:
+            cable_cells[key] = Tile("cable", 0)
+        cable_cells[key].set(px % 8, py % 8, color)
+
+    # Slim timber poles and short crossarms, entirely above the row-9 ledge.
+    for pole_x in (8, 48):
+        tx = pole_x // 8
+        for ty in (6, 7, 8):
+            tile = Tile("timber", 0)
+            pole_px = pole_x % 8
+            tile.rect(max(0, pole_px - 1), 0, min(7, pole_px), 7, 1)
+            if ty == 6:
+                tile.rect(max(0, pole_px - 3), 1, min(7, pole_px + 3), 1, 2)
+                tile.set(pole_px, 0, 3)
+            tiles[ty][tx] = tile
+
+    # Fine sagging conductor; individual pixels quantize cleanly at 8x8.
+    for px in range(9, 48):
+        py = 57 + ((px - 9) * (px - 9)) // 900
+        cable_pixel(px, py, 2)
+        if px in (10, 47):
+            cable_pixel(px, py + 1, 1)
+
+    # Two compact star glints, echoing the reference cable scenes.
+    gx, gy = 30, 58
+    for dx, dy in ((0, 0), (-1, 0), (1, 0), (0, -1), (0, 1)):
+        cable_pixel(gx + dx, gy + dy, 3 if (dx, dy) == (0, 0) else 2)
+    cable_pixel(43, 58, 3)
+    cable_pixel(42, 58, 2)
+    cable_pixel(44, 58, 2)
+
+    for (ty, tx), tile in cable_cells.items():
+        tiles[ty][tx] = tile
+
+    # The left pole shares a tile with the cable; ink its fine dark silhouette
+    # into those cable tiles instead of letting either graphic erase the other.
+    for ty in (7, 8):
+        key = (ty, 1)
+        tile = cable_cells.get(key, Tile("cable", 0))
+        for py in range(8):
+            tile.set(0, py, 1)
+            tile.set(1, py, 1)
+        tiles[ty][1] = tile
+
+
+def decorate_house(tiles: list[list[Tile]]) -> None:
+    """Small timber hut on the open summit shelf, with two lit windows."""
+    for x in range(14, 18):
+        tiles[1][x] = make_house_roof(x, 1)
+    for x in range(13, 19):
+        tiles[2][x] = make_house_roof(x, 2)
+    for y in (3, 4, 5):
+        for x in range(13, 19):
+            tiles[y][x] = make_house_wall(x, y)
+    tiles[4][14] = make_window_tile()
+    tiles[4][17] = make_window_tile()
+    tiles[5][15] = make_door_tile("left")
+    tiles[5][16] = make_door_tile("right")
+
+
+def decorate_pines(tiles: list[list[Tile]]) -> None:
+    """A single small stand of distant pines, clear of every collision row."""
+    for ty in range(12, 15):
+        for tx in range(0, 3):
+            tiles[ty][tx] = make_pine_tile(tx, ty, 0, 12)
 
 
 def make_background() -> tuple[Image.Image, list[int], int]:
@@ -189,20 +357,27 @@ def make_background() -> tuple[Image.Image, list[int], int]:
         row_tiles: list[Tile] = []
         for x in range(level.MAP_W):
             if (y, x) in platforms:
-                row_tiles.append(make_rock_tile(x, y, platform=True, moss=variant(x, y, 13) == 0))
+                row_tiles.append(make_bridge_tile(x, y) if is_bridge(y, x) else make_platform_tile(x, y))
             elif (y, x) in solid:
-                row_tiles.append(make_rock_tile(x, y, platform=False, moss=variant(x, y, 13) == 0))
+                top = (y - 1, x) not in solid
+                left = (y, x - 1) not in solid
+                right = (y, x + 1) not in solid
+                row_tiles.append(make_solid_tile(x, y, top, left, right))
             elif (y, x) in hazard_cells:
                 row_tiles.append(make_hazard_tile(x, y, hazard_cells[(y, x)]))
             else:
                 row_tiles.append(make_sky_tile(x, y))
         tiles.append(row_tiles)
 
-    # A tiny storm beacon on a distant ridge gives the scene a warm focal point.
-    # It is background scenery and does not alter level collision or actors.
-    beacon_x, beacon_y = 15, 6
-    if collision[beacon_y][beacon_x] == level.COL_EMPTY:
-        tiles[beacon_y][beacon_x] = make_beacon_tile()
+    decorate_house(tiles)
+    decorate_pines(tiles)
+    put_cable_scene(tiles)
+    art_only_cells = (
+        [(x, y) for y in range(1, 6) for x in range(13, 19)]
+        + [(x, y) for y in range(12, 15) for x in range(3)]
+        + [(x, y) for y in range(6, 9) for x in range(1, 7)]
+    )
+    assert all(collision[y][x] == level.COL_EMPTY for x, y in art_only_cells)
 
     image = Image.new("RGB", (level.BG_W, level.BG_H))
     tile_colors: list[int] = []
@@ -224,6 +399,7 @@ def make_background() -> tuple[Image.Image, list[int], int]:
 
     assert image.size == (level.BG_W, level.BG_H)
     assert len(tile_colors) == level.MAP_W * level.MAP_H
+    assert set(tile_colors) <= set(range(7)), "UI palette slot 7 is reserved"
     assert len(unique_tiles) <= 384, f"{len(unique_tiles)} unique tiles exceeds L-03 budget"
     return image, tile_colors, len(unique_tiles)
 

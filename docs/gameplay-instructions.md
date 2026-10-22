@@ -15,7 +15,7 @@ B: Interact (Pull/Connect/Cut cables, Pick/Place a connector)
 ## Game Elements
 
 - you must place and generate all the assets generated in `/Users/abe/src/modretro-chromatic/gb-mr-cfe/` accordingly. there is a GB Studio project there that you must use. explore
-- images/art: there are sample assets in the `/Users/abe/src/modretro-chromatic/gb-mr-cfe/mr-cfe/assets/backgrounds/samples/` for your reference. these are just a a reference, but you must be creative on generating the sprites, character, etc.
+- images/art: the sample PNGs in `/Users/abe/src/modretro-chromatic/gb-mr-cfe/assets/backgrounds/samples/` are visual references only. Do not use them directly as game backgrounds; create original, GBC-compliant art inspired by their silhouettes, platform edges, bridges, cable glow, houses, and lighting.
 - no score, 5 buildings max, character can be killed when touching dangerous objects, but has unlimited lives
 
 ## Music and Sound effects
@@ -23,4 +23,3 @@ B: Interact (Pull/Connect/Cut cables, Pick/Place a connector)
 - you create them
   - music: intro, main theme, winning, loosing
   - sfx: pulling, connecting, cutting, jumping, dying, winning.
-
