@@ -1,0 +1,46 @@
+{
+  "_resourceType": "actor",
+  "id": "9869b753-eb1c-5732-a526-158769640763",
+  "_index": 10,
+  "symbol": "cable_house_d_1",
+  "prefabId": "",
+  "name": "Kiko's Cable 1",
+  "coordinateType": "tiles",
+  "x": 12,
+  "y": 23,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "731980b4-1c0b-513d-bdae-d804cec51361",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "span",
+        "loopAnim": true
+      },
+      "id": "8f8fd31a-8364-58cf-b44b-d7a6fd2c7fa3"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "09014f36-eb2b-537a-ad91-ba9fac09d2aa"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

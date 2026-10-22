@@ -1,0 +1,46 @@
+{
+  "_resourceType": "actor",
+  "id": "1f3735f3-e84b-5fed-95d7-5be7213b100f",
+  "_index": 2,
+  "symbol": "cable_house_a_2",
+  "prefabId": "",
+  "name": "Marta's Cable 2",
+  "coordinateType": "tiles",
+  "x": 3,
+  "y": 33,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "731980b4-1c0b-513d-bdae-d804cec51361",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "span",
+        "loopAnim": true
+      },
+      "id": "f11b82a6-6c02-5aec-966a-cdfc031f8f5d"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "7e902529-8218-5e3a-aa14-e7f269bcbe3c"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

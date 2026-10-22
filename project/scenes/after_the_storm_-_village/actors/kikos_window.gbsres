@@ -1,0 +1,46 @@
+{
+  "_resourceType": "actor",
+  "id": "40000003-0000-5000-8000-000000000003",
+  "_index": 12,
+  "symbol": "actor_kiko_s_window",
+  "prefabId": "",
+  "name": "Kiko's Window",
+  "coordinateType": "tiles",
+  "x": 18,
+  "y": 14,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "2aa9e093-90ac-59db-8a51-69f50aa0e714",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "b7b1cc00-b44a-51cd-a589-131b4e7648b7",
+        "loopAnim": true
+      },
+      "id": "623-0000-5000-8000-000000000001"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "623-0000-5000-8000-000000000002"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

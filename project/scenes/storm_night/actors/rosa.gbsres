@@ -1,0 +1,106 @@
+{
+  "_resourceType": "actor",
+  "id": "37724d2d-f05d-598d-bb1a-1967a36b3e93",
+  "_index": 16,
+  "symbol": "npc_rosa",
+  "prefabId": "",
+  "name": "Rosa",
+  "coordinateType": "tiles",
+  "x": 11,
+  "y": 23,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "b279568d-2a55-51b9-b959-0bf0b6ce9005",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "cf46949d-7184-5c8d-b717-10b879e16f76"
+    },
+    {
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": [
+          "Rosa: Step high!"
+        ],
+        "avatarId": "",
+        "minHeight": 4,
+        "maxHeight": 7,
+        "textX": 1,
+        "textY": 1,
+        "textHeight": 5,
+        "position": "bottom",
+        "clearPrevious": true,
+        "showFrame": true,
+        "speedIn": -1,
+        "speedOut": -1,
+        "closeWhen": "key",
+        "closeButton": "a",
+        "closeDelayUnits": "time",
+        "closeDelayTime": 0.5,
+        "closeDelayFrames": 30
+      },
+      "id": "fc6c7f1f-3d98-5180-84f8-7b9d9a5a88f9"
+    },
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 16
+        }
+      },
+      "id": "1e8558cc-5d77-53d6-86f2-f044a23658eb"
+    },
+    {
+      "command": "EVENT_OVERLAY_SHOW",
+      "args": {
+        "color": "black",
+        "x": 0,
+        "y": 0
+      },
+      "id": "2dd23553-cbbc-5318-9ef1-62a59dda9d8d"
+    },
+    {
+      "command": "EVENT_TEXT_DRAW",
+      "args": {
+        "text": "STORM %D2$02$",
+        "x": 0,
+        "y": 0,
+        "location": "overlay"
+      },
+      "id": "a4e621b3-a705-5476-aadc-c95074955e0d"
+    }
+  ],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Rosa",
+        "loopAnim": true
+      },
+      "id": "b41869fd-d407-5285-bac3-f4de2162956e"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

@@ -1,0 +1,96 @@
+{
+  "_resourceType": "actor",
+  "id": "e599e2f1-ea9c-5283-a958-4c87747353fd",
+  "_index": 18,
+  "symbol": "substation",
+  "prefabId": "",
+  "name": "Substation",
+  "coordinateType": "tiles",
+  "x": 1,
+  "y": 32,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "4fae1270-138a-50c1-84aa-c16ef3ae1a13",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "5b46ffc5-fca7-5d94-8cfb-e58fe8fba262"
+    },
+    {
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": [
+          "Grid starts here."
+        ],
+        "avatarId": "",
+        "minHeight": 4,
+        "maxHeight": 7,
+        "textX": 1,
+        "textY": 1,
+        "textHeight": 5,
+        "position": "bottom",
+        "clearPrevious": true,
+        "showFrame": true,
+        "speedIn": -1,
+        "speedOut": -1,
+        "closeWhen": "key",
+        "closeButton": "a",
+        "closeDelayUnits": "time",
+        "closeDelayTime": 0.5,
+        "closeDelayFrames": 30
+      },
+      "id": "ba8c210f-47ea-59e0-9091-447e76df5873"
+    },
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 16
+        }
+      },
+      "id": "4b5c2675-204e-5b59-97d5-c05af1acf0ba"
+    },
+    {
+      "command": "EVENT_OVERLAY_SHOW",
+      "args": {
+        "color": "black",
+        "x": 0,
+        "y": 0
+      },
+      "id": "40893182-7a51-5367-9a2c-b427548bdc6f"
+    },
+    {
+      "command": "EVENT_TEXT_DRAW",
+      "args": {
+        "text": "STORM %D2$02$",
+        "x": 0,
+        "y": 0,
+        "location": "overlay"
+      },
+      "id": "c1239455-d6cb-57cc-a0f5-64cdd1264846"
+    }
+  ],
+  "startScript": [],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

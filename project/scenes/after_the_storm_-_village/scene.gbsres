@@ -1,0 +1,109 @@
+{
+  "_resourceType": "scene",
+  "id": "cfe-village-topdown-2026",
+  "_index": 1,
+  "type": "TOPDOWN",
+  "name": "After the Storm - Village",
+  "symbol": "scene_village_after_storm",
+  "x": 272,
+  "y": 32,
+  "width": 32,
+  "height": 32,
+  "backgroundId": "65124193-5c72-5383-8684-1fe63c09a705",
+  "tilesetId": "",
+  "colorModeOverride": "none",
+  "paletteIds": [
+    "940ebabc-3fc8-5e14-acd6-fd71077179c8",
+    "302b2705-929c-5ca8-af5b-61e2a1ec9e62",
+    "8701e123-0357-5623-9c17-855dac66fa7b",
+    "e96c8a5c-c0f3-5250-9610-546cdfc6ec3d",
+    "aaa5c4db-4ca3-57c5-9993-5e70431da6a8",
+    "7dd7cdec-14e1-5303-8ea4-e4c8aa5434b4",
+    "52a1e816-c0f1-5614-b3bb-c11db6feb096"
+  ],
+  "spritePaletteIds": [
+    "e0a6ddcd-363c-5875-accc-a221942268ed",
+    "a68f879c-d270-5fe9-a3c6-03382937e91b",
+    "5eba3dcd-bb6c-53f2-99e5-353c5d60806d",
+    "3cc9fcad-b06d-5021-80d7-ef9e074135da",
+    "5c61a041-1bcc-554f-aa07-b749c23c7c9d",
+    "b6b55f04-b89d-54dd-8204-c8838b2f9da2"
+  ],
+  "autoFadeSpeed": 1,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "0",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "90000001-0000-5000-8000-000000000001"
+    },
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "1",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "90000002-0000-5000-8000-000000000002"
+    },
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "3",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "90000003-0000-5000-8000-000000000003"
+    },
+    {
+      "command": "EVENT_MUSIC_PLAY",
+      "args": {
+        "musicId": "ef24b514-07e8-5585-928e-905a3e924b7f"
+      },
+      "id": "90000004-0000-5000-8000-000000000004"
+    },
+    {
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": "AFTER THE STORM\nB: pick up, talk\nLink five homes.",
+        "avatarId": "",
+        "minHeight": 4,
+        "maxHeight": 7,
+        "textX": 1,
+        "textY": 1,
+        "textHeight": 5,
+        "position": "bottom",
+        "clearPrevious": true,
+        "showFrame": true,
+        "speedIn": -1,
+        "speedOut": -1,
+        "closeWhen": "key",
+        "closeButton": "a",
+        "closeDelayUnits": "time",
+        "closeDelayTime": 0.5,
+        "closeDelayFrames": 30
+      },
+      "id": "90000005-0000-5000-8000-000000000005"
+    },
+    {
+      "command": "EVENT_MUSIC_PLAY",
+      "args": {
+        "musicId": "6fcd550a-a2e4-5c30-93bc-0a4c11478fe2"
+      },
+      "id": "90000006-0000-5000-8000-000000000006"
+    }
+  ],
+  "playerHit1Script": [],
+  "playerHit2Script": [],
+  "playerHit3Script": [],
+  "collisions": "0f44+0015+0f3+002+0f5+0016+0f3+002+0f4+002+0f5+0010+0f3+002+0f4+002+0f5+00a+0f5+00!0f3+002+0f4+002+0f5+002+0f2+006+0f5+00!0f3+002+0f4+002+0f5+00a+0f5+00!0f3+002+0f4+0011+0f5+00!0f3+002+0f4+0017+0f3+002+0f4+0017+0f3+002+0f4+0017+0f3+002+0f4+00f+0f5+003+0f3+002+0f3+00!0f5+00a+0f5+003+0f3+002+0f3+00!0f5+00a+0f5+003+0f3+002+0f3+00!0f5+00a+0f5+003+0f3+002+0f9+0012+0f3+002+0f4+003+0f!0013+0f3+002+0f4+001c+0f4+0017+0f3+002+0f4+0017+0f3+002+0f4+0017+0f3+002+0f4+00!0f5+0011+0f3+002+0f4+00!0f5+0011+0f3+002+0f4+00!0f5+0011+0f3+002+0f4+00!0f5+0011+0f3+002+0f4+0017+0f3+002+0f4+0017+0f3+002+0f4+0017+0f3+002+0f4+0017+0f3+002+0f42+"
+}

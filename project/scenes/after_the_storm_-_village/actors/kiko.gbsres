@@ -1,0 +1,158 @@
+{
+  "_resourceType": "actor",
+  "id": "10000003-0000-5000-8000-000000000003",
+  "_index": 2,
+  "symbol": "actor_kiko",
+  "prefabId": "",
+  "name": "Kiko",
+  "coordinateType": "tiles",
+  "x": 22,
+  "y": 15,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "d18afbbe-a99f-582a-b8cf-1757c7013391",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "gt",
+          "valueA": {
+            "type": "variable",
+            "value": "3"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 0
+          }
+        }
+      },
+      "id": "81000201-0000-5000-8000-000000000201",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_IF",
+            "args": {
+              "condition": {
+                "type": "eq",
+                "valueA": {
+                  "type": "variable",
+                  "value": "0"
+                },
+                "valueB": {
+                  "type": "number",
+                  "value": 2
+                }
+              }
+            },
+            "id": "81000202-0000-5000-8000-000000000202",
+            "children": {
+              "true": [
+                {
+                  "command": "EVENT_DEC_VALUE",
+                  "args": {
+                    "variable": "3"
+                  },
+                  "id": "81000203-0000-5000-8000-000000000203"
+                },
+                {
+                  "command": "EVENT_INC_VALUE",
+                  "args": {
+                    "variable": "0"
+                  },
+                  "id": "81000204-0000-5000-8000-000000000204"
+                },
+                {
+                  "command": "EVENT_SOUND_PLAY_EFFECT",
+                  "args": {
+                    "units": "time",
+                    "type": "65c37f2f-2624-54f4-8b2a-392b556aa3a1",
+                    "priority": "high",
+                    "pitch": 4,
+                    "frequency": 200,
+                    "duration": 0.5,
+                    "wait": true,
+                    "effect": 0
+                  },
+                  "id": "81000205-0000-5000-8000-000000000205"
+                },
+                {
+                  "command": "EVENT_ACTOR_SHOW",
+                  "args": {
+                    "actorId": "40000003-0000-5000-8000-000000000003"
+                  },
+                  "id": "81000206-0000-5000-8000-000000000206"
+                },
+                {
+                  "command": "EVENT_ACTOR_SHOW",
+                  "args": {
+                    "actorId": "50000003-0000-5000-8000-000000000003"
+                  },
+                  "id": "81000207-0000-5000-8000-000000000207"
+                },
+                {
+                  "command": "EVENT_SOUND_PLAY_EFFECT",
+                  "args": {
+                    "units": "time",
+                    "type": "ffd6649b-80cd-5798-81ad-0f02363581fa",
+                    "priority": "low",
+                    "pitch": 4,
+                    "frequency": 200,
+                    "duration": 0.25,
+                    "wait": true,
+                    "effect": 0
+                  },
+                  "id": "82000003-0000-5000-8000-000000000003"
+                }
+              ],
+              "false": [
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": "Repair homes in\norder.",
+                    "avatarId": ""
+                  },
+                  "id": "8100020c-0000-5000-8000-00000000020c"
+                }
+              ]
+            }
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": "Bring a\nconnector first.",
+              "avatarId": ""
+            },
+            "id": "8100020d-0000-5000-8000-00000000020d"
+          }
+        ]
+      }
+    }
+  ],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "c47883f0-586b-5e86-a1c2-0670047fb961",
+        "loopAnim": true
+      },
+      "id": "61000002-0000-5000-8000-000000000002"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

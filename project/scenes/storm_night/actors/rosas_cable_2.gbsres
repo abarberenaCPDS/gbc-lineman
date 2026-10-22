@@ -1,0 +1,46 @@
+{
+  "_resourceType": "actor",
+  "id": "1652a2cd-a4f5-5522-b704-eb08c350152d",
+  "_index": 8,
+  "symbol": "cable_house_c_2",
+  "prefabId": "",
+  "name": "Rosa's Cable 2",
+  "coordinateType": "tiles",
+  "x": 5,
+  "y": 27,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "731980b4-1c0b-513d-bdae-d804cec51361",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "span",
+        "loopAnim": true
+      },
+      "id": "5c12cdc6-b06d-517e-9d7c-ab56795c1e82"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "cbe56474-593e-514f-b160-8108bb517230"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

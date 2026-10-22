@@ -1,0 +1,46 @@
+{
+  "_resourceType": "trigger",
+  "id": "08e07fbb-df4b-53e7-8fd1-de04f710cb83",
+  "name": "Hazard 1",
+  "prefabId": "",
+  "x": 17,
+  "y": 31,
+  "symbol": "trigger_hazard_1",
+  "prefabScriptOverrides": {},
+  "width": 3,
+  "height": 1,
+  "script": [
+    {
+      "command": "EVENT_SOUND_PLAY_EFFECT",
+      "args": {
+        "units": "time",
+        "type": "dd29b0e2-a71f-545d-a481-984618ec4ba3",
+        "priority": "high",
+        "pitch": 4,
+        "frequency": 200,
+        "duration": 0.5,
+        "wait": true,
+        "effect": 0
+      },
+      "id": "72af2eab-0ee9-5d39-a6bc-2aec1bc1dd55"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_POSITION",
+      "args": {
+        "units": "tiles",
+        "actorId": "player",
+        "x": {
+          "type": "number",
+          "value": 2
+        },
+        "y": {
+          "type": "number",
+          "value": 32
+        }
+      },
+      "id": "d99e9cf3-079d-5e53-a654-307e6085138c"
+    }
+  ],
+  "leaveScript": [],
+  "_index": 0
+}

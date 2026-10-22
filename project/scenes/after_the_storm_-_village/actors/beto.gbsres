@@ -1,0 +1,202 @@
+{
+  "_resourceType": "actor",
+  "id": "10000005-0000-5000-8000-000000000005",
+  "_index": 4,
+  "symbol": "actor_beto",
+  "prefabId": "",
+  "name": "Beto",
+  "coordinateType": "tiles",
+  "x": 17,
+  "y": 8,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "d18afbbe-a99f-582a-b8cf-1757c7013391",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "gt",
+          "valueA": {
+            "type": "variable",
+            "value": "3"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 0
+          }
+        }
+      },
+      "id": "81000401-0000-5000-8000-000000000401",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_IF",
+            "args": {
+              "condition": {
+                "type": "eq",
+                "valueA": {
+                  "type": "variable",
+                  "value": "0"
+                },
+                "valueB": {
+                  "type": "number",
+                  "value": 4
+                }
+              }
+            },
+            "id": "81000402-0000-5000-8000-000000000402",
+            "children": {
+              "true": [
+                {
+                  "command": "EVENT_DEC_VALUE",
+                  "args": {
+                    "variable": "3"
+                  },
+                  "id": "81000403-0000-5000-8000-000000000403"
+                },
+                {
+                  "command": "EVENT_INC_VALUE",
+                  "args": {
+                    "variable": "0"
+                  },
+                  "id": "81000404-0000-5000-8000-000000000404"
+                },
+                {
+                  "command": "EVENT_SOUND_PLAY_EFFECT",
+                  "args": {
+                    "units": "time",
+                    "type": "65c37f2f-2624-54f4-8b2a-392b556aa3a1",
+                    "priority": "high",
+                    "pitch": 4,
+                    "frequency": 200,
+                    "duration": 0.5,
+                    "wait": true,
+                    "effect": 0
+                  },
+                  "id": "81000405-0000-5000-8000-000000000405"
+                },
+                {
+                  "command": "EVENT_ACTOR_SHOW",
+                  "args": {
+                    "actorId": "40000005-0000-5000-8000-000000000005"
+                  },
+                  "id": "81000406-0000-5000-8000-000000000406"
+                },
+                {
+                  "command": "EVENT_ACTOR_SHOW",
+                  "args": {
+                    "actorId": "50000005-0000-5000-8000-000000000005"
+                  },
+                  "id": "81000407-0000-5000-8000-000000000407"
+                },
+                {
+                  "command": "EVENT_SOUND_PLAY_EFFECT",
+                  "args": {
+                    "units": "time",
+                    "type": "ffd6649b-80cd-5798-81ad-0f02363581fa",
+                    "priority": "low",
+                    "pitch": 4,
+                    "frequency": 200,
+                    "duration": 0.25,
+                    "wait": true,
+                    "effect": 0
+                  },
+                  "id": "82000005-0000-5000-8000-000000000005"
+                },
+                {
+                  "command": "EVENT_SET_VALUE",
+                  "args": {
+                    "variable": "1",
+                    "value": {
+                      "type": "number",
+                      "value": 1
+                    }
+                  },
+                  "id": "81000408-0000-5000-8000-000000000408"
+                },
+                {
+                  "command": "EVENT_MUSIC_PLAY",
+                  "args": {
+                    "musicId": "a0533ba2-661a-5fed-ae5e-55bfc5e0c59f"
+                  },
+                  "id": "81000409-0000-5000-8000-000000000409"
+                },
+                {
+                  "command": "EVENT_SOUND_PLAY_EFFECT",
+                  "args": {
+                    "units": "time",
+                    "type": "e6a2223b-5928-59b0-a771-9efef4cf2e96",
+                    "priority": "high",
+                    "pitch": 4,
+                    "frequency": 200,
+                    "duration": 0.5,
+                    "wait": true,
+                    "effect": 0
+                  },
+                  "id": "8100040a-0000-5000-8000-00000000040a"
+                },
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": [
+                      "The mountain\nhums again.\nRain on the",
+                      "roofs.\nA light in every\nwindow.",
+                      "Thank you,\nMister CFE."
+                    ],
+                    "avatarId": ""
+                  },
+                  "id": "8100040b-0000-5000-8000-00000000040b"
+                }
+              ],
+              "false": [
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": "Repair homes in\norder.",
+                    "avatarId": ""
+                  },
+                  "id": "8100040c-0000-5000-8000-00000000040c"
+                }
+              ]
+            }
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": "Bring a\nconnector first.",
+              "avatarId": ""
+            },
+            "id": "8100040d-0000-5000-8000-00000000040d"
+          }
+        ]
+      }
+    }
+  ],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "176cceee-4651-5e74-aba3-edcff25e5434",
+        "loopAnim": true
+      },
+      "id": "61000004-0000-5000-8000-000000000004"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

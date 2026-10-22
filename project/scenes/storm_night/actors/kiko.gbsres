@@ -1,0 +1,106 @@
+{
+  "_resourceType": "actor",
+  "id": "82d565cb-d48d-585f-b984-2bb32e7def6b",
+  "_index": 17,
+  "symbol": "npc_kiko",
+  "prefabId": "",
+  "name": "Kiko",
+  "coordinateType": "tiles",
+  "x": 4,
+  "y": 17,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "b279568d-2a55-51b9-b959-0bf0b6ce9005",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "dce07e09-3996-5a9e-9c09-acf37903c5e4"
+    },
+    {
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": [
+          "Kiko: Stay dry!"
+        ],
+        "avatarId": "",
+        "minHeight": 4,
+        "maxHeight": 7,
+        "textX": 1,
+        "textY": 1,
+        "textHeight": 5,
+        "position": "bottom",
+        "clearPrevious": true,
+        "showFrame": true,
+        "speedIn": -1,
+        "speedOut": -1,
+        "closeWhen": "key",
+        "closeButton": "a",
+        "closeDelayUnits": "time",
+        "closeDelayTime": 0.5,
+        "closeDelayFrames": 30
+      },
+      "id": "e3ba5e78-ddbb-5006-ba75-fcf609ca3779"
+    },
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 16
+        }
+      },
+      "id": "4477bd19-bce3-54f4-965a-95da746ea8a0"
+    },
+    {
+      "command": "EVENT_OVERLAY_SHOW",
+      "args": {
+        "color": "black",
+        "x": 0,
+        "y": 0
+      },
+      "id": "1bae0738-bc13-53dc-aadf-3aba98dd4e05"
+    },
+    {
+      "command": "EVENT_TEXT_DRAW",
+      "args": {
+        "text": "STORM %D2$02$",
+        "x": 0,
+        "y": 0,
+        "location": "overlay"
+      },
+      "id": "ff7b8a40-cb24-5244-9331-0e5d48d5a893"
+    }
+  ],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Kiko",
+        "loopAnim": true
+      },
+      "id": "fe2fd8f4-7c7c-507e-89df-4dc60e0ac2bc"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

@@ -1,0 +1,46 @@
+{
+  "_resourceType": "actor",
+  "id": "50000005-0000-5000-8000-000000000005",
+  "_index": 18,
+  "symbol": "actor_beto_s_light",
+  "prefabId": "",
+  "name": "Beto's Light",
+  "coordinateType": "tiles",
+  "x": 22,
+  "y": 9,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "2aa9e093-90ac-59db-8a51-69f50aa0e714",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "8b137ffa-1464-5c7c-b759-a41336763766",
+        "loopAnim": true
+      },
+      "id": "635-0000-5000-8000-000000000001"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "635-0000-5000-8000-000000000002"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

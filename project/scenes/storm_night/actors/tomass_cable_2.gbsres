@@ -1,0 +1,46 @@
+{
+  "_resourceType": "actor",
+  "id": "a3e63c4c-8bfa-5cb5-be6b-4a52339a0594",
+  "_index": 5,
+  "symbol": "cable_house_b_2",
+  "prefabId": "",
+  "name": "Tomas's Cable 2",
+  "coordinateType": "tiles",
+  "x": 14,
+  "y": 30,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "731980b4-1c0b-513d-bdae-d804cec51361",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "span",
+        "loopAnim": true
+      },
+      "id": "037bf443-2947-5218-9153-e05f408689b9"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "77701e8b-3e8d-54e7-9c83-f956c0a70542"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

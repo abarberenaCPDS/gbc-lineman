@@ -1,0 +1,186 @@
+{
+  "_resourceType": "actor",
+  "id": "10000002-0000-5000-8000-000000000002",
+  "_index": 1,
+  "symbol": "actor_rosa",
+  "prefabId": "",
+  "name": "Rosa",
+  "coordinateType": "tiles",
+  "x": 7,
+  "y": 16,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "d18afbbe-a99f-582a-b8cf-1757c7013391",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "gt",
+          "valueA": {
+            "type": "variable",
+            "value": "3"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 0
+          }
+        }
+      },
+      "id": "81000101-0000-5000-8000-000000000101",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_IF",
+            "args": {
+              "condition": {
+                "type": "eq",
+                "valueA": {
+                  "type": "variable",
+                  "value": "0"
+                },
+                "valueB": {
+                  "type": "number",
+                  "value": 1
+                }
+              }
+            },
+            "id": "81000102-0000-5000-8000-000000000102",
+            "children": {
+              "true": [
+                {
+                  "command": "EVENT_DEC_VALUE",
+                  "args": {
+                    "variable": "3"
+                  },
+                  "id": "81000103-0000-5000-8000-000000000103"
+                },
+                {
+                  "command": "EVENT_INC_VALUE",
+                  "args": {
+                    "variable": "0"
+                  },
+                  "id": "81000104-0000-5000-8000-000000000104"
+                },
+                {
+                  "command": "EVENT_SOUND_PLAY_EFFECT",
+                  "args": {
+                    "units": "time",
+                    "type": "65c37f2f-2624-54f4-8b2a-392b556aa3a1",
+                    "priority": "high",
+                    "pitch": 4,
+                    "frequency": 200,
+                    "duration": 0.5,
+                    "wait": true,
+                    "effect": 0
+                  },
+                  "id": "81000105-0000-5000-8000-000000000105"
+                },
+                {
+                  "command": "EVENT_ACTOR_SHOW",
+                  "args": {
+                    "actorId": "40000002-0000-5000-8000-000000000002"
+                  },
+                  "id": "81000106-0000-5000-8000-000000000106"
+                },
+                {
+                  "command": "EVENT_ACTOR_SHOW",
+                  "args": {
+                    "actorId": "50000002-0000-5000-8000-000000000002"
+                  },
+                  "id": "81000107-0000-5000-8000-000000000107"
+                },
+                {
+                  "command": "EVENT_SOUND_PLAY_EFFECT",
+                  "args": {
+                    "units": "time",
+                    "type": "ffd6649b-80cd-5798-81ad-0f02363581fa",
+                    "priority": "low",
+                    "pitch": 4,
+                    "frequency": 200,
+                    "duration": 0.25,
+                    "wait": true,
+                    "effect": 0
+                  },
+                  "id": "82000002-0000-5000-8000-000000000002"
+                },
+                {
+                  "command": "EVENT_IF",
+                  "args": {
+                    "condition": {
+                      "type": "eq",
+                      "valueA": {
+                        "type": "variable",
+                        "value": "0"
+                      },
+                      "valueB": {
+                        "type": "number",
+                        "value": 2
+                      }
+                    }
+                  },
+                  "id": "81000108-0000-5000-8000-000000000108",
+                  "children": {
+                    "true": [
+                      {
+                        "command": "EVENT_MUSIC_PLAY",
+                        "args": {
+                          "musicId": "fcc508fa-ad2b-5e70-b7e0-d704479393dd"
+                        },
+                        "id": "81000109-0000-5000-8000-000000000109"
+                      }
+                    ]
+                  }
+                }
+              ],
+              "false": [
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": "Repair homes in\norder.",
+                    "avatarId": ""
+                  },
+                  "id": "8100010c-0000-5000-8000-00000000010c"
+                }
+              ]
+            }
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": "Bring a\nconnector first.",
+              "avatarId": ""
+            },
+            "id": "8100010d-0000-5000-8000-00000000010d"
+          }
+        ]
+      }
+    }
+  ],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "758e3c00-db96-59c0-9cf6-d63fa79b281a",
+        "loopAnim": true
+      },
+      "id": "61000001-0000-5000-8000-000000000001"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

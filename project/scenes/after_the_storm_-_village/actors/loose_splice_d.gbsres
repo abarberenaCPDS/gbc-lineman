@@ -1,0 +1,58 @@
+{
+  "_resourceType": "actor",
+  "id": "30000004-0000-5000-8000-000000000004",
+  "_index": 8,
+  "symbol": "actor_loose_splice_d",
+  "prefabId": "",
+  "name": "Loose Splice D",
+  "coordinateType": "tiles",
+  "x": 13,
+  "y": 6,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "2aa9e093-90ac-59db-8a51-69f50aa0e714",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [
+    {
+      "command": "EVENT_INC_VALUE",
+      "args": {
+        "variable": "3"
+      },
+      "id": "70000004-0000-5000-8000-000000000001"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "70000004-0000-5000-8000-000000000002"
+    },
+    {
+      "command": "EVENT_SOUND_PLAY_EFFECT",
+      "args": {
+        "units": "time",
+        "type": "09e8b512-afe8-5b4a-a5b1-c53609e43ad6",
+        "priority": "high",
+        "pitch": 4,
+        "frequency": 200,
+        "duration": 0.5,
+        "wait": true,
+        "effect": 0
+      },
+      "id": "70000004-0000-5000-8000-000000000003"
+    }
+  ],
+  "startScript": [],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}
