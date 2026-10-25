@@ -1,0 +1,39 @@
+{
+  "_resourceType": "actor",
+  "id": "0a208a0e-9313-59b7-be31-3be4c204ab2a",
+  "_index": 0,
+  "symbol": "marta_checkpoint",
+  "prefabId": "",
+  "name": "Marta's Home Checkpoint",
+  "coordinateType": "tiles",
+  "x": 11,
+  "y": 5,
+  "frame": 0,
+  "animate": false,
+  "spriteSheetId": "0bf0a48c-8a26-5877-8e03-276998c2809b",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Marta",
+        "loopAnim": true
+      },
+      "id": "d4d0b1c9-ebe4-5a49-b00c-c42c3d4dc259"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

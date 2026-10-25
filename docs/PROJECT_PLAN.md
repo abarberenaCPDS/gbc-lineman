@@ -20,7 +20,7 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Last updated:** 2026-10-25 · **Phase 0 done · Phase 1 next**
+**Last updated:** 2026-10-25 · **Phase 1: movement prototype built; user feedback pending**
 
 ---
 
@@ -32,7 +32,7 @@
 | Resource counts | 2 scenes · 39 actors · 6 triggers · 35 palettes · 52 assets · 4 variables |
 | Start scene | Storm Night (PLATFORM), start `(2, 32)` |
 | Build | GB Studio CLI 4.3.2 + GBDK 4.5.0, 12.2 s |
-| ROM | `build/rom/mr-cfe.gbc` · 131,072 B (2 banks of 64 KB flat) · sha256 `f776e3a3…` |
+| ROM | `build/rom/mr-cfe.gbc` · 131,072 B (128 KiB; eight 16-KiB banks) · sha256 `f776e3a3…` |
 | Header | Title `MRCFE`, **MBC5+RUMBLE+RAM+BATTERY**, 32 KB SRAM, GBC-only, checksums valid |
 | Headless boot | PyBoy 2.7.0, CGB, frame 600 shows Storm Night start + "Move: D-pad" prompt ✓ |
 | Browser preview | `http://127.0.0.1:57089/83863de94ecce88d9065f3504e2a1721eccad11af404a4fed92c36ad58e88e97/` (listening) |
@@ -62,6 +62,10 @@
   coding-only tasks to the dedicated coding model; pick specialist models per
   task. Subagents must follow this plan doc and commit nothing themselves —
   review, verify, then commit.
+  User additionally requires MCP use by subagents. The launched child sessions
+  reported no MCP bridge; their work is file-only, not MCP-verified. Do not claim
+  otherwise or launch further child work under this requirement until MCP access
+  is available or the user explicitly approves a main-session-only MCP split.
 - **User testing checkpoints:** at the end of each phase (and at any
   " playable milestone" marker), stop and hand a browser preview to the user.
   Keep the preview open and untouched while they play. Report progress after
@@ -95,7 +99,7 @@ User decisions (2026-10-25): **action platformer** on the kept storm/mountain/
 villagers fiction, **friendly expert** difficulty, **prototype-first** process.
 New verb requested and now engine-verified: **drop-through via D-pad down +
 A jump** (`FEAT_PLATFORM_DROP_THROUGH`, input mode `DROP_THRU_INPUT_DOWN_JUMP_HOLD`)
-— also enables `FEAT_PLATFORM_COYOTE_TIME` and `FEAT_PLATFORM_RUN` as config.
+— coyote time is enabled; run remains disabled (B must not gain an unreviewed role).
 Full spec: [redesign-brief](redesign-brief.md).
 
 The original splice collect/connect/cut loop is **rejected by the user — the
@@ -109,16 +113,15 @@ redesign:**
   debug-symbol build (`rom_build captureDebugArtifacts:true` +
   `emulator_debug`), plus screen checks. First splice pickup confirmed
   headless ("Splice +1", `Splices Held` 1→2).
-- Walk speed ≈ 1 px/frame at `startMoveSpeed: 1`; multi-page help dialogue
-  advances with A; B-interact fires when the player's hitbox overlaps the
-  target actor's tile.
-- Build budget: 138 KB ROM with current content; MBC5+RUMBLE+RAM+BATTERY
-  (cart supports rumble/battery-saves — a hardware feature to consider
-  using).
-- Subagent pipeline proven: parallel resource analysis + MCP cross-check.
+- A advances help dialogue. Earlier walk-speed and interaction-radius estimates
+  were rough probes, not calibrated engine limits; do not use them as assertions.
+- Build size: 131,072 bytes (128 KiB). Header declares MBC5+RUMBLE+RAM+BATTERY;
+  this does not establish physical cartridge capabilities or verified saves.
+- Two coding agents ran in parallel. Main session performed MCP verification;
+  the subagents themselves could not access MCP.
 
-- ⬜ Prototype the new core loop through generators; verify with the proven
-  headless loop
+- 🔄 Movement/layout prototype generated and MCP-built. Jump and Down+A descent
+  verified headlessly; full route, checkpoint, coyote timing, and user feel pending.
 - ✅ Capture user redesign direction — done; decisions table in
   [redesign-brief](redesign-brief.md)
 - ✅ Write the new design into docs — `docs/redesign-brief.md`
@@ -127,6 +130,34 @@ redesign:**
 
 **Exit criteria:** an acceptable new core loop, designed, documented, and
 prototyped in the engine.
+
+### Movement prototype handoff (not full M-P1 acceptance)
+
+- Current start: `Storm Climb`, `(2,32)`; legacy scenes retained unchanged.
+- Data/generators: `tools/climb.py`, `make_climb_art.py`,
+  `make_climb_scene.py`, `make_engine_fields.py`.
+- Regenerate using the managed Python in this order: `make_climb_art.py` →
+  `make_climb_scene.py` → `make_engine_fields.py`. Start selection is an explicit
+  MCP `settings_update`, not an implicit generator side effect.
+- New background matches collisions. Cross-marked tiles are **static reset
+  zones**, not timed wind. Falling debris has not been implemented.
+- MCP validation: zero errors/warnings before start switch; ROM build passed
+  with only upstream Node DEP0190 warning. ROM SHA-256:
+  `c6dff89a775215200f9f1565eaf24780daeac8fbca45dc536c44797d353717c5`.
+- Four focused generator tests pass (`python3 -m unittest discover -s tools
+  -p test_climb.py`); regeneration is byte-identical across 14 output files.
+- Recorded headless jump/landing at frame 470; Down+A frames 482–497;
+  released landing at frame 505. Recording:
+  `/Users/abe/src/artifacts/playtests/storm-climb-movement`, session
+  `f7f11bb5ed72451fbf4e2f99778d33d3`, branch `branch-0001`.
+- Browser export updated on the existing preview URL (see baseline table).
+  MCP status returned **no attached players**. Serving the preview is verified;
+  opening a built-in browser tab and human/browser play are **not verified**.
+- User check: arrows move, Z is A/jump, Down+Z drops through a shelf.
+  Test movement/descending only; placeholder visuals are not final art direction.
+- Next: user movement feedback, full-route and checkpoint tests, telegraphed
+  dynamic hazards, then polished art/audio. Phase 3 content order must be
+  revisited against the new loop, not treated as frozen requirements.
 
 ---
 
@@ -189,6 +220,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-25 | 1 | Integrated both coding-agent outputs; corrected background/collision mismatch and arrival-trigger checkpoint. Movement prototype builds; jump and Down+A descent verified in recorded PyBoy frames. Browser export updated, but no browser players attached. `VERSION` now `0.2.0-dev`; Phase 1 remains in progress. | ROM `c6dff89a…`; recording review actions 71–78, frames 482–505; dynamic hazards and full route pending. |
 | 2026-10-25 | 1 | **Redesign direction locked.** Action platformer, keep fiction, friendly expert, prototype-first, Down+A drop-through verb. Engine verified: `FEAT_PLATFORM_DROP_THROUGH` + `FEAT_PLATFORM_COYOTE_TIME` + `FEAT_PLATFORM_RUN` exist and are off; drop-through input modes include `DOWN_JUMP_HOLD` (GB Studio default is `DOWN_JUMP_TAP`). Brief written: `docs/redesign-brief.md`. M-P1 slice defined (storm_climb scene, checkpoints, debris+gust hazards). Coding work dispatched to parallel GPT-6 Luna subagents on tools/ generators; MCP stays in main session. Old test plan banner-superseded. | engine source grep: drop-through modes DOWN_HOLD/DOWN_TAP/DOWN_JUMP_HOLD/DOWN_JUMP_TAP · docs/redesign-brief.md |
 | 2026-10-25 | 1 | **Pivot recorded: user rejected the splice collect/connect/cut gameplay — full redesign required.** Before the pivot, pipeline verification was proven end-to-end: first pickup scripted headless with variable-level assertion (`Splices Held` 1→2, "Splice +1" on-screen). Engine facts recorded (walk ≈1 px/frame, B-interact radius, multi-page dialogue). Old test plan de-scoped. | Baseline table above · debug-symbol ROM sha `49f2adce…` |
 | 2026-10-25 | 0 | **Phase 0 complete.** `project_select` + `project_inspect` (0 errors, 0 warnings; 2 scenes · 39 actors · 6 triggers). Toolchain ready (CLI 4.3.2, GBDK 4.5.0, PyBoy 2.7.0). First MCP ROM build OK: 131,072 B, MBC5+RUMBLE+RAM+BATTERY, GBC-only, headers valid. Headless CGB boot verified (Storm Night, "Move: D-pad"). Browser preview opened and left running for the user. | Baseline table above · boot frame sha256 `2b8e13b3…` |

@@ -11,6 +11,12 @@
 | Difficulty | **Friendly expert** — easy to learn, hazards grow teeth with altitude; no permanent fail state |
 | Process | **Prototype-first** — playable slice each milestone, tested by Abe in the browser preview |
 
+**Implementation status:** movement/layout prototype only. Down+A descent is
+headless-tested; coyote time is enabled but timing untested; run remains off.
+Collision-aligned placeholder art and static marked reset zones are present.
+Timed wind/debris, full-route/checkpoint verification, and human acceptance
+are pending. See `PROJECT_PLAN.md` for exact evidence and the preview handoff.
+
 ## Pitch
 
 The storm is tearing the mountain apart while you climb it. Repair checkpoints

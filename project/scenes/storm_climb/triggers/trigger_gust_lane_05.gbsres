@@ -1,0 +1,85 @@
+{
+  "_resourceType": "trigger",
+  "id": "72eb2ec8-7234-5e9a-a6ef-fb1fb011084f",
+  "name": "Gust Lane 5",
+  "prefabId": "",
+  "x": 12,
+  "y": 19,
+  "symbol": "trigger_gust_lane_05",
+  "prefabScriptOverrides": {},
+  "width": 3,
+  "height": 1,
+  "script": [
+    {
+      "command": "EVENT_SOUND_PLAY_EFFECT",
+      "args": {
+        "units": "time",
+        "type": "dd29b0e2-a71f-545d-a481-984618ec4ba3",
+        "priority": "high",
+        "pitch": 4,
+        "frequency": 200,
+        "duration": 0.5,
+        "wait": true,
+        "effect": 0
+      },
+      "id": "312eef58-2b17-506d-a4fa-8181a2e667db"
+    },
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "0"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 0
+          }
+        }
+      },
+      "id": "5c70b8d6-9d5d-5791-a4fe-7bff2f3c9019",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_ACTOR_SET_POSITION",
+            "args": {
+              "units": "tiles",
+              "actorId": "player",
+              "x": {
+                "type": "number",
+                "value": 2
+              },
+              "y": {
+                "type": "number",
+                "value": 32
+              }
+            },
+            "id": "9b661fa0-3e33-5624-a6fb-2ee2b34a6797"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_ACTOR_SET_POSITION",
+            "args": {
+              "units": "tiles",
+              "actorId": "player",
+              "x": {
+                "type": "number",
+                "value": 11
+              },
+              "y": {
+                "type": "number",
+                "value": 5
+              }
+            },
+            "id": "63836335-7bc7-57c9-99be-88ff1e95f3b9"
+          }
+        ]
+      }
+    }
+  ],
+  "leaveScript": [],
+  "_index": 4
+}

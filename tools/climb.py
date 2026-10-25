@@ -1,0 +1,223 @@
+"""Storm Climb - deterministic geometry source for the vertical-climb slice.
+
+This is data only for a 20x36-tile PLATFORM scene.  The existing storm-night
+background supplies the mountain art; these values describe walkable ledges,
+rock collision, timed debris columns, and wind-gust respawn lanes.
+
+Units are 8x8-pixel tiles.  Collision bytes follow GB Studio's PLATFORM
+semantics: solid=15 (0x0F), top/one-way=1 (0x01), and empty=0 (0x00).
+"""
+
+from __future__ import annotations
+
+TILE = 8
+MAP_W, MAP_H = 20, 36
+
+# Collision bytes used by GB Studio PLATFORM scenes.
+COL_EMPTY = 0x00
+COL_TOP = 0x01  # one-way surface: land from above, jump through from below
+COL_SOLID = 0x0F
+
+# ---------------------------------------------------------------------------
+# Mountain route, bottom to summit
+#
+# Platforms are (row, x_start, x_end), inclusive.  The alternating, overlapping
+# shelves keep the route legible while allowing a straight-up option at every
+# transition.  Every rise is exactly three tiles (24 px), matching the proven
+# jump cadence in level.py.  The bottom shelf is the substation deck; the top
+# shelf is House A's checkpoint ledge.
+# ---------------------------------------------------------------------------
+PLATFORMS = [
+    (33, 0, 7),
+    (30, 3, 12),
+    (27, 9, 18),
+    (24, 5, 13),
+    (21, 1, 8),
+    (18, 6, 15),
+    (15, 11, 19),
+    (12, 7, 15),
+    (9, 2, 10),
+    (6, 7, 16),
+]
+
+# Rows occupied by the valley deck structure: its one-way top and two solid
+# foundation rows.  The staggered edge buttresses make the lower mountain feel
+# enclosed without closing any of the overlapping central ascent routes.
+DECK_ROWS = [33, 34, 35]
+SOLID_BLOCKS = [
+    (0, MAP_W - 1, 34, 35),  # continuous valley bedrock
+    (18, 19, 28, 29),       # right-side rock buttress
+    (0, 1, 25, 26),         # left-side rock buttress
+    (18, 19, 22, 23),
+    (0, 1, 19, 20),
+    (18, 19, 16, 17),
+    (0, 1, 13, 14),
+    (18, 19, 10, 11),
+]
+
+# ---------------------------------------------------------------------------
+# Storm hazards
+#
+# Gust lanes are (row, x_start, x_end), inclusive.  They sit in the open gaps
+# between shelves and become respawn triggers in the scene generator.  Their
+# staggered placement leaves a climbable vertical corridor through every gap.
+# Debris entries are timed actor-drop columns, with inclusive row bounds; they
+# stay inside the ascent overlap, away from both platform edges, so timing a
+# dodge is never the only way to reach the next shelf.
+# ---------------------------------------------------------------------------
+GUST_LANES = [
+    (31, 9, 11),
+    (28, 14, 16),
+    (25, 10, 12),
+    (22, 2, 4),
+    (19, 12, 14),
+    (16, 1, 3),
+    (13, 8, 10),
+    (10, 3, 5),
+]
+
+HAZARD_DEBRIS = [
+    {"row_top": 31, "x": 5, "row_bottom": 32},
+    {"row_top": 28, "x": 10, "row_bottom": 29},
+    {"row_top": 20, "x": 7, "row_bottom": 20},
+    {"row_top": 11, "x": 8, "row_bottom": 11},
+]
+
+# The checkpoint tile is immediately above the summit shelf, with open
+# headroom.  The last hazard lane is below row 10, leaving the house safe.
+HOUSE_A = {"x": 11, "y": 5}
+
+# The base substation and player begin on the wide bottom deck.  START is the
+# empty tile occupied by the player; the one-way deck surface is directly
+# beneath it, as in level.py's spawn convention.
+SUBSTATION = {"x": 1, "y": 32}
+START = (2, 32)
+
+
+def collision_grid() -> list[list[int]]:
+    """Return the row-major PLATFORM collision bytes (MAP_H by MAP_W)."""
+    grid = [[COL_EMPTY for _ in range(MAP_W)] for _ in range(MAP_H)]
+    for row, x0, x1 in PLATFORMS:
+        for x in range(x0, x1 + 1):
+            grid[row][x] = COL_TOP
+    for x0, x1, row0, row1 in SOLID_BLOCKS:
+        for row in range(row0, row1 + 1):
+            for x in range(x0, x1 + 1):
+                grid[row][x] = COL_SOLID
+    return grid
+
+
+def _hazard_cells() -> set[tuple[int, int]]:
+    """Expand all gust and debris geometry into (row, x) cells."""
+    cells: set[tuple[int, int]] = set()
+    for row, x0, x1 in GUST_LANES:
+        cells.update((row, x) for x in range(x0, x1 + 1))
+    for debris in HAZARD_DEBRIS:
+        cells.update(
+            (row, debris["x"])
+            for row in range(debris["row_top"], debris["row_bottom"] + 1)
+        )
+    return cells
+
+
+def _self_check() -> None:
+    """Exhaustively check the geometry and fairness invariants at import time."""
+    grid = collision_grid()
+    assert len(grid) == MAP_H and all(len(row) == MAP_W for row in grid), "grid size"
+    assert all(cell in (COL_EMPTY, COL_TOP, COL_SOLID) for row in grid for cell in row), (
+        "unexpected PLATFORM collision byte"
+    )
+
+    # All authored geometry stays within the scene, and every shelf has a
+    # landing interval that overlaps the next one for a direct vertical route.
+    for row, x0, x1 in PLATFORMS:
+        assert 0 <= row < MAP_H and 0 <= x0 <= x1 < MAP_W, "platform bounds"
+        assert all(grid[row][x] == COL_TOP for x in range(x0, x1 + 1)), (
+            f"platform row {row} is not one-way throughout"
+        )
+    platform_rows = [row for row, _, _ in PLATFORMS]
+    assert platform_rows == sorted(platform_rows, reverse=True), "platform order"
+    for lower, upper in zip(PLATFORMS, PLATFORMS[1:]):
+        lower_row, lower_x0, lower_x1 = lower
+        upper_row, upper_x0, upper_x1 = upper
+        rise = lower_row - upper_row
+        assert rise == 3, f"platform rows {lower_row}->{upper_row} rise {rise}, expected 3"
+        assert max(lower_x0, upper_x0) <= min(lower_x1, upper_x1), (
+            f"platform rows {lower_row}->{upper_row} have no vertical landing overlap"
+        )
+
+    # The deck metadata agrees with the actual floor and lower landing shelf.
+    assert DECK_ROWS == [33, 34, 35], "deck row definition"
+    assert all(grid[34][x] == COL_SOLID and grid[35][x] == COL_SOLID for x in range(MAP_W)), (
+        "valley bedrock must span the scene"
+    )
+    assert all(grid[33][x] == COL_TOP for x in range(8)), "bottom deck surface"
+
+    # Spawn and substation occupy clear standing tiles with one-way ground.
+    sx, sy = START
+    assert 0 <= sx < MAP_W and 0 <= sy < MAP_H - 1, "spawn bounds"
+    assert grid[sy][sx] == COL_EMPTY, "spawn blocked"
+    assert grid[sy + 1][sx] == COL_TOP, "spawn floating"
+    sub_x, sub_y = SUBSTATION["x"], SUBSTATION["y"]
+    assert grid[sub_y][sub_x] == COL_EMPTY, "substation tile blocked"
+    assert grid[sub_y + 1][sub_x] == COL_TOP, "substation floating"
+
+    # Checkpoint tile and its two tiles of headroom are clear; its support is
+    # the summit one-way shelf, and it is separated from every hazard.
+    hx, hy = HOUSE_A["x"], HOUSE_A["y"]
+    assert 0 <= hx < MAP_W and 2 <= hy < MAP_H - 1, "house bounds"
+    assert grid[hy][hx] == COL_EMPTY, "house tile blocked"
+    assert grid[hy - 1][hx] == COL_EMPTY and grid[hy - 2][hx] == COL_EMPTY, (
+        "house needs two empty headroom tiles"
+    )
+    assert grid[hy + 1][hx] == COL_TOP, "house has no one-way standing surface"
+    assert all(abs(row - hy) > 2 for row, _ in _hazard_cells()), "house too close to hazard"
+
+    # Expand and bound every hazard.  No trigger or falling actor cell may
+    # cover solid rock or a one-way landing tile.
+    for row, x0, x1 in GUST_LANES:
+        assert 0 <= row < MAP_H and 0 <= x0 <= x1 < MAP_W, "gust lane bounds"
+        for x in range(x0, x1 + 1):
+            assert grid[row][x] == COL_EMPTY, f"gust cell {x},{row} is not empty"
+    assert len(GUST_LANES) >= 3, "need at least three gust lanes"
+    assert len(HAZARD_DEBRIS) >= 2, "need at least two debris columns"
+    for debris in HAZARD_DEBRIS:
+        row_top, x, row_bottom = (
+            debris["row_top"], debris["x"], debris["row_bottom"]
+        )
+        assert 0 <= row_top <= row_bottom < MAP_H and 0 <= x < MAP_W, (
+            "debris column bounds"
+        )
+        assert all(grid[row][x] == COL_EMPTY for row in range(row_top, row_bottom + 1)), (
+            f"debris column x={x} intersects collision"
+        )
+        containing_gap = None
+        for lower, upper in zip(PLATFORMS, PLATFORMS[1:]):
+            lower_row, lower_x0, lower_x1 = lower
+            upper_row, upper_x0, upper_x1 = upper
+            if upper_row < row_top <= row_bottom < lower_row:
+                containing_gap = (lower_x0, lower_x1, upper_x0, upper_x1)
+                break
+        assert containing_gap is not None, "debris must fall within one ascent gap"
+        lower_x0, lower_x1, upper_x0, upper_x1 = containing_gap
+        assert lower_x0 < x < lower_x1 and upper_x0 < x < upper_x1, (
+            "debris must avoid both platform edges"
+        )
+
+    # For every three-row jump gap, at least one column remains free of *all*
+    # gust and debris cells from the lower shelf to the upper shelf.
+    hazards = _hazard_cells()
+    for lower, upper in zip(PLATFORMS, PLATFORMS[1:]):
+        lower_row, lower_x0, lower_x1 = lower
+        upper_row, upper_x0, upper_x1 = upper
+        candidates = range(max(lower_x0, upper_x0), min(lower_x1, upper_x1) + 1)
+        clear_columns = [
+            x for x in candidates
+            if all((row, x) not in hazards for row in range(upper_row + 1, lower_row))
+        ]
+        assert clear_columns, (
+            f"platform rows {lower_row}->{upper_row} have no hazard-free ascent column"
+        )
+
+
+_self_check()

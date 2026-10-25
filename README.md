@@ -2,7 +2,7 @@
 
 [![Platform: Game Boy Color](https://img.shields.io/badge/platform-Game%20Boy%20Color-326b4f)](https://modretro.com/products/chromatic)
 [![Engine: GB Studio](https://img.shields.io/badge/engine-GB%20Studio%204.2.0-4856a6)](https://www.gbstudio.dev/)
-[![Version](https://img.shields.io/badge/version-0.1.0--dev-orange)](VERSION)
+[![Version](https://img.shields.io/badge/version-0.2.0--dev-orange)](VERSION)
 
 ## 🌧️ The game
 
@@ -100,6 +100,6 @@ are local and ignored by Git.
 ## 🏷️ Versioning and local collaboration
 
 The project version is in [`VERSION`](VERSION) and follows SemVer. It is
-`0.1.0-dev` while the platformer conversion is in development. Git history and
+`0.2.0-dev` while the platformer redesign is in development. Git history and
 worktrees are local only; no remote is configured. Commit messages are one-line
 Conventional Commits. See [GIT_WORKFLOW](docs/GIT_WORKFLOW.md).

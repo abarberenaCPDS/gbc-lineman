@@ -12,9 +12,16 @@ Game Boy Color game "Mister CFE: After the Storm", built with GB Studio 4.2.0 (`
   TMPDIR="$(getconf DARWIN_USER_TEMP_DIR)gbsb-cfe" node "$CLI" -v make:rom ./mr-cfe.gbsproj build/rom/mr-cfe.gbc
   ```
 
-## Generated content — tools/level.py rules everything
+## Generated content
 
-`tools/level.py` is the single source of truth for level geometry, palettes, and collision bytes. Art, sprites, and the scene resource are **derived from it** — never hand-edit `assets/backgrounds/`, sidecar `.gbsres` files, or `project/scenes/storm_night/` when a change belongs in `level.py`.
+The active redesign is `storm_climb`: `tools/climb.py` owns its geometry;
+regenerate with managed Python: `make_climb_art.py` → `make_climb_scene.py` →
+`make_engine_fields.py`. See `docs/PROJECT_PLAN.md` for current acceptance gaps.
+The older `level.py`/`make_scene.py` pipeline describes Storm Night, not the
+redesign. Its authored resources diverged from generators; do not blindly rerun it.
+
+`tools/level.py` supplies legacy geometry and shared palette definitions. Edit
+source modules/generators rather than generated art or scene resources.
 
 - Edit `level.py` → run the relevant generators (`tools/make_art.py`, `tools/make_scene.py`, `tools/make_sprites.py`, …). They use deterministic UUID5 namespaces, so reruns update only what they own, in place.
 - Pillow-based generators (`make_art`, `make_sprites`, `make_village_bg`, `make_village_sprites`) must run under the managed toolchain Python: `"$HOME/Library/Application Support/modretro-chromatic/toolchain/.local/pyboy-venv/bin/python"`.
@@ -23,7 +30,7 @@ Game Boy Color game "Mister CFE: After the Storm", built with GB Studio 4.2.0 (`
 
 ## Project gotchas
 
-- The live scene is `project/scenes/storm_night/` (start scene, PLATFORM type, 20×36-tile map). `after_the_storm_-_village/` is legacy topdown leftovers and `after_the_storm_village/` is an empty husk — do not edit or assume they are wired up.
+- The start is `project/scenes/storm_climb/` (PLATFORM, 20×36). Storm Night and the topdown village are legacy scenes retained for reference, not current acceptance targets.
 - `*.bak` files are GB Studio editor backups; `build/`, `artifacts/`, `save-states/`, `__pycache__/`, and `user_settings.gbsres` are gitignored generated/local state. Never force-add them.
 - Project settings: sprite mode 8x16, music driver `huge`, color-only; hazard triggers teleport the player back to start `(2,32)` — there is no game-over state.
 
@@ -31,7 +38,7 @@ Game Boy Color game "Mister CFE: After the Storm", built with GB Studio 4.2.0 (`
 
 - **Local-only repo: never add or change a remote.**
 - One-line Conventional Commits, `type(scope): imperative summary`; no AI attribution trailers. Types in use: `feat`, `fix`, `art`, `audio`, `docs`, `build`, `test`, `chore`.
-- Version is SemVer in root `VERSION` (currently `0.1.0-dev`). One branch per worktree, never the same branch in two worktrees.
+- Version is SemVer in root `VERSION`. One branch per worktree, never the same branch in two worktrees.
 
 ## Roadmap
 
@@ -41,5 +48,6 @@ burst.
 
 ## Verification
 
-- ROM build success is not enough: headless emulator checks confirm logic, but input/collision presentation/audio are only confirmed by live play (`docs/platformer-test-plan.md` holds the full playthrough checklist with per-behavior "Source-confirmed vs Live test" status).
-- Playthrough order matters and is authored: splice pickups are gated per house (Marta 0 → Tomas 1 → Rosa 2 → Kiko 3 → Nuria 4), music changes at homes 2 and 4, win state at 5.
+- Focused generator checks: `python3 -m unittest discover -s tools -p test_climb.py`.
+- ROM build success is not enough: headless gameplay evidence does not verify browser UI, human feel/audio taste, or physical hardware.
+- `docs/platformer-test-plan.md` is superseded: the old splice loop was rejected. Current prototype status and manual checks live in `docs/PROJECT_PLAN.md`.
