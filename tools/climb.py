@@ -61,9 +61,9 @@ SOLID_BLOCKS = [
 # Gust lanes are (row, x_start, x_end), inclusive.  They sit in the open gaps
 # between shelves and become respawn triggers in the scene generator.  Their
 # staggered placement leaves a climbable vertical corridor through every gap.
-# Debris entries are timed actor-drop columns, with inclusive row bounds; they
-# stay inside the ascent overlap, away from both platform edges, so timing a
-# dodge is never the only way to reach the next shelf.
+# Debris entries are timed actor-drop columns, with inclusive row bounds.
+# They can cross one-way shelves (but never solid rock); landing columns stay
+# within the overlap and away from platform edges. Runtime fairness needs play.
 # ---------------------------------------------------------------------------
 GUST_LANES = [
     (31, 9, 11),
@@ -77,11 +77,17 @@ GUST_LANES = [
 ]
 
 HAZARD_DEBRIS = [
-    {"row_top": 31, "x": 5, "row_bottom": 32},
-    {"row_top": 28, "x": 10, "row_bottom": 29},
-    {"row_top": 20, "x": 7, "row_bottom": 20},
-    {"row_top": 11, "x": 8, "row_bottom": 11},
+    {"row_top": 29, "x": 5, "row_bottom": 32},
+    {"row_top": 25, "x": 10, "row_bottom": 29},
+    {"row_top": 17, "x": 7, "row_bottom": 20},
+    {"row_top": 8, "x": 8, "row_bottom": 11},
 ]
+
+# Frames are authored explicitly so warnings can be tuned without script edits.
+DEBRIS_WARNING_FRAMES = 60
+DEBRIS_REST_FRAMES = 90
+DEBRIS_STEP_PIXELS = 2
+DEBRIS_STEP_FRAMES = 2
 
 # The checkpoint tile is immediately above the summit shelf, with open
 # headroom.  The last hazard lane is below row 10, leaving the house safe.
@@ -173,8 +179,8 @@ def _self_check() -> None:
     assert grid[hy + 1][hx] == COL_TOP, "house has no one-way standing surface"
     assert all(abs(row - hy) > 2 for row, _ in _hazard_cells()), "house too close to hazard"
 
-    # Expand and bound every hazard.  No trigger or falling actor cell may
-    # cover solid rock or a one-way landing tile.
+    # Static reset lanes must occupy empty cells. Falling rocks may cross a
+    # one-way shelf, but must never pass through solid rock.
     for row, x0, x1 in GUST_LANES:
         assert 0 <= row < MAP_H and 0 <= x0 <= x1 < MAP_W, "gust lane bounds"
         for x in range(x0, x1 + 1):
@@ -188,17 +194,17 @@ def _self_check() -> None:
         assert 0 <= row_top <= row_bottom < MAP_H and 0 <= x < MAP_W, (
             "debris column bounds"
         )
-        assert all(grid[row][x] == COL_EMPTY for row in range(row_top, row_bottom + 1)), (
-            f"debris column x={x} intersects collision"
+        assert all(grid[row][x] != COL_SOLID for row in range(row_top, row_bottom + 1)), (
+            f"debris column x={x} intersects solid rock"
         )
         containing_gap = None
         for lower, upper in zip(PLATFORMS, PLATFORMS[1:]):
             lower_row, lower_x0, lower_x1 = lower
             upper_row, upper_x0, upper_x1 = upper
-            if upper_row < row_top <= row_bottom < lower_row:
+            if upper_row < row_bottom < lower_row:
                 containing_gap = (lower_x0, lower_x1, upper_x0, upper_x1)
                 break
-        assert containing_gap is not None, "debris must fall within one ascent gap"
+        assert containing_gap is not None, "debris must end within an ascent gap"
         lower_x0, lower_x1, upper_x0, upper_x1 = containing_gap
         assert lower_x0 < x < lower_x1 and upper_x0 < x < upper_x1, (
             "debris must avoid both platform edges"

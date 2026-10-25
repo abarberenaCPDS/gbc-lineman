@@ -134,7 +134,8 @@ def parse_instrument(rec):
 
 
 def parse(path):
-    buf = open(path, "rb").read()
+    with open(path, "rb") as source:
+        buf = source.read()
     if len(buf) < FIXED:
         raise UgeError(f"file too short ({len(buf)} bytes)")
     version = struct.unpack_from("<i", buf, 0)[0]

@@ -49,7 +49,7 @@
     {
       "command": "EVENT_MUSIC_PLAY",
       "args": {
-        "musicId": "6fcd550a-a2e4-5c30-93bc-0a4c11478fe2"
+        "musicId": "cf9587b2-4161-5c36-82fc-5661eb961e0a"
       },
       "id": "f70fa796-75c2-591b-8cad-817c817afcf5"
     },
@@ -109,7 +109,77 @@
       "id": "c53a2f60-1216-564f-9c65-1f415abce454"
     }
   ],
-  "playerHit1Script": [],
+  "playerHit1Script": [
+    {
+      "command": "EVENT_SOUND_PLAY_EFFECT",
+      "args": {
+        "units": "time",
+        "type": "dd29b0e2-a71f-545d-a481-984618ec4ba3",
+        "priority": "high",
+        "pitch": 4,
+        "frequency": 200,
+        "duration": 0.5,
+        "wait": true,
+        "effect": 0
+      },
+      "id": "30df6492-9288-5f4a-9344-cf3893725f62"
+    },
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "0"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 0
+          }
+        }
+      },
+      "id": "844c9420-262e-55c2-b42c-4f83bc1ea2b6",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_ACTOR_SET_POSITION",
+            "args": {
+              "units": "tiles",
+              "actorId": "player",
+              "x": {
+                "type": "number",
+                "value": 2
+              },
+              "y": {
+                "type": "number",
+                "value": 32
+              }
+            },
+            "id": "bcac49b6-3a3c-5d78-87c2-b3ef7c255e39"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_ACTOR_SET_POSITION",
+            "args": {
+              "units": "tiles",
+              "actorId": "player",
+              "x": {
+                "type": "number",
+                "value": 11
+              },
+              "y": {
+                "type": "number",
+                "value": 5
+              }
+            },
+            "id": "e25d589b-f653-58c2-be28-a708a52afc87"
+          }
+        ]
+      }
+    }
+  ],
   "playerHit2Script": [],
   "playerHit3Script": []
 }

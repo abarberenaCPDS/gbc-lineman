@@ -38,7 +38,7 @@ syncopated: rapid repeated arpeggios and noise hits carry the motion, while
 the alternating two-octave square riff supplies the distinctive hook. Effects
 are mostly slides, note cuts and two `B02` order jumps; no tempo changes.
 
-## Shared motif and new arrangements
+## Historical shared motif and village arrangements
 
 All five new source files use 6 ticks per row, the same ~149.32 BPM, and the
 same F-centered minor/Dorian pitch language. The core village hook is the
@@ -59,6 +59,30 @@ stings each use one 64-row order (about **6.43 seconds**).
 | `cfe_village_3` | Four one-bar phrases per section: the unchanged F hook alternates with rising/falling answers, an independent 12-note counterline and a 16-step walking bass. Noise uses 9–10 selected low accents/light pickups—not a hit every beat. |
 | `cfe_intro` | Slower-spaced statement of the same motif, then a held F tonic. |
 | `cfe_win` | Restates the motif, adds a short C–Eb–F cadence and lands on a held F tonic. |
+
+## Storm Climb — original theme iteration (2026-10-25)
+
+Better climb music is a current user priority, superseding the redesign brief's
+earlier instruction to retain `cfe_village_1`. The reference/village analysis
+above remains historical; those legacy assets are unchanged.
+
+- **Composition:** `tools/compose_climb.py` writes an original E-minor theme,
+  eight sections (~51.4 seconds), four Game Boy channels and 32 patterns.
+- **Balance:** soft 50%-duty lead, half-volume wave bass, reduced harmony and
+  noise. These are authored settings, not a claim of pleasing playback.
+- **Pipeline:** offline rendering uses the installed external `uge-builder`;
+  independent `uge_report` structural validation passed (main-session evidence).
+  The old `compose_music.py` likewise emits JSON requiring `uge-builder`, not
+  pure-Python UGE binary output.
+- **Final structural review:** direct child MCP inventory/script inspection
+  confirms the scene resolves this asset; all 840 events and four order lists
+  match source JSON/UGE. B-major turnaround backing was corrected; 12 focused
+  tests pass. Native review ROM is 131,072 B, SHA-256
+  `6f9bdec3623ff7400022d153ac5a1b9cad150356810fe40f0aa52c75009fbcd5`.
+  Recorded headless play reaches frame 414; this does not establish audio taste.
+- **Listening pending:** no acceptance of the new theme in browser or hardware.
+  Check melody, loop seam, sustained-note harshness, channel balance and SFX
+  masking with Abe. Do not reload the live Chrome player during human play.
 
 ## SFX pipeline note
 

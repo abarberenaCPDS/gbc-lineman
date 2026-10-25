@@ -199,6 +199,68 @@ def set_position(x: int, y: int, key: str) -> dict[str, Any]:
     )
 
 
+def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
+    """Shared checkpoint-aware reset for trigger and actor collisions."""
+    return [
+        sound_event(death_sound_id, f"{key}:death-sfx"),
+        if_value(VARIABLE_CHECKPOINTS_REACHED, 0, f"{key}:respawn-check", [
+            set_position(*climb.START, f"{key}:respawn-start"),
+        ], [
+            set_position(climb.HOUSE_A["x"], climb.HOUSE_A["y"], f"{key}:respawn-house"),
+        ]),
+    ]
+
+
+def wait_event(frames: int, key: str) -> dict[str, Any]:
+    # Official eventWait.js accepts script-value frames, not plain integers.
+    return event("EVENT_WAIT", {"units": "frames", "frames": number(frames)}, key)
+
+
+def debris_cycle(index: int, debris: dict[str, Any]) -> list[dict[str, Any]]:
+    """Update scripts repeat natively; every cycle yields before moving.
+
+    Official eventActorCollisions{Enable,Disable}.js and eventWait.js define
+    the schema. Position stepping avoids a blocking move preventing collision
+    checks, while the engine's group-1 contact handler supplies real hitboxes.
+    """
+    key = f"debris:{index}"
+    x, top, bottom = debris["x"] * 8, debris["row_top"] * 8, debris["row_bottom"] * 8
+
+    def own_position(y: int, suffix: str) -> dict[str, Any]:
+        return event("EVENT_ACTOR_SET_POSITION", {
+            "actorId": "$self$", "units": "pixels", "x": number(x), "y": number(y),
+        }, f"{key}:{suffix}")
+
+    def own(command: str, suffix: str) -> dict[str, Any]:
+        return event(command, {"actorId": "$self$"}, f"{key}:{suffix}")
+
+    def state(name: str) -> dict[str, Any]:
+        return event("EVENT_ACTOR_SET_STATE", {
+            "actorId": "$self$", "spriteStateId": name, "loopAnim": False,
+        }, f"{key}:state-{name}")
+
+    result = [
+        own("EVENT_ACTOR_COLLISIONS_DISABLE", "safe-warning"),
+        own_position(top, "reset-top"),
+        state("Warning"),
+        own("EVENT_ACTOR_SHOW", "show-warning"),
+        wait_event(climb.DEBRIS_WARNING_FRAMES, f"{key}:warning-wait"),
+        state("Rock"),
+        own("EVENT_ACTOR_COLLISIONS_ENABLE", "danger-fall"),
+    ]
+    for y in range(top, bottom + 1, climb.DEBRIS_STEP_PIXELS):
+        result.extend([
+            own_position(y, f"fall-{y}"),
+            wait_event(climb.DEBRIS_STEP_FRAMES, f"{key}:fall-wait-{y}"),
+        ])
+    result.extend([
+        own("EVENT_ACTOR_COLLISIONS_DISABLE", "safe-rest"),
+        own("EVENT_ACTOR_HIDE", "hide-rest"),
+        wait_event(climb.DEBRIS_REST_FRAMES + index * 13, f"{key}:rest-wait"),
+    ])
+    return result
+
+
 def collision_rle(grid: list[list[int]], width: int, height: int) -> str:
     if len(grid) != height or any(len(row) != width for row in grid):
         raise ValueError(f"climb collision grid must be {width}x{height}")
@@ -276,13 +338,6 @@ def actor_resource(
 def checkpoint_actor(index: int, houses_sprite_id: str, place_sound_id: str) -> dict[str, Any]:
     house = climb.HOUSE_A
     key = "marta-checkpoint"
-    activated = [
-        set_value(VARIABLE_CHECKPOINTS_REACHED, 1, f"{key}:set-reached"),
-        sound_event(place_sound_id, f"{key}:place-sfx"),
-        cutoff_event(150, f"{key}:dialogue-cutoff"),
-        text_event(short_lines("Marta's home!"), f"{key}:dialogue"),
-        *hud_events(f"{key}:hud"),
-    ]
     return actor_resource(
         index=index,
         symbol="marta_checkpoint",
@@ -308,18 +363,7 @@ def debris_actor(index: int, debris: dict[str, Any], sprite_id: str) -> dict[str
     row_bottom = int(debris["row_bottom"])
     if row_bottom < row_top:
         raise ValueError(f"debris {index} has row_bottom above row_top")
-    # The reference scene exposes no wait or actor-move command. Preserve the
-    # known actor schema and hazard sprite rather than emitting unverified GBVM
-    # events; the cycle/movement needs a follow-up using verified commands.
-    start_script = [
-        event(
-            "EVENT_ACTOR_SET_STATE",
-            {"actorId": "$self$", "spriteStateId": "floodwater", "loopAnim": True},
-            f"debris:{index}:set-state",
-        ),
-        event("EVENT_ACTOR_SHOW", {"actorId": "$self$"}, f"debris:{index}:show"),
-    ]
-    return actor_resource(
+    actor = actor_resource(
         index=index,
         symbol=f"debris_{index:02d}",
         name=f"Falling Debris {index}",
@@ -327,8 +371,11 @@ def debris_actor(index: int, debris: dict[str, Any], sprite_id: str) -> dict[str
         y=row_top,
         sprite_id=sprite_id,
         key=f"debris:{index}",
-        start_script=start_script,
+        start_script=[event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": "$self$"}, f"debris:{index}:init-safe")],
     )
+    actor["collisionGroup"] = "1"
+    actor["updateScript"] = debris_cycle(index, debris)
+    return actor
 
 
 def trigger_resource(index: int, lane: tuple[int, int, int], death_sound_id: str) -> dict[str, Any]:
@@ -379,15 +426,16 @@ def build_scene(music_id: str) -> dict[str, Any]:
             "symbol": "scene_storm_climb",
             "backgroundId": resource_id("background:storm-climb"),
             "script": scene_script(music_id),
+            "playerHit1Script": respawn_events("debris-hit", sidecar_id("assets/sounds/death.wav.gbsres", "sound")),
         }
     )
     return scene
 
 
 def main() -> None:
-    music_id = sidecar_id("assets/music/cfe_village_1.uge.gbsres", "music")
+    music_id = sidecar_id("assets/music/cfe_storm_climb.uge.gbsres", "music")
     sprite_ids = {
-        "hazard": sidecar_id("assets/sprites/hazard.png.gbsres", "sprite"),
+        "hazard": sidecar_id("assets/sprites/climb_debris.png.gbsres", "sprite"),
         "houses": sidecar_id("assets/sprites/houses.png.gbsres", "sprite"),
     }
     audio_ids = {
@@ -397,6 +445,8 @@ def main() -> None:
 
     scene = build_scene(music_id)
     actors = [checkpoint_actor(0, sprite_ids["houses"], audio_ids["place"])]
+    actors.extend(debris_actor(index, item, sprite_ids["hazard"])
+                  for index, item in enumerate(climb.HAZARD_DEBRIS, start=1))
     triggers = [
         trigger_resource(index, lane, audio_ids["death"])
         for index, lane in enumerate(climb.GUST_LANES, start=1)
@@ -423,7 +473,7 @@ def main() -> None:
     print(
         f"generated storm_climb: {climb.MAP_W}x{climb.MAP_H} PLATFORM, "
         f"{len(actors)} actors, {len(triggers)} gust triggers; "
-        "movement prototype; timed debris/wind pending"
+        "telegraphed falling debris; gust lanes remain static prototypes"
     )
 
 
