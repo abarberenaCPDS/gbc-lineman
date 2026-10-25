@@ -1,5 +1,11 @@
 # Storm Night browser playthrough test plan
 
+> **⚠️ SUPERSEDED (2026-10-25).** The splice collect/connect/cut gameplay this
+> plan verifies was rejected in the redesign pivot; see
+> [PROJECT_PLAN.md](PROJECT_PLAN.md) and [redesign-brief.md](redesign-brief.md).
+> Kept until the new prototype is stable, then retired. Do not treat its
+> acceptance items as current work.
+
 Scope: authored resources in `Storm Night` (`project/scenes/storm_night/`), its five house actors, four splice pickups, six hazard triggers, and project settings. The final GBC-only ROM built successfully; the pickup/repair sequence still needs a complete live playthrough.
 
 Status labels: **Source-confirmed** means the behavior/text is present in authored resources; **Live test** means verify it in the open browser because source inspection cannot confirm runtime input, collision, presentation, or audio.

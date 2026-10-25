@@ -89,7 +89,14 @@ documented in the progress log.
 
 ---
 
-## Phase 1 — Gameplay redesign 🔄 *(user pivot 2026-10-25)*
+## Phase 1 — Gameplay redesign ✅ → prototype 🔄 *(user pivot 2026-10-25)*
+
+User decisions (2026-10-25): **action platformer** on the kept storm/mountain/
+villagers fiction, **friendly expert** difficulty, **prototype-first** process.
+New verb requested and now engine-verified: **drop-through via D-pad down +
+A jump** (`FEAT_PLATFORM_DROP_THROUGH`, input mode `DROP_THRU_INPUT_DOWN_JUMP_HOLD`)
+— also enables `FEAT_PLATFORM_COYOTE_TIME` and `FEAT_PLATFORM_RUN` as config.
+Full spec: [redesign-brief](redesign-brief.md).
 
 The original splice collect/connect/cut loop is **rejected by the user — the
 gameplay must be redesigned**. The old `platformer-test-plan.md` no longer
@@ -110,11 +117,13 @@ redesign:**
   using).
 - Subagent pipeline proven: parallel resource analysis + MCP cross-check.
 
-- ⬜ Capture user redesign direction (core loop, tone, scope)
-- ⬜ Write the new design into game-design docs (supersedes the old loop)
-- ⬜ New test plan replaces `platformer-test-plan.md`
 - ⬜ Prototype the new core loop through generators; verify with the proven
   headless loop
+- ✅ Capture user redesign direction — done; decisions table in
+  [redesign-brief](redesign-brief.md)
+- ✅ Write the new design into docs — `docs/redesign-brief.md`
+- 🔄 Replace the old test plan — banner added to `platformer-test-plan.md`;
+  new plan written at M-P1 acceptance
 
 **Exit criteria:** an acceptable new core loop, designed, documented, and
 prototyped in the engine.
@@ -180,7 +189,8 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
-| 2026-10-25 | 1 | **Pivot: user rejected the splice collect/connect/cut gameplay — full redesign required.** Before the pivot, pipeline verification was proven end-to-end: first pickup scripted headless with variable-level assertion (`Splices Held` 1→2, "Splice +1" on-screen). Engine facts recorded (walk ≈1 px/frame, B-interact radius, multi-page dialogue). Old test plan de-scoped. | Baseline table above · debug-symbol ROM sha `49f2adce…` |
+| 2026-10-25 | 1 | **Redesign direction locked.** Action platformer, keep fiction, friendly expert, prototype-first, Down+A drop-through verb. Engine verified: `FEAT_PLATFORM_DROP_THROUGH` + `FEAT_PLATFORM_COYOTE_TIME` + `FEAT_PLATFORM_RUN` exist and are off; drop-through input modes include `DOWN_JUMP_HOLD` (GB Studio default is `DOWN_JUMP_TAP`). Brief written: `docs/redesign-brief.md`. M-P1 slice defined (storm_climb scene, checkpoints, debris+gust hazards). Coding work dispatched to parallel GPT-6 Luna subagents on tools/ generators; MCP stays in main session. Old test plan banner-superseded. | engine source grep: drop-through modes DOWN_HOLD/DOWN_TAP/DOWN_JUMP_HOLD/DOWN_JUMP_TAP · docs/redesign-brief.md |
+| 2026-10-25 | 1 | **Pivot recorded: user rejected the splice collect/connect/cut gameplay — full redesign required.** Before the pivot, pipeline verification was proven end-to-end: first pickup scripted headless with variable-level assertion (`Splices Held` 1→2, "Splice +1" on-screen). Engine facts recorded (walk ≈1 px/frame, B-interact radius, multi-page dialogue). Old test plan de-scoped. | Baseline table above · debug-symbol ROM sha `49f2adce…` |
 | 2026-10-25 | 0 | **Phase 0 complete.** `project_select` + `project_inspect` (0 errors, 0 warnings; 2 scenes · 39 actors · 6 triggers). Toolchain ready (CLI 4.3.2, GBDK 4.5.0, PyBoy 2.7.0). First MCP ROM build OK: 131,072 B, MBC5+RUMBLE+RAM+BATTERY, GBC-only, headers valid. Headless CGB boot verified (Storm Night, "Move: D-pad"). Browser preview opened and left running for the user. | Baseline table above · boot frame sha256 `2b8e13b3…` |
 | 2026-10-25 | Pre-0 | Plan doc created from session decisions: pure GB Studio + generators, full-game scope, memorable themes. | docs/PROJECT_PLAN.md |
 | — | — | — | — |
