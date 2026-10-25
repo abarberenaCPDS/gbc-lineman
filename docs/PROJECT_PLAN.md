@@ -89,18 +89,35 @@ documented in the progress log.
 
 ---
 
-## Phase 1 — Verify the existing loop ⬜
+## Phase 1 — Gameplay redesign 🔄 *(user pivot 2026-10-25)*
 
-Prove the current game works top-to-bottom before adding anything.
+The original splice collect/connect/cut loop is **rejected by the user — the
+gameplay must be redesigned**. The old `platformer-test-plan.md` no longer
+represents an acceptance target. What carries over:
 
-- ⬜ Scripted headless full run: all 4 pickups, all 5 repairs, one cut/refund
-- ⬜ All 6 hazard trigger respawns confirmed headless
-- ⬜ Clear every "Live test" item in [platformer-test-plan](platformer-test-plan.md)
-  in the browser preview
-- ⬜ Fix anything broken — through generators only — and re-verify
+**Verified engine facts (from Phase 1 probing, 2026-10-25) — valid for any
+redesign:**
 
-**Exit criteria:** test-plan fully green, updated snapshot recorded in the test
-plan doc.
+- Headless verification loop works: scripted buttons → variable reads via
+  debug-symbol build (`rom_build captureDebugArtifacts:true` +
+  `emulator_debug`), plus screen checks. First splice pickup confirmed
+  headless ("Splice +1", `Splices Held` 1→2).
+- Walk speed ≈ 1 px/frame at `startMoveSpeed: 1`; multi-page help dialogue
+  advances with A; B-interact fires when the player's hitbox overlaps the
+  target actor's tile.
+- Build budget: 138 KB ROM with current content; MBC5+RUMBLE+RAM+BATTERY
+  (cart supports rumble/battery-saves — a hardware feature to consider
+  using).
+- Subagent pipeline proven: parallel resource analysis + MCP cross-check.
+
+- ⬜ Capture user redesign direction (core loop, tone, scope)
+- ⬜ Write the new design into game-design docs (supersedes the old loop)
+- ⬜ New test plan replaces `platformer-test-plan.md`
+- ⬜ Prototype the new core loop through generators; verify with the proven
+  headless loop
+
+**Exit criteria:** an acceptable new core loop, designed, documented, and
+prototyped in the engine.
 
 ---
 
@@ -163,6 +180,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-25 | 1 | **Pivot: user rejected the splice collect/connect/cut gameplay — full redesign required.** Before the pivot, pipeline verification was proven end-to-end: first pickup scripted headless with variable-level assertion (`Splices Held` 1→2, "Splice +1" on-screen). Engine facts recorded (walk ≈1 px/frame, B-interact radius, multi-page dialogue). Old test plan de-scoped. | Baseline table above · debug-symbol ROM sha `49f2adce…` |
 | 2026-10-25 | 0 | **Phase 0 complete.** `project_select` + `project_inspect` (0 errors, 0 warnings; 2 scenes · 39 actors · 6 triggers). Toolchain ready (CLI 4.3.2, GBDK 4.5.0, PyBoy 2.7.0). First MCP ROM build OK: 131,072 B, MBC5+RUMBLE+RAM+BATTERY, GBC-only, headers valid. Headless CGB boot verified (Storm Night, "Move: D-pad"). Browser preview opened and left running for the user. | Baseline table above · boot frame sha256 `2b8e13b3…` |
 | 2026-10-25 | Pre-0 | Plan doc created from session decisions: pure GB Studio + generators, full-game scope, memorable themes. | docs/PROJECT_PLAN.md |
 | — | — | — | — |
