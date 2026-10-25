@@ -91,6 +91,7 @@ are local and ignored by Git.
 ## 📚 Useful docs
 
 - [Master project plan and progress status](docs/PROJECT_PLAN.md)
+- [Reusable MCP toolkit and verification workflows](docs/MCP_TOOLKIT.md)
 - [Original gameplay brief](docs/gameplay-instructions.md)
 - [Design decisions and deferred alternatives](docs/game-design.md)
 - [GBC background and sprite audit](docs/asset-hardware-audit.md)

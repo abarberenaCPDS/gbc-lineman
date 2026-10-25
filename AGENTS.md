@@ -15,8 +15,11 @@ Game Boy Color game "Mister CFE: After the Storm", built with GB Studio 4.2.0 (`
 ## Generated content
 
 The active redesign is `storm_climb`: `tools/climb.py` owns its geometry;
-regenerate with managed Python: `make_climb_art.py` → `make_climb_scene.py` →
-`make_engine_fields.py`. See `docs/PROJECT_PLAN.md` for current acceptance gaps.
+regenerate with managed Python: `make_climb_art.py`, `make_climb_sprites.py`,
+then `make_climb_scene.py` and `make_engine_fields.py`. Music needs
+`python3 tools/compose_climb.py --render` first (installed Docker `uge-builder`,
+offline/no pull); the legacy `compose_music.py` writes JSON, not binary UGE.
+See `docs/PROJECT_PLAN.md` for current acceptance gaps and the visual-quality gate.
 The older `level.py`/`make_scene.py` pipeline describes Storm Night, not the
 redesign. Its authored resources diverged from generators; do not blindly rerun it.
 
@@ -45,6 +48,12 @@ source modules/generators rather than generated art or scene resources.
 The current phase, status, and progress log live in `docs/PROJECT_PLAN.md` —
 read it first and update it (status markers + progress log) after every work
 burst.
+Independent work uses up to five parallel subagents; coding-only workers use
+`openai/gpt-6-luna`. Each worker must verify direct MCP access (recent `general`
+workers have it; earlier `explore` workers did not). Main serializes builds,
+emulator controls, project selection and preview updates.
+Reusable MCP capabilities, ownership rules and verification limits are in
+`docs/MCP_TOOLKIT.md`; rediscover tool signatures before reuse in a new session.
 
 ## Verification
 

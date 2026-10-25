@@ -20,11 +20,19 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Last updated:** 2026-10-25 · **Phase 1: movement prototype built; user feedback pending**
+**Last updated:** 2026-10-25 · **Phase 1: debris/music human review pending; visual direction approved, M-V1 production pending**
+
+**Latest feedback:** Abe confirmed the Chrome preview and said the movement
+prototype looks good for now. Holding Down+A can drop multiple levels; keep
+this as a known defect for a later single-level descent pass. Better music is
+requested **now**, not postponed to Phase 3. Telegraphed falling debris and a
+new climb theme are implemented but not yet gameplay/listening accepted. Abe also
+approved the visual approach below, not finished assets. Preserve the unpaused
+Chrome preview: the latest web build is staged separately, with no safe handoff yet.
 
 ---
 
-## Baseline metrics (Phase 0, 2026-10-25)
+## Historical baseline metrics (Phase 0, 2026-10-25 — not current Storm Climb)
 
 | Metric | Value |
 | --- | --- |
@@ -36,19 +44,26 @@
 | Header | Title `MRCFE`, **MBC5+RUMBLE+RAM+BATTERY**, 32 KB SRAM, GBC-only, checksums valid |
 | Headless boot | PyBoy 2.7.0, CGB, frame 600 shows Storm Night start + "Move: D-pad" prompt ✓ |
 | Browser preview | `http://127.0.0.1:57089/83863de94ecce88d9065f3504e2a1721eccad11af404a4fed92c36ad58e88e97/` (listening) |
-| Note | GB Studio **desktop app** not managed by toolchain — user runs their own editor install; CLI-only pipeline unaffected. Headless boot frame sha256 `2b8e13b3…` is our "before" reference. |
+| Note | Project/desktop version is 4.2.0 versus managed CLI 4.3.2; desktop app is user-managed. Keep this mismatch visible. Headless boot frame sha256 `2b8e13b3…` is our "before" reference. |
 
 ---
 
 ## How we work (standing rules)
 
+- **Reusable MCP knowledge:** [MCP toolkit](MCP_TOOLKIT.md) documents the
+  capability audit and model/tool combinations independently of this game's
+  plan. Rediscover signatures in future sessions. Use it for graphics/palette,
+  sprite, dialogue, collision/dependency and runtime checks—not just builds.
+  Tilemap recipes are an isolated-fixture experiment before any adoption;
+  never give recipes and generators ownership of the same outputs.
 - **Pipeline only:** data in `tools/level.py` + sibling data modules →
   deterministic generators → `assets/` + `project/` → MCP build → headless
   emulator asserts → browser preview live check. No hand-edited generated
   artifacts.
-- **MCP first:** `project_select` the `.gbsproj` before touching anything.
-  Browser preview stays open between iterations; never rebuild/reload while a
-  human is playing.
+- **MCP first:** main selects the `.gbsproj`; children use direct read-only MCP
+  against that selection, with no competing project selection. Main owns shared
+  build/emulator/preview operations. Browser preview stays open between iterations;
+  never rebuild/reload while a human is playing.
 - **Verify before building on it:** a feature is only "done" after a ROM build
   plus headless run plus a live preview check (or device capture in Phase 4).
 - **Git:** local-only repo, one-line Conventional Commits
@@ -58,14 +73,15 @@
   [GIT_WORKFLOW](GIT_WORKFLOW.md). Each worktree is its own MCP project copy.
 - **SemVer:** version lives in root `VERSION`. `0.x` = pre-1.0. Additive
   content → MINOR, fixes/polish → PATCH. Dev suffix stays until a release.
-- **Subagents:** parallelize independent work with subagents (up to 5),
-  coding-only tasks to the dedicated coding model; pick specialist models per
+- **Subagents:** parallel subagents are mandatory for independent work (up to 5),
+  coding tasks to GPT-6 Luna only; pick specialist models per
   task. Subagents must follow this plan doc and commit nothing themselves —
   review, verify, then commit.
-  User additionally requires MCP use by subagents. The launched child sessions
-  reported no MCP bridge; their work is file-only, not MCP-verified. Do not claim
-  otherwise or launch further child work under this requirement until MCP access
-  is available or the user explicitly approves a main-session-only MCP split.
+  User requires **direct MCP** use by each child; check access first and report
+  limitations honestly. Earlier children reported no bridge and remain file-only.
+  All three recent improvement reviewers and both final auditors confirmed direct
+  MCP use; this documentation child also used read-only `project_inspect`.
+  Later access does not retroactively verify earlier children or authorize mutations.
 - **User testing checkpoints:** at the end of each phase (and at any
   " playable milestone" marker), stop and hand a browser preview to the user.
   Keep the preview open and untouched while they play. Report progress after
@@ -121,7 +137,8 @@ redesign:**
   the subagents themselves could not access MCP.
 
 - 🔄 Movement/layout prototype generated and MCP-built. Jump and Down+A descent
-  verified headlessly; full route, checkpoint, coyote timing, and user feel pending.
+  verified headlessly; Abe says movement looks good for now. Full route,
+  checkpoint, coyote timing, and dynamic hazard fairness remain pending.
 - ✅ Capture user redesign direction — done; decisions table in
   [redesign-brief](redesign-brief.md)
 - ✅ Write the new design into docs — `docs/redesign-brief.md`
@@ -131,7 +148,7 @@ redesign:**
 **Exit criteria:** an acceptable new core loop, designed, documented, and
 prototyped in the engine.
 
-### Movement prototype handoff (not full M-P1 acceptance)
+### Historical movement prototype handoff (not full M-P1 acceptance)
 
 - Current start: `Storm Climb`, `(2,32)`; legacy scenes retained unchanged.
 - Data/generators: `tools/climb.py`, `make_climb_art.py`,
@@ -140,7 +157,7 @@ prototyped in the engine.
   `make_climb_scene.py` → `make_engine_fields.py`. Start selection is an explicit
   MCP `settings_update`, not an implicit generator side effect.
 - New background matches collisions. Cross-marked tiles are **static reset
-  zones**, not timed wind. Falling debris has not been implemented.
+  zones**, not timed wind. Falling debris was absent from this earlier build.
 - MCP validation: zero errors/warnings before start switch; ROM build passed
   with only upstream Node DEP0190 warning. ROM SHA-256:
   `c6dff89a775215200f9f1565eaf24780daeac8fbca45dc536c44797d353717c5`.
@@ -155,31 +172,139 @@ prototyped in the engine.
   opening a built-in browser tab and human/browser play are **not verified**.
 - User check: arrows move, Z is A/jump, Down+Z drops through a shelf.
   Test movement/descending only; placeholder visuals are not final art direction.
-- Next: user movement feedback, full-route and checkpoint tests, telegraphed
-  dynamic hazards, then polished art/audio. Phase 3 content order must be
-  revisited against the new loop, not treated as frozen requirements.
+- This handoff predates Abe's movement feedback and the debris/music iteration
+  below; its ROM, tests and browser attachment state are historical evidence.
+
+### Current debris/music iteration — verification in progress
+
+- **Source:** `make_climb_scene.py` adds native debris update loops: 60-frame
+  harmless warning, fall 2 px per 2 frames, rest `90 + 13 * index` frames;
+  collision group 1 routes contacts to checkpoint-aware respawn. Static marked
+  reset zones remain; timed gusts are still pending.
+- **Source/audio:** `compose_climb.py` creates an original eight-section E-minor
+  theme (~51.4 s), four channels / 32 patterns. Installed `uge-builder` renders
+  offline; independent `uge_report` structural validation passed. Lead uses soft
+  50% duty, bass half-volume, and reduced harmony/noise. Legacy tracks unchanged.
+  Final B-major backing correction is source-audited; listening acceptance is pending.
+  See [music notes](music-notes.md). This latest
+  user request supersedes the brief's old “new music out of scope” statement.
+- **Direct read-only MCP (documentation child):** `project_inspect` confirms
+  project 4.2.0, PLATFORM start `(2,32)`, 3 scenes / 44 actors / 15 triggers /
+  55 assets, zero health errors/warnings/info. This is authored-source evidence only.
+- **Final direct child-MCP source audits:** music audit via
+  `project_inspect` / `project_inventory` / `script_inspect` confirms native asset
+  resolution, 840 events, 32 patterns, four orders and fixed B-major backing.
+  Hazard audit via `project_inspect` / `scene_inspect` / `graphics_analyze_scene` /
+  `script_inspect` validates four debris actors, harmless 60-frame warning,
+  2 px / 2-frame fall, disabled hidden/rest state, valid name references and native
+  update loop. Source checks do not establish gameplay fairness.
+- **Final main-session build/test evidence:** 12 tests passed; regeneration of
+  23 files, including the new UGE, is byte-identical. Successful ROM:
+  `build/rom/storm-climb-review.gbc`, 131,072 bytes, SHA-256
+  `6f9bdec3623ff7400022d153ac5a1b9cad150356810fe40f0aa52c75009fbcd5`.
+  Final music SHA-256:
+  `69ae51f2f5b0101a69fa0b9c295c4bbf5eaece9326f24866ca4f0d4fec942dcf`.
+- **Headless (main session):** retained PyBoy recording
+  `artifacts/playtests/storm-climb-review`, session
+  `aee21094966949378e966ab27d751b89`, `branch-0001`, review actions 26–62,
+  frames 348–414: warning → rock → contact → return to base (player OAM x=16 at
+  frame 414); checkpoint variable 0 remains 0. This does **not** prove safe-warning
+  contact, full route, checkpoint behavior, coyote timing, fairness or human music acceptance.
+- **Browser:** Abe played the earlier Chrome movement preview and liked movement
+  for now. Main-session MCP status sees unpaused remote player
+  `0f1179d6-685e-477b-9c7a-fd0756e942bb`; remote input is unavailable. This is not
+  evidence that an agent attached/controlled it or that the latest build was
+  played. Latest web export is staged separately at `build/web-review`, ROM SHA-256
+  `ff617bab548f9200b5bbd362aef75edb8433fab0d42d9c25ee1de04b60fdcc14`;
+  it is not the final native ROM identity above. Old Chrome remains unpaused and
+  untouched; no handoff yet. Do not replace/reload during human play.
+- **Hardware:** no verification of this iteration.
+
+**Known defect — multi-level drop:** holding Down+A can pass through several
+shelves. User permits deferring a single-level descent fix; not resolved.
+
+**Remaining M-P1 gates:** safe-warning contact and checkpoint tests,
+full-route/coyote checks, timed gust implementation/verification, safe preview
+handoff, human hazard-feel and music listening acceptance. Movement approval
+alone is not full slice acceptance.
+
+### Visual-production lane — approved direction, M-V1 pending 🔄
+
+**M-V1 acceptance gate:** one polished scene + a recognizable electrician animation
+set + one distinct villager + one visible power-restoration transformation.
+The user must approve this playable slice **in the browser before scaling up**;
+direction approval, generator output or pixel counts alone do not pass the gate.
+
+**Proposed first composition (reference review complete):** a 160×144 cliffside
+substation opening, timber service terrace, one clear onward ledge, electrician
+and Marta. Cold slate/blue-violet distance contrasts with a locally restored amber
+window and panel lamp. Compare 16×16 and 16×24 hero fixtures in that same scene
+before choosing size. Do not disguise every greybox shelf as a cliff: catwalks
+must read as drop-through and solid rock must agree with solid collisions.
+Reference basis: samples 003 (grounded opening), 002 (value/material hierarchy),
+005 (worker silhouette). This is the next fixture target, not approved final art.
+
+- **World/composition:** distinct storm village, wooded cliffs, infrastructure and
+  summit identities; foreground framing and distant depth, restrained weather,
+  cold night contrasted with warm windows. Build actual world terrain, not repeated
+  green shelves. Purpose-built bridges, poles, cables, foliage and landmarks;
+  compact, readable HUD that leaves room for the world.
+- **Characters:** helmet, workwear and tools read as an electrician in silhouette;
+  idle/run/jump/fall/land/repair animation set. Villagers need distinct shapes,
+  clothing and personalities, not just differently labelled houses.
+- **References/reproducibility:** user samples are art-direction references, not
+  copied pixel assets. Generators must reproduce the approved art; reproducibility
+  does not substitute for artistic judgment or human review.
+- **Hardware gates:** assess at native GBC 160×144; BG four colors per tile,
+  sprites three opaque colors + transparency, 40 OAM objects / 10 per scanline.
+  Static estimates do not establish compiled/runtime budgets: inspect compiled
+  tile/palette usage and runtime OAM/scanline pressure before acceptance.
+
+**Three parallel owned tracks** (mandatory independent subagent work, maximum five
+subagents; coding only on GPT-6 Luna; each uses direct MCP):
+
+| Track | Owned work / handoff |
+| --- | --- |
+| Environment | Reference/style investigation, scene composition and environment art generators; M-V1 scene and restoration states. |
+| Character-animation | Electrician silhouette/animation and one distinct villager; character source/generators, not environment files. |
+| Runtime-budget / integration | Readability and hardware-budget audit, integration requirements and compiled/runtime checks coordinated through main; no competing edits to the other tracks' sources. |
+
+Main owns shared scene integration, project selection, build, emulator and preview;
+resolve file ownership before edits and serialize shared-runtime checks.
+
+**Next, in parallel:** **(A)** human debris/music review once a safe browser handoff
+is possible; **(B)** reference/style investigation now, then M-V1 production.
+Subsequent scene expansion is blocked on user approval of M-V1, not pixel count alone.
 
 ---
 
 ## Phase 2 — Pipeline hardening ⬜
 
-Make every later feature fast to build and impossible to fork by accident.
+Proposed hardening, not mandatory busywork before the next playable iteration.
+Adopt extractions only where they reduce current duplication or iteration risk.
 
-- ⬜ Extract music data → `tools/melody.py` (data) consumed by `compose_music.py`
+- ⬜ Consider extracting shared music data → `tools/melody.py` if useful;
+  legacy `compose_music.py` emits JSON and needs external `uge-builder` to render
+  UGE, not a pure-Python binary writer. Keep the new climb pipeline distinct.
 - ⬜ Extract character/sprite data → `tools/characters.py` consumed by
   `make_sprites.py`
 - ⬜ Add `tools/make_project.py` orchestrator: one command regenerates
   art → sprites → scene(s) → music → sfx in dependency order
 - ⬜ Byte-identical regen verified via fresh build + `project_refresh`
 
-**Exit criteria:** single-command full regen, deterministic output confirmed,
-iteration loop noticeably faster.
+**Proposed exit criteria:** agreed hardening scope, deterministic output and a
+measurably faster iteration loop; a refactor alone is not a playable milestone.
 
 ---
 
 ## Phase 3 — Full game content ⬜
 
-Ordered by risk; each item ships independently and stays playable.
+**Provisional backlog under the action-platformer redesign**, not frozen scope
+or a required sequence. Re-scope generators, NPC/checkpoint roles, ending and
+milestones after M-P1 acceptance; do not restore the rejected splice loop.
+Climb music is already being improved in Phase 1, not gated on item 3.6.
+Scene expansion additionally requires **M-V1 browser approval**; the distinct
+village/cliffs/infrastructure/summit identities are direction, not a frozen scene count.
 
 | # | Feature | Generator surface | Status |
 | --- | --- | --- | --- |
@@ -190,12 +315,12 @@ Ordered by risk; each item ships independently and stays playable.
 | 3.5 | Feel & juice: coyote time, jump frames, sparkles, window glow | `level.py` tuning, sprite frames, palette flips | ⬜ |
 | 3.6 | Memorable themes: title, village stages, character leitmotifs | `melody.py` → `compose_music.py` | ⬜ |
 
-**Playable milestone M1** (after 3.1 + 3.2): user does a full browser playtest
+**Provisional playable milestone M1** (after 3.1 + 3.2): user does a full browser playtest
 of the new openings and NPCs.
 
-**Playable milestone M2** (after 3.3 + 3.5): user plays the multi-area climb.
+**Provisional playable milestone M2** (after 3.3 + 3.5): user plays the multi-area climb.
 
-**Exit criteria:** title → intro → climb (multi-area) → ending complete in one
+**Proposed exit criteria:** title → intro → climb (multi-area) → ending complete in one
 run; music changes with progression; every new fixture verified headless +
 live.
 
@@ -220,6 +345,9 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-25 | Pipeline | Inspected all 81 MCP tools and audited useful model/tool combinations; reusable guide separated from game status. Debris/theme integration committed as `d65ea1a`. | Direct capability audit plus bounded sprite, dialogue, collision and dependency probes; recipe/import/device mutations were not exercised. |
+| 2026-10-25 | 1 / visual | Final debris/music source audits and retained contact→base evidence recorded; visual approach approved, M-V1 browser gate and three parallel owned tracks added. Next: safe human debris/music handoff alongside reference/style work, then M-V1 production. | Main reports 12 tests, 23 byte-identical outputs, native ROM `6f9bdec3…`, PyBoy actions 26–62 / frames 348–414; exact identities and limits above. Three improvement reviewers + two final auditors confirmed direct MCP; earlier agents remain file-only. Documentation child directly inspected project health; no selection/build/preview operations. Human acceptance and scene scaling remain gated. |
+| 2026-10-25 | 1 | Abe played Chrome movement preview: good for now; multi-level Down+A drop deferred. Debris loops and original climb theme implemented, not accepted. Music is current work, not deferred. Phase 2 extraction and Phase 3 backlog clarified as proposals. | Child read-only MCP: zero health errors/warnings, Storm Climb + four debris actors. Main-session evidence: eight tests, debug ROM 131,072 B sha `9078cd2e…`, PyBoy boot frame 348. Dynamic contacts/checkpoint/fairness, listening and latest browser/hardware checks pending; preserve unpaused Chrome player. |
 | 2026-10-25 | 1 | Integrated both coding-agent outputs; corrected background/collision mismatch and arrival-trigger checkpoint. Movement prototype builds; jump and Down+A descent verified in recorded PyBoy frames. Browser export updated, but no browser players attached. `VERSION` now `0.2.0-dev`; Phase 1 remains in progress. | ROM `c6dff89a…`; recording review actions 71–78, frames 482–505; dynamic hazards and full route pending. |
 | 2026-10-25 | 1 | **Redesign direction locked.** Action platformer, keep fiction, friendly expert, prototype-first, Down+A drop-through verb. Engine verified: `FEAT_PLATFORM_DROP_THROUGH` + `FEAT_PLATFORM_COYOTE_TIME` + `FEAT_PLATFORM_RUN` exist and are off; drop-through input modes include `DOWN_JUMP_HOLD` (GB Studio default is `DOWN_JUMP_TAP`). Brief written: `docs/redesign-brief.md`. M-P1 slice defined (storm_climb scene, checkpoints, debris+gust hazards). Coding work dispatched to parallel GPT-6 Luna subagents on tools/ generators; MCP stays in main session. Old test plan banner-superseded. | engine source grep: drop-through modes DOWN_HOLD/DOWN_TAP/DOWN_JUMP_HOLD/DOWN_JUMP_TAP · docs/redesign-brief.md |
 | 2026-10-25 | 1 | **Pivot recorded: user rejected the splice collect/connect/cut gameplay — full redesign required.** Before the pivot, pipeline verification was proven end-to-end: first pickup scripted headless with variable-level assertion (`Splices Held` 1→2, "Splice +1" on-screen). Engine facts recorded (walk ≈1 px/frame, B-interact radius, multi-page dialogue). Old test plan de-scoped. | Baseline table above · debug-symbol ROM sha `49f2adce…` |
