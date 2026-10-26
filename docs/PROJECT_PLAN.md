@@ -27,8 +27,9 @@ prototype looks good for now. Holding Down+A can drop multiple levels; keep
 this as a known defect for a later single-level descent pass. Better music is
 requested **now**, not postponed to Phase 3. Telegraphed falling debris and a
 new climb theme are implemented but not yet gameplay/listening accepted. Abe also
-approved the visual approach below, not finished assets. Preserve the unpaused
-Chrome preview: the latest web build is staged separately, with no safe handoff yet.
+approved the visual approach below, not finished assets. M-V1 preview handoff is
+now authorized and served; user permits interruptions for meaningful iteration
+updates and explicitly discarded the previous movement-preview state.
 
 ---
 
@@ -63,7 +64,9 @@ Chrome preview: the latest web build is staged separately, with no safe handoff 
 - **MCP first:** main selects the `.gbsproj`; children use direct read-only MCP
   against that selection, with no competing project selection. Main owns shared
   build/emulator/preview operations. Browser preview stays open between iterations;
-  never rebuild/reload while a human is playing.
+   User permits preview interruptions for meaningful updates. Still preserve
+   saves/recordings and resolve unknown outcomes; interruption permission is
+   not permission to discard arbitrary state or recordings.
 - **Verify before building on it:** a feature is only "done" after a ROM build
   plus headless run plus a live preview check (or device capture in Phase 4).
 - **Git:** local-only repo, one-line Conventional Commits
@@ -84,8 +87,8 @@ Chrome preview: the latest web build is staged separately, with no safe handoff 
   Later access does not retroactively verify earlier children or authorize mutations.
 - **User testing checkpoints:** at the end of each phase (and at any
   " playable milestone" marker), stop and hand a browser preview to the user.
-  Keep the preview open and untouched while they play. Report progress after
-  every work burst.
+  Keep the preview open; apply the user's interruption permission and report
+  meaningful updates. Report progress after every work burst.
 
 ---
 
@@ -308,8 +311,12 @@ Subsequent scene expansion is blocked on user approval of M-V1, not pixel count 
   and regression tests prevent the original duplicate-pose error.
 - Browser build staged separately at `build/web-opening`, ROM SHA-256
   `43aec1c44a974237177197db2da0832d434673ecffd2bbb4e1f6992677b33844`.
-  Existing Chrome player remains unpaused on the old movement build; no reload
-  or handoff performed. Human art/music approval is still pending.
+  User paused the old player and requested the switch. Cached export opened
+  without recompilation at the new process-local URL:
+  `http://127.0.0.1:57089/5c57abafec2b86fad79d4550ad2215b84dfcdbb4d7cba0f7e5cf1e8984135911/`.
+  User then explicitly discarded the previous state; new preview `list_states`
+  returns no saved states. No old state will be restored; unrelated recordings
+  and stored project files were not deleted. Human art/music approval is pending.
 - Preview controls: arrows move, A/Z jumps, B/X repairs or talks, SELECT/Shift
   compares hero size and returns home. Authored comparison (not gameplay):
   `artifacts/visual-opening/size_power_comparison.png`.
@@ -389,6 +396,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-25 | M-V1 handoff | User requested preview switch; old view was paused. Cached M-V1 export opened without a build. User permits preview interruptions and explicitly discarded the previous state; new session lists no saved states. | Current listener `e2b03c3e…`; web ROM `43aec1c4…`; human review pending. |
 | 2026-10-25 | M-V1 | Three parallel direct-MCP workers delivered environment, characters and native integration guidance; follow-up audits caught/fixed duplicate repair poses and native color mappings. Isolated visual candidate builds, 22 tests pass, 25 resources regenerate identically. Native repair/size/movement and sampled OAM verified; web candidate staged without interrupting Chrome. | Native ROM `713876e2…`; web ROM `43aec1c4…`; human gate remains pending. |
 | 2026-10-25 | Pipeline | Inspected all 81 MCP tools and audited useful model/tool combinations; reusable guide separated from game status. Debris/theme integration committed as `d65ea1a`. | Direct capability audit plus bounded sprite, dialogue, collision and dependency probes; recipe/import/device mutations were not exercised. |
 | 2026-10-25 | 1 / visual | Final debris/music source audits and retained contact→base evidence recorded; visual approach approved, M-V1 browser gate and three parallel owned tracks added. Next: safe human debris/music handoff alongside reference/style work, then M-V1 production. | Main reports 12 tests, 23 byte-identical outputs, native ROM `6f9bdec3…`, PyBoy actions 26–62 / frames 348–414; exact identities and limits above. Three improvement reviewers + two final auditors confirmed direct MCP; earlier agents remain file-only. Documentation child directly inspected project health; no selection/build/preview operations. Human acceptance and scene scaling remain gated. |

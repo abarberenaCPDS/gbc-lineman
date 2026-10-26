@@ -79,7 +79,8 @@ build/               Local build output (ignored by Git)
 
 Prefer the **ModRetro Chromatic MCP** for project inspection, ROM builds,
 emulator playtests and the playable browser preview. Keep the preview open
-between iterations; do not rebuild it while a human is actively playing.
+between iterations; follow the interruption permission and save/recording guards
+in [the project plan](docs/PROJECT_PLAN.md).
 
 For local GB Studio CLI work, use the installed toolchain and a short temporary
 build directory whose path does not contain `src`:

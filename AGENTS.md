@@ -4,7 +4,7 @@ Game Boy Color game "Mister CFE: After the Storm", built with GB Studio 4.2.0 (`
 
 ## Authoring and building
 
-- Prefer the **ModRetro Chromatic MCP** tools: `project_select` the `.gbsproj` (absolute path; use the worktree's copy when working in a worktree) before inspecting, editing, or building. Build/playtest via MCP, keep the browser preview open between iterations, and never rebuild/reload it while a human is playing.
+- Prefer the **ModRetro Chromatic MCP** tools: `project_select` the `.gbsproj` (absolute path; use the worktree's copy when working in a worktree) before authoring/building. Main owns build/playtest/preview operations. User permits preview interruptions for meaningful updates; preserve saves/recordings and resolve uncertain operations before switching.
 - Local CLI build (rare, MCP unavailable): the temporary build dir path **must not contain `src`** or the build breaks. Exact working command:
 
   ```sh
