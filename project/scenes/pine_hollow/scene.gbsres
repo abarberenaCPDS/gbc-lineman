@@ -1,0 +1,409 @@
+{
+  "_resourceType": "scene",
+  "id": "4d9329db-9c79-52dd-8372-d215a891bcb8",
+  "_index": 6,
+  "name": "Pine Hollow",
+  "backgroundId": "f3edeaa2-968b-5478-9464-7c2962538e3e",
+  "tilesetId": "",
+  "width": 40,
+  "height": 18,
+  "type": "PLATFORM",
+  "colorModeOverride": "none",
+  "paletteIds": [
+    "71085f61-67fb-53bf-ab00-42f6ae97915c",
+    "6dca60e7-b2dc-5a6f-a856-2d2139cfc0fc",
+    "b2dbc43f-5ea2-5ffc-a0db-359d862e8847",
+    "7236f4af-b46f-5c4c-8d8b-827b1065a563",
+    "36aaf291-f0e8-5d60-8f28-bb0ce316b9a4",
+    "70ea8fc2-e502-571e-898d-412a483fd6cc",
+    "87767377-69df-5af2-a439-3d97ab633758",
+    "default-ui"
+  ],
+  "spritePaletteIds": [
+    "030624ef-c88f-5e59-8664-65193264ce80",
+    "3f4c984d-277f-5474-95b9-b0766100b992",
+    "930e657b-7839-5e52-8666-c91f774d3fb0",
+    "0f2244fe-574b-5f67-b459-3517db82dfe7",
+    "2192af0f-f22d-58bd-8d4c-a29bbc66452f",
+    "b871e178-c93e-51fa-8fe6-ba32b43214cf",
+    "4196207d-829f-5923-a671-a70c35651b6e",
+    "default-sprite"
+  ],
+  "collisions": "0050+0f!0026+0f2+0026+0f2+0026+0f2+0026+0f2+0026+0f2+0026+0f2+0026+0f2+006+0fc+0014+0f2+006+0fc+0014+0f2+006+0fc+0014+0f2+004+0fe+00c+0fa+004+0fe+00c+0fa+004+0fe+00c+0f81+",
+  "autoFadeSpeed": 1,
+  "symbol": "scene_pine_hollow",
+  "x": 1200,
+  "y": 360,
+  "script": [
+    {
+      "command": "EVENT_PLAYER_SET_SPRITE",
+      "args": {
+        "spriteSheetId": "9cb46fea-def2-507c-8edb-a3ca83a61946"
+      },
+      "id": "df287132-c7e4-5944-aac3-7d709f38c032"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_DIRECTION",
+      "args": {
+        "actorId": "player",
+        "direction": {
+          "type": "direction",
+          "value": "right"
+        }
+      },
+      "id": "ad8da6f7-4164-5ec3-b8f7-90c677001c68"
+    },
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "6",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "1da06439-680d-5ce6-b023-59f609404af4"
+    },
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "12",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "d7365f63-ed59-5383-bb5c-6ce36b159ffc"
+    },
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "13",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "a04453fd-4b75-5258-970d-6e67faf9488f"
+    },
+    {
+      "command": "EVENT_PALETTE_SET_BACKGROUND",
+      "args": {
+        "palette0": "keep",
+        "palette1": "keep",
+        "palette2": "keep",
+        "palette3": "7236f4af-b46f-5c4c-8d8b-827b1065a563",
+        "palette4": "keep",
+        "palette5": "keep",
+        "palette6": "keep",
+        "palette7": "keep"
+      },
+      "id": "201430e4-1902-542a-9ef6-1ec92315f21b"
+    },
+    {
+      "command": "EVENT_PALETTE_SET_BACKGROUND",
+      "args": {
+        "palette0": "keep",
+        "palette1": "keep",
+        "palette2": "keep",
+        "palette3": "keep",
+        "palette4": "keep",
+        "palette5": "70ea8fc2-e502-571e-898d-412a483fd6cc",
+        "palette6": "keep",
+        "palette7": "keep"
+      },
+      "id": "2c85d51b-8429-589e-87e4-9c293d275f23"
+    },
+    {
+      "command": "EVENT_MUSIC_PLAY",
+      "args": {
+        "musicId": "cf9587b2-4161-5c36-82fc-5661eb961e0a"
+      },
+      "id": "4c5fd334-11fc-5b09-bc9a-e00b8e9f4860"
+    },
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "7aa073f8-f274-52ea-b37a-09a6bf8ca787"
+    },
+    {
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": [
+          "No power at\nKiko's house!"
+        ],
+        "avatarId": "",
+        "minHeight": 4,
+        "maxHeight": 7,
+        "textX": 1,
+        "textY": 1,
+        "textHeight": 5,
+        "position": "bottom",
+        "clearPrevious": true,
+        "showFrame": true,
+        "speedIn": -1,
+        "speedOut": -1,
+        "closeWhen": "key",
+        "closeButton": "a",
+        "closeDelayUnits": "time",
+        "closeDelayTime": 0.5,
+        "closeDelayFrames": 30
+      },
+      "id": "d7fa5f26-042a-5ef8-9e8f-4d3b61584d40"
+    },
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 16
+        }
+      },
+      "id": "abf64e16-880a-5387-b7a3-e53791d1efcb"
+    },
+    {
+      "command": "EVENT_OVERLAY_SHOW",
+      "args": {
+        "color": "black",
+        "x": 0,
+        "y": 0
+      },
+      "id": "feb411a1-a6ee-5ae5-9f1e-6c9c89eee47a"
+    },
+    {
+      "command": "EVENT_TEXT_DRAW",
+      "args": {
+        "text": "LINE %D1$12$/1 HOME %D1$13$/1",
+        "x": 0,
+        "y": 0,
+        "location": "overlay"
+      },
+      "id": "47493a68-6208-50ae-b85c-452e0213fc31"
+    },
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "43f6c605-239c-56b3-a11a-19c9db55f647"
+    },
+    {
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": [
+          "Dinner's cold..."
+        ],
+        "avatarId": "",
+        "minHeight": 4,
+        "maxHeight": 7,
+        "textX": 1,
+        "textY": 1,
+        "textHeight": 5,
+        "position": "bottom",
+        "clearPrevious": true,
+        "showFrame": true,
+        "speedIn": -1,
+        "speedOut": -1,
+        "closeWhen": "key",
+        "closeButton": "a",
+        "closeDelayUnits": "time",
+        "closeDelayTime": 0.5,
+        "closeDelayFrames": 30
+      },
+      "id": "7f430979-1b92-55ed-af31-18072cdd3cad"
+    },
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 16
+        }
+      },
+      "id": "27ac7302-7b7a-5c20-88f4-b33347f292ec"
+    },
+    {
+      "command": "EVENT_OVERLAY_SHOW",
+      "args": {
+        "color": "black",
+        "x": 0,
+        "y": 0
+      },
+      "id": "b65b252b-1e95-59d8-a8d4-fc626cb26cbc"
+    },
+    {
+      "command": "EVENT_TEXT_DRAW",
+      "args": {
+        "text": "LINE %D1$12$/1 HOME %D1$13$/1",
+        "x": 0,
+        "y": 0,
+        "location": "overlay"
+      },
+      "id": "81049c20-3d91-5a94-ab05-b560f1d15673"
+    }
+  ],
+  "playerHit1Script": [
+    {
+      "command": "EVENT_SOUND_PLAY_EFFECT",
+      "args": {
+        "units": "time",
+        "type": "dd29b0e2-a71f-545d-a481-984618ec4ba3",
+        "priority": "high",
+        "pitch": 4,
+        "frequency": 200,
+        "duration": 0.5,
+        "wait": true,
+        "effect": 0
+      },
+      "id": "4d2f6569-0c50-5bcc-83b6-96fd57f540f9"
+    },
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "6"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "a9439b2e-50b1-585e-9aad-055b9f4a6726",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "6",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "25d56ff2-543c-54f3-a29f-8a82429f5403"
+          },
+          {
+            "command": "EVENT_ACTOR_SHOW",
+            "args": {
+              "actorId": "d184d992-462a-51a2-aa84-292bf5bf2735"
+            },
+            "id": "11bd110b-90a8-530c-9948-14b48f9d2370"
+          },
+          {
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "d184d992-462a-51a2-aa84-292bf5bf2735",
+              "spriteStateId": "Dangling",
+              "loopAnim": true
+            },
+            "id": "68956474-d0d4-5487-bd28-1bbcfcd7a159"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 16
+              }
+            },
+            "id": "596cd4e4-beba-59e6-9c09-b57960943ed8"
+          },
+          {
+            "command": "EVENT_OVERLAY_SHOW",
+            "args": {
+              "color": "black",
+              "x": 0,
+              "y": 0
+            },
+            "id": "c9f57754-b064-56a7-8fc7-785827b1915e"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "LINE %D1$12$/1 HOME %D1$13$/1",
+              "x": 0,
+              "y": 0,
+              "location": "overlay"
+            },
+            "id": "411e2520-4379-5f68-9900-f8953a99facd"
+          }
+        ],
+        "false": []
+      }
+    },
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "13"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 0
+          }
+        }
+      },
+      "id": "4a8f555b-c8d7-52db-83a2-e106b85bb255",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_ACTOR_SET_POSITION",
+            "args": {
+              "units": "tiles",
+              "actorId": "player",
+              "x": {
+                "type": "number",
+                "value": 2
+              },
+              "y": {
+                "type": "number",
+                "value": 14
+              }
+            },
+            "id": "092e0a81-a792-5fa5-846b-e1805a31e750"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_ACTOR_SET_POSITION",
+            "args": {
+              "units": "tiles",
+              "actorId": "player",
+              "x": {
+                "type": "number",
+                "value": 35
+              },
+              "y": {
+                "type": "number",
+                "value": 11
+              }
+            },
+            "id": "0e6fd66b-cc57-5cf3-a64c-06be3f85e557"
+          }
+        ]
+      }
+    }
+  ],
+  "playerHit2Script": [],
+  "playerHit3Script": []
+}

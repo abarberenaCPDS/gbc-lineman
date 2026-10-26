@@ -1,0 +1,39 @@
+{
+  "_resourceType": "actor",
+  "id": "06966a83-b016-5fd6-86cf-e52489275ca7",
+  "_index": 1,
+  "symbol": "pine_stove",
+  "prefabId": "",
+  "name": "Electric Stove",
+  "coordinateType": "tiles",
+  "x": 37,
+  "y": 11,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "ecb4e25a-3535-5a02-8a06-22d24c74f366",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Off",
+        "loopAnim": true
+      },
+      "id": "f4d17775-df7e-5946-a40e-6b89a627ed47"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

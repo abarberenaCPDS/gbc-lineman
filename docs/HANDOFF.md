@@ -1,4 +1,4 @@
-# Session handoff: Mister CFE (2026-10-26, after Rosa's job)
+# Session handoff: Mister CFE (2026-10-26, after Kiko's job)
 
 Start a new session with: **"Read docs/HANDOFF.md and continue."**
 Once this handoff's work is done, replace or delete this file. `PROJECT_PLAN.md` remains the
@@ -8,7 +8,7 @@ long-term status record.
 
 `AGENTS.md`, `CLAUDE.md`, `docs/PROJECT_PLAN.md` (top, "Second repair job: Tomás's Wind
 Ridge", progress log), `docs/redesign-brief.md`, `docs/action-climb-acceptance.md`,
-`docs/MCP_TOOLKIT.md`. VERSION is `0.7.0-dev`. Local-only repo: never add a remote.
+`docs/MCP_TOOLKIT.md`. VERSION is `0.8.0-dev`. Local-only repo: never add a remote.
 One-line Conventional Commits, no AI attribution.
 
 ## Current state
@@ -25,6 +25,16 @@ One-line Conventional Commits, no AI attribution.
   doing anything that could discard a recording, then open `build/web-tomas`.
 - Abe deferred cartridge flashing ("will flash later"). Hardware and Chromatic
   stream remain untested.
+
+## Update: Kiko's job (Pine Hollow) built — next: title + intro
+
+- Rosa: "all plays amazingly" (MCP web preview after `/mcp` reconnect fixed the stuck listener).
+- Kiko: contract `tools/kiko.py`, profile `kiko`; vars 12/13; entry from Rosa's porch end.
+  Full loop native on `96201faa…`; release `15e1c3ed…`; web `build/web-kiko` in preview.
+- Next (Abe): title "Abe's Games Present / Mr CFE" with the SemVer tag, then an animated
+  intro (calm evening → tropical storm: thunder, lightning, rain, wind → poles snap,
+  lights out → morning, no power → Mr CFE's mission). Draft shot list is in the chat
+  log of 2026-10-26; the tag should come from `VERSION` at generation time.
 
 ## Update: Rosa's job (Signal Hill) built
 

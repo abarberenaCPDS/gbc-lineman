@@ -20,7 +20,7 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Last updated:** 2026-10-26 · **Rosa's job (Signal Hill) built and native-verified end to end; live-cable arcs added (hazard ladder step 3); landing-zone defect fixed; browser export `build/web-rosa` served locally, human play pending**
+**Last updated:** 2026-10-26 · **Kiko's job (Pine Hollow) built and native-verified end to end; Signal Hill pole art fixed; web preview `build/web-kiko` served, human play pending; next: title + intro cinematic**
 
 **Latest feedback:** Abe confirmed the Chrome preview and said the movement
 prototype looks good for now. Holding Down+A can drop multiple levels; keep
@@ -580,6 +580,31 @@ Release ROM `31fd2ac6…`; 212 tests. **Not native-verified:** the ridge→hill 
 
 ---
 
+### Fourth repair job: Kiko's Pine Hollow (mixed hazards) 🔄
+
+Contract `tools/kiko.py`; generators `make_kiko_art.py`, `make_kiko_sprites.py`,
+`make_kiko_scene.py` (profile `tools/make_project.py kiko --verify`), three parallel
+workers. Route: Rosa powered (var11=1) opens the right end of her porch (hill trigger
+38,9; text-only refusal) → Pine Hollow (40×18) → one tap onto a long mesa with the pole
+→ falling debris + a gust on the mesa → drop down → one live wire → porch → box (var12)
+→ door (var13: warm windows, Kiko Relieved, stove On, "Stove's on! Soup is cooking!",
+HUD `LINE 1/1 HOME 1/1`).
+
+**Native:** hollow-start test ROM `96201faa…` (unrecorded; quota): full loop passed
+(intro, step + mesa taps, pickup, debris/gust crossing, mesa drop clear of the wire,
+plug var12=1 with cyan route, door var13=1, OAM peak 8/line, 0 over). The box needs the
+hero right next to it (B at x243 did nothing, x≈253 worked). The worker's box script had
+no empty-hands hint; added "No cable yet." for consistency. **Also fixed:** Signal Hill's
+pole art was hardcoded at the old column 13 and clipped away after the pole moved; now
+derived from the contract, with a pixel test (found by the Kiko art worker). Release ROM
+`15e1c3ed…`; 285 tests. **Art notes:** Kiko and the stove are crude (blink frame reads
+like a visor; stove steam faint). **Not native-verified:** Signal Hill→Pine Hollow exit
+(tests only), respawn after var13. **Browser:** `build/web-kiko` (web ROM `72bf2761…`)
+in the MCP web preview. **Stream/hardware:** none.
+
+
+---
+
 ## Phase 2 — Pipeline hardening ⬜
 
 Proposed hardening, not mandatory busywork before the next playable iteration.
@@ -649,6 +674,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-26 | Kiko's job | Pine Hollow built by 3 parallel workers + main contract: mesa with debris + gust, floor live wire; Rosa porch exit gated on var11. Native full loop passed; Signal Hill pole art fix; junction hint added. Next requested by Abe: title (\"Abe's Games Present / Mr CFE\" + SemVer) and intro cinematic. VERSION 0.8.0-dev. | ROM `96201faa…` (loop); release `15e1c3ed…`; 285 tests; web `72bf2761…` served, human play pending. |
 | 2026-10-26 | Rosa browser verdict | Abe played `build/web-rosa` (web ROM `530b763a…`) in the MCP web preview (after an MCP reconnect cleared the stuck listener): **"all plays amazingly."** Positive human-browser verdict on the full arc through Rosa's job; not a hazard-fairness or hardware verdict. | Human browser report. |
 | 2026-10-26 | Rosa's job | Signal Hill built by 3 parallel workers + main contract; live-cable arcs (hazard step 3); ridge porch exit gated on var9 (text-only refusal). Native play passed the full loop; caught a step landing over wire 1 → steps moved left + contract rule. VERSION 0.7.0-dev. | ROMs `3dd78a6e…` (loop), `089f7a44…` (landing fix); release `31fd2ac6…`; 212 tests; web `530b763a…` served locally, human play pending. |
 | 2026-10-26 | Tomás browser verdict | Abe played `build/web-tomas` (web ROM `1996a02b…`, local static server): **"works awesome."** Positive human-browser verdict on the full arc through Tomás's job; not a hazard-fairness or hardware verdict. Next: Rosa's job (Abe's choice). | Human browser report. |

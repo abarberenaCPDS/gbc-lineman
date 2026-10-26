@@ -40,8 +40,9 @@ try:
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
     import rosa  # noqa: E402  (Rosa's job contract: geometry, IDs, timings)
+    import kiko  # noqa: E402  (Kiko's job contract: the porch exit leads there)
 except ModuleNotFoundError as error:
-    if error.name in {"climb", "opening", "rosa", "make_climb_scene"}:
+    if error.name in {"climb", "opening", "rosa", "kiko", "make_climb_scene"}:
         raise SystemExit(
             f"cannot generate signal_hill: tools/{error.name}.py is missing"
         ) from error
@@ -436,6 +437,41 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
     }
 
 
+def hollow_exit_trigger() -> dict[str, Any]:
+    """Right end of Rosa's porch leads on to Kiko's Pine Hollow.
+
+    Gated on Rosa's checkpoint (var 11). The refusal only explains: a nudge
+    plus leftover momentum re-entered the summit exit and looped its text
+    (exact ROM 147c23be). Lifts the HUD cutoff and hides the overlay first.
+    """
+    x, y, width, height = kiko.HILL_EXIT
+    start_x, start_y = kiko.START
+    go = [
+        cutoff_event(150, "hollow-exit:cutoff"),
+        event("EVENT_OVERLAY_HIDE", {}, "hollow-exit:hud-hide"),
+        event("EVENT_SWITCH_SCENE", {
+            "x": shared.number(start_x), "y": shared.number(start_y), "direction": "right",
+            "sceneId": kiko.SCENE_ID, "fadeSpeed": "2",
+        }, "hollow-exit:to-hollow"),
+    ]
+    wait = say(short_lines("Power Rosa's\nhouse first."), "hollow-exit:not-yet")
+    return {
+        "_resourceType": "trigger",
+        "id": rosa.resource_id("trigger:hollow-exit"),
+        "name": "Hollow Exit (to Pine Hollow)",
+        "prefabId": "",
+        "x": x,
+        "y": y,
+        "symbol": "trigger_signal_hollow_exit",
+        "prefabScriptOverrides": {},
+        "width": width,
+        "height": height,
+        "script": [if_value(kiko.HILL_EXIT_GATE_VAR, 1, "hollow-exit:gate", go, wait)],
+        "leaveScript": [],
+        "_index": 1,
+    }
+
+
 def arc_actor(index: int, lane: tuple[int, int, int], start_delay: int,
               sprite_id: str) -> dict[str, Any]:
     """Live cable lane: warning sparks (no collision), arc (hits via group 1), rest.
@@ -612,7 +648,7 @@ def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[
 
 
 def build_triggers(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
-    return [door_trigger(audio_ids["connect"])]
+    return [door_trigger(audio_ids["connect"]), hollow_exit_trigger()]
 
 
 # ---------------------------------------------------------------------------

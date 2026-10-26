@@ -267,14 +267,20 @@ def _draw_windows(c: _Canvas) -> None:
 
 
 def _draw_pole(c: _Canvas) -> None:
+    # Snapped upright stub on the upper step, drawn from the contract's pole
+    # tiles (hardcoded pixels drifted when the pole moved): a slanted broken
+    # top and one crossarm across the crossarm tiles.
     p = PALETTES[TIMBER]
-    # Snapped upright stub on the upper step (pole column 13, rows 6-8): a
-    # slanted broken top and one crossarm across columns 12-14.
-    c.line(TIMBER, [(107, 50), (107, 71)], p[2], 2)
-    c.line(TIMBER, [(108, 51), (108, 71)], p[0])
-    c.line(TIMBER, [(105, 50), (111, 48)], p[3])
-    c.line(TIMBER, [(96, 52), (119, 52)], p[1])
-    c.line(TIMBER, [(96, 53), (119, 53)], p[0])
+    x = _PX * TILE + 3
+    top = (_PY - 2) * TILE + 2
+    bottom = (_PY + 1) * TILE - 1
+    arm = (_PY - 2) * TILE + 4
+    left, right = (_PX - 1) * TILE, (_PX + 1) * TILE + 7
+    c.line(TIMBER, [(x, top), (x, bottom)], p[2], 2)
+    c.line(TIMBER, [(x + 1, top + 1), (x + 1, bottom)], p[0])
+    c.line(TIMBER, [(x - 2, top), (x + 4, top - 2)], p[3])
+    c.line(TIMBER, [(left, arm), (right, arm)], p[1])
+    c.line(TIMBER, [(left, arm + 1), (right, arm + 1)], p[0])
 
 
 def _draw_arc_posts(c: _Canvas) -> None:

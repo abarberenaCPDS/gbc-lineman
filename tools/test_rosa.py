@@ -9,6 +9,7 @@ import make_climb_scene as shared
 import make_rosa_scene as scene
 import opening
 import rosa
+import kiko
 
 # Hermetic fixtures: the builders only reference these IDs, so fixed strings
 # keep the structural tests independent of which art sidecars exist yet.
@@ -230,7 +231,7 @@ class RosaTests(unittest.TestCase):
                     self.assertTrue(redraws, "HUD must be redrawn after text")
                     self.assertEqual(redraws[0]["args"]["text"], rosa.HUD_TEXT)
         # Authored in-play texts: two init boxes, Rosa x3, cable pickup, junction x3, door x2.
-        self.assertEqual(checked, 11)
+        self.assertEqual(checked, 12)
 
     def test_hud_uses_exact_two_digit_variable_tokens(self):
         self.assertEqual(rosa.HUD_TEXT, "LINE %D1$10$/1 HOME %D1$11$/1")
@@ -256,7 +257,7 @@ class RosaTests(unittest.TestCase):
                         self.assertNotIn("’", part, "use ASCII apostrophes in dialogue")
                         checked += 1
         # One part per line; two-line boxes count each part.
-        self.assertEqual(checked, 20)
+        self.assertEqual(checked, 22)
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
@@ -533,6 +534,22 @@ class RosaTests(unittest.TestCase):
         for path in (scene.DEATH_SOUND, scene.CONNECT_SOUND, scene.PICKUP_SOUND,
                      scene.MUSIC_SIDECAR, scene.GUST_SPRITE):
             self.assertTrue((PROJECT_DIR / path).exists(), path)
+
+    def test_hollow_exit_leads_to_pine_hollow_only_after_rosa_is_powered(self):
+        trigger = trigger_by_symbol("trigger_signal_hollow_exit")
+        self.assertEqual((trigger["x"], trigger["y"], trigger["width"], trigger["height"]),
+                         kiko.HILL_EXIT)
+        [gate] = trigger["script"]
+        self.assertEqual(gate["args"]["condition"]["valueA"], {"type": "variable", "value": "11"})
+        cutoff, hide, switch = gate["children"]["true"]
+        self.assertEqual(cutoff["args"]["y"]["value"], 150)
+        self.assertEqual(hide["command"], "EVENT_OVERLAY_HIDE")
+        self.assertEqual(switch["args"]["sceneId"], kiko.SCENE_ID)
+        self.assertEqual((switch["args"]["x"]["value"], switch["args"]["y"]["value"]), kiko.START)
+        refused = gate["children"]["false"]
+        self.assertNotIn("EVENT_ACTOR_SET_POSITION", [e["command"] for e in walk(refused)])
+        tx, _, tw, _ = rosa.DOOR_TRIGGER
+        self.assertGreaterEqual(trigger["x"], tx + tw)
 
 
 if __name__ == "__main__":

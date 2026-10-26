@@ -34,6 +34,8 @@ is enjoyable and works. Only mark a row complete with the named evidence.
 | Wind Ridge → Signal Hill only after Tomás is powered | ✅ ridge trigger (38,9 1×3) gated on var9; refusal is text only (no nudge, no loop) | ⬜ tests only | ✅ "all plays amazingly" (web `530b763a…`) | ⬜ |
 | Rosa's job: two-step climb, carry past wire + gust + wire, plug, power her home | ✅ `tools/rosa.py`, 68 Rosa tests | ✅ ROM `3dd78a6e…`: pickup, carry, var10=1 + cyan route, door var11=1, warm windows, workstation On, Rosa Relieved, HUD 1/1 1/1; OAM peak 8, 0 over | ✅ "all plays amazingly" (web `530b763a…`) | ⬜ |
 | Live-cable arcs: sparks warn, arc hits, landing off the steps is clear | ✅ arc actors 48/24/80f, collision group 1; landing rule (lanes ≥ 9 tiles past upper step) | ✅ landing defect on `3dd78a6e…`/`c2aeecad…` fixed; `089f7a44…` lands near x100, clear of wire 1 (x144); arc hit not yet exercised natively | ✅ "all plays amazingly" (web `530b763a…`) | ⬜ |
+| Signal Hill → Pine Hollow only after Rosa is powered | ✅ hill trigger (38,9 1×3) gated on var11; text-only refusal | ⬜ tests only | ⬜ | ⬜ |
+| Kiko's job: mesa (debris + gust), floor wire, plug, power the stove | ✅ `tools/kiko.py`, 71 Kiko tests | ✅ ROM `96201faa…`: pickup on mesa, debris/gust crossing, var12=1 + cyan route, door var13=1, warm windows, stove On, Kiko Relieved, HUD 1/1 1/1; OAM peak 8, 0 over | ⬜ | ⬜ |
 
 Evidence rules: project/graphics/static previews establish **authored** state,
 not runtime behavior. Headless samples establish only the exact ROM and interval

@@ -90,6 +90,13 @@ class RosaBackgroundTests(unittest.TestCase):
                 for tx in range(x0, x1 + 1):
                     self.assertEqual(self.slot(tx, ty), art.STONE, f"step {tx},{ty} not stone")
 
+    def test_pole_art_is_drawn_on_the_pole_tiles(self):
+        # Hardcoded pole pixels once drifted from the contract and were clipped
+        # away; the light stripe must run through every pole tile's column 3.
+        for tx, ty in art.POLE_TILES:
+            column = [self.native(tx, ty, 3, y) for y in range(rosa.TILE)]
+            self.assertIn(2, column, f"pole art missing on tile {tx},{ty}")
+
     def test_pole_stands_on_upper_step_behind_cable_end(self):
         px, py = rosa.DAMAGED_POLE
         self.assertEqual(self.grid[py][px], climb.COL_EMPTY)
