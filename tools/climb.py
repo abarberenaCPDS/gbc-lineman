@@ -29,10 +29,10 @@ COL_SOLID = 0x0F
 # ---------------------------------------------------------------------------
 PLATFORMS = [
     (33, 0, 7),
-    (30, 3, 12),
+    (30, 3, 16),  # room to steer around the lower debris before the next jump
     (27, 9, 18),
-    (24, 5, 13),
-    (21, 1, 8),
+    (24, 5, 15),  # two-tile supported landing right of the row-25 hazard
+    (21, 1, 10), # preserve a two-tile corridor clear of the next falling rock
     (18, 6, 15),
     (15, 11, 19),
     (12, 7, 15),
@@ -58,9 +58,10 @@ SOLID_BLOCKS = [
 # ---------------------------------------------------------------------------
 # Storm hazards
 #
-# Gust lanes are (row, x_start, x_end), inclusive.  They sit in the open gaps
-# between shelves and become respawn triggers in the scene generator.  Their
-# staggered placement leaves a climbable vertical corridor through every gap.
+# Gust lanes are (row, x_start, x_end), inclusive. They mark future wind zones
+# between shelves; lane 1 has an actor-owned timed collision, while the other
+# seven trigger resources are inert until their routes are proven in play.
+# Their staggered placement leaves a climbable corridor through every gap.
 # Debris entries are timed actor-drop columns, with inclusive row bounds.
 # They can cross one-way shelves (but never solid rock); landing columns stay
 # within the overlap and away from platform edges. Runtime fairness needs play.
@@ -76,9 +77,16 @@ GUST_LANES = [
     (10, 3, 5),
 ]
 
+# First timed gust proves the hazard language in the lower playable slice.
+# Remaining lanes are still static instant-reset triggers until reviewed.
+TIMED_GUST_LANE_INDICES = (0,)
+GUST_WARNING_FRAMES = 54
+GUST_ACTIVE_FRAMES = 20
+GUST_REST_FRAMES = 90
+
 HAZARD_DEBRIS = [
-    {"row_top": 29, "x": 5, "row_bottom": 32},
-    {"row_top": 25, "x": 10, "row_bottom": 29},
+    {"row_top": 29, "x": 6, "row_bottom": 32},  # clear the 24px worker's first-jump corridor
+    {"row_top": 25, "x": 15, "row_bottom": 29},
     {"row_top": 17, "x": 7, "row_bottom": 20},
     {"row_top": 8, "x": 8, "row_bottom": 11},
 ]
@@ -186,6 +194,9 @@ def _self_check() -> None:
         for x in range(x0, x1 + 1):
             assert grid[row][x] == COL_EMPTY, f"gust cell {x},{row} is not empty"
     assert len(GUST_LANES) >= 3, "need at least three gust lanes"
+    assert TIMED_GUST_LANE_INDICES == tuple(sorted(set(TIMED_GUST_LANE_INDICES)))
+    assert all(0 <= i < len(GUST_LANES) and GUST_LANES[i][2] - GUST_LANES[i][1] == 2
+               for i in TIMED_GUST_LANE_INDICES), "timed gusts need three-tile lanes"
     assert len(HAZARD_DEBRIS) >= 2, "need at least two debris columns"
     for debris in HAZARD_DEBRIS:
         row_top, x, row_bottom = (
@@ -210,19 +221,23 @@ def _self_check() -> None:
             "debris must avoid both platform edges"
         )
 
-    # For every three-row jump gap, at least one column remains free of *all*
-    # gust and debris cells from the lower shelf to the upper shelf.
+    # For every three-row jump gap, a two-tile footprint remains free of all
+    # gust/debris cells AND supported by both shelves. This conservative
+    # corridor matches the approved 24px worker's 12px-wide collision bounds.
     hazards = _hazard_cells()
     for lower, upper in zip(PLATFORMS, PLATFORMS[1:]):
         lower_row, lower_x0, lower_x1 = lower
         upper_row, upper_x0, upper_x1 = upper
-        candidates = range(max(lower_x0, upper_x0), min(lower_x1, upper_x1) + 1)
-        clear_columns = [
-            x for x in candidates
-            if all((row, x) not in hazards for row in range(upper_row + 1, lower_row))
+        first = max(lower_x0, upper_x0)
+        last = min(lower_x1, upper_x1)
+        clear_pairs = [
+            (x, x + 1) for x in range(first, last)
+            if all((row, column) not in hazards
+                   for row in range(upper_row + 1, lower_row)
+                   for column in (x, x + 1))
         ]
-        assert clear_columns, (
-            f"platform rows {lower_row}->{upper_row} have no hazard-free ascent column"
+        assert clear_pairs, (
+            f"platform rows {lower_row}->{upper_row} have no two-tile hazard-free ascent"
         )
 
 

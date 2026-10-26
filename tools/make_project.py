@@ -16,7 +16,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parent.parent
 PROFILES = {
-    "climb": ("make_climb_art.py", "make_climb_sprites.py", "make_climb_scene.py", "make_engine_fields.py"),
+    "climb": ("make_climb_art.py", "make_climb_sprites.py", "make_climb_gust.py", "make_climb_scene.py", "make_engine_fields.py"),
     "opening": ("make_opening_art.py", "make_opening_characters.py", "make_opening_scene.py"),
 }
 
@@ -48,7 +48,8 @@ def main() -> None:
     if args.fixtures:
         run("tools/preview_opening.py")
     if args.verify:
-        run("-m", "unittest", "discover", "-s", "tools", "-p", f"test_{args.profile}.py")
+        pattern = "test_climb*.py" if args.profile == "climb" else "test_opening.py"
+        run("-m", "unittest", "discover", "-s", "tools", "-p", pattern)
     print("Regeneration complete. Refresh, build and playtest through MCP; launch scene is unchanged.")
 
 

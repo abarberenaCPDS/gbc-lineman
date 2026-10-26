@@ -1,7 +1,7 @@
 {
   "_resourceType": "trigger",
   "id": "b5d8455e-a64b-5abc-955e-e4b624739396",
-  "name": "Gust Lane 8",
+  "name": "Gust Lane 8 (inactive preview)",
   "prefabId": "",
   "x": 3,
   "y": 10,
@@ -9,77 +9,7 @@
   "prefabScriptOverrides": {},
   "width": 3,
   "height": 1,
-  "script": [
-    {
-      "command": "EVENT_SOUND_PLAY_EFFECT",
-      "args": {
-        "units": "time",
-        "type": "dd29b0e2-a71f-545d-a481-984618ec4ba3",
-        "priority": "high",
-        "pitch": 4,
-        "frequency": 200,
-        "duration": 0.5,
-        "wait": true,
-        "effect": 0
-      },
-      "id": "69271ab3-fa48-5e82-a7b5-19b620b4f176"
-    },
-    {
-      "command": "EVENT_IF",
-      "args": {
-        "condition": {
-          "type": "eq",
-          "valueA": {
-            "type": "variable",
-            "value": "0"
-          },
-          "valueB": {
-            "type": "number",
-            "value": 0
-          }
-        }
-      },
-      "id": "01c4b256-6a36-5c1b-a9f4-dd8c0d5c7e12",
-      "children": {
-        "true": [
-          {
-            "command": "EVENT_ACTOR_SET_POSITION",
-            "args": {
-              "units": "tiles",
-              "actorId": "player",
-              "x": {
-                "type": "number",
-                "value": 2
-              },
-              "y": {
-                "type": "number",
-                "value": 32
-              }
-            },
-            "id": "0d1f1b66-b3fc-5f68-9218-7096fde8a8fc"
-          }
-        ],
-        "false": [
-          {
-            "command": "EVENT_ACTOR_SET_POSITION",
-            "args": {
-              "units": "tiles",
-              "actorId": "player",
-              "x": {
-                "type": "number",
-                "value": 11
-              },
-              "y": {
-                "type": "number",
-                "value": 5
-              }
-            },
-            "id": "c7ac5b45-45ba-58ad-b865-03f2acd663e5"
-          }
-        ]
-      }
-    }
-  ],
+  "script": [],
   "leaveScript": [],
   "_index": 7
 }

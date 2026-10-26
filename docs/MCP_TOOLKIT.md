@@ -111,7 +111,12 @@ it is not a general renderer or a recommendation to add custom engine code.
   255/170/85/0. Writing dark painted RGB directly can render as bright index 3.
   Keep authored RGB fixtures separate from the compiler-facing proxy PNG.
 - Sprite proxies differ: transparent green/alpha → 0; white → 1; gray 160 → 2;
-  black → 3. Do not reuse the background indexer for sprite previews.
+  black → 3. Do not reuse the background indexer for sprite previews. If a
+  generated sprite uses the keyed-green RGB convention, static graphics analysis
+  may count that key as a fourth opaque color. Encoding keyed-green pixels with
+  **alpha zero** in RGBA preserves native transparency and lets the static
+  analyzer verify the three-opaque-color limit; test the generated PNG, not
+  only its in-memory art data.
 - The compiler's `getSpritePalette` expands editor colors as `[p0,p0,p1,p3]`.
   For three opaque colors light/mid/dark, serialize editor
   `[light,mid,dark,dark]`, not `[transparent,light,mid,dark]`.

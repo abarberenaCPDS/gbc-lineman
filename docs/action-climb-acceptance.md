@@ -10,9 +10,10 @@ is enjoyable and works. Only mark a row complete with the named evidence.
 | Service opening: B repairs once; Marta reacts, only windows/panel warm | ✅ scene and palette analysis, 22 tests | ✅ both sizes repair, variable 4=1, repeat B leaves 1; 128 changed window pixels | 🔄 art direction liked; interaction feedback not explicit | ⬜ |
 | Service opening: sprite/readability budget | ✅ 157 effective BG tiles, 7+UI palette slots | ✅ sampled 24px worker: 7 visible objects, peak 5/scanline | ✅ opening judged "much better" | ⬜ |
 | Opening climb theme sounds right | ✅ UGE/source match, ROM event resolves | ✅ game boots with new track (audio quality not established) | ✅ Abe says music works well | ⬜ long loop and actual-device listening |
-| Lower climb: accessible catwalks, clear next landing, no false footing | ⬜ polished lower geometry/art integration | ⬜ jump and collision route | ⬜ feel/readability | ⬜ |
+| Lower climb: accessible catwalks, clear next landing, no false footing | ✅ collision-aligned night/timber/stone lower art + two-tile route assertions; 256-KiB native build | 🔄 24px worker reaches shelves 30→27→24→21→18 using short A taps; full route not tested | ⬜ feel/readability | ⬜ |
 | Falling debris: warning safe, fall hits, respawn retains progress | ✅ authored 60f warning + 2px/2f fall | 🔄 warning→fall→contact→base recorded; safe warning and checkpoint preservation untested | ⬜ telegraph feels fair | ⬜ |
-| Gusts: visible rhythm, avoidable while ascending | ⬜ red-cross static zones still placeholders | ⬜ | ⬜ | ⬜ |
+| First timed gust: safe warning, active burst, avoidable crossing | ✅ lane 1 native actor; old marker trigger inert, valid 256-KiB ROM | ✅ player at world `(86.8,264)` stood safe during warning frames 489–534; burst reset to `(16,256)` by frame 549 | ⬜ rhythm feels fair | ⬜ |
+| Other gust lanes: visible rhythm, avoidable while ascending | 🔄 seven old instant-reset scripts disabled after tall-collider route test; visible markers are inert placeholders | ⬜ re-author one by one | ⬜ | ⬜ |
 | Down+A descends *one* shelf reliably | ✅ engine toggle | ⚠️ existing drop-through works, repeated hold may cross shelves | ⚠️ Abe observed multi-level drop; fix deferred | ⬜ |
 | First checkpoint then full multi-area route | ⬜ source progression unfinished | ⬜ checkpoint/full route | ⬜ sustained play | ⬜ |
 

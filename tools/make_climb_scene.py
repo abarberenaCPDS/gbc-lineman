@@ -24,11 +24,12 @@ VARIABLE_CHECKPOINTS_REACHED = "0"
 sys.path.insert(0, str(TOOLS_DIR))
 try:
     import climb  # noqa: E402  (sibling module owns all authored climb data)
+    import opening  # noqa: E402  (shared approved palette/sprite identities)
 except ModuleNotFoundError as error:
-    if error.name == "climb":
+    if error.name in {"climb", "opening"}:
         raise SystemExit(
-            "cannot generate storm_climb: tools/climb.py is missing; "
-            "it must provide the climb data API"
+            f"cannot generate storm_climb: tools/{error.name}.py is missing; "
+            "it must provide the climb/opening data API"
         ) from error
     raise
 
@@ -285,6 +286,16 @@ def collision_rle(grid: list[list[int]], width: int, height: int) -> str:
 
 def scene_script(music_id: str) -> list[dict[str, Any]]:
     return [
+        event(
+            "EVENT_PLAYER_SET_SPRITE",
+            {"spriteSheetId": opening.resource_id("sprite:opening_worker24")},
+            "init-player-sprite",
+        ),
+        event(
+            "EVENT_ACTOR_SET_DIRECTION",
+            {"actorId": "player", "direction": {"type": "direction", "value": "right"}},
+            "init-player-direction",
+        ),
         set_value(VARIABLE_CHECKPOINTS_REACHED, 0, "init-checkpoints-reached"),
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-village-music"),
         text_event(short_lines("A: jump\nDown+A: drop"), "intro-controls"),
@@ -378,6 +389,41 @@ def debris_actor(index: int, debris: dict[str, Any], sprite_id: str) -> dict[str
     return actor
 
 
+def timed_gust_actor(index: int, lane: tuple[int, int, int], sprite_id: str) -> dict[str, Any]:
+    """Warning has no collision; burst hits through the shared group-1 reset."""
+    row, x0, x1 = lane
+    if x1 - x0 + 1 != 3:
+        raise ValueError("the authored gust sprite is exactly three tiles wide")
+    key = f"timed-gust:{index}"
+
+    def own(command: str, suffix: str, **args: Any) -> dict[str, Any]:
+        return event(command, {"actorId": "$self$", **args}, f"{key}:{suffix}")
+
+    actor = actor_resource(
+        index=len(climb.HAZARD_DEBRIS) + index,
+        symbol=f"gust_{index:02d}",
+        name=f"Telegraphed Gust {index}",
+        x=x0, y=row, sprite_id=sprite_id, key=key,
+        start_script=[own("EVENT_ACTOR_COLLISIONS_DISABLE", "initial-safe")],
+    )
+    actor["collisionGroup"] = "1"
+    actor["animate"] = True
+    actor["animSpeed"] = 8
+    actor["updateScript"] = [
+        own("EVENT_ACTOR_COLLISIONS_DISABLE", "warning-safe"),
+        own("EVENT_ACTOR_SET_STATE", "warning-state", spriteStateId="Warning", loopAnim=True),
+        own("EVENT_ACTOR_SHOW", "warning-visible"),
+        wait_event(climb.GUST_WARNING_FRAMES, f"{key}:warning-time"),
+        own("EVENT_ACTOR_SET_STATE", "burst-state", spriteStateId="Burst", loopAnim=True),
+        own("EVENT_ACTOR_COLLISIONS_ENABLE", "burst-active"),
+        wait_event(climb.GUST_ACTIVE_FRAMES, f"{key}:burst-time"),
+        own("EVENT_ACTOR_COLLISIONS_DISABLE", "rest-safe"),
+        own("EVENT_ACTOR_HIDE", "rest-hidden"),
+        wait_event(climb.GUST_REST_FRAMES, f"{key}:rest-time"),
+    ]
+    return actor
+
+
 def trigger_resource(index: int, lane: tuple[int, int, int], death_sound_id: str) -> dict[str, Any]:
     row, x_start, x_end = (int(value) for value in lane)
     if x_end < x_start:
@@ -411,10 +457,34 @@ def trigger_resource(index: int, lane: tuple[int, int, int], death_sound_id: str
     }
 
 
+def gust_marker_triggers(death_sound_id: str) -> list[dict[str, Any]]:
+    markers = [
+        trigger_resource(index, lane, death_sound_id)
+        for index, lane in enumerate(climb.GUST_LANES, start=1)
+    ]
+    for lane_index, trigger in enumerate(markers):
+        # Keep stable resource IDs, but no instant reset scripts. The 24px
+        # collider made adjacent static lanes an unavoidable vertical squeeze.
+        status = "timed actor-owned" if lane_index in climb.TIMED_GUST_LANE_INDICES else "inactive preview"
+        trigger["name"] = f"Gust Lane {lane_index + 1} ({status})"
+        trigger["script"] = []
+    return markers
+
+
 def build_scene(music_id: str) -> dict[str, Any]:
     if int(climb.MAP_W) != 20 or int(climb.MAP_H) != 36:
         raise ValueError("storm_climb must match the Storm Night 20x36 scene schema")
     scene = load_json(REFERENCE_SCENE)
+    sprite_palette_ids = scene.get("spritePaletteIds")
+    if not isinstance(sprite_palette_ids, list) or len(sprite_palette_ids) != 8:
+        raise ValueError("Storm Climb reference scene must have eight sprite palette slots")
+    sprite_palette_ids = list(sprite_palette_ids)
+    sprite_palette_ids[0] = opening.resource_id("palette:sprite:worker")
+    background_palette_ids = [
+        opening.resource_id(f"palette:bg:{name}") for name, _ in opening.BG_PALETTES
+    ] + ["default-ui"]
+    if len(background_palette_ids) != 8 or background_palette_ids[7] != "default-ui":
+        raise ValueError("Storm Climb background palettes must preserve the UI in slot 7")
     scene.update(
         {
             "id": resource_id("scene:storm-climb"),
@@ -425,6 +495,8 @@ def build_scene(music_id: str) -> dict[str, Any]:
             "collisions": collision_rle(climb.collision_grid(), int(climb.MAP_W), int(climb.MAP_H)),
             "symbol": "scene_storm_climb",
             "backgroundId": resource_id("background:storm-climb"),
+            "paletteIds": background_palette_ids,
+            "spritePaletteIds": sprite_palette_ids,
             "script": scene_script(music_id),
             "playerHit1Script": respawn_events("debris-hit", sidecar_id("assets/sounds/death.wav.gbsres", "sound")),
         }
@@ -437,6 +509,7 @@ def main() -> None:
     sprite_ids = {
         "hazard": sidecar_id("assets/sprites/climb_debris.png.gbsres", "sprite"),
         "houses": sidecar_id("assets/sprites/houses.png.gbsres", "sprite"),
+        "gust": sidecar_id("assets/sprites/climb_gust.png.gbsres", "sprite"),
     }
     audio_ids = {
         "death": sidecar_id("assets/sounds/death.wav.gbsres", "sound"),
@@ -447,10 +520,11 @@ def main() -> None:
     actors = [checkpoint_actor(0, sprite_ids["houses"], audio_ids["place"])]
     actors.extend(debris_actor(index, item, sprite_ids["hazard"])
                   for index, item in enumerate(climb.HAZARD_DEBRIS, start=1))
-    triggers = [
-        trigger_resource(index, lane, audio_ids["death"])
-        for index, lane in enumerate(climb.GUST_LANES, start=1)
-    ]
+    actors.extend(
+        timed_gust_actor(index + 1, climb.GUST_LANES[index], sprite_ids["gust"])
+        for index in climb.TIMED_GUST_LANE_INDICES
+    )
+    triggers = gust_marker_triggers(audio_ids["death"])
     checkpoint = trigger_resource(100, (climb.HOUSE_A["y"], climb.HOUSE_A["x"], climb.HOUSE_A["x"] + 1), audio_ids["death"])
     checkpoint.update({
         "name": "Marta Arrival Checkpoint",
@@ -473,7 +547,8 @@ def main() -> None:
     print(
         f"generated storm_climb: {climb.MAP_W}x{climb.MAP_H} PLATFORM, "
         f"{len(actors)} actors, {len(triggers)} gust triggers; "
-        "telegraphed falling debris; gust lanes remain static prototypes"
+        f"{len(climb.TIMED_GUST_LANE_INDICES)} telegraphed gust; "
+        "remaining gust markers are inert until their routes are tested"
     )
 
 

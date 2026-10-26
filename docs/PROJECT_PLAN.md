@@ -352,6 +352,57 @@ telegraphed, navigable encounter; test safe ascent/respawn plus actual OAM.
 Leave eight-lane gust conversion, top checkpoint, complete route, coyote timing
 and single-level drop as explicit later gates. Divide environment, character
 integration and hazard/test generator ownership before parallel edits.
+Do not add a service-opening → climb transition until the lower slice builds
+and its entry route is tested; opening variable 4 (repair) and climb variable 0
+(checkpoint) are independent authored state, not an implicit scene reload.
+Initial read-only geometry audit (before correction): rows 27→24 and 21→18
+had **no two-tile-wide hazard-free column supported by both shelves**. Even
+after widening, test these landings in the exact ROM before claiming fairness.
+First exact-ROM attempt with the tall hero exposed more overlap: the first
+rock at x5 can hit even a nominal x3/4 takeoff, and the second rock at x10
+blocked a jump from x9. The follow-up source widens shelves at rows 30/24/21,
+shifts debris columns right (first x6, second x15) and asserts a fully supported,
+two-tile hazard-free ascent in **every** gap. This correction still needs a
+fresh native build/gameplay run; do not count the earlier 256-KiB ROM as proof.
+Actual position trace also exposed an **unavoidable vertical squeeze** caused
+by the seven un-timed instant-reset lanes: row-28 marks the right of the lower
+shelf while row-25 catches the ascent near x11. Those seven trigger scripts
+are now **inert**, retaining stable resources/visible storm marks for future
+telegraphed versions. Only the first actor-owned gust and falling rocks cause
+hazard resets in this interim climb; reactivating lanes without route tests
+would regress fairness.
+
+**Lower-climb native evidence (2026-10-25):** source regenerated with managed
+Python, 23 focused climb-art/gust/source tests pass, project health 0/0.
+GBC-only ROM `build/rom/lower-climb-timed-only.gbc` is 262,144 B, SHA-256
+`73ef60d6b4ad9cf5249ae1d422495a47c222c6dd53124aed11a395cdcea72dbc`.
+Headless PyBoy source-mode position reads (WRAM `_actors` decoded with the
+installed engine's `PX_TO_SUBPX` scale) confirmed 24px worker landings at
+world y232 (row30), y208 (row27), y184 (row24), y160 (row21), y136 (row18),
+with explicit short A presses. An overlong jump can pass several shelves and
+contact higher hazards—keep variable-height jump tuning on the feel backlog.
+At world `(86.8,264)` the player remained inside gust lane 1 while its actor
+collision flag was off at frames 489–534; at frame 549 the burst set collision
+and the player returned to `(16,256)` (base). These native probes were not
+recorded because the emulator reported retained-recording quota; preserve all
+existing recordings, do not delete evidence merely to free quota. Earlier
+failed attempts *are* retained under `artifacts/playtests/lower-climb-test`.
+Full route, checkpoint, other gust lanes and browser/hardware feel are still
+unverified. Project settings were restored to Service Opening `(1,15)` after
+the temporary climb-start build/test.
+
+**Playable lower-climb checkpoint:** user may test the separate browser export
+at `http://127.0.0.1:57089/2b21374be4ac30b39a7d2e47fc92028ffc258b007bb88e0748fc2eb3580188bd/`
+(process-local URL, can expire). Web ROM SHA-256 `c3370ce35214b67a3c99879560cca579c419f4f00685fc46a06ed49f3c7c08d2`,
+262,144 B. The project's configured default start was then restored to the
+service opening; the already-served lower-climb export remains independent.
+Prompt: judge first five shelves, visibility and the first gust's warning/burst;
+tap A briefly (~8 native frames), rather than holding to the upper hazards.
+Remaining seven visible gust markers are harmless placeholders, not hidden
+traps. Native scene analysis: 142/384 effective background tiles, four object
+palette slots, static 11-OAM estimate; one boot frame observed peak 5/scanline.
+The combined managed-Python suite passes **36 tests**, and all 23 climb-owned
+resources regenerate byte-identically. Human browser/hardware approval pending.
 
 ---
 
@@ -424,6 +475,9 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-25 | Lower-climb preview | Staged separate 256-KiB browser build for human testing, then restored project start to Service Opening. 36 focused tests pass; 23 climb resources regenerate identically. | Web `c3370ce3…`; native `73ef60d6…`; static budget 142/384 BG; no human checkpoint feedback yet. |
+| 2026-10-25 | Lower climb | Corrected unfair static-lane squeeze by inerting seven un-timed triggers; native 24px route reaches row18, and first gust warning is safe before its active burst resets the player. Opening start restored. | ROM `73ef60d6…` 256 KiB; exact WRAM/frame assertions in lower-climb evidence above. Human preview and top checkpoint pending. |
+| 2026-10-25 | Lower climb | Parallel direct-MCP review identified narrow edge-supported landings at rows 27→24 and 21→18. Luna integrated the 24px sprite/opening palettes into the *climb generator*; a second Luna authored a 24px-wide Warning/Burst gust sprite. Main wired lane 1's timed actor and disabled its old trigger script in generator source. **Art generator and full ROM/playtest are pending**; only 16 focused stdlib source tests + 3 gust tests pass so far. | `tools/climb.py`, `make_climb_scene.py`, `make_climb_gust.py`; no native outcome claimed. |
 | 2026-10-25 | M-V1 | 24px worker now defaults on fresh boot; SELECT retains 16px comparison, repair works after toggling back. Source from direct-MCP Luna review, main exact-ROM native test, new isolated web preview. | Native `fd632ba2…`, browser `59eb4a2d…` at `http://127.0.0.1:57089/ab353aa1e1049f7ba089a0ac87744636bc43696f8428b2b57e70688806728fd7/`; 25 tests pass. |
 | 2026-10-25 | Audio | Abe listened to `cfe_storm_climb` in the opening browser preview and said it works well. This closes browser listening for the current track only; device audio remains untested. | Human browser report; UGE asset/version as above. |
 | 2026-10-25 | M-V1 | User liked the new browser art direction and chose 24px electrician. Parallel direct-MCP workers assigned default-size implementation and next-climb integration review. | Fresh ROM/default-boot check and user music listening still pending. |

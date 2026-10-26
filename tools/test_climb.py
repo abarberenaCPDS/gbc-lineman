@@ -7,12 +7,26 @@ import climb
 import level
 import make_climb_scene as scene
 import compose_climb
+import opening
 import uge_report
 
 
 class ClimbTests(unittest.TestCase):
     def test_geometry_invariants(self):
         climb._self_check()
+
+    def test_lower_transitions_have_clear_two_tile_landings(self):
+        hazards = climb._hazard_cells()
+        for lower, upper in zip(climb.PLATFORMS[:5], climb.PLATFORMS[1:6]):
+            lower_row, lx0, lx1 = lower
+            upper_row, ux0, ux1 = upper
+            candidates = range(max(lx0, ux0), min(lx1, ux1))
+            self.assertTrue(any(
+                all((row, col) not in hazards
+                    for row in range(upper_row + 1, lower_row)
+                    for col in (x, x + 1))
+                for x in candidates
+            ), f"no two-tile safe landing for {lower_row}->{upper_row}")
 
     def test_collision_encoding_matches_existing_encoder(self):
         grid = climb.collision_grid()
@@ -30,6 +44,64 @@ class ClimbTests(unittest.TestCase):
         self.assertEqual(resource["backgroundId"], scene.resource_id("background:storm-climb"))
         self.assertEqual((resource["width"], resource["height"]), (20, 36))
 
+    def test_scene_starts_with_approved_24px_worker_facing_right(self):
+        resource = scene.build_scene("test-music")
+        script = resource["script"]
+
+        self.assertEqual(opening.resource_id("sprite:opening_worker24"),
+                         "9cb46fea-def2-507c-8edb-a3ca83a61946")
+        self.assertEqual(script[0]["command"], "EVENT_PLAYER_SET_SPRITE")
+        self.assertEqual(script[0]["args"], {
+            "spriteSheetId": "9cb46fea-def2-507c-8edb-a3ca83a61946",
+        })
+        self.assertEqual(script[1]["command"], "EVENT_ACTOR_SET_DIRECTION")
+        self.assertEqual(script[1]["args"], {
+            "actorId": "player", "direction": {"type": "direction", "value": "right"},
+        })
+
+    def test_scene_init_retains_checkpoint_music_help_and_hud(self):
+        script = scene.build_scene("test-music")["script"]
+        self.assertEqual(script[2]["command"], "EVENT_SET_VALUE")
+        self.assertEqual(script[2]["args"]["variable"], "0")
+        self.assertEqual(script[2]["args"]["value"]["value"], 0)
+        self.assertEqual(script[3]["args"]["musicId"], "test-music")
+        self.assertEqual(script[4]["args"]["text"], ["A: jump\nDown+A: drop"])
+        self.assertEqual([event["command"] for event in script[5:]], [
+            "EVENT_OVERLAY_SET_SCANLINE_CUTOFF", "EVENT_OVERLAY_SHOW", "EVENT_TEXT_DRAW",
+        ])
+        self.assertFalse(any(
+            event["command"] == "EVENT_SET_VALUE" and event["args"]["variable"] == "4"
+            for event in script
+        ), "Storm Climb init must not reset Service Restored")
+
+    def test_scene_uses_opening_background_palettes_and_preserves_legacy_sprite_slots(self):
+        resource = scene.build_scene("test-music")
+        expected_backgrounds = [
+            "71085f61-67fb-53bf-ab00-42f6ae97915c",
+            "6dca60e7-b2dc-5a6f-a856-2d2139cfc0fc",
+            "b2dbc43f-5ea2-5ffc-a0db-359d862e8847",
+            "7236f4af-b46f-5c4c-8d8b-827b1065a563",
+            "36aaf291-f0e8-5d60-8f28-bb0ce316b9a4",
+            "c25ce4da-331a-5bf6-8ba2-ec1e56cbc9de",
+            "87767377-69df-5af2-a439-3d97ab633758",
+            "default-ui",
+        ]
+        self.assertEqual(expected_backgrounds[:7], [
+            opening.resource_id(f"palette:bg:{name}") for name, _ in opening.BG_PALETTES
+        ])
+        self.assertEqual(resource["paletteIds"], expected_backgrounds)
+        self.assertEqual(len(resource["paletteIds"]), 8)
+        self.assertEqual(resource["paletteIds"][7], "default-ui")
+
+        legacy_sprite_palettes = scene.load_json(scene.REFERENCE_SCENE)["spritePaletteIds"]
+        self.assertEqual(len(resource["spritePaletteIds"]), 8)
+        self.assertEqual(resource["spritePaletteIds"][0],
+                         "030624ef-c88f-5e59-8664-65193264ce80")
+        self.assertEqual(resource["spritePaletteIds"][1:7], legacy_sprite_palettes[1:7])
+        self.assertEqual(resource["spritePaletteIds"][7], legacy_sprite_palettes[7])
+        self.assertEqual(opening.resource_id("palette:sprite:worker"),
+                         "030624ef-c88f-5e59-8664-65193264ce80")
+
     def test_debris_has_safe_warning_then_damaging_fall(self):
         actor = scene.debris_actor(1, climb.HAZARD_DEBRIS[0], "test-sprite")
         self.assertEqual(actor["collisionGroup"], "1")
@@ -42,6 +114,36 @@ class ClimbTests(unittest.TestCase):
         positions = [e["args"]["y"]["value"] for e in actor["updateScript"]
                      if e["command"] == "EVENT_ACTOR_SET_POSITION"]
         self.assertEqual(positions[-1], climb.HAZARD_DEBRIS[0]["row_bottom"] * 8)
+
+    def test_first_timed_gust_has_safe_warning_and_actor_owned_collision(self):
+        lane = climb.GUST_LANES[0]
+        actor = scene.timed_gust_actor(1, lane, "test-gust-sprite")
+        self.assertEqual((actor["x"], actor["y"]), (lane[1], lane[0]))
+        self.assertEqual(actor["collisionGroup"], "1")
+        self.assertEqual(actor["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
+        script = actor["updateScript"]
+        commands = [entry["command"] for entry in script]
+        assert_order = lambda a, b: self.assertLess(commands.index(a), commands.index(b))
+        assert_order("EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_SET_STATE")
+        assert_order("EVENT_WAIT", "EVENT_ACTOR_COLLISIONS_ENABLE")
+        self.assertEqual([entry["args"]["spriteStateId"] for entry in script
+                          if entry["command"] == "EVENT_ACTOR_SET_STATE"], ["Warning", "Burst"])
+        self.assertEqual([entry["args"]["frames"]["value"] for entry in script
+                          if entry["command"] == "EVENT_WAIT"],
+                         [climb.GUST_WARNING_FRAMES, climb.GUST_ACTIVE_FRAMES,
+                          climb.GUST_REST_FRAMES])
+        self.assertEqual(commands[-3:], ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_HIDE", "EVENT_WAIT"])
+        legacy = scene.trigger_resource(1, lane, "death-sound")
+        self.assertTrue(legacy["script"], "base trigger constructor retains legacy shape")
+
+    def test_no_instant_reset_trigger_left_on_unverified_gust_lanes(self):
+        markers = scene.gust_marker_triggers("death-sound")
+        self.assertEqual(len(markers), len(climb.GUST_LANES))
+        self.assertTrue(all(marker["script"] == [] for marker in markers))
+        self.assertEqual(markers[0]["id"],
+                         scene.trigger_resource(1, climb.GUST_LANES[0], "death-sound")["id"])
+        self.assertIn("timed actor-owned", markers[0]["name"])
+        self.assertTrue(all("inactive preview" in marker["name"] for marker in markers[1:]))
 
     def test_debris_reset_does_not_erase_checkpoint(self):
         commands = scene.respawn_events("test-reset", "death-sound")

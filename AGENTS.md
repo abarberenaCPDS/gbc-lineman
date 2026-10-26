@@ -15,6 +15,8 @@ Game Boy Color game "Mister CFE: After the Storm", built with GB Studio 4.2.0 (`
 ## Generated content
 
 Current launch is the isolated `service_opening` M-V1 fixture, not the climb.
+Its preferred hero is 24px (opening size variable 5: 0=tall default,
+1=16px comparator); SELECT returns to safe ground before swapping colliders.
 Managed-Python command: `tools/make_project.py opening --fixtures --verify`.
 `tools/opening.py` owns its palette/geometry/ID contract; the scene generator
 does not change launch settings. Compiler-facing background PNGs are indexed
@@ -28,6 +30,11 @@ offline/no pull); the legacy `compose_music.py` writes JSON, not binary UGE.
 See `docs/PROJECT_PLAN.md` for current acceptance gaps and the visual-quality gate.
 The older `level.py`/`make_scene.py` pipeline describes Storm Night, not the
 redesign. Its authored resources diverged from generators; do not blindly rerun it.
+
+Climb route uses **short A taps** for one-shelf rises; holding A longer can
+overshoot into higher hazards. Lane 1 is actor-owned timed wind; the other
+seven gust trigger resources have empty scripts intentionally until route tests
+make them safe to activate. Keep their stable IDs during regeneration.
 
 `tools/level.py` supplies legacy geometry and shared palette definitions. Edit
 source modules/generators rather than generated art or scene resources.
@@ -62,6 +69,8 @@ Reusable MCP capabilities, ownership rules and verification limits are in
 
 ## Verification
 
-- Focused generator checks: `python3 -m unittest discover -s tools -p test_climb.py`.
+- Full visual/climb tests and generators need the managed Python (Pillow):
+  `"$HOME/Library/Application Support/modretro-chromatic/toolchain/.local/pyboy-venv/bin/python" tools/make_project.py climb --verify`.
+  Plain `python3` can run only the stdlib-only `test_climb.py` subset.
 - ROM build success is not enough: headless gameplay evidence does not verify browser UI, human feel/audio taste, or physical hardware.
 - `docs/platformer-test-plan.md` is superseded: the old splice loop was rejected. Current prototype status and manual checks live in `docs/PROJECT_PLAN.md`.

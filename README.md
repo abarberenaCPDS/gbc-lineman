@@ -8,8 +8,10 @@
 the configured start scene. It is not the full game. See the
 [master plan](docs/PROJECT_PLAN.md) and [current redesign](docs/redesign-brief.md);
 the original loop sketch below is historical, not the current acceptance target.
-In the fixture, **B/X** repairs or talks; **SELECT/Shift** compares hero sizes
-and returns to the starting spot.
+In the fixture, the **24px electrician** is the default; **B/X** repairs or
+talks, and **SELECT/Shift** compares the smaller 16px version and returns to
+the starting spot. The [action-climb acceptance matrix](docs/action-climb-acceptance.md)
+separates verified game behavior from work still awaiting human or hardware review.
 
 ## 🌧️ The game
 
