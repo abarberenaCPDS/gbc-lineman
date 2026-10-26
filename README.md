@@ -2,89 +2,82 @@
 
 [![Platform: Game Boy Color](https://img.shields.io/badge/platform-Game%20Boy%20Color-326b4f)](https://modretro.com/products/chromatic)
 [![Engine: GB Studio](https://img.shields.io/badge/engine-GB%20Studio%204.2.0-4856a6)](https://www.gbstudio.dev/)
-[![Version](https://img.shields.io/badge/version-0.4.0--dev-orange)](VERSION)
+[![Version](https://img.shields.io/badge/version-0.10.3-orange)](VERSION)
 
-**Current work:** an isolated **Service Opening (M-V1)** visual candidate is
-the configured start scene. It is not the full game. See the
-[master plan](docs/PROJECT_PLAN.md) and [current redesign](docs/redesign-brief.md);
-the original loop sketch below is historical, not the current acceptance target.
-In the fixture, the **24px electrician** is the default; **B/X** repairs or
-talks, and **SELECT/Shift** compares the smaller 16px version and returns to
-the starting spot. The [action-climb acceptance matrix](docs/action-climb-acceptance.md)
-separates verified game behavior from work still awaiting human or hardware review.
+A color-only Game Boy Color platformer, played on a ModRetro Chromatic
+cartridge. The latest release Abe approved on the cart carries the git tag
+`stable`. Status, open bugs and the progress log live in the
+[master plan](docs/PROJECT_PLAN.md), [bug log](docs/BUGS.md) and
+[session handoff](docs/HANDOFF.md).
 
 ## 🌧️ The game
 
-A tropical storm has cut the power to a lonely mountain village. Climb the
-mountain, recover loose cable connectors, restore the five homes in order, and
-talk with the people waiting in the dark. There is no score; Mister CFE has
-unlimited lives.
+A tropical storm has knocked out the power on the hill. Mister CFE, the
+village electrician, takes one work order at a time: reach the broken pole,
+pick up the dangling cable end, carry it to the house's junction box and make
+the line live, then walk to the door.
 
-The project is being converted to a **2D PLATFORM game**. Its visual reference
-is the supplied art in `assets/backgrounds/samples/`: dark cavern silhouettes,
-clear green platform edges, wooden bridges, warm windows, and bright electric
-cable against the night. Those PNGs are references, not game-ready assets.
+| Work order | Scene | Neighbour | What the power brings back |
+| --- | --- | --- | --- |
+| 1 | Storm Climb | Amara (Nigeria) | Her fridge: "Food is saved." |
+| 2 | Wind Ridge | Hiroshi (Japan) | His oxygen concentrator |
+| 3 | Signal Hill | Priya (India) | Her home workstation |
+| 4 | Pine Hollow | Emil (Denmark), a kid | Dinner on the electric stove |
+
+Flow: logo → storm cinematic → title (left idle, it replays the cinematic) →
+Service Opening → a work-order card before each job → the storm report → title.
+
+Hazards respawn you at the scene start; there are no lives or game over.
+Cracked boards creak and give way if you stand still on them, wind gusts and
+live arcs fire on a timer, and hidden cables only show a brief spark before
+they arc. Each neighbour speaks with their own name and voice pitch.
 
 ## 🕹️ Controls
 
 | Input | Action |
 | --- | --- |
-| D-pad | Move |
-| A | Jump / close dialogue |
-| B | Interact: pick up, talk, connect or cut |
-
-## 🔌 Core loop
-
-```text
-        climb the mountain
-               │
-     find a loose connector
-               │ B
-   ┌───────────┴───────────┐
-   │                       │
-talk with a neighbor   link their home
-                           │
-             warm light + a fuller music arrangement
-```
-
-The intended repair chain is bottom-to-top: substation → five homes → the
-mountain humming again. A failed jump or dangerous contact costs time, not a
-life; hazards respawn the player without a permanent game-over state.
-
-## 🗺️ World sketch
-
-```text
-                    [House E] ── ridge
-               ledges / bridges / cable
-          [House C]          [House D]
-      trail and storm-damaged power poles
-          [House B] ── stream crossing
-              [House A]
-           [Substation]
-```
-
-This is a design sketch, not a tile-accurate map. See the design notes for the
-current authored level and any changes made during the platformer conversion.
+| D-pad | Walk |
+| A | Jump (short taps for one-shelf rises) / close dialogue |
+| Down + A | Drop through one one-way shelf per press |
+| B | Interact: pick up, connect, talk |
+| START | Start from the title |
+| A or START | Skip the cinematic |
+| SELECT | Service Opening only: compare the 16px hero |
 
 ## 🧱 Project layout
 
 ```text
 mr-cfe.gbsproj       GB Studio project descriptor
-assets/              Backgrounds, sprites, music and sound effects
-project/             Scenes, actors, palettes, settings and variables
-tools/               Deterministic art, audio and level generators
-docs/                Design brief, decisions and production notes
+assets/              Backgrounds, sprites, music, sound effects
+assets/engine/       Generated one-line engine overlay (B-07); never edit by hand
+project/             Scenes, actors, palettes, settings, variables (generated JSON)
+tools/               Contracts, generators and tests (the source of truth)
+docs/                Plan, handoff, bug log, design and workflow notes
 build/               Local build output (ignored by Git)
 ```
 
+Everything under `project/` and the art in `assets/` is generated from the
+contract modules in `tools/` (`climb.py`, `ridge.py`, `rosa.py`, `kiko.py`,
+`intro.py`, `tickets.py`, `hazards.py`, `voices.py`, …). Edit the contract or
+generator, regenerate, then run the tests; don't hand-edit generated output.
+Code keys keep the neighbours' original names (`marta`, `tomas`, `rosa`,
+`kiko`) so resource IDs stay stable.
+
 ## 🧰 Build and verification
 
-Prefer the **ModRetro Chromatic MCP** for project inspection, ROM builds,
-emulator playtests and the playable browser preview. Keep the preview open
-between iterations; follow the interruption permission and save/recording guards
-in [the project plan](docs/PROJECT_PLAN.md).
+Generators and tests use the managed toolchain Python (Pillow):
 
-For local GB Studio CLI work, use the installed toolchain and a short temporary
+```sh
+PY="$HOME/Library/Application Support/modretro-chromatic/toolchain/.local/pyboy-venv/bin/python"
+"$PY" tools/make_project.py climb --verify        # one profile: generate + its tests
+"$PY" -m unittest discover -s tools -p 'test_*.py' # full suite
+```
+
+Profiles: `opening`, `climb`, `ridge`, `rosa`, `kiko`, `intro`, `tickets`.
+
+Prefer the **ModRetro Chromatic MCP** for ROM builds, headless emulator checks,
+the browser preview, streaming to the Chromatic and flashing the cartridge (see
+[MCP toolkit](docs/MCP_TOOLKIT.md)). For a local CLI build, use a temporary
 build directory whose path does not contain `src`:
 
 ```sh
@@ -94,23 +87,24 @@ TMPDIR="$(getconf DARWIN_USER_TEMP_DIR)gbsb-cfe" \
   node "$CLI" -v make:rom ./mr-cfe.gbsproj build/rom/mr-cfe.gbc
 ```
 
-The source generators use the toolchain Python environment when Pillow is
-required. Generated ROMs, browser exports, compiler symbols and emulator saves
-are local and ignored by Git.
+Test ROMs that start in a specific scene use
+`tools/make_intro_scene.py --test-start SCENE_ID X Y DIRECTION`; restore
+`project/settings.gbsres` before a release build and never commit the override.
 
 ## 📚 Useful docs
 
-- [Master project plan and progress status](docs/PROJECT_PLAN.md)
+- [Master project plan and progress log](docs/PROJECT_PLAN.md)
+- [Session handoff: current state and next steps](docs/HANDOFF.md)
+- [Bug log](docs/BUGS.md)
+- [Design options awaiting decisions](docs/DESIGN_OPTIONS.md)
 - [Reusable MCP toolkit and verification workflows](docs/MCP_TOOLKIT.md)
-- [Original gameplay brief](docs/gameplay-instructions.md)
-- [Design decisions and deferred alternatives](docs/game-design.md)
-- [GBC background and sprite audit](docs/asset-hardware-audit.md)
-- [Fast Pace reference analysis and CFE music notes](docs/music-notes.md)
-- [Local Git, worktree and SemVer workflow](docs/GIT_WORKFLOW.md)
+- [Platformer redesign brief](docs/redesign-brief.md)
+- [Action-climb acceptance matrix](docs/action-climb-acceptance.md)
+- [Local Git, SemVer and stable-tag workflow](docs/GIT_WORKFLOW.md)
 
 ## 🏷️ Versioning and local collaboration
 
-The project version is in [`VERSION`](VERSION) and follows SemVer. It is
-`0.2.0-dev` while the platformer redesign is in development. Git history and
-worktrees are local only; no remote is configured. Commit messages are one-line
-Conventional Commits. See [GIT_WORKFLOW](docs/GIT_WORKFLOW.md).
+The version is in [`VERSION`](VERSION) (SemVer, pre-1.0) and is baked into the
+title screen. Each release gets a `vX.Y.Z` tag; `stable` marks the latest one
+approved on the cart. Git is local only: no remote. Commit messages are
+one-line Conventional Commits. See [GIT_WORKFLOW](docs/GIT_WORKFLOW.md).
