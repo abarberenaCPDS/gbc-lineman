@@ -94,15 +94,42 @@ Kiko's family (stove), Nuria (finale: lights and heat).
 2. **Browser:** rebuild the web export and serve it with `web_preview`. Give Abe a short test
    script that covers the same branches. Record his verdict as "human browser" in
    `PROJECT_PLAN.md` and the acceptance matrix; never claim it yourself.
-3. **Hardware:** only with Abe's separate, explicit, informed consent.
+3. **Stream to the Chromatic:** Abe plans to ask for this. Use the MCP `play` tool.
+   - Rediscover its signature first.
+   - Run `device` discovery and confirm the exact device with Abe.
+   - Build or `rom_inspect` the exact ROM to stream, and report its sha256.
+   - Watch the stream with `device_capture`, in the built-in browser only.
+
+   Streaming plays the emulator on the host and sends video and audio to the device. It does not
+   run the cartridge, writes nothing, and the tools can't send button presses to the stream. So
+   it is evidence of readability and audio on the real screen and speaker, not of hardware
+   execution. Record it in the docs as "Chromatic stream (host-emulated)", separate from
+   "hardware/cartridge". Get Abe's OK before any device access, and never fall back to `flash`
+   without the step below.
+4. **Hardware / cartridge:** only with Abe's separate, explicit, informed consent.
    1. `rom_inspect` the exact ROM (path, size, sha256).
    2. Discover the device.
    3. Flash it.
    4. Watch the play with `device_capture`.
 
-   If he declines, leave hardware marked untested.
-4. **Docs and commit:** update the acceptance matrix and `PROJECT_PLAN.md`, keeping source,
-   native, browser and hardware results separate. Bump `VERSION` per SemVer and commit.
-5. **Next job:** plan and build Tomás's repair job with up to 5 parallel workers.
+   Flashing erases whatever is on the cartridge. If he declines, leave hardware marked untested.
+5. **Docs and commit:** update the acceptance matrix and `PROJECT_PLAN.md`, keeping source,
+   native, browser, Chromatic-stream and hardware results separate. Bump `VERSION` per SemVer and commit.
+6. **Next job:** plan and build Tomás's repair job with up to 5 parallel workers.
 
 The Down+A multi-shelf drop stays deferred unless Abe asks for it.
+
+## Other open limitations (backlog, not blocking this session)
+
+- Only gust lane 1 is active; lanes 2–8 are inert placeholders.
+- Holding A for 10 frames or more can rise two shelves. A long hold from shelf 12 at x ≥ 75 can still touch the arrival trigger.
+- Coyote time is enabled but its timing is untested. The Down+A multi-shelf drop is deferred.
+- Progress isn't saved: vars 0/6/7 reset on every climb entry, and battery-save persistence is untested.
+- The game has no title screen or ending, only one of five households, and no connector collectibles yet.
+- Art polish:
+  - The junction box's Dead state is barely darker than Live.
+  - The pole crossarm doesn't line up with the cable attach point.
+  - The route tiles shift tint slightly.
+  - There's no separate fall or landing pose.
+- The project file says GB Studio 4.2.0, but the managed CLI that builds it is 4.3.2.
+- Audio has never been heard on a Chromatic, and nothing has run from a cartridge.
