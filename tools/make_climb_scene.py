@@ -44,8 +44,9 @@ sys.path.insert(0, str(TOOLS_DIR))
 try:
     import climb  # noqa: E402  (sibling module owns all authored climb data)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
+    import ridge  # noqa: E402  (Tomás's job contract: summit exit target)
 except ModuleNotFoundError as error:
-    if error.name in {"climb", "opening"}:
+    if error.name in {"climb", "opening", "ridge"}:
         raise SystemExit(
             f"cannot generate storm_climb: tools/{error.name}.py is missing; "
             "it must provide the climb/opening data API"
@@ -697,6 +698,50 @@ def street_exit_trigger() -> dict[str, Any]:
     }
 
 
+SUMMIT_EXIT_NUDGE_TILES = 3
+
+
+def summit_exit_trigger() -> dict[str, Any]:
+    """Right end of the summit shelf leads on to Tomás's Wind Ridge.
+
+    Gated on Marta's checkpoint (var 0) so the jobs stay in order; before
+    that the hero is told why and nudged back onto the shelf. Like the street
+    exit, it lifts the HUD cutoff and hides the overlay before switching.
+    """
+    x, y, width, height = ridge.CLIMB_SUMMIT_EXIT
+    start_x, start_y = ridge.START
+    go = [
+        cutoff_event(150, "summit-exit:cutoff"),
+        event("EVENT_OVERLAY_HIDE", {}, "summit-exit:hud-hide"),
+        event("EVENT_SWITCH_SCENE", {
+            "x": number(start_x), "y": number(start_y), "direction": "right",
+            "sceneId": ridge.SCENE_ID, "fadeSpeed": "2",
+        }, "summit-exit:to-ridge"),
+    ]
+    # Exact ROM 147c23be: a two-tile nudge after the text left the 24px hero's
+    # box (x+2..x+14) touching the exit after leftover momentum, so the text
+    # looped. Step back three tiles first, then explain.
+    wait = [
+        set_position(x - SUMMIT_EXIT_NUDGE_TILES, climb.HOUSE_A["y"], "summit-exit:nudge-back"),
+        *say(short_lines("Marta needs\npower first."), "summit-exit:not-yet"),
+    ]
+    return {
+        "_resourceType": "trigger",
+        "id": resource_id("trigger:summit-exit"),
+        "name": "Summit Exit (to Wind Ridge)",
+        "prefabId": "",
+        "x": x,
+        "y": y,
+        "symbol": "trigger_summit_exit",
+        "prefabScriptOverrides": {},
+        "width": width,
+        "height": height,
+        "script": [if_value(ridge.CLIMB_EXIT_GATE_VAR, 1, "summit-exit:gate", go, wait)],
+        "leaveScript": [],
+        "_index": 101,
+    }
+
+
 def debris_actor(index: int, debris: dict[str, Any], sprite_id: str) -> dict[str, Any]:
     row_top = int(debris["row_top"])
     x = int(debris["x"])
@@ -867,6 +912,7 @@ def main() -> None:
     triggers = gust_marker_triggers(audio_ids["death"])
     triggers.append(build_checkpoint_trigger(audio_ids["death"], audio_ids["connect"]))
     triggers.append(street_exit_trigger())
+    triggers.append(summit_exit_trigger())
 
     write_variables()
     for relative_path, palette in grid_palettes():

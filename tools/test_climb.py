@@ -9,6 +9,7 @@ import level
 import make_climb_scene as scene
 import compose_climb
 import opening
+import ridge
 import uge_report
 
 
@@ -558,6 +559,32 @@ class ClimbTests(unittest.TestCase):
         written = {entry["args"]["variable"] for s in self._all_scripts()
                    for entry in self._flatten(s) if entry["command"] == "EVENT_SET_VALUE"}
         self.assertNotIn("4", written, "the climb must never clear Service Restored")
+
+    def test_summit_exit_leads_to_ridge_only_after_martas_checkpoint(self):
+        trigger = scene.summit_exit_trigger()
+        self.assertEqual((trigger["x"], trigger["y"], trigger["width"], trigger["height"]),
+                         ridge.CLIMB_SUMMIT_EXIT)
+        [gate] = trigger["script"]
+        self.assertEqual(gate["args"]["condition"]["valueA"], {"type": "variable", "value": "0"})
+        cutoff, hide, switch = gate["children"]["true"]
+        self.assertEqual(cutoff["args"]["y"]["value"], 150)
+        self.assertEqual(hide["command"], "EVENT_OVERLAY_HIDE")
+        self.assertEqual(switch["args"]["sceneId"], ridge.SCENE_ID)
+        self.assertEqual((switch["args"]["x"]["value"], switch["args"]["y"]["value"]), ridge.START)
+        refused = gate["children"]["false"]
+        # Step clear of the exit before the modal text so it cannot re-fire:
+        # the 24px hero's box spans x+2..x+14 and can drift 2px after a stop.
+        nudge = refused[0]
+        self.assertEqual(nudge["command"], "EVENT_ACTOR_SET_POSITION")
+        hero_right = nudge["args"]["x"]["value"] * 8 + 2 + 12 + 2
+        self.assertLess(hero_right, ridge.CLIMB_SUMMIT_EXIT[0] * 8)
+        self.assertEqual(refused[1]["command"], "EVENT_OVERLAY_SET_SCANLINE_CUTOFF")
+        self.assertEqual(refused[2]["command"], "EVENT_TEXT")
+        # The summit shelf ends at x16; the exit column is open air above it.
+        grid = climb.collision_grid()
+        x, y, _, h = ridge.CLIMB_SUMMIT_EXIT
+        self.assertTrue(all(grid[r][x] == climb.COL_EMPTY for r in range(y, y + h)))
+        self.assertNotIn((ridge.CLIMB_SUMMIT_EXIT[1], x), climb._hazard_cells())
 
     def test_grid_sprite_sidecars_match_climb_ids_when_present(self):
         # The grid sprite sheets are generated separately; check them only if they exist.

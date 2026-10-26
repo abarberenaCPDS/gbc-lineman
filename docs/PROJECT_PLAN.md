@@ -20,7 +20,7 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Last updated:** 2026-10-26 · **Marta's line: every Live Wire branch + climb re-entry native-verified (re-entry freeze found and fixed); browser export `build/web-live-wire` awaiting human play**
+**Last updated:** 2026-10-26 · **Tomás's job (Wind Ridge) built and native-verified; two exact-ROM defects fixed (sprite-per-line overflow, looping summit refusal); browser export `build/web-tomas` built, human play pending**
 
 **Latest feedback:** Abe confirmed the Chrome preview and said the movement
 prototype looks good for now. Holding Down+A can drop multiple levels; keep
@@ -516,6 +516,45 @@ the exit and the intro cutoff. **Browser:** `build/web-live-wire`, web ROM
 
 ---
 
+### Second repair job: Tomás's Wind Ridge (Storm Run + Live Wire + Blackout Grid) 🔄
+
+Contract `tools/ridge.py`; generators `make_ridge_art.py`, `make_tomas_sprites.py`,
+`make_ridge_scene.py` (profile `tools/make_project.py ridge --verify`). Route:
+Marta's checkpoint (var0=1) opens the summit exit (climb 17,3) → Wind Ridge
+(40×18 PLATFORM) → hop the rock plateau, press B at the snapped pole → carry the
+cable past one debris column and two timed gust lanes → hop onto Tomás's porch →
+B at the junction box (var8, cyan route) → walk into the door (var9: warm
+windows, Tomás Relieved, oxygen concentrator On, "Power's on! I can breathe.",
+HUD `LINE 1/1 HOME 1/1`, respawn moves to the door). Built by three parallel
+workers (art, sprites, scene) against main's contract.
+
+**Native (exact ROM):** ridge-start test ROMs (temporary start scene, restored
+afterwards). ROM `ed6995c1…`: plateau landing in the debris column and an
+unreachable catwalk → debris moved to x22, catwalk removed. ROM `e05b693c…`
+(recording `artifacts/playtests/wind-ridge-start-v2`, needs-review): the whole
+loop passed (pickup, carry, dead-line door, Tomás talk, plug, repeat B, door
+payoff). **Defect:** the concentrator lost its top half: house props, hero and
+both 24px gusts shared scanlines (13 OBJs > 10). Fix: Tomás's porch step
+(32–38, top row 12) lifts the props above the gust rows; budget test added.
+Porch ROM `1f52dbdd…` (unrecorded: the recording quota was full even after
+archiving superseded recordings): OAM peak 8/line, 0 over limit, concentrator
+whole, one tap onto the porch, box and door texts correct. **Defect:** the
+summit refusal looped (2-tile nudge + leftover momentum re-entered the
+trigger); fixed with a 3-tile nudge before the text, test added, verified on
+`65d76ea8…`. The open branch (var0=1 → ridge) is covered by tests, not by
+native play. Full-arc ROM `build/rom/mr-cfe.gbc` `54570c84…`.
+
+**Known limits:** gust start delays only offset first activation (actors run
+their update scripts only on screen), so both gusts can show at once; the
+debris column next to the plateau landing can catch a hero who walks off with
+full momentum; no ridge→climb return exit. **Browser:** `build/web-tomas`, web
+ROM `1996a02b…`; the preview server still holds the previous Live Wire view
+with an unresolved browser-recording acknowledgement, so the new URL was not
+opened. **Stream/hardware:** none.
+
+
+---
+
 ## Phase 2 — Pipeline hardening ⬜
 
 Proposed hardening, not mandatory busywork before the next playable iteration.
@@ -585,6 +624,8 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-26 | Tomás's job | Wind Ridge built by 3 parallel workers + main contract; summit exit gated on var0. Native play caught a sprite-per-scanline overflow (concentrator half-drawn) → porch step, and a looping summit refusal → 3-tile nudge first; both fixed with tests. VERSION 0.6.0-dev. | ROMs `e05b693c…` (full loop), `1f52dbdd…` (porch, OAM peak 8), `65d76ea8…` (refusal); release `54570c84…`; 134 tests; web `1996a02b…` built, human play pending. |
+| 2026-10-26 | Live Wire browser verdict | Abe played `build/web-live-wire` (web ROM `6831f908…`): **"I like it so far."** Positive human-browser verdict on the branch/re-entry build; not a hazard-fairness or hardware verdict. Flash deferred by Abe ("will flash later"). Tomás's job (Wind Ridge) started; contract `tools/ridge.py`. | Human browser report. |
 | 2026-10-26 | Live Wire branches | All untested Live Wire branches passed natively; added street exit for re-entry; exact-ROM play found a re-entry freeze (HUD cutoff hid modal text), fixed in generator + tests and re-verified. Abe kept the 24px-only climb. Browser export served. VERSION 0.5.0-dev. | ROMs `b187d1e4…` (branches) and `1769ebc6…` (fix, passed); 84 tests; web `6831f908…`; human play pending. |
 | 2026-10-25 | Marta's line feedback | Abe on the first repair job: **"I love it."** Positive direction for the combined Storm Run + Live Wire + Blackout Grid structure; not a hazard-fairness, drop-on-hit or hardware verdict. | Human reaction after the `build/web-marta-line` handoff. |
 | 2026-10-25 | Marta's line | Grid-repair structure approved; first job built by five parallel workers: powered opening gate, snapped pole + carried cable, junction box lights the route, door gated on power with fridge payoff, LINE/HOME HUD. Exact-ROM play caught invisible in-play dialogue (frozen game); fixed and re-verified. VERSION 0.4.0-dev. | ROM `a17ead01…` recorded pass frames 300–2032; 82 tests; web `0f4cb6ad…`; human play pending. |
