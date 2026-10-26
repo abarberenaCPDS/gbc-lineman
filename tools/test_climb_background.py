@@ -87,8 +87,24 @@ class ClimbBackgroundTests(unittest.TestCase):
             return any(max(abs(ax - bx), abs(ay - by)) <= 1
                        for ax, ay in tiles for bx, by in targets)
 
-        self.assertTrue(near(cells, set(art.POLE_TILES) | {climb.DAMAGED_POLE}))
+        # The cable hangs from the top of the intro pole sprite, which covers
+        # the rows DAMAGED_POLE y-3..y; the first claimed route tile sits there.
+        px, py = climb.DAMAGED_POLE
+        self.assertEqual((art.CABLE_ATTACH[0] // climb.TILE, art.CABLE_ATTACH[1] // climb.TILE),
+                         (px, py - 3))
+        self.assertIn((px, py - 3), art.cable_route_tiles())
+        self.assertTrue(near(cells, {(px, py - 3)}))
         self.assertTrue(near(cells, {climb.JUNCTION_BOX}))
+
+    def test_background_draws_no_pole_stub(self):
+        # The pole is the animated intro_pole actor now. Its footprint (two tiles
+        # wide, rows DAMAGED_POLE y-3..y) must not carry the old BG timber claim.
+        import make_climb_art as art
+        slots, _ = self._slot_and_proxy()
+        px, py = climb.DAMAGED_POLE
+        footprint = [(tx, ty) for ty in range(py - 3, py + 1) for tx in (px, px + 1)]
+        self.assertNotIn(2, [slots[ty * climb.MAP_W + tx] for tx, ty in footprint])
+        self.assertFalse(hasattr(art, "POLE_TILES"))
 
     def test_cable_cells_are_empty_collision(self):
         import make_climb_art as art
@@ -97,8 +113,10 @@ class ClimbBackgroundTests(unittest.TestCase):
         for tx, ty in art.cable_route_tiles():
             if slots[ty * climb.MAP_W + tx] == climb.LINE_BG_SLOT:
                 self.assertEqual(grid[ty][tx], climb.COL_EMPTY, f"cable on collision {tx},{ty}")
-        for tx, ty in art.POLE_TILES:
-            self.assertEqual(grid[ty][tx], climb.COL_EMPTY, f"pole on collision {tx},{ty}")
+        px, py = climb.DAMAGED_POLE
+        for ty in range(py - 3, py + 1):
+            for tx in (px, px + 1):
+                self.assertEqual(grid[ty][tx], climb.COL_EMPTY, f"pole sprite on collision {tx},{ty}")
 
     def test_background_tile_budget(self):
         import make_climb_art as art

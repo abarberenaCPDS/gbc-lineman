@@ -8,6 +8,7 @@ import unittest
 from PIL import Image
 
 import climb
+import intro
 import make_ridge_art as art
 import opening
 import ridge
@@ -93,14 +94,18 @@ class RidgeBackgroundTests(unittest.TestCase):
                            for y in (2, 3, 4) for x in range(ridge.TILE))
                 self.assertGreaterEqual(body, 12, f"ledge body missing at {tx},{row}")
 
-    def test_pole_stands_on_plateau_behind_cable_end(self):
+    def test_pole_stands_on_plateau_and_background_draws_no_stub(self):
+        # The pole is the intro_pole actor: its footprint (rows py-3..py, two
+        # tiles wide) keeps no BG timber stub, and the cable starts on its top row.
         px, py = ridge.DAMAGED_POLE
         self.assertEqual(self.grid[py][px], climb.COL_EMPTY)
         self.assertEqual(self.grid[py + 1][px], climb.COL_SOLID, "pole must stand on the plateau")
-        self.assertEqual(self.slot(px, py), art.TIMBER)
-        for tx, ty in art.POLE_TILES:
-            self.assertEqual(self.grid[ty][tx], climb.COL_EMPTY)
-            self.assertEqual(self.slot(tx, ty), art.TIMBER)
+        self.assertEqual(ridge.CABLE_ROUTE[0], (px, py - 3))
+        self.assertFalse(hasattr(art, "POLE_TILES"))
+        for ty in range(py - 3, py + 1):
+            for tx in (px, px + 1):
+                self.assertEqual(self.grid[ty][tx], climb.COL_EMPTY)
+                self.assertNotEqual(self.slot(tx, ty), art.TIMBER, f"BG stub at {tx},{ty}")
 
     def test_only_cable_pixels_use_the_line_index_in_metal_slot(self):
         route = art.cable_route_tiles()
@@ -126,7 +131,7 @@ class RidgeBackgroundTests(unittest.TestCase):
             return any(max(abs(ax - bx), abs(ay - by)) <= reach
                        for ax, ay in cells for bx, by in targets)
 
-        pole = set(art.POLE_TILES) | {ridge.DAMAGED_POLE}
+        pole = {(ridge.DAMAGED_POLE[0], ridge.DAMAGED_POLE[1] - 3)}
         house_x0, house_x1, house_y0, house_y1 = ridge.HOUSE_RECT
         house = {(x, y) for x in range(house_x0, house_x1 + 1)
                  for y in range(house_y0, house_y1 + 1)}

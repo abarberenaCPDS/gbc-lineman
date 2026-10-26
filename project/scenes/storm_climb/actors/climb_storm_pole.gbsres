@@ -1,0 +1,71 @@
+{
+  "_resourceType": "actor",
+  "id": "fec793b2-55c9-5494-8e98-b16913cc83ae",
+  "_index": 8,
+  "symbol": "climb_storm_pole",
+  "prefabId": "",
+  "name": "Storm Pole",
+  "coordinateType": "tiles",
+  "x": 3,
+  "y": 20,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "616a294b-fae9-5c68-965a-9a1db4b273d0",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "7"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "2d6d05b2-ed16-5f7e-a88b-7d7a2c5b1431",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "$self$",
+              "spriteStateId": "Standing",
+              "loopAnim": true
+            },
+            "id": "ccd3cb6b-a5d3-5584-8954-a5f82691661d"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "$self$",
+              "spriteStateId": "Snapped",
+              "loopAnim": true
+            },
+            "id": "de28cda0-3495-59fb-96fd-853ddd8075c7"
+          }
+        ]
+      }
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 import climb
+import intro
 import make_climb_scene as shared
 import make_ridge_scene as scene
 import opening
@@ -320,7 +321,7 @@ class RidgeTests(unittest.TestCase):
             self.assertFalse(any(e["command"] == "EVENT_ACTOR_COLLISIONS_ENABLE"
                                  for e in walk(guard["children"]["true"])),
                              "start delay must not enable the hazard early")
-        self.assertEqual([g["_index"] for g in gusts], [len(built_actors()) - 2, len(built_actors()) - 1])
+        self.assertEqual([g["_index"] for g in gusts], [len(built_actors()) - 3, len(built_actors()) - 2])  # the storm pole is appended last
 
     def test_hill_exit_leads_to_signal_hill_only_after_tomas_is_powered(self):
         trigger = trigger_by_symbol("trigger_ridge_hill_exit")
@@ -344,20 +345,33 @@ class RidgeTests(unittest.TestCase):
         self.assertTrue(all(grid[r][trigger["x"]] == ridge.COL_EMPTY
                             for r in range(trigger["y"], trigger["y"] + trigger["height"])))
 
+    def _scanline_load(self, hero_x, hero_feet):
+        """OBJ columns per tile row on the 20-tile screen centred on the hero."""
+        sprites = [((hero_x, hero_feet), 3, 3)]  # hero: 24px wide, 24px tall
+        sprites += [(ridge.TOMAS, 2, 3)]          # Tomás: 24px figure on a 16x32 canvas
+        sprites += [(pos, 2, 2) for pos in (ridge.JUNCTION_BOX, ridge.CONCENTRATOR)]
+        sprites += [((x0, row), 3, 2) for row, x0, _ in ridge.GUST_LANES]
+        # Storm pole (2x4 intro sprite) and cable end (2x2) share the pickup's tile.
+        sprites += [(ridge.DAMAGED_POLE, 2, 4), (ridge.DAMAGED_POLE, 2, 2)]
+        left = hero_x - 10
+        load = {}
+        for (x, feet), width, height in sprites:
+            if x + width <= left or x >= left + 20:
+                continue  # off screen: not drawn
+            for row in range(feet - height + 1, feet + 1):
+                load[row] = load.get(row, 0) + width
+        return load
+
     def test_house_view_stays_within_ten_sprites_per_scanline(self):
         # Exact ROM e05b693c showed the concentrator losing its top half when
         # the house props shared the gusts' rows (13 8x16 OBJs on one line).
         # Count OBJ columns per tile row with the hero standing at the box and
-        # every gust visible; debris passes through briefly and is excluded.
-        bx, by = ridge.JUNCTION_BOX
-        sprites = [((bx, by), 3, 3)]  # hero: 24px wide, 24px tall
-        sprites += [(pos, 2, 2) for pos in (ridge.JUNCTION_BOX, ridge.TOMAS,
-                                            ridge.CONCENTRATOR)]
-        sprites += [((x0, row), 3, 2) for row, x0, _ in ridge.GUST_LANES]
-        load = {}
-        for (_, feet), width, height in sprites:
-            for row in range(feet - height + 1, feet + 1):
-                load[row] = load.get(row, 0) + width
+        # every on-screen gust visible; debris passes through briefly and is excluded.
+        load = self._scanline_load(*ridge.JUNCTION_BOX)
+        self.assertLessEqual(max(load.values()), 10, load)
+
+    def test_pole_view_stays_within_ten_sprites_per_scanline(self):
+        load = self._scanline_load(*ridge.DAMAGED_POLE)
         self.assertLessEqual(max(load.values()), 10, load)
 
     def test_debris_and_actor_roster(self):
@@ -366,6 +380,7 @@ class RidgeTests(unittest.TestCase):
         self.assertEqual(symbols, [
             scene.TOMAS_SYMBOL, scene.CONCENTRATOR_SYMBOL, scene.CABLE_SYMBOL,
             scene.JUNCTION_SYMBOL, "ridge_debris_01", "ridge_gust_01", "ridge_gust_02",
+            scene.POLE_SYMBOL,
         ])
         self.assertEqual([a["_index"] for a in actors], list(range(len(actors))))
         self.assertEqual(len(set(a["id"] for a in actors)), len(actors))
@@ -392,7 +407,26 @@ class RidgeTests(unittest.TestCase):
         self.assertEqual((debris["x"], debris["y"]), (ridge.HAZARD_DEBRIS[0]["x"],
                                                      ridge.HAZARD_DEBRIS[0]["row_top"]))
         self.assertEqual(debris["spriteSheetId"], FAKE_SPRITES["hazard"])
-        self.assertEqual(len(actors), 7, "keep the actor count modest")
+        self.assertEqual(len(actors), 8, "keep the actor count modest")
+
+    def test_storm_pole_uses_intro_sprite_and_starts_snapped_unless_live(self):
+        pole = actor_by_symbol(scene.POLE_SYMBOL)
+        self.assertEqual(pole["id"], scene.actor_id("pole"))
+        self.assertEqual(pole["spriteSheetId"], intro.POLE_SPRITE_ID)
+        self.assertEqual((pole["x"], pole["y"]), ridge.DAMAGED_POLE)
+        self.assertTrue(pole["animate"])
+        self.assertEqual(pole["script"], [], "pole is not interactive")
+        self.assertEqual(pole["collisionGroup"], "", "pole does not collide")
+        start = pole["startScript"][0]
+        self.assertTrue(is_var_if(start, ridge.VAR_LINE_LIVE, 1))
+        self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
+                          for e in start["children"]["true"]], [("$self$", "Standing")])
+        self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
+                          for e in start["children"]["false"]], [("$self$", "Snapped")])
+        init = built_scene()["script"]
+        self.assertIn((scene.pole_actor_id(), "Snapped"),
+                      [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                       for e in init if e["command"] == "EVENT_ACTOR_SET_STATE"])
 
     def test_tomas_talk_tracks_power_and_line(self):
         script = actor_by_symbol(scene.TOMAS_SYMBOL)["script"]
@@ -420,8 +454,9 @@ class RidgeTests(unittest.TestCase):
                          climb.grid_resource_id("palette:bg:metal_live"))
         self.assertEqual(set(k for k, v in palette["args"].items() if v != "keep"),
                          {f"palette{ridge.LINE_BG_SLOT}"})
-        states = [e["args"]["spriteStateId"] for e in branch if e["command"] == "EVENT_ACTOR_SET_STATE"]
-        self.assertEqual(states, ["Live"])
+        states = [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                  for e in branch if e["command"] == "EVENT_ACTOR_SET_STATE"]
+        self.assertEqual(states, [("$self$", "Live"), (scene.pole_actor_id(), "Standing")])
 
     def test_cable_pickup_requires_empty_hands_and_dead_line(self):
         script = actor_by_symbol(scene.CABLE_SYMBOL)["script"]
@@ -465,7 +500,8 @@ class RidgeTests(unittest.TestCase):
         self.assertEqual(sprites[0], opening.resource_id("palette:sprite:worker"))
         self.assertEqual(sprites[1], scene.tomas_palette_id())
         self.assertEqual(sprites[2], climb.grid_resource_id("palette:sprite:grid"))
-        self.assertEqual(sprites[3:], template["spritePaletteIds"][3:])
+        self.assertEqual(sprites[shared.POLE_SPRITE_PALETTE_SLOT], intro.palette_id("pole"))
+        self.assertEqual(sprites[4:], template["spritePaletteIds"][4:])
         backgrounds = resource["paletteIds"]
         self.assertEqual(len(backgrounds), 8)
         self.assertEqual(backgrounds[:5], [opening.resource_id(f"palette:bg:{name}")

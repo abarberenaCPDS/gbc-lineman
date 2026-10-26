@@ -109,24 +109,17 @@ class KikoBackgroundTests(unittest.TestCase):
                 self.assertIn(self.slot(x, row), (art.SKY, art.LINE),
                               f"debris column {x},{row} must stay open air")
 
-    def test_pole_stands_on_mesa_behind_cable_end(self):
+    def test_pole_stands_on_mesa_and_background_draws_no_stub(self):
+        # The pole is the intro_pole actor: its footprint (rows py-3..py, two
+        # tiles wide) keeps no BG timber stub, and the cable starts on its top row.
         px, py = kiko.DAMAGED_POLE
         self.assertEqual(self.grid[py][px], climb.COL_EMPTY)
         self.assertEqual(self.grid[py + 1][px], climb.COL_SOLID, "pole must stand on the mesa")
-        self.assertEqual(self.slot(px, py), art.TIMBER)
-        self.assertEqual(art.POLE_TILES, ((px, py - 2), (px, py - 1), (px, py)))
-        for tx, ty in (*art.POLE_TILES, *art.CROSSARM_TILES):
-            self.assertEqual(self.grid[ty][tx], climb.COL_EMPTY)
-            self.assertEqual(self.slot(tx, ty), art.TIMBER)
-        self.assertEqual({ty for _, ty in art.CROSSARM_TILES}, {py - 2}, "crossarm on the pole top")
-        self.assertEqual({tx for tx, _ in art.CROSSARM_TILES}, {px - 1, px + 1})
         self.assertEqual(kiko.CABLE_ROUTE[0], (px, py - 3), "cable leaves the pole top")
-
-    def test_pole_art_is_drawn_on_the_pole_tiles(self):
-        # The pole's light stripe runs through every pole tile's column 3.
-        for tx, ty in art.POLE_TILES:
-            column = [self.native(tx, ty, 3, y) for y in range(kiko.TILE)]
-            self.assertIn(2, column, f"pole art missing on tile {tx},{ty}")
+        self.assertFalse(hasattr(art, "POLE_TILES"))
+        for ty in range(py - 3, py + 1):
+            for tx in (px, px + 1):
+                self.assertNotEqual(self.slot(tx, ty), art.TIMBER, f"BG stub at {tx},{ty}")
 
     def test_arc_lanes_have_posts_at_both_ends(self):
         self.assertTrue(art.ARC_POST_TOPS)
@@ -169,7 +162,7 @@ class KikoBackgroundTests(unittest.TestCase):
             return any(max(abs(ax - bx), abs(ay - by)) <= reach
                        for ax, ay in cells for bx, by in targets)
 
-        pole = set(art.POLE_TILES) | {kiko.DAMAGED_POLE}
+        pole = {(kiko.DAMAGED_POLE[0], kiko.DAMAGED_POLE[1] - 3)}
         house_x0, house_x1, house_y0, house_y1 = kiko.HOUSE_RECT
         house = {(x, y) for x in range(house_x0, house_x1 + 1)
                  for y in range(house_y0, house_y1 + 1)}

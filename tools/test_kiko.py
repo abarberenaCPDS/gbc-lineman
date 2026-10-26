@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 import climb
+import intro
 import make_climb_scene as shared
 import make_kiko_scene as scene
 import opening
@@ -462,16 +463,41 @@ class KikoTests(unittest.TestCase):
             load = sprite_load(sprites)
             self.assertLessEqual(max(load.values()), 10, (x, load))
 
+    def test_storm_pole_uses_intro_sprite_and_starts_snapped_unless_live(self):
+        pole = actor_by_symbol(scene.POLE_SYMBOL)
+        self.assertEqual(pole["id"], scene.actor_id("pole"))
+        self.assertEqual(pole["spriteSheetId"], intro.POLE_SPRITE_ID)
+        self.assertEqual((pole["x"], pole["y"]), kiko.DAMAGED_POLE)
+        self.assertTrue(pole["animate"])
+        self.assertEqual(pole["script"], [], "pole is not interactive")
+        self.assertEqual(pole["collisionGroup"], "", "pole does not collide")
+        start = pole["startScript"][0]
+        self.assertTrue(is_var_if(start, kiko.VAR_LINE_LIVE, 1))
+        self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
+                          for e in start["children"]["true"]], [("$self$", "Standing")])
+        self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
+                          for e in start["children"]["false"]], [("$self$", "Snapped")])
+        init = built_scene()["script"]
+        self.assertIn((scene.pole_actor_id(), "Snapped"),
+                      [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                       for e in init if e["command"] == "EVENT_ACTOR_SET_STATE"])
+
+    def test_storm_pole_palette_has_its_own_slot(self):
+        sprites = built_scene()["spritePaletteIds"]
+        self.assertEqual(sprites[intro.SPRITE_SLOTS["pole"]], intro.palette_id("pole"))
+        self.assertNotEqual(intro.SPRITE_SLOTS["pole"], kiko.ARC_SPRITE_PALETTE_SLOT)
+
     def test_actor_roster(self):
         actors = built_actors()
         symbols = [a["symbol"] for a in actors]
         self.assertEqual(symbols, [
             scene.KIKO_SYMBOL, scene.STOVE_SYMBOL, scene.CABLE_SYMBOL,
             scene.JUNCTION_SYMBOL, "pine_debris_01", "pine_arc_01", "pine_gust_01",
+            scene.POLE_SYMBOL,
         ])
         self.assertEqual([a["_index"] for a in actors], list(range(len(actors))))
         self.assertEqual(len(set(a["id"] for a in actors)), len(actors))
-        self.assertEqual(len(actors), 7, "keep the actor count modest")
+        self.assertEqual(len(actors), 8, "keep the actor count modest")  # 7 + storm pole
         kiko_actor = actor_by_symbol(scene.KIKO_SYMBOL)
         self.assertEqual((kiko_actor["x"], kiko_actor["y"]), kiko.KIKO)
         self.assertEqual(kiko_actor["spriteSheetId"], kiko.KIKO_SPRITE_ID)
@@ -526,7 +552,7 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(set(k for k, v in palette["args"].items() if v != "keep"),
                          {f"palette{kiko.LINE_BG_SLOT}"})
         states = [e["args"]["spriteStateId"] for e in branch if e["command"] == "EVENT_ACTOR_SET_STATE"]
-        self.assertEqual(states, ["Live"])
+        self.assertEqual(states, ["Live", "Standing"])  # junction box, then the pole
         self.assertEqual([e["args"]["text"] for e in branch if e["command"] == "EVENT_TEXT"],
                          [["Line is live!\nGo see Kiko."]])
         # Empty hands at a dead line point back to the pole, like the other jobs.

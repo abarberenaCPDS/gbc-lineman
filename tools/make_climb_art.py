@@ -32,14 +32,14 @@ LANE_CELLS = {
 }
 
 # Marta's broken line (gameplay contract: climb.DAMAGED_POLE / JUNCTION_BOX).
-# A snapped timber pole stands on the shelf-21 pickup corner; its cable hangs
-# from the top, rises to row 11, sags across the mountain and drops into the
-# junction box.  Cable pixels are only painted on empty sky/ridge tiles, which
-# are claimed for BG slot 5 (LINE_BG_SLOT).  Posts, foliage, windows and shelf
-# or rock tiles are never claimed, so the line passes behind them as gaps.
-POLE_TILES = ((4, 16), (4, 17), (4, 18), (4, 19), (4, 20))  # (tx, ty), base on row 21
-CROSSARM_TILES = ((3, 17), (5, 17))
-CABLE_ATTACH = (44, 133)      # tile (5,16): just right of the snapped pole top
+# The snapped pole is the animated intro_pole actor on the shelf-21 pickup
+# corner (see make_climb_scene), so the background draws no pole. Its cable
+# starts at the top of that sprite (tile row DAMAGED_POLE y-3), rises to row
+# 11, sags across the mountain and drops into the junction box.  Cable pixels
+# are only painted on empty sky/ridge tiles, which are claimed for BG slot 5
+# (LINE_BG_SLOT).  Posts, foliage, windows and shelf or rock tiles are never
+# claimed, so the line passes behind them as gaps.
+CABLE_ATTACH = (31, 137)      # tile (3,17): top of the pole sprite, above its insulator
 CABLE_CORNER = (50, 88)       # tile (6,11): leaves the pole on row 11
 CABLE_SPAN_END = (134, 88)    # tile (16,11): end of the sagging span
 CABLE_SPAN_SAG = 5            # pixels the span dips below its chord at mid-span
@@ -162,12 +162,6 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     for tx, ty in [(5, 29), (5, 30), (5, 31), (6, 31), (8, 24),
                    (8, 23), (14, 17), (14, 16), (6, 9), (6, 8)]:
         _set_slot(slots, tx, ty, 5, empty_only=True)
-
-    # Marta's snapped timber pole and crossarm, on empty sky next to the pickup.
-    for tx, ty in (*POLE_TILES, *CROSSARM_TILES):
-        if grid[ty][tx] != climb.COL_EMPTY:
-            raise AssertionError(f"grid pole overlaps collision at {tx},{ty}")
-        slots[ty][tx] = 2
 
     # These are currently static reset lanes.  Give every lane a distinct
     # metal-backed warning marker; do not imply a timed gust animation.
@@ -457,18 +451,6 @@ def _draw_warnings(c: _Canvas) -> None:
         c.line(5, [(center, y + 1), (center, y + 6)], p[3])
 
 
-def _draw_grid_pole(c: _Canvas) -> None:
-    p = PALETTES[2]
-    # Snapped timber stub standing on the shelf-21 pickup corner, with one
-    # crossarm just under its broken top.  Painting is clipped to POLE tiles.
-    c.line(2, [(35, 130), (34, 167)], p[2], 2)
-    c.line(2, [(33, 131), (32, 167)], p[3])
-    c.line(2, [(24, 138), (47, 138)], p[1])
-    c.line(2, [(24, 139), (47, 139)], p[0])
-    c.point(2, (24, 137), p[3])
-    c.point(2, (47, 137), p[3])
-
-
 def _draw_cable(c: _Canvas, slots: list[list[int]]) -> None:
     """Paint the cable in LINE_COLOR_INDEX on claimed slot-5 route tiles only."""
     color = PALETTES[climb.LINE_BG_SLOT][climb.LINE_COLOR_INDEX]
@@ -515,7 +497,6 @@ def make_background() -> tuple[Image.Image, list[list[int]]]:
     _draw_home(canvas)
     _draw_infrastructure(canvas)
     _draw_warnings(canvas)
-    _draw_grid_pole(canvas)
     _draw_cable(canvas, slots)
     _draw_sky(canvas)
 

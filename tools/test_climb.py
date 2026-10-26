@@ -5,6 +5,7 @@ from pathlib import Path
 import unittest
 
 import climb
+import intro
 import level
 import make_climb_scene as scene
 import compose_climb
@@ -72,10 +73,13 @@ class ClimbTests(unittest.TestCase):
         )
         self.assertEqual(script[5]["command"], "EVENT_PALETTE_SET_BACKGROUND")
         self.assertEqual(script[6]["command"], "EVENT_PALETTE_SET_BACKGROUND")
-        self.assertEqual(script[7]["args"]["musicId"], "test-music")
-        self.assertEqual(script[8]["command"], "EVENT_OVERLAY_SET_SCANLINE_CUTOFF")
-        self.assertEqual(script[9]["args"]["text"], ["A: jump\nDown+A: drop"])
-        self.assertEqual([event["command"] for event in script[10:]], [
+        self.assertEqual(script[7]["command"], "EVENT_ACTOR_SET_STATE")
+        self.assertEqual((script[7]["args"]["actorId"], script[7]["args"]["spriteStateId"]),
+                         (scene.pole_actor_id(), "Snapped"))
+        self.assertEqual(script[8]["args"]["musicId"], "test-music")
+        self.assertEqual(script[9]["command"], "EVENT_OVERLAY_SET_SCANLINE_CUTOFF")
+        self.assertEqual(script[10]["args"]["text"], ["A: jump\nDown+A: drop"])
+        self.assertEqual([event["command"] for event in script[11:]], [
             "EVENT_OVERLAY_SET_SCANLINE_CUTOFF", "EVENT_OVERLAY_SHOW", "EVENT_TEXT_DRAW",
         ])
         self.assertFalse(any(
@@ -117,8 +121,10 @@ class ClimbTests(unittest.TestCase):
         # Slot 1 carries Marta and slot 2 the Live Wire grid; the rest keep legacy IDs.
         self.assertEqual(resource["spritePaletteIds"][1], opening.resource_id("palette:sprite:marta"))
         self.assertEqual(resource["spritePaletteIds"][2], climb.grid_resource_id("palette:sprite:grid"))
+        # Slots 3-6 keep the legacy IDs; slot 7 (free in every job) carries the intro pole.
+        self.assertEqual(scene.POLE_SPRITE_PALETTE_SLOT, 7)
         self.assertEqual(resource["spritePaletteIds"][3:7], legacy_sprite_palettes[3:7])
-        self.assertEqual(resource["spritePaletteIds"][7], legacy_sprite_palettes[7])
+        self.assertEqual(resource["spritePaletteIds"][7], intro.palette_id("pole"))
         self.assertEqual(opening.resource_id("palette:sprite:worker"),
                          "030624ef-c88f-5e59-8664-65193264ce80")
 
@@ -295,8 +301,9 @@ class ClimbTests(unittest.TestCase):
         self.assertEqual([(e["args"]["variable"], e["args"]["value"]["value"])
                           for e in flat if e["command"] == "EVENT_SET_VALUE"],
                          [("6", 0), ("7", 1)])
-        state = next(e for e in flat if e["command"] == "EVENT_ACTOR_SET_STATE")
-        self.assertEqual((state["args"]["actorId"], state["args"]["spriteStateId"]), ("$self$", "Live"))
+        states = [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                  for e in flat if e["command"] == "EVENT_ACTOR_SET_STATE"]
+        self.assertEqual(states, [("$self$", "Live"), (scene.pole_actor_id(), "Standing")])
         palette = next(e for e in flat if e["command"] == "EVENT_PALETTE_SET_BACKGROUND")
         self.assertEqual(palette["args"]["palette5"], climb.grid_resource_id("palette:bg:metal_live"))
         self.assertEqual({k: v for k, v in palette["args"].items() if k != "palette5"},
@@ -305,6 +312,26 @@ class ClimbTests(unittest.TestCase):
         self.assertEqual(sound["args"]["type"], "connect-sfx")
         text = next(e for e in flat if e["command"] == "EVENT_TEXT")
         self.assertEqual(text["args"]["text"], ["Line is live!\nOn to Marta's."])
+
+    def test_storm_pole_uses_intro_sprite_and_starts_snapped_unless_live(self):
+        pole = scene.pole_actor(9, intro.POLE_SPRITE_ID)
+        self.assertEqual(pole["id"], scene.resource_id("actor:pole"))
+        self.assertEqual(pole["spriteSheetId"], intro.POLE_SPRITE_ID)
+        self.assertEqual((pole["x"], pole["y"]), climb.DAMAGED_POLE)
+        self.assertTrue(pole["animate"])
+        self.assertEqual(pole["script"], [], "pole is not interactive")
+        self.assertEqual(pole["collisionGroup"], "", "pole does not collide")
+
+        start = pole["startScript"][0]
+        self.assertEqual(start["args"]["condition"]["valueA"], {"type": "variable", "value": "7"})
+        self.assertEqual(start["args"]["condition"]["valueB"], {"type": "number", "value": 1})
+        self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
+                          for e in start["children"]["true"]], [("$self$", "Standing")])
+        self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
+                          for e in start["children"]["false"]], [("$self$", "Snapped")])
+
+        # Every scene entry pins Snapped after the line reset, so a stale live flag
+        # cannot leave the pole Standing whichever of the two scripts runs first.
 
     def test_respawn_drops_carried_cable_before_repositioning(self):
         for events in (scene.build_scene("test-music")["playerHit1Script"],
@@ -412,6 +439,10 @@ class ClimbTests(unittest.TestCase):
                      "assets/sprites/climb_gust.png.gbsres"):
             other_slots |= palette_indexes(path)
         self.assertEqual(other_slots, {0, 4, 5})
+        # The pole sprite's own OBJ slot (intro_pole tiles) must be free here too.
+        self.assertEqual(palette_indexes("assets/sprites/intro_pole.png.gbsres"),
+                         {scene.POLE_SPRITE_PALETTE_SLOT})
+        self.assertNotIn(scene.POLE_SPRITE_PALETTE_SLOT, other_slots)
         self.assertNotIn(scene.MARTA_SPRITE_PALETTE_SLOT, other_slots)
         # Live Wire grid sprites take OBJ slot 2; no existing climb sprite may use it.
         self.assertNotIn(climb.GRID_SPRITE_PALETTE_SLOT, other_slots)

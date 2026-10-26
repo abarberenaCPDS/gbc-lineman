@@ -52,10 +52,9 @@ SPARKS = [(64, 26, 3), (160, 20, 3), (236, 16, 2)]
 # clear of the cable route and the gust lanes.
 PINES = [(9, 52, 12, 99), (25, 76, 10, 111)]
 
-# Snapped utility pole on the step plateau (contract: ridge.DAMAGED_POLE).
-# It rises from the plateau's top row; the cable-end sprite stands in front.
-POLE_TILES = ((16, 9), (16, 10), (16, 11))
-CROSSARM_TILES = ((15, 9), (17, 9))
+# The snapped utility pole (contract: ridge.DAMAGED_POLE) is the animated
+# intro_pole actor (see make_ridge_scene); the background draws no pole. The
+# cable starts at the top of that sprite (ridge.CABLE_ROUTE[0] == pole x, y-3).
 
 # Route cells are converted to tile-centre pixels, so every polyline vertex
 # lands in the middle of its contract cell.
@@ -134,11 +133,6 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     for tx, ty in ridge.HOUSE_WINDOWS:
         slots[ty][tx] = WINDOW
 
-    for tx, ty in (*POLE_TILES, *CROSSARM_TILES):
-        if grid[ty][tx] != climb.COL_EMPTY:
-            raise AssertionError(f"pole overlaps collision at {tx},{ty}")
-        slots[ty][tx] = TIMBER
-
     # Gust lanes get a metal hazard placard; it never uses the cable index.
     for row, x0, x1 in ridge.GUST_LANES:
         for tx in range(x0, x1 + 1):
@@ -156,7 +150,6 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
             slots[ty][tx] = LINE
 
     assert all(0 <= slot < 7 for row in slots for slot in row), "UI slot 7 reserved"
-    assert all(slots[ty][tx] == TIMBER for tx, ty in POLE_TILES)
     assert all(slots[ty][tx] == WINDOW for tx, ty in ridge.HOUSE_WINDOWS)
     return slots
 
@@ -310,16 +303,6 @@ def _draw_windows(c: _Canvas) -> None:
         c.line(WINDOW, [(x + 2, y + 4), (x + 5, y + 4)], p[2])
 
 
-def _draw_pole(c: _Canvas) -> None:
-    p = PALETTES[TIMBER]
-    # Snapped upright stub with a slanted broken top and one crossarm.
-    c.line(TIMBER, [(131, 73), (131, 95)], p[2], 2)
-    c.line(TIMBER, [(132, 74), (132, 95)], p[0])
-    c.line(TIMBER, [(129, 73), (133, 75)], p[3])
-    c.line(TIMBER, [(124, 78), (139, 78)], p[1])
-    c.line(TIMBER, [(124, 79), (139, 79)], p[0])
-
-
 def _draw_warnings(c: _Canvas) -> None:
     # Metal placards use indices 0, 2 and 3 only; index 1 is the cable's.
     p = PALETTES[METAL]
@@ -364,7 +347,6 @@ def make_background() -> tuple[Image.Image, list[list[int]]]:
     _draw_posts(canvas, grid)
     _draw_cabin(canvas)
     _draw_windows(canvas)
-    _draw_pole(canvas)
     _draw_warnings(canvas)
     _draw_cable(canvas, slots)
 

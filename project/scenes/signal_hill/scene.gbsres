@@ -27,7 +27,7 @@
     "2192af0f-f22d-58bd-8d4c-a29bbc66452f",
     "b871e178-c93e-51fa-8fe6-ba32b43214cf",
     "4196207d-829f-5923-a671-a70c35651b6e",
-    "default-sprite"
+    "0f42aecb-f04b-5823-8a3f-212ef9df444a"
   ],
   "collisions": "0050+0f!0026+0f2+0026+0f2+0026+0f2+0026+0f2+0026+0f2+0026+0f2+0026+0f2+005+0f3+001e+0f2+005+0f3+001e+0f2+005+0f3+001e+0f2+003+0f5+0017+0f9+003+0f5+0017+0f9+003+0f5+0017+0f80+",
   "autoFadeSpeed": 1,
@@ -113,6 +113,15 @@
         "palette7": "keep"
       },
       "id": "9f07a03f-9983-5b57-8ba3-7e1ca1b0e1ec"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "da049197-236f-50e8-97f8-ca7cb346bb44",
+        "spriteStateId": "Snapped",
+        "loopAnim": true
+      },
+      "id": "29c2b791-d75e-5a05-9da3-cbc82a72d82d"
     },
     {
       "command": "EVENT_MUSIC_PLAY",

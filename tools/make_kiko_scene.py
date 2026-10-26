@@ -42,13 +42,14 @@ GUST_SPRITE = "assets/sprites/climb_gust.png.gbsres"
 sys.path.insert(0, str(TOOLS_DIR))
 try:
     import climb  # noqa: E402  (shared palettes, grid sprites and climb timings)
+    import intro  # noqa: E402  (intro pole sprite and palette identities)
     import kiko  # noqa: E402  (Kiko's job contract: geometry, IDs, timings)
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
     import voices  # noqa: E402  (speaker names and text blips)
     import rosa  # noqa: E402  (Signal Hill owns the live arc palette this job reuses)
 except ModuleNotFoundError as error:
-    if error.name in {"voices", "climb", "kiko", "opening", "rosa", "make_climb_scene"}:
+    if error.name in {"intro", "voices", "climb", "kiko", "opening", "rosa", "make_climb_scene"}:
         raise SystemExit(
             f"cannot generate pine_hollow: tools/{error.name}.py is missing"
         ) from error
@@ -62,6 +63,8 @@ KIKO_KEY = "kiko"
 STOVE_KEY = "stove"
 CABLE_KEY = "cable-end"
 JUNCTION_KEY = "junction-box"
+POLE_KEY = "pole"
+POLE_SYMBOL = "kiko_storm_pole"
 CABLE_SPRITE_KEY = "sprite:grid_cable_end"
 JUNCTION_SPRITE_KEY = "sprite:grid_junction_box"
 KIKO_SYMBOL = "pine_kiko"
@@ -291,6 +294,9 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
         set_value(VAR_HOME_POWERED, 0, "init-home-powered"),
         window_palette_event(False, "init-window-cold"),
         line_palette_event(False, "init-line-dead"),
+        # Pinned Snapped on every entry: the pole's own start script reads the
+        # line variable, and the order between the two scripts is unspecified.
+        actor_state(pole_actor_id(), "Snapped", "init-pole-snapped"),
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-pine-hollow-music"),
         # Intro boxes after the music cue; say() lifts the cutoff a previous visit may have left.
         *say(short_lines("No power at\nKiko's house!"), "intro"),
@@ -388,6 +394,28 @@ def cable_end_actor(index: int, sprite_id: str, pickup_sound_id: str) -> dict[st
     )
 
 
+def pole_actor_id() -> str:
+    return actor_id(POLE_KEY)
+
+
+def pole_actor(index: int, sprite_id: str) -> dict[str, Any]:
+    """The snapped pole on the mesa: intro pole sprite, Standing once the line is live.
+
+    Non-colliding and not interactive; the cable-end pickup owns the B press.
+    """
+    key = POLE_KEY
+    x, y = kiko.DAMAGED_POLE
+    return actor_resource(
+        index=index, symbol=POLE_SYMBOL, name="Storm Pole", x=x, y=y,
+        sprite_id=sprite_id, key=key,
+        start_script=[if_value(VAR_LINE_LIVE, 1, f"{key}:line-check", [
+            actor_state("$self$", "Standing", f"{key}:standing"),
+        ], [
+            actor_state("$self$", "Snapped", f"{key}:snapped"),
+        ])],
+    )
+
+
 def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dict[str, Any]:
     """Dead junction box at the foot of Kiko's porch. Plugging in the carried cable lights the line.
 
@@ -403,6 +431,7 @@ def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dic
             set_value(VAR_CARRYING_CABLE, 0, f"{key}:clear-cable"),
             set_value(VAR_LINE_LIVE, 1, f"{key}:set-live"),
             actor_state("$self$", "Live", f"{key}:live-state"),
+            actor_state(pole_actor_id(), "Standing", f"{key}:pole-standing"),
             line_palette_event(True, f"{key}:metal-live"),
             sound_event(connect_sound_id, f"{key}:sfx"),
             *say(short_lines("Line is live!\nGo see Kiko."), f"{key}:text"),
@@ -637,6 +666,7 @@ def build_scene(music_id: str, death_sound_id: str) -> dict[str, Any]:
     sprite_palette_ids[kiko.KIKO_SPRITE_PALETTE_SLOT] = kiko_palette_id()
     sprite_palette_ids[kiko.GRID_SPRITE_PALETTE_SLOT] = climb.grid_resource_id("palette:sprite:grid")
     sprite_palette_ids[kiko.ARC_SPRITE_PALETTE_SLOT] = arc_palette_id()
+    sprite_palette_ids[intro.SPRITE_SLOTS["pole"]] = intro.palette_id("pole")
     # Debris (slot 4) and gust (slot 5) keep the climb palettes, as Wind Ridge and Signal Hill do.
     background_palette_ids = [
         opening.resource_id(f"palette:bg:{name}") for name, _ in opening.BG_PALETTES
@@ -687,6 +717,7 @@ def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[
         gust_actor(index, lane, kiko.GUST_START_DELAYS[index - 1], sprite_ids["gust"])
         for index, lane in enumerate(kiko.GUST_LANES, start=1)
     )
+    actors.append(pole_actor(len(actors), intro.POLE_SPRITE_ID))
     # Editor order is list order: actors and triggers are indexed by position.
     for position, actor in enumerate(actors):
         actor["_index"] = position

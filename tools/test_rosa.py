@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 import climb
+import intro
 import make_climb_scene as shared
 import make_rosa_scene as scene
 import opening
@@ -390,17 +391,42 @@ class RosaTests(unittest.TestCase):
             load = sprite_load(sprites)
             self.assertLessEqual(max(load.values()), 10, (x, load))
 
+    def test_storm_pole_uses_intro_sprite_and_starts_snapped_unless_live(self):
+        pole = actor_by_symbol(scene.POLE_SYMBOL)
+        self.assertEqual(pole["id"], scene.actor_id("pole"))
+        self.assertEqual(pole["spriteSheetId"], intro.POLE_SPRITE_ID)
+        self.assertEqual((pole["x"], pole["y"]), rosa.DAMAGED_POLE)
+        self.assertTrue(pole["animate"])
+        self.assertEqual(pole["script"], [], "pole is not interactive")
+        self.assertEqual(pole["collisionGroup"], "", "pole does not collide")
+        start = pole["startScript"][0]
+        self.assertTrue(is_var_if(start, rosa.VAR_LINE_LIVE, 1))
+        self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
+                          for e in start["children"]["true"]], [("$self$", "Standing")])
+        self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
+                          for e in start["children"]["false"]], [("$self$", "Snapped")])
+        init = built_scene()["script"]
+        self.assertIn((scene.pole_actor_id(), "Snapped"),
+                      [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                       for e in init if e["command"] == "EVENT_ACTOR_SET_STATE"])
+
+    def test_storm_pole_palette_has_its_own_slot(self):
+        sprites = built_scene()["spritePaletteIds"]
+        self.assertEqual(sprites[intro.SPRITE_SLOTS["pole"]], intro.palette_id("pole"))
+        self.assertNotEqual(intro.SPRITE_SLOTS["pole"], rosa.ARC_SPRITE_PALETTE_SLOT)
+
     def test_actor_roster(self):
         actors = built_actors()
         symbols = [a["symbol"] for a in actors]
         self.assertEqual(symbols, [
             scene.ROSA_SYMBOL, scene.WORKSTATION_SYMBOL, scene.CABLE_SYMBOL,
             scene.JUNCTION_SYMBOL, "signal_arc_01", "signal_arc_02", "signal_gust_01",
+            scene.POLE_SYMBOL,
         ])
         self.assertFalse(any("debris" in s for s in symbols), "no debris in Signal Hill")
         self.assertEqual([a["_index"] for a in actors], list(range(len(actors))))
         self.assertEqual(len(set(a["id"] for a in actors)), len(actors))
-        self.assertEqual(len(actors), 7, "keep the actor count modest")
+        self.assertEqual(len(actors), 8, "keep the actor count modest")  # 7 + storm pole
         rosa_actor = actor_by_symbol(scene.ROSA_SYMBOL)
         self.assertEqual((rosa_actor["x"], rosa_actor["y"]), rosa.ROSA)
         self.assertEqual(rosa_actor["spriteSheetId"], rosa.ROSA_SPRITE_ID)
@@ -453,7 +479,7 @@ class RosaTests(unittest.TestCase):
         self.assertEqual(set(k for k, v in palette["args"].items() if v != "keep"),
                          {f"palette{rosa.LINE_BG_SLOT}"})
         states = [e["args"]["spriteStateId"] for e in branch if e["command"] == "EVENT_ACTOR_SET_STATE"]
-        self.assertEqual(states, ["Live"])
+        self.assertEqual(states, ["Live", "Standing"])  # junction box, then the pole
         no_cable = has_cable["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in no_cable if e["command"] == "EVENT_TEXT"],
                          [["No cable yet.\nCheck the pole."]])

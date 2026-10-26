@@ -52,11 +52,9 @@ PINES = [(14, 40, 14, 79), (30, 52, 10, 79), (46, 40, 16, 79),
          (102, 48, 12, 79), (196, 40, 14, 79), (214, 52, 10, 79),
          (240, 44, 14, 79)]
 
-# Snapped utility pole on the mesa (contract: kiko.DAMAGED_POLE). It rises from
-# the mesa's top row; the cable-end sprite stands in front.
-_PX, _PY = kiko.DAMAGED_POLE
-POLE_TILES = tuple((_PX, _PY - dy) for dy in (2, 1, 0))
-CROSSARM_TILES = ((_PX - 1, _PY - 2), (_PX + 1, _PY - 2))
+# The snapped utility pole (contract: kiko.DAMAGED_POLE) is the animated
+# intro_pole actor (see make_kiko_scene); the background draws no pole. The
+# cable starts at the top of that sprite (kiko.CABLE_ROUTE[0] == pole x, y-3).
 
 # Downed-wire posts: one at each end of every arc lane, standing on the floor.
 # Each entry is the post's top tile; the post is two tiles tall.
@@ -131,11 +129,6 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     for tx, ty in kiko.HOUSE_WINDOWS:
         slots[ty][tx] = WINDOW
 
-    for tx, ty in (*POLE_TILES, *CROSSARM_TILES):
-        if grid[ty][tx] != climb.COL_EMPTY:
-            raise AssertionError(f"pole overlaps collision at {tx},{ty}")
-        slots[ty][tx] = TIMBER
-
     # Downed-wire posts: metal family, open air, never on a lane.
     for tx, ty in ARC_POST_TILES:
         if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in LANE_CELLS:
@@ -160,7 +153,6 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
             slots[ty][tx] = LINE
 
     assert all(0 <= slot < 7 for row in slots for slot in row), "UI slot 7 reserved"
-    assert all(slots[ty][tx] == TIMBER for tx, ty in POLE_TILES)
     assert all(slots[ty][tx] == METAL for tx, ty in ARC_POST_TILES)
     assert all(slots[ty][tx] == WINDOW for tx, ty in kiko.HOUSE_WINDOWS)
     return slots
@@ -301,22 +293,6 @@ def _draw_windows(c: _Canvas) -> None:
         c.line(WINDOW, [(x + 2, y + 4), (x + 5, y + 4)], p[2])
 
 
-def _draw_pole(c: _Canvas) -> None:
-    # Snapped upright stub on the mesa, drawn from the contract's pole tiles:
-    # a slanted broken top and one crossarm across the crossarm tiles.
-    p = PALETTES[TIMBER]
-    x = _PX * TILE + 3
-    top = (_PY - 2) * TILE + 2
-    bottom = (_PY + 1) * TILE - 1
-    arm = (_PY - 2) * TILE + 4
-    left, right = (_PX - 1) * TILE, (_PX + 1) * TILE + 7
-    c.line(TIMBER, [(x, top), (x, bottom)], p[2], 2)
-    c.line(TIMBER, [(x + 1, top + 1), (x + 1, bottom)], p[0])
-    c.line(TIMBER, [(x - 2, top), (x + 4, top - 2)], p[3])
-    c.line(TIMBER, [(left, arm), (right, arm)], p[1])
-    c.line(TIMBER, [(left, arm + 1), (right, arm + 1)], p[0])
-
-
 def _draw_arc_posts(c: _Canvas) -> None:
     # Metal posts use indices 0, 2 and 3 only; index 1 is the cable's.
     p = PALETTES[METAL]
@@ -371,7 +347,6 @@ def make_background() -> tuple[Image.Image, list[list[int]]]:
     _draw_scars(canvas)
     _draw_cabin(canvas)
     _draw_windows(canvas)
-    _draw_pole(canvas)
     _draw_arc_posts(canvas)
     _draw_warnings(canvas)
     _draw_cable(canvas, slots)

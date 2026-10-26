@@ -210,7 +210,7 @@ SPRITE_PALETTES = {
     "bolt": ["000000", "FFFFFF", "F1E27A", "A8B8D0"],
     "pole": ["000000", "F1C879", "8A6A48", "2B2420"],
 }
-SPRITE_SLOTS = {"worker": 0, "rain": 1, "bolt": 2, "pole": 3}
+SPRITE_SLOTS = {"worker": 0, "rain": 1, "bolt": 2, "pole": 7}  # pole: the only OBJ slot free in every job scene
 
 # ---------------------------------------------------------------------------
 # Shots: (caption lines, frames). Effects per shot live in make_intro_scene.

@@ -37,23 +37,30 @@ JUNCTION_ACTOR_KEY = "junction-box"
 GRID_SPRITE_HARDWARE = ["000000", "C7DCE1", "38C8D8", "142332"]
 CABLE_ACTOR_SYMBOL = "grid_cable_end"
 JUNCTION_ACTOR_SYMBOL = "grid_junction_box"
+# The broken pole is the intro's animated pole sprite (Snapped until the line is
+# live, then Standing). Its tiles carry OBJ slot intro.SPRITE_SLOTS["pole"], so
+# the scene uses the intro pole palette there; no climb sprite uses that slot.
+POLE_ACTOR_KEY = "pole"
+POLE_ACTOR_SYMBOL = "climb_storm_pole"
 # Two-digit variable tokens only: GB Studio drops a single leading zero.
 HUD_TEXT = "LINE %D1$07$/1 HOME %D1$00$/1"
 
 sys.path.insert(0, str(TOOLS_DIR))
 try:
     import climb  # noqa: E402  (sibling module owns all authored climb data)
+    import intro  # noqa: E402  (intro pole sprite and palette identities)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
     import voices  # noqa: E402  (speaker names and text blips)
     import ridge  # noqa: E402  (Tomás's job contract: summit exit target)
 except ModuleNotFoundError as error:
-    if error.name in {"voices", "climb", "opening", "ridge"}:
+    if error.name in {"voices", "climb", "intro", "opening", "ridge"}:
         raise SystemExit(
             f"cannot generate storm_climb: tools/{error.name}.py is missing; "
             "it must provide the climb/opening data API"
         ) from error
     raise
 
+POLE_SPRITE_PALETTE_SLOT = intro.SPRITE_SLOTS["pole"]
 VAR_CARRYING_CABLE_ID = climb.VAR_CARRYING_CABLE
 VAR_LINE_LIVE_ID = climb.VAR_LINE_LIVE
 LINE_BG_SLOT = climb.LINE_BG_SLOT
@@ -349,6 +356,10 @@ def junction_actor_id() -> str:
     return resource_id(f"actor:{JUNCTION_ACTOR_KEY}")
 
 
+def pole_actor_id() -> str:
+    return resource_id(f"actor:{POLE_ACTOR_KEY}")
+
+
 def cable_drop_events(key: str) -> list[dict[str, Any]]:
     """A carried cable falls back to the storm pole when the carrier is hit."""
     return [if_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:cable-drop", [
@@ -473,6 +484,10 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
         # Explicit cold summit window on every entry, matching the var 0 reset.
         background_palette_state(False, "init-summit-window-cold"),
         line_palette_state(False, "init-line-dead"),
+        # The pole's start script also reads var 7, and the order between it and
+        # this script is unspecified. Pin Snapped here so a stale live flag from a
+        # previous visit can never leave the pole Standing on a dead line.
+        actor_state(pole_actor_id(), "Snapped", "init-pole-snapped"),
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-village-music"),
         # The overlay scanline cutoff survives scene switches: lift it so the
         # intro box is visible even when a previous visit left the HUD's 16px.
@@ -608,6 +623,7 @@ def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dic
             set_value(VAR_CARRYING_CABLE_ID, 0, f"{key}:clear-cable"),
             set_value(VAR_LINE_LIVE_ID, 1, f"{key}:set-live"),
             actor_state("$self$", "Live", f"{key}:live-state"),
+            actor_state(pole_actor_id(), "Standing", f"{key}:pole-standing"),
             line_palette_state(True, f"{key}:metal-live"),
             sound_event(connect_sound_id, f"{key}:sfx"),
             *say(short_lines("Line is live!\nOn to Marta's."), f"{key}:text"),
@@ -625,6 +641,32 @@ def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dic
         key=key,
         script=plug,
         start_script=[actor_state("$self$", "Dead", f"{key}:dead")],
+    )
+    actor["animate"] = True
+    return actor
+
+
+def pole_actor(index: int, sprite_id: str) -> dict[str, Any]:
+    """The snapped storm pole on shelf 21, using the intro pole sprite.
+
+    Snapped while the line is dead, Standing once the junction box makes it live.
+    Non-colliding and not interactive: the cable-end pickup owns the B press.
+    """
+    key = POLE_ACTOR_KEY
+    x, y = climb.DAMAGED_POLE
+    actor = actor_resource(
+        index=index,
+        symbol=POLE_ACTOR_SYMBOL,
+        name="Storm Pole",
+        x=x,
+        y=y,
+        sprite_id=sprite_id,
+        key=key,
+        start_script=[if_value(VAR_LINE_LIVE_ID, 1, f"{key}:line-check", [
+            actor_state("$self$", "Standing", f"{key}:standing"),
+        ], [
+            actor_state("$self$", "Snapped", f"{key}:snapped"),
+        ])],
     )
     actor["animate"] = True
     return actor
@@ -867,6 +909,7 @@ def build_scene(music_id: str) -> dict[str, Any]:
     sprite_palette_ids[0] = opening.resource_id("palette:sprite:worker")
     sprite_palette_ids[MARTA_SPRITE_PALETTE_SLOT] = opening.resource_id("palette:sprite:marta")
     sprite_palette_ids[GRID_SPRITE_PALETTE_SLOT] = grid_sprite_palette_id()
+    sprite_palette_ids[POLE_SPRITE_PALETTE_SLOT] = intro.palette_id("pole")
     background_palette_ids = [
         opening.resource_id(f"palette:bg:{name}") for name, _ in opening.BG_PALETTES
     ] + ["default-ui"]
@@ -920,6 +963,7 @@ def main() -> None:
                                   audio_ids["pickup"]))
     actors.append(junction_box_actor(len(actors), climb.grid_resource_id("sprite:grid_junction_box"),
                                      audio_ids["connect"]))
+    actors.append(pole_actor(len(actors), intro.POLE_SPRITE_ID))
     triggers = gust_marker_triggers(audio_ids["death"])
     triggers.append(build_checkpoint_trigger(audio_ids["death"], audio_ids["connect"]))
     triggers.append(street_exit_trigger())

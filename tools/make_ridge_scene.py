@@ -37,13 +37,14 @@ GUST_SPRITE = "assets/sprites/climb_gust.png.gbsres"
 sys.path.insert(0, str(TOOLS_DIR))
 try:
     import climb  # noqa: E402  (shared palettes, grid sprites and climb timings)
+    import intro  # noqa: E402  (intro pole sprite and palette identities)
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
     import voices  # noqa: E402  (speaker names and text blips)
     import ridge  # noqa: E402  (Tomas's job contract: geometry, IDs, timings)
     import rosa  # noqa: E402  (Rosa's job contract: the ridge exit leads there)
 except ModuleNotFoundError as error:
-    if error.name in {"voices", "climb", "opening", "ridge", "rosa", "make_climb_scene"}:
+    if error.name in {"voices", "climb", "intro", "opening", "ridge", "rosa", "make_climb_scene"}:
         raise SystemExit(
             f"cannot generate wind_ridge: tools/{error.name}.py is missing"
         ) from error
@@ -55,6 +56,8 @@ VAR_LINE_LIVE = ridge.VAR_LINE_LIVE
 VAR_HOME_POWERED = ridge.VAR_HOME_POWERED
 CABLE_KEY = "cable-end"
 JUNCTION_KEY = "junction-box"
+POLE_KEY = "pole"
+POLE_SYMBOL = "ridge_storm_pole"
 TOMAS_KEY = "tomas"
 CONCENTRATOR_KEY = "oxygen-concentrator"
 CABLE_SPRITE_KEY = "sprite:grid_cable_end"
@@ -75,6 +78,10 @@ def tomas_palette_id() -> str:
 
 def actor_id(key: str) -> str:
     return ridge.resource_id(f"actor:{key}")
+
+
+def pole_actor_id() -> str:
+    return actor_id(POLE_KEY)
 
 
 def palette_resource(kind: str, name: str, colors: list[str]) -> dict[str, Any]:
@@ -280,6 +287,9 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
         set_value(VAR_HOME_POWERED, 0, "init-home-powered"),
         window_palette_event(False, "init-window-cold"),
         line_palette_event(False, "init-line-dead"),
+        # Pinned Snapped on every entry: the pole's own start script reads var 8,
+        # and the order between the two scripts is unspecified.
+        actor_state(pole_actor_id(), "Snapped", "init-pole-snapped"),
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-ridge-music"),
         # Intro box after the music cue; say() lifts the cutoff the previous visit may have left.
         *say(short_lines("Tomas needs his\noxygen machine!"), "intro"),
@@ -376,6 +386,24 @@ def cable_end_actor(index: int, sprite_id: str, pickup_sound_id: str) -> dict[st
     )
 
 
+def pole_actor(index: int, sprite_id: str) -> dict[str, Any]:
+    """The snapped pole on the step plateau: intro pole sprite, Standing once the line is live.
+
+    Non-colliding and not interactive; the cable-end pickup owns the B press.
+    """
+    key = POLE_KEY
+    x, y = ridge.DAMAGED_POLE
+    return actor_resource(
+        index=index, symbol=POLE_SYMBOL, name="Storm Pole", x=x, y=y,
+        sprite_id=sprite_id, key=key,
+        start_script=[if_value(VAR_LINE_LIVE, 1, f"{key}:line-check", [
+            actor_state("$self$", "Standing", f"{key}:standing"),
+        ], [
+            actor_state("$self$", "Snapped", f"{key}:snapped"),
+        ])],
+    )
+
+
 def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dict[str, Any]:
     """Dead junction box on the ridge floor. Plugging in the carried cable lights the line."""
     key = JUNCTION_KEY
@@ -387,6 +415,7 @@ def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dic
             set_value(VAR_CARRYING_CABLE, 0, f"{key}:clear-cable"),
             set_value(VAR_LINE_LIVE, 1, f"{key}:set-live"),
             actor_state("$self$", "Live", f"{key}:live-state"),
+            actor_state(pole_actor_id(), "Standing", f"{key}:pole-standing"),
             line_palette_event(True, f"{key}:metal-live"),
             sound_event(connect_sound_id, f"{key}:sfx"),
             *say(short_lines("Line is live!\nGo see Tomas."), f"{key}:text"),
@@ -604,6 +633,9 @@ def build_scene(music_id: str, death_sound_id: str) -> dict[str, Any]:
     sprite_palette_ids[0] = opening.resource_id("palette:sprite:worker")
     sprite_palette_ids[ridge.TOMAS_SPRITE_PALETTE_SLOT] = tomas_palette_id()
     sprite_palette_ids[ridge.GRID_SPRITE_PALETTE_SLOT] = climb.grid_resource_id("palette:sprite:grid")
+    # The intro pole sprite's tiles carry OBJ slot intro.SPRITE_SLOTS["pole"]; set it
+    # here rather than inheriting it from the climb template.
+    sprite_palette_ids[shared.POLE_SPRITE_PALETTE_SLOT] = intro.palette_id("pole")
     background_palette_ids = [
         opening.resource_id(f"palette:bg:{name}") for name, _ in opening.BG_PALETTES
     ] + ["default-ui"]
@@ -649,6 +681,7 @@ def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[
         gust_actor(index + 1, lane, ridge.GUST_START_DELAYS[index], sprite_ids["gust"])
         for index, lane in enumerate(ridge.GUST_LANES)
     )
+    actors.append(pole_actor(len(actors), intro.POLE_SPRITE_ID))
     # Editor order is list order: actors and triggers are indexed by position.
     for position, actor in enumerate(actors):
         actor["_index"] = position
