@@ -21,7 +21,11 @@ is enjoyable and works. Only mark a row complete with the named evidence.
 | Checkpoint respawn after hit | ✅ hit script: var0 ? House A : START | ✅ ROM `ef64f624…` (same respawn script): debris 4 hit on shelf 9 → reappeared on summit (y40) beside the door | ⬜ | ⬜ |
 | Opening service gate opens with the repair | ✅ gate actor Closed/Open on var4 | ✅ ROM `a17ead01…`: Closed before B, Open after | ⬜ | ⬜ |
 | Live Wire: pick up snapped cable, carry, plug in | ✅ vars 6/7, pole + box scripts, say() text | ✅ pickup var6=1, carried past falling debris 3, plug var7=1, HUD LINE 1/1 | ⬜ feel | ⬜ |
-| Cable drops back to pole on a hit | ✅ drop block before respawn (tests) | ⬜ not exercised | ⬜ | ⬜ |
+| Cable drops back to pole on a hit | ✅ drop block before respawn (tests) | ✅ ROM `b187d1e4…`: debris 3 hit while carrying → var6=0, respawn START (var0=0), HUD redrawn, cable sprite back at pole (OAM); re-pickup works; second drop also seen | ⬜ | ⬜ |
+| Junction box texts: "No cable yet" / repeat "Line is live." | ✅ box script branches | ✅ ROM `b187d1e4…`: B with var6=0 → "No cable yet. / Check the pole."; second B after plugging → "Line is live." | ⬜ | ⬜ |
+| Unpowered door: "Still no power", no checkpoint, reward later | ✅ door gated on var7 | ✅ ROM `b187d1e4…`: text shown, var0 stays 0 (debris-4 hit respawned at START); after plugging, door gives fridge payoff, var0=1, HUD 1/1 | ⬜ | ⬜ |
+| 16px hero choice | ✅ climb forces 24px (Abe chose to keep this) | ✅ ROM `b187d1e4…`: SELECT → var5=1 16px in opening; climb plays 24px; var5 persists and opening restores 16px on return | ⬜ | ⬜ |
+| Climb → opening → climb re-entry | ✅ street exit (0,30 1×3) → opening (16,9); exit lifts HUD cutoff + hides overlay; climb intro lifts cutoff | ✅ ROM `b187d1e4…` found invisible modal texts (frozen until A) after return; fixed; ROM `1769ebc6…`: texts visible, var4 kept, var0/6/7 reset, gate open, HUD LINE 0/1 HOME 0/1 | ⬜ | ⬜ |
 | Line lights up; Marta's fridge payoff gated on power | ✅ slot-5 index-1 route + door gate | ✅ cyan route after plug; door text + var0=1, HOME 1/1, OAM peak 4/line | ⬜ reward feels earned | ⬜ |
 | Full connected arc: repair → climb → checkpoint | ✅ 51 tests | ✅ one recorded deterministic pass, ROM `2274855c…`, frames 300–1584 | ⬜ preview served, human play pending | ⬜ |
 

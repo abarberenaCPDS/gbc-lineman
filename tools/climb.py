@@ -106,6 +106,10 @@ HOUSE_A = {"x": 11, "y": 5}
 # beneath it, as in level.py's spawn convention.
 SUBSTATION = {"x": 1, "y": 32}
 START = (2, 32)
+# Walking off the bottom deck's left edge returns to the service opening.
+# (x, y, width, height) in tiles: column 0 over the 24px hero's rows 30-32,
+# clear of START so a respawn never re-fires it.
+STREET_EXIT = (0, 30, 1, 3)
 
 # ---------------------------------------------------------------------------
 # Marta's line (first repair job): a storm-snapped pole on shelf 21 leaves a
@@ -269,6 +273,13 @@ def _self_check() -> None:
         assert clear_pairs, (
             f"platform rows {lower_row}->{upper_row} have no two-tile hazard-free ascent"
         )
+
+    ex, ey, ew, eh = STREET_EXIT
+    exit_tiles = {(y, x) for y in range(ey, ey + eh) for x in range(ex, ex + ew)}
+    assert all(grid[y][x] == COL_EMPTY for y, x in exit_tiles), "street exit must be open"
+    assert grid[ey + eh][ex] != COL_EMPTY, "street exit stands on the bottom deck"
+    assert START[0] >= ex + ew + 1, "START keeps the 16px-wide hero clear of the street exit"
+    assert not exit_tiles & hazards, "street exit inside a hazard"
 
     # Grid-repair props stand on shelves with 24px headroom, clear of hazards.
     for x, y in (DAMAGED_POLE, JUNCTION_BOX):

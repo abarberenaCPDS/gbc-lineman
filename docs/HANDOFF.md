@@ -1,4 +1,4 @@
-# Session handoff: Mister CFE (2026-10-25)
+# Session handoff: Mister CFE (2026-10-26)
 
 Start a new session with: **"Read docs/HANDOFF.md and continue."**
 Once this handoff's work is done, replace or delete this file. `PROJECT_PLAN.md` remains the
@@ -8,7 +8,7 @@ long-term status record.
 
 `AGENTS.md`, `CLAUDE.md`, `docs/PROJECT_PLAN.md` (top, "First repair job: Marta's line",
 progress log), `docs/redesign-brief.md`, `docs/action-climb-acceptance.md`, `docs/MCP_TOOLKIT.md`.
-VERSION is `0.4.0-dev`; check `git log`/`git status` before editing. This is a local-only repo:
+VERSION is `0.5.0-dev`; check `git log`/`git status` before editing. This is a local-only repo:
 never add a remote. Use one-line Conventional Commits with no AI attribution.
 
 ## Current state
@@ -70,28 +70,18 @@ Kiko's family (stove), Nuria (finale: lights and heat).
 
 ## Required work for this session, in order
 
-1. **Test on the exact ROM** (recorded PyBoy, source debug) every Live Wire branch that hasn't been covered yet:
-   1. **Cable drop on a hit.** Take the cable, then get hit by debris 3 (or the lane-1 gust) while var6=1. Check that:
-      - var6 = 0;
-      - the cable end is visible again in state "Dangling" at `DAMAGED_POLE`;
-      - the HUD is redrawn;
-      - the respawn depends on the checkpoint (back to start if var0 = 0).
-
-      Then pick the cable up again and finish the job.
-   2. **Junction box texts.** "No cable yet.\nCheck the pole." when var6 = 0 and var7 = 0, and
-      "Line is live." on a second press after plugging in.
-   3. **Unpowered door.** "Still no power.\nFix the line!" at Marta's door when var7 = 0. Check that
-      var0 stays 0 and that the reward still fires later once the line is live.
-   4. **16px hero.** Press SELECT in the opening (var5 = 1), then play the full arc. The climb
-      currently forces the 24px sprite. Ask Abe whether to keep that or carry the choice through,
-      then test whichever he picks.
-   5. **Scene re-entry.** Go back from the climb to the opening (add a generator-owned exit if none
-      exists), then enter the climb again. Check that var4 persists, var0/6/7 reset as designed,
-      the gate stays Open, the HUD is correct and nothing gets stuck.
-
-   Fix any defect in the generators (never hand-edit `.gbsres`), add regression tests, rebuild
-   and test again.
-2. **Browser:** rebuild the web export and serve it with `web_preview`. Give Abe a short test
+1. ✅ **Done 2026-10-26: native Live Wire branches + re-entry.** All five branches passed
+   on ROM `b187d1e4…` (`artifacts/playtests/live-wire-branches`). Abe chose to keep the
+   climb 24px-only. A new street exit (bottom deck, left edge) returns to the opening.
+   Re-entry exposed a freeze (the HUD's 16px scanline cutoff hid modal text); it is fixed
+   in `make_climb_scene.py` with tests, and passed on ROM `1769ebc6…`
+   (`artifacts/playtests/live-wire-reentry`). Details: `PROJECT_PLAN.md`, Marta's line.
+   - Gotcha: the overlay scanline cutoff **survives scene switches**. Any exit from a
+     HUD scene must lift it (150) and hide the overlay; any scene-init text must lift it.
+   - Debris 3 timing: read `actors[4]` at WRAM 4863 (flag, x u16, y u16). Cross while
+     it rests at y=160 with flag 0x26 (collision bit 0x08 clear).
+2. **Browser:** export `build/web-live-wire` (web ROM `6831f908…`) is served by
+   `web_preview` (process-local URL; use `recover` if it expired). Give Abe a short test
    script that covers the same branches. Record his verdict as "human browser" in
    `PROJECT_PLAN.md` and the acceptance matrix; never claim it yourself.
 3. **Stream to the Chromatic:** Abe plans to ask for this. Use the MCP `play` tool.

@@ -20,7 +20,7 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Last updated:** 2026-10-25 · **First repair job (Marta's line: gate → carry cable → live line → fridge) native-verified; human preview pending**
+**Last updated:** 2026-10-26 · **Marta's line: every Live Wire branch + climb re-entry native-verified (re-entry freeze found and fixed); browser export `build/web-live-wire` awaiting human play**
 
 **Latest feedback:** Abe confirmed the Chrome preview and said the movement
 prototype looks good for now. Holding Down+A can drop multiple levels; keep
@@ -491,6 +491,29 @@ hit, "No cable yet" box text, "Still no power" door text, 16px hero, re-entry.
 **Browser:** export `build/web-marta-line`, web ROM `0f4cb6ad…`, process-local
 URL; human play pending. **Hardware:** none.
 
+**Live Wire branches + re-entry (2026-10-26):** generator-owned street exit
+added (`climb.STREET_EXIT` column 0, rows 30–32 → opening (16,9) facing left).
+Native ROM `build/rom/live-wire-branches.gbc` SHA-256
+`b187d1e4f8f7cf0446ea6f487ab196b770cf35774f0a5a9c5e7f7d89a85e57db`, recording
+`artifacts/playtests/live-wire-branches` session `922212de…` (needs-review,
+two branches): SELECT 16px in the opening, climb forces 24px (Abe: keep it);
+debris 3 hit while carrying → var6=0, respawn START, HUD redrawn, cable back at
+the pole (OAM), re-pickup works; box with no cable → "No cable yet."; door with
+the line dead → "Still no power.", var0 stays 0 (debris-4 hit respawned at
+START); plug → "Line is live!", second B → "Line is live."; door → fridge
+payoff, var0=1, HUD 1/1; street exit → opening keeps var4/var5.
+**Defect found:** the HUD's 16px scanline cutoff survived the scene switch, so
+the opening's controls text and the climb's intro text on re-entry were
+invisible modal boxes (input frozen until A). Fix in `make_climb_scene.py`:
+the exit lifts the cutoff and hides the overlay; the intro lifts it first.
+Regression tests added (84 total). Fixed ROM `build/rom/live-wire-reentry.gbc`
+SHA-256 `1769ebc664a1f4ca7b041942bfcccf630d9f19ac0588e884b82f91788b24e069`,
+recording `artifacts/playtests/live-wire-reentry` session `c205403e…` (passed):
+texts visible both ways, re-entry resets var0/6/7, keeps var4, gate open, HUD
+`LINE 0/1 HOME 0/1`. The branch checks ran on `b187d1e4…`; the fix touches only
+the exit and the intro cutoff. **Browser:** `build/web-live-wire`, web ROM
+`6831f908…`, process-local URL; human play pending. **Stream/hardware:** none.
+
 ---
 
 ## Phase 2 — Pipeline hardening ⬜
@@ -562,6 +585,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-26 | Live Wire branches | All untested Live Wire branches passed natively; added street exit for re-entry; exact-ROM play found a re-entry freeze (HUD cutoff hid modal text), fixed in generator + tests and re-verified. Abe kept the 24px-only climb. Browser export served. VERSION 0.5.0-dev. | ROMs `b187d1e4…` (branches) and `1769ebc6…` (fix, passed); 84 tests; web `6831f908…`; human play pending. |
 | 2026-10-25 | Marta's line feedback | Abe on the first repair job: **"I love it."** Positive direction for the combined Storm Run + Live Wire + Blackout Grid structure; not a hazard-fairness, drop-on-hit or hardware verdict. | Human reaction after the `build/web-marta-line` handoff. |
 | 2026-10-25 | Marta's line | Grid-repair structure approved; first job built by five parallel workers: powered opening gate, snapped pole + carried cable, junction box lights the route, door gated on power with fridge payoff, LINE/HOME HUD. Exact-ROM play caught invisible in-play dialogue (frozen game); fixed and re-verified. VERSION 0.4.0-dev. | ROM `a17ead01…` recorded pass frames 300–2032; 82 tests; web `0f4cb6ad…`; human play pending. |
 | 2026-10-25 | Connected arc | Repair-gated opening exit, Marta summit reward (warm windows, powered Marta, HUD) and checkpoint respawn. Exact-ROM play caught an early-firing trigger and a dead HUD variable token; both fixed and re-verified. VERSION 0.3.0-dev. | ROM v2 `2274855c…` recorded pass frames 300–1584; v1 `ef64f624…` respawn evidence; 51 tests; web `36d3691e…` served, human play pending. |

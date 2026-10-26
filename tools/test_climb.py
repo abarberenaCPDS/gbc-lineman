@@ -72,8 +72,9 @@ class ClimbTests(unittest.TestCase):
         self.assertEqual(script[5]["command"], "EVENT_PALETTE_SET_BACKGROUND")
         self.assertEqual(script[6]["command"], "EVENT_PALETTE_SET_BACKGROUND")
         self.assertEqual(script[7]["args"]["musicId"], "test-music")
-        self.assertEqual(script[8]["args"]["text"], ["A: jump\nDown+A: drop"])
-        self.assertEqual([event["command"] for event in script[9:]], [
+        self.assertEqual(script[8]["command"], "EVENT_OVERLAY_SET_SCANLINE_CUTOFF")
+        self.assertEqual(script[9]["args"]["text"], ["A: jump\nDown+A: drop"])
+        self.assertEqual([event["command"] for event in script[10:]], [
             "EVENT_OVERLAY_SET_SCANLINE_CUTOFF", "EVENT_OVERLAY_SHOW", "EVENT_TEXT_DRAW",
         ])
         self.assertFalse(any(
@@ -334,6 +335,8 @@ class ClimbTests(unittest.TestCase):
         """Exact-ROM regression: text behind the 16px HUD cutoff was invisible
         while its script waited for A, freezing the player after the pickup."""
         scripts = [
+            # Scene init too: re-entry inherits whatever cutoff was last set.
+            scene.build_scene("test-music")["script"],
             scene.checkpoint_actor(0, "sprite")["script"],
             scene.cable_end_actor(6, "sprite", "sfx")["script"],
             scene.junction_box_actor(7, "sprite", "sfx")["script"],
@@ -526,6 +529,35 @@ class ClimbTests(unittest.TestCase):
         ])
         self.assertEqual(self._checkpoint_trigger()["id"],
                          "b02fc406-5513-54f5-abd9-25c1adb2da51")
+
+    def test_street_exit_returns_to_opening_clear_of_start_and_hazards(self):
+        trigger = scene.street_exit_trigger()
+        self.assertEqual((trigger["x"], trigger["y"], trigger["width"], trigger["height"]),
+                         climb.STREET_EXIT)
+        cutoff, hide, switch = trigger["script"]
+        # Exact-ROM regression: the HUD cutoff survived the switch and hid the
+        # opening's modal controls text, freezing input until A.
+        self.assertEqual(cutoff["command"], "EVENT_OVERLAY_SET_SCANLINE_CUTOFF")
+        self.assertEqual(cutoff["args"]["y"]["value"], 150)
+        self.assertEqual(hide["command"], "EVENT_OVERLAY_HIDE")
+        self.assertEqual(switch["command"], "EVENT_SWITCH_SCENE")
+        self.assertEqual(switch["args"]["sceneId"], opening.resource_id("scene:service-opening"))
+        self.assertEqual((switch["args"]["x"]["value"], switch["args"]["y"]["value"]),
+                         opening.EXIT_NUDGE)
+        # Respawning at START (16px-wide hero) must not overlap the exit column.
+        self.assertGreater(climb.START[0], trigger["x"] + trigger["width"])
+        ids = {t["id"] for t in scene.gust_marker_triggers("s")} | {self._checkpoint_trigger()["id"]}
+        self.assertNotIn(trigger["id"], ids)
+
+    def test_reentry_resets_live_wire_state_and_keeps_opening_progress(self):
+        script = scene.build_scene("test-music")["script"]
+        sets = {entry["args"]["variable"]: entry["args"]["value"]["value"]
+                for entry in script if entry["command"] == "EVENT_SET_VALUE"}
+        self.assertEqual(sets, {scene.VARIABLE_CHECKPOINTS_REACHED: 0,
+                                scene.VAR_CARRYING_CABLE_ID: 0, scene.VAR_LINE_LIVE_ID: 0})
+        written = {entry["args"]["variable"] for s in self._all_scripts()
+                   for entry in self._flatten(s) if entry["command"] == "EVENT_SET_VALUE"}
+        self.assertNotIn("4", written, "the climb must never clear Service Restored")
 
     def test_grid_sprite_sidecars_match_climb_ids_when_present(self):
         # The grid sprite sheets are generated separately; check them only if they exist.

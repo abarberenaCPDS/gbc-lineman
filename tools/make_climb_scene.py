@@ -462,6 +462,9 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
         background_palette_state(False, "init-summit-window-cold"),
         line_palette_state(False, "init-line-dead"),
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-village-music"),
+        # The overlay scanline cutoff survives scene switches: lift it so the
+        # intro box is visible even when a previous visit left the HUD's 16px.
+        cutoff_event(150, "intro-controls:say-cutoff"),
         text_event(short_lines("A: jump\nDown+A: drop"), "intro-controls"),
         *hud_events("initial-hud"),
     ]
@@ -659,6 +662,41 @@ def build_checkpoint_trigger(death_sound_id: str, connect_sound_id: str) -> dict
     return checkpoint
 
 
+def street_exit_trigger() -> dict[str, Any]:
+    """Back to the service opening, two tiles before its awning exit.
+
+    Re-entering the climb runs scene init again: vars 0/6/7 reset while the
+    opening's var 4 (service restored) keeps the gate open. The HUD's 16px
+    scanline cutoff survives the switch, so it is lifted and the overlay hidden
+    first; exact-ROM play showed the opening's controls box invisible and
+    waiting for A otherwise.
+    """
+    x, y, width, height = climb.STREET_EXIT
+    arrive_x, arrive_y = opening.EXIT_NUDGE
+    return {
+        "_resourceType": "trigger",
+        "id": resource_id("trigger:street-exit"),
+        "name": "Street Exit (to Service Opening)",
+        "prefabId": "",
+        "x": x,
+        "y": y,
+        "symbol": "trigger_street_exit",
+        "prefabScriptOverrides": {},
+        "width": width,
+        "height": height,
+        "script": [
+            cutoff_event(150, "street-exit:cutoff"),
+            event("EVENT_OVERLAY_HIDE", {}, "street-exit:hud-hide"),
+            event("EVENT_SWITCH_SCENE", {
+            "x": number(arrive_x), "y": number(arrive_y), "direction": "left",
+            "sceneId": opening.resource_id("scene:service-opening"), "fadeSpeed": "2",
+            }, "street-exit:to-opening"),
+        ],
+        "leaveScript": [],
+        "_index": 100,
+    }
+
+
 def debris_actor(index: int, debris: dict[str, Any], sprite_id: str) -> dict[str, Any]:
     row_top = int(debris["row_top"])
     x = int(debris["x"])
@@ -828,6 +866,7 @@ def main() -> None:
                                      audio_ids["connect"]))
     triggers = gust_marker_triggers(audio_ids["death"])
     triggers.append(build_checkpoint_trigger(audio_ids["death"], audio_ids["connect"]))
+    triggers.append(street_exit_trigger())
 
     write_variables()
     for relative_path, palette in grid_palettes():
@@ -839,7 +878,7 @@ def main() -> None:
         write_json(SCENE_DIR / "triggers" / f"{trigger['symbol']}.gbsres", trigger)
     print(
         f"generated storm_climb: {climb.MAP_W}x{climb.MAP_H} PLATFORM, "
-        f"{len(actors)} actors, {len(triggers)} gust triggers; "
+        f"{len(actors)} actors, {len(triggers)} triggers; "
         f"{len(climb.TIMED_GUST_LANE_INDICES)} telegraphed gust; "
         "remaining gust markers are inert until their routes are tested"
     )
