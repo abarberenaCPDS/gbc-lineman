@@ -59,67 +59,66 @@ EMPTY = "." * CANVAS
 # Relieved: smile (corners higher); A arms at her sides, B raises her right hand to wave.
 # ---------------------------------------------------------------------------
 _ROSA_HEAD = [
-    EMPTY,
     ".....333333.....",
     "....33333333....",
+    "...3333333333...",
+    "...3311111133...",  # forehead
     "...3311111133...",
-    "...3331333133...",  # glasses: dark frames, skin lenses
-    "...3311111133...",
+    "...3313113133...",  # eyes: two dark pixels on skin, two rows tall
+    "...3313113133...",
+    "...3311111133...",  # cheeks
 ]
-_ROSA_NECK_TO_HIPS_A = [
-    ".22332222223322.",  # shoulders: long hair at x3-4 and x11-12, sleeves at x1-2 and x13-14
+_MOUTH_FROWN = [
+    "...3311331133...",  # middle higher than corners
+    "...3313113133...",
+]
+_MOUTH_SMILE = [
+    "...3313113133...",  # corners higher
+    "...3311331133...",
+]
+_JAW = [
+    "...3331111333...",
+    "...3322112233...",  # collar
+]
+_SKIRT_LEGS_SHOES = [
+    "....33333333....",  # skirt
+    "...3333333333...",
+    "..333333333333..",
+    "....33....33....",  # stockings
+    "....33....33....",
+    "...333....333...",  # shoes
+]
+_ARMS_DOWN = [
+    ".3" + "2" * 12 + "3.",
+] * 5
+_SHOULDERS = ".22332222223322."
+ROSA_WAIT_A = _ROSA_HEAD + _MOUTH_FROWN + _JAW + [
+    _SHOULDERS,
     "..3222222223....",
     "..3222222223.33.",  # dark phone held at her side
     "..3222222223.33.",
-    "....33333333....",  # skirt
-    "....33....33....",  # shoes
-]
-ROSA_WAIT_A = _ROSA_HEAD + [
-    "...3311331133...",  # r6 frown: middle higher than corners
-    "...3313113133...",  # r7 frown: corners lower
-    "...3331111333...",  # r8 jaw
-    "...3322112233...",  # r9 collar
-] + _ROSA_NECK_TO_HIPS_A
-ROSA_WAIT_B = _ROSA_HEAD[:4] + [
-    "...3333333333...",  # blink behind the glasses
-    _ROSA_HEAD[5],
-    "...3311331133...",
+    "..3222222223....",
+    "..3222222223....",
+] + _SKIRT_LEGS_SHOES
+ROSA_WAIT_B = _ROSA_HEAD[:5] + [
+    "...3311111133...",  # blink: eyes shut to a single row
     "...3313113133...",
-    "...3331111333...",
-    "...3322112233...",
+] + _ROSA_HEAD[7:] + _MOUTH_FROWN + _JAW + [
     ".22332222223333.",  # phone raised to chest height
     "..3222222223.33.",
     "..3222222223....",
     "..3222222223....",
-    "....33333333....",
-    "....33....33....",
-]
-_ROSA_ARMS_DOWN = [
-    ".22332222223322.",
-    ".3" + "2" * 12 + "3.",
-    ".3" + "2" * 12 + "3.",
-    ".3" + "2" * 12 + "3.",
-    "....33333333....",
-    "....33....33....",
-]
-ROSA_REL_A = _ROSA_HEAD + [
-    "...3313113133...",  # r6 smile: corners higher
-    "...3311331133...",  # r7 smile: middle lower
-    "...3331111333...",
-    "...3322112233...",
-] + _ROSA_ARMS_DOWN
-ROSA_REL_B = _ROSA_HEAD + [
-    "...3313113133...",
-    "...3311331133" + ".11",          # right hand lifting
-    "...3331111333" + "22.",          # right forearm raised
-    "...3322112233" + "22.",
-    ".22332222223322.",
-    ".3" + "2" * 12 + "3.",
-    ".3" + "2" * 12 + "3.",
-    ".3" + "2" * 12 + "3.",
-    "....33333333....",
-    "....33....33....",
-]
+    "..3222222223....",
+    "..3222222223....",
+] + _SKIRT_LEGS_SHOES
+ROSA_REL_A = _ROSA_HEAD + _MOUTH_SMILE + _JAW + [_SHOULDERS] + _ARMS_DOWN + _SKIRT_LEGS_SHOES
+_REL_B_FACE = [_MOUTH_SMILE[0], _MOUTH_SMILE[1][:13] + ".11"]  # right hand lifting
+ROSA_REL_B = _ROSA_HEAD + _REL_B_FACE + [
+    _JAW[0][:13] + "22.",  # right forearm raised
+    _JAW[1][:13] + "22.",
+    _SHOULDERS,
+] + _ARMS_DOWN + _SKIRT_LEGS_SHOES
+ROSA_TALL = 32  # canvas rows; the 24px figure stands on the bottom 24 of them
 ROSA_FRAMES = [ROSA_WAIT_A, ROSA_WAIT_B, ROSA_REL_A, ROSA_REL_B]
 ROSA_STATE_FRAMES = {"Waiting": [0, 1], "Relieved": [2, 3]}
 
@@ -248,10 +247,15 @@ ARC_STATE_FRAMES = {"Warning": [0, 1], "Arc": [2, 3]}
 # ---------------------------------------------------------------------------
 
 
-def _render(rows: list[str]) -> Image.Image:
-    if len(rows) != CANVAS:
-        raise ValueError(f"expected {CANVAS} rows, got {len(rows)}")
-    image = Image.new("RGBA", (CANVAS, CANVAS), TRANSPARENT)
+def _pad(rows: list[str], height: int) -> list[str]:
+    """Top-pad figure rows with transparent rows so the figure stands on the canvas bottom."""
+    return [EMPTY] * (height - len(rows)) + rows
+
+
+def _render(rows: list[str], height: int = CANVAS) -> Image.Image:
+    if len(rows) != height:
+        raise ValueError(f"expected {height} rows, got {len(rows)}")
+    image = Image.new("RGBA", (CANVAS, height), TRANSPARENT)
     for y, row in enumerate(rows):
         if len(row) != CANVAS:
             raise ValueError(f"row {y} has width {len(row)}, expected {CANVAS}")
@@ -263,7 +267,7 @@ def _render(rows: list[str]) -> Image.Image:
 
 
 def _sheet(frames: list[Image.Image]) -> Image.Image:
-    result = Image.new("RGBA", (CANVAS * len(frames), CANVAS), TRANSPARENT)
+    result = Image.new("RGBA", (CANVAS * len(frames), frames[0].height), TRANSPARENT)
     for index, frame in enumerate(frames):
         result.paste(frame, (index * CANVAS, 0))
     return result
@@ -284,7 +288,7 @@ def _bounds(sheet: Image.Image) -> tuple[int, int, int, int]:
                 ys.append(y)
     if not xs:
         raise AssertionError("sprite has no opaque pixels")
-    origin = CANVAS - 8
+    origin = sheet.height - 8
     left, right, top, bottom = min(xs), max(xs), min(ys), max(ys)
     return (left, top - origin, right - left + 1, bottom - top + 1)
 
@@ -312,18 +316,23 @@ def _sidecar(
             for animation_frame_index, frame_index in enumerate(authored):
                 frame_x = frame_index * CANVAS
                 tiles: list[dict] = []
-                for x in range(0, CANVAS, 8):
-                    crop = sheet.crop((frame_x + x, 0, frame_x + x + 8, CANVAS))
+                objects = [(x, slice_y) for x in range(0, CANVAS, 8)
+                           for slice_y in range(0, sheet.height, 16)]
+                for x, slice_y in objects:
+                    crop = sheet.crop((frame_x + x, slice_y, frame_x + x + 8, slice_y + 16))
                     if not any(_is_opaque(pixel) for pixel in crop.get_flattened_data()):
                         continue
                     key = (f"state:{state_index}:animation:{animation_index}:"
                            f"frame:{animation_frame_index}:object:{x}")
+                    if slice_y:  # keep the original id for the single (or first) object row
+                        key += f":row{slice_y}"
                     tiles.append({
                         "id": _rid(name, key + ":tile"),
                         "x": x,
-                        "y": 0,
+                        # GB Studio tile y counts UP from the canvas bottom.
+                        "y": sheet.height - 16 - slice_y,
                         "sliceX": frame_x + x,
-                        "sliceY": 0,
+                        "sliceY": slice_y,
                         "flipX": False,
                         "flipY": False,
                         "palette": 0,
@@ -364,7 +373,7 @@ def _sidecar(
         "canvasOriginX": 0,
         "canvasOriginY": 0,
         "canvasWidth": CANVAS,
-        "canvasHeight": CANVAS,
+        "canvasHeight": sheet.height,
         "boundsX": bounds[0],
         "boundsY": bounds[1],
         "boundsWidth": bounds[2],
@@ -386,7 +395,7 @@ def _shade(pixel: tuple[int, int, int, int]) -> int:
 
 def _rosa_asset() -> tuple[str, Image.Image, dict]:
     name = "rosa"
-    sheet = _sheet([_render(rows) for rows in ROSA_FRAMES])
+    sheet = _sheet([_render(_pad(rows, ROSA_TALL), ROSA_TALL) for rows in ROSA_FRAMES])
     states = [(state, ROSA_STATE_FRAMES[state]) for state in rosa.ROSA_STATES]
     meta = _sidecar(name, rosa.ROSA_SPRITE_ID, sheet, states,
                     rosa.ROSA_SPRITE_PALETTE_SLOT, anim_speed=20)
@@ -412,14 +421,15 @@ def _arc_asset() -> tuple[str, Image.Image, dict]:
 
 
 def _frame_bytes(sheet: Image.Image, index: int) -> bytes:
-    return sheet.crop((index * CANVAS, 0, (index + 1) * CANVAS, CANVAS)).tobytes()
+    return sheet.crop((index * CANVAS, 0, (index + 1) * CANVAS, sheet.height)).tobytes()
 
 
 def _validate(name: str, image: Image.Image, meta: dict) -> None:
     if image.mode != "RGBA" or image.size != (meta["width"], meta["height"]):
         raise AssertionError(f"{name}: sheet is not RGBA with matching metadata size")
-    if image.height != CANVAS or image.width % CANVAS:
-        raise AssertionError(f"{name}: sheet is not aligned to {CANVAS}x{CANVAS} frames")
+    height = ROSA_TALL if name == "rosa" else CANVAS
+    if image.height != height or image.width % CANVAS:
+        raise AssertionError(f"{name}: sheet is not aligned to {CANVAS}x{height} frames")
     opaque = {pixel for pixel in image.get_flattened_data() if _is_opaque(pixel)}
     if not opaque or not opaque <= set(PROXY.values()):
         raise AssertionError(f"{name}: opaque pixels must be proxy colours")
@@ -428,14 +438,14 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
     frame_count = image.width // CANVAS
     frames = [_frame_bytes(image, index) for index in range(frame_count)]
     for index in range(frame_count):
-        frame = image.crop((index * CANVAS, 0, (index + 1) * CANVAS, CANVAS))
-        ys = [y for y in range(CANVAS) for x in range(CANVAS) if _is_opaque(frame.getpixel((x, y)))]
+        frame = image.crop((index * CANVAS, 0, (index + 1) * CANVAS, height))
+        ys = [y for y in range(height) for x in range(CANVAS) if _is_opaque(frame.getpixel((x, y)))]
         if not ys:
             raise AssertionError(f"{name}: frame {index} is empty")
         if name == "live_arc":
             if min(ys) < ARC_BLOCK_TOP:
                 raise AssertionError(f"{name}: frame {index} leaves the chest-lane tile row")
-        elif max(ys) != CANVAS - 1:
+        elif max(ys) != height - 1:
             raise AssertionError(f"{name}: frame {index} does not stand on the shared feet row")
         accents = sum(1 for pixel in frame.get_flattened_data() if pixel == PROXY[2])
         if name == "rosa_workstation" and accents > MAX_ACCENT_PIXELS:
@@ -452,7 +462,8 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
                         raise AssertionError(f"{name}: duplicate tile id")
                     tile_ids.add(tile["id"])
                     if (tile["sliceX"] < 0 or tile["sliceX"] + 8 > image.width
-                            or tile["y"] != 0 or tile["sliceY"] != 0):
+                            or tile["y"] != height - 16 - tile["sliceY"]
+                            or tile["sliceY"] % 16):
                         raise AssertionError(f"{name}: tile slice outside its object")
     states_by_name = {state["name"]: state for state in meta["states"]}
     if name == "rosa":

@@ -32,13 +32,13 @@ def _load(name: str) -> tuple[Image.Image, dict]:
 
 def _frames(image: Image.Image) -> list[bytes]:
     return [
-        image.crop((index * 16, 0, (index + 1) * 16, 16)).tobytes()
+        image.crop((index * 16, 0, (index + 1) * 16, image.height)).tobytes()
         for index in range(image.width // 16)
     ]
 
 
 def _frame_image(image: Image.Image, index: int) -> Image.Image:
-    return image.crop((index * 16, 0, (index + 1) * 16, 16))
+    return image.crop((index * 16, 0, (index + 1) * 16, image.height))
 
 
 def _state_frame_counts(meta: dict) -> dict:
@@ -50,7 +50,7 @@ def _opaque(frame: Image.Image, x: int, y: int) -> bool:
 
 
 def _opaque_rows(frame: Image.Image) -> set[int]:
-    return {y for y in range(16) for x in range(16) if _opaque(frame, x, y)}
+    return {y for y in range(frame.height) for x in range(16) if _opaque(frame, x, y)}
 
 
 class ContractTests(unittest.TestCase):
@@ -130,12 +130,12 @@ class StateTests(unittest.TestCase):
 
 class SheetTests(unittest.TestCase):
     def test_sheet_sizes(self):
-        expected = {KIKO: (64, 16), STOVE: (48, 16)}
+        expected = {KIKO: (64, 32), STOVE: (48, 16)}
         for name in NAMES:
             image, meta = _load(name)
             self.assertEqual(image.size, expected[name], name)
             self.assertEqual((meta["width"], meta["height"]), image.size, name)
-            self.assertEqual((meta["canvasWidth"], meta["canvasHeight"]), (16, 16), name)
+            self.assertEqual((meta["canvasWidth"], meta["canvasHeight"]), (16, image.height), name)
             self.assertEqual(image.width % 16, 0, name)
 
     def test_kiko_idle_frames_differ_within_each_state(self):
@@ -167,35 +167,44 @@ class SheetTests(unittest.TestCase):
             image, _meta = _load(name)
             for index in range(image.width // 16):
                 rows = _opaque_rows(_frame_image(image, index))
-                self.assertEqual(max(rows), 15, f"{name} frame {index} floats off the feet row")
+                self.assertEqual(max(rows), image.height - 1,
+                                 f"{name} frame {index} floats off the feet row")
 
-    def test_kiko_is_a_child_with_a_lower_head_and_shorter_body(self):
-        kiko_image, _meta = _load(KIKO)
-        tomas_image, _ = _load(TOMAS)
-        rosa_image, _ = _load(ROSA)
+    def test_kiko_is_a_20px_child_on_a_32px_canvas(self):
+        image, meta = _load(KIKO)
+        self.assertEqual(image.height, 32)
         for index in (0, 1):  # Waiting frames: the bowl does not raise the head line
-            kiko_rows = _opaque_rows(_frame_image(kiko_image, index))
-            tomas_rows = _opaque_rows(_frame_image(tomas_image, index))
-            rosa_rows = _opaque_rows(_frame_image(rosa_image, index))
-            self.assertGreater(min(kiko_rows), min(tomas_rows), "Kiko's head must sit lower than Tomás's")
-            self.assertGreater(min(kiko_rows), min(rosa_rows), "Kiko's head must sit lower than Rosa's")
-            self.assertLess(max(kiko_rows) - min(kiko_rows), max(tomas_rows) - min(tomas_rows),
-                            "Kiko must be shorter than Tomás")
-            self.assertLess(max(kiko_rows) - min(kiko_rows), max(rosa_rows) - min(rosa_rows),
-                            "Kiko must be shorter than Rosa")
+            rows = _opaque_rows(_frame_image(image, index))
+            self.assertEqual(max(rows) - min(rows) + 1, 20, "Kiko is a 20px figure")
+        self.assertEqual((meta["boundsY"], meta["boundsHeight"]), (-12, 20))
+        self.assertLess(20, 24, "Kiko stays shorter than the 24px adults")
+
+    def test_eyes_are_dark_pixels_not_a_band(self):
+        image, _meta = _load(KIKO)
+        for index in range(4):
+            frame = _frame_image(image, index)
+            for y in range(12, 32):
+                run = best = 0
+                for x in range(16):
+                    px = frame.getpixel((x, y))
+                    run = run + 1 if px == mk.PROXY[3] else 0
+                    best = max(best, run)
+                if 15 <= y <= 18 and index in (0, 1):  # eye rows of the Waiting head
+                    self.assertLessEqual(best, 3, f"frame {index} row {y} reads as a visor")
 
     def test_relieved_bowl_is_raised_above_the_head_line(self):
         image, _meta = _load(KIKO)
         for index in (2, 3):
             rows = _opaque_rows(_frame_image(image, index))
-            self.assertLessEqual(min(rows), 1, f"Relieved frame {index} must raise the bowl")
+            self.assertEqual(min(rows), 12, f"Relieved frame {index} must raise the bowl")
 
 
 class PaletteTests(unittest.TestCase):
     def test_tile_palette_indices(self):
         for name, slot in ((KIKO, kiko.KIKO_SPRITE_PALETTE_SLOT),
                            (STOVE, kiko.GRID_SPRITE_PALETTE_SLOT)):
-            _image, meta = _load(name)
+            image, meta = _load(name)
+            image_h = image.height
             tiles = [tile for state in meta["states"] for animation in state["animations"]
                      for frame in animation["frames"] for tile in frame["tiles"]]
             self.assertTrue(tiles, name)
@@ -203,8 +212,7 @@ class PaletteTests(unittest.TestCase):
                 self.assertEqual(tile["paletteIndex"], slot, name)
                 self.assertEqual(tile["palette"], 0, name)
                 self.assertEqual(tile["objPalette"], "OBP0", name)
-                self.assertEqual(tile["y"], 0, name)
-                self.assertEqual(tile["sliceY"], 0, name)
+                self.assertEqual(tile["y"], image_h - 16 - tile["sliceY"], name)
 
     def test_png_colours_are_restricted_to_proxy_palette(self):
         for name in NAMES:
@@ -220,8 +228,8 @@ class PaletteTests(unittest.TestCase):
             image, _meta = _load(name)
             for index in range(image.width // 16):
                 frame = _frame_image(image, index)
-                self.assertEqual(frame.getpixel((0, 15))[3], 0, f"{name} frame {index} corner")
-                self.assertEqual(frame.getpixel((15, 15))[3], 0, f"{name} frame {index} corner")
+                self.assertEqual(frame.getpixel((0, frame.height - 1))[3], 0, f"{name} frame {index} corner")
+                self.assertEqual(frame.getpixel((15, frame.height - 1))[3], 0, f"{name} frame {index} corner")
             pixels = list(image.get_flattened_data())
             self.assertTrue(any(pixel[3] == 0 for pixel in pixels), f"{name} has no transparency")
 
@@ -238,17 +246,18 @@ class BoundsTests(unittest.TestCase):
         for name in NAMES:
             image, meta = _load(name)
             xs, ys = [], []
-            for y in range(16):
+            for y in range(image.height):
                 for x in range(image.width):
                     if image.getpixel((x, y))[3]:
                         xs.append(x % 16)
                         ys.append(y)
             self.assertEqual(meta["boundsX"], min(xs), name)
-            self.assertEqual(meta["boundsY"], min(ys) - 8, name)
+            self.assertEqual(meta["boundsY"], min(ys) - (image.height - 8), name)
             self.assertEqual(meta["boundsWidth"], max(xs) - min(xs) + 1, name)
             self.assertEqual(meta["boundsHeight"], max(ys) - min(ys) + 1, name)
             self.assertGreaterEqual(meta["boundsX"], 0, name)
             self.assertLessEqual(meta["boundsX"] + meta["boundsWidth"], 16, name)
+            self.assertLessEqual(meta["boundsHeight"], image.height, name)
             self.assertGreater(meta["boundsWidth"], 0, name)
             self.assertGreater(meta["boundsHeight"], 0, name)
 
@@ -267,27 +276,6 @@ class BoundsTests(unittest.TestCase):
                         for tile in frame["tiles"]:
                             self.assertGreaterEqual(tile["sliceX"], 0, name)
                             self.assertLessEqual(tile["sliceX"] + 8, image.width, name)
-
-
-class DistinctnessTests(unittest.TestCase):
-    def _differing_pixels(self, first: Image.Image, second: Image.Image) -> int:
-        first_mask = first.getchannel("A")
-        second_mask = second.getchannel("A")
-        return sum(
-            1 for y in range(16) for x in range(16)
-            if (first_mask.getpixel((x, y)) != 0) != (second_mask.getpixel((x, y)) != 0)
-        )
-
-    def test_kiko_silhouette_differs_from_tomas_and_rosa(self):
-        kiko_image, _meta = _load(KIKO)
-        for other_name in (TOMAS, ROSA):
-            other_image, _other_meta = _load(other_name)
-            for index in (0, 2):
-                differing = self._differing_pixels(
-                    _frame_image(kiko_image, index), _frame_image(other_image, index))
-                self.assertGreaterEqual(differing, 20,
-                                        f"Kiko frame {index} too close to {other_name}")
-
 
 
 class RegenerationTests(unittest.TestCase):

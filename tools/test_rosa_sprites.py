@@ -30,13 +30,13 @@ def _load(name: str) -> tuple[Image.Image, dict]:
 
 def _frames(image: Image.Image) -> list[bytes]:
     return [
-        image.crop((index * 16, 0, (index + 1) * 16, 16)).tobytes()
+        image.crop((index * 16, 0, (index + 1) * 16, image.height)).tobytes()
         for index in range(image.width // 16)
     ]
 
 
 def _frame_image(image: Image.Image, index: int) -> Image.Image:
-    return image.crop((index * 16, 0, (index + 1) * 16, 16))
+    return image.crop((index * 16, 0, (index + 1) * 16, image.height))
 
 
 def _state_frame_counts(meta: dict) -> dict:
@@ -119,12 +119,12 @@ class StateTests(unittest.TestCase):
 
 class SheetTests(unittest.TestCase):
     def test_sheet_sizes(self):
-        expected = {ROSA: (64, 16), WORKSTATION: (48, 16), ARC: (64, 16)}
+        expected = {ROSA: (64, 32), WORKSTATION: (48, 16), ARC: (64, 16)}
         for name in NAMES:
             image, meta = _load(name)
             self.assertEqual(image.size, expected[name], name)
             self.assertEqual((meta["width"], meta["height"]), image.size, name)
-            self.assertEqual((meta["canvasWidth"], meta["canvasHeight"]), (16, 16), name)
+            self.assertEqual((meta["canvasWidth"], meta["canvasHeight"]), (16, image.height), name)
             self.assertEqual(image.width % 16, 0, name)
 
     def test_rosa_idle_frames_differ_within_each_state(self):
@@ -154,8 +154,8 @@ class SheetTests(unittest.TestCase):
             image, _meta = _load(name)
             for index in range(image.width // 16):
                 frame = _frame_image(image, index)
-                rows = {y for y in range(16) for x in range(16) if _opaque(frame, x, y)}
-                self.assertEqual(max(rows), 15, f"{name} frame {index} floats off the feet row")
+                rows = {y for y in range(frame.height) for x in range(16) if _opaque(frame, x, y)}
+                self.assertEqual(max(rows), frame.height - 1, f"{name} frame {index} floats off the feet row")
 
     def test_arc_art_stays_in_the_chest_lane_tile_row(self):
         image, _meta = _load(ARC)
@@ -186,8 +186,9 @@ class PaletteTests(unittest.TestCase):
                 self.assertEqual(tile["paletteIndex"], slot, name)
                 self.assertEqual(tile["palette"], 0, name)
                 self.assertEqual(tile["objPalette"], "OBP0", name)
-                self.assertEqual(tile["y"], 0, name)
-                self.assertEqual(tile["sliceY"], 0, name)
+                # GB Studio tile y counts up from the canvas bottom.
+                self.assertEqual(tile["y"], meta["canvasHeight"] - 16 - tile["sliceY"], name)
+                self.assertIn(tile["sliceY"], (0, 16), name)
 
     def test_png_colours_are_restricted_to_proxy_palette(self):
         for name in NAMES:
@@ -221,13 +222,13 @@ class BoundsTests(unittest.TestCase):
         for name in NAMES:
             image, meta = _load(name)
             xs, ys = [], []
-            for y in range(16):
+            for y in range(image.height):
                 for x in range(image.width):
                     if image.getpixel((x, y))[3]:
                         xs.append(x % 16)
                         ys.append(y)
             self.assertEqual(meta["boundsX"], min(xs), name)
-            self.assertEqual(meta["boundsY"], min(ys) - 8, name)
+            self.assertEqual(meta["boundsY"], min(ys) - (image.height - 8), name)
             self.assertEqual(meta["boundsWidth"], max(xs) - min(xs) + 1, name)
             self.assertEqual(meta["boundsHeight"], max(ys) - min(ys) + 1, name)
             self.assertGreaterEqual(meta["boundsX"], 0, name)
@@ -243,9 +244,21 @@ class BoundsTests(unittest.TestCase):
         self.assertEqual((meta["boundsY"], meta["boundsHeight"]), (0, 8))
 
     def test_rosa_is_a_standing_figure_with_head_room(self):
+        # 24px figure on a 16x32 canvas, like opening_worker24 (bounds y -16, height 24).
         _image, meta = _load(ROSA)
+        self.assertEqual(meta["canvasHeight"], 32)
         self.assertEqual(meta["boundsY"] + meta["boundsHeight"], 8)
-        self.assertLessEqual(meta["boundsY"], -6)
+        self.assertEqual((meta["boundsY"], meta["boundsHeight"]), (-16, 24))
+
+    def test_rosa_face_reads_at_1x(self):
+        # Eyes are dark pixels on skin; the mouth sits on skin below them.
+        image, _meta = _load(ROSA)
+        for index in range(4):
+            frame = _frame_image(image, index)
+            px = lambda x, y: frame.getpixel((x, y))
+            self.assertEqual(px(6, 14)[:3], (0, 0, 0), f"frame {index} left eye")
+            self.assertEqual(px(9, 14)[:3], (0, 0, 0), f"frame {index} right eye")
+            self.assertEqual(px(7, 14)[:3], (255, 255, 255), f"frame {index} skin between eyes")
 
     def test_checksums_match_png_bytes(self):
         for name in NAMES:
@@ -269,7 +282,7 @@ class DistinctnessTests(unittest.TestCase):
         rosa_image, _meta = _load(ROSA)
         tomas_image, _tomas_meta = _load(TOMAS)
         for rosa_index, tomas_index in ((0, 0), (2, 2)):
-            rosa_mask = _frame_image(rosa_image, rosa_index).getchannel("A")
+            rosa_mask = _frame_image(rosa_image, rosa_index).crop((0, 16, 16, 32)).getchannel("A")
             tomas_mask = _frame_image(tomas_image, tomas_index).getchannel("A")
             differing = sum(
                 1 for y in range(16) for x in range(16)
@@ -282,10 +295,10 @@ class DistinctnessTests(unittest.TestCase):
         tomas_image, _tomas_meta = _load(TOMAS)
         for index in (0, 2):
             frame = _frame_image(rosa_image, index)
-            self.assertTrue(_opaque(frame, 3, 9), f"Rosa frame {index} lacks hair past the jaw")
-            self.assertTrue(_opaque(frame, 12, 9), f"Rosa frame {index} lacks hair past the jaw")
-            self.assertFalse(_opaque(_frame_image(tomas_image, index), 3, 9),
-                             f"Tomás frame {index} should not have hair at the shoulder")
+            self.assertTrue(_opaque(frame, 3, 18), f"Rosa frame {index} lacks hair past the jaw")
+            self.assertTrue(_opaque(frame, 12, 18), f"Rosa frame {index} lacks hair past the jaw")
+            self.assertFalse(_opaque(_frame_image(tomas_image, index), 12, 18),
+                             f"Tomás frame {index} should not have hair past the jaw")
 
 
 class RegenerationTests(unittest.TestCase):

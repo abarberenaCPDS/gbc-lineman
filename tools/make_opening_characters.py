@@ -262,43 +262,71 @@ def _worker_frame(
     return image
 
 
+MARTA_ROWS = (
+    "......3333......",
+    ".....333333.....",
+    "....33222233....",
+    "...3321111233...",
+    "...3311111133...",
+    "...3313113133...",
+    "...3313113133...",
+    "....33111133....",
+    ".....311113.....",
+    "......3333......",
+    "...3322222233...",
+    "..332222222233..",
+    "..322223322223..",
+    "..322223322223..",
+    "..322221122223..",
+    "..322221122223..",
+    "..332222222233..",
+    "...3222222223...",
+    "...3222222223...",
+    "..322222222223..",
+    "..322222222223..",
+    "..333333333333..",
+    "....311331133...",
+    "...3333..3333...",
+)
+
+
 def _marta_frame(powered: bool, phase: int = 0) -> Image.Image:
-    image = Image.new("RGB", (16, 16), TRANSPARENT)
-    draw = ImageDraw.Draw(image)
-    # A round rain hood frames a visible face; the scalloped mauve silhouette
-    # and shawl distinguish Marta from the hardhat worker.
-    _poly(draw, [(4, 2), (6, 0), (10, 0), (12, 2), (13, 5), (12, 7),
-                 (14, 8), (13, 11), (11, 12), (11, 14), (5, 14),
-                 (5, 12), (3, 11), (2, 8), (4, 7), (3, 5)], 3)
-    _poly(draw, [(5, 2), (7, 1), (10, 1), (12, 3), (12, 5), (10, 7),
-                 (6, 7), (4, 5)], 2)
-    _rect(draw, (6, 3, 10, 7), 1)
-    _rect(draw, (4, 7, 11, 11), 2)  # rounded shawl shoulders
-    _rect(draw, (3, 8, 4, 10), 3)
-    _rect(draw, (11, 8, 12, 10), 3)
-    _rect(draw, (5, 11, 10, 13), 3)
-    _rect(draw, (5, 12, 7, 14), 2)
-    _rect(draw, (8, 12, 10, 14), 2)
-    _rect(draw, (4, 14, 7, 15), 3)
-    _rect(draw, (9, 14, 12, 15), 3)
-    _draw_index(draw, (7, 5), 3)
-    _draw_index(draw, (10, 5), 3)
+    """24px older neighbour on a 16x32 canvas, feet on the bottom row.
+
+    Hood (3) frames a skin (1) face with two-pixel-tall eyes and a mouth;
+    the shawl (2) and clasped hands read at 1x. Three inks only.
+    """
+    grid = [list(row) for row in MARTA_ROWS]
+
+    def put(x: int, y: int, shade: int) -> None:
+        grid[y][x] = str(shade)
+
+    # Mouth: flat worried line (row 8 is the chin row).
+    put(7, 8, 3)
+    put(8, 8, 3)
     if powered:
-        # Upright, relieved posture: open arms, softened closed eyes, and a
-        # warm smile. Colors still come exclusively from Marta's three inks.
-        _rect(draw, (2, 6, 3, 9), 3)
-        _rect(draw, (1, 5, 2, 7), 2)
-        _rect(draw, (12, 6, 13, 9), 3)
-        _rect(draw, (13, 5, 14, 7), 2)
-        _draw_index(draw, (7, 5), 1)
-        _draw_index(draw, (10, 5), 1)
-        _rect(draw, (8, 7, 9, 7), 3)
-        _draw_index(draw, (8, 8), 1)
+        # Relieved: closed happy eyes, wide smile, open raised arms.
+        for x in (6, 9):
+            put(x, 5, 1)
+        put(6, 8, 3)
+        put(9, 8, 3)
+        for x in (7, 8):
+            put(x, 14, 2)
+            put(x, 15, 2)
+        for x, y in ((1, 9), (2, 9), (1, 10), (2, 10), (13, 9), (14, 9), (13, 10), (14, 10)):
+            put(x, y, 1)
+        for x, y in ((2, 11), (13, 11), (2, 12), (13, 12)):
+            put(x, y, 3)
     elif phase:
-        _draw_index(draw, (8, 8), 3)
-        _draw_index(draw, (7, 5), 1)
-    else:
-        _draw_index(draw, (8, 8), 1)
+        # Blink: top eye row closes, bottom row stays.
+        put(6, 5, 1)
+        put(9, 5, 1)
+    image = Image.new("RGB", (16, 32), TRANSPARENT)
+    draw = ImageDraw.Draw(image)
+    for y, row in enumerate(grid):
+        for x, ch in enumerate(row):
+            if ch != ".":
+                _draw_index(draw, (x, y + 8), int(ch))
     return image
 
 
@@ -521,7 +549,7 @@ def _worker_asset(name: str, body_height: int) -> tuple[str, Image.Image, dict]:
 
 def _marta_asset() -> tuple[str, Image.Image, dict]:
     frames = [_marta_frame(False, 0), _marta_frame(False, 1), _marta_frame(True)]
-    sheet = _sheet(frames, 16, 16)
+    sheet = _sheet(frames, 16, 32)
     states = [
         {
             "name": "Waiting",
@@ -535,7 +563,7 @@ def _marta_asset() -> tuple[str, Image.Image, dict]:
         },
     ]
     meta = _sidecar(
-        "opening_marta", sheet, 16, 16, (1, -8, 14, 16),
+        "opening_marta", sheet, 16, 32, (2, -16, 12, 24),
         PALETTE_INDEX["marta"], states, anim_speed=12,
     )
     return "opening_marta", sheet, meta
@@ -629,6 +657,8 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
             if canvas_h == 32 and max(ys) < body_bottom - 1:
                 raise AssertionError(f"{name}: tall candidate lost its lower-foot placement")
     elif name == "opening_marta":
+        if (canvas_h, meta["boundsY"], meta["boundsHeight"]) != (32, -16, 24):
+            raise AssertionError("Marta must be a bottom-anchored 24px figure on a 16x32 canvas")
         waiting = meta["states"][0]["animations"]
         powered = meta["states"][1]["animations"]
         if len(waiting[0]["frames"]) != 2 or len(powered[0]["frames"]) != 1:

@@ -13,8 +13,8 @@ Art is drawn from ASCII rows: ``.`` is transparent, and ``1``, ``2``, ``3`` are 
 three opaque proxy colours (white, gray 160, black). Proxy index N maps to hardware
 index N of the palette the scene worker builds: ``ridge.TOMAS_SPRITE_HARDWARE`` for
 Tomás and the grid sprite palette for the concentrator. Index 0 is always
-transparent. Tomás uses the same proxy scheme and 16x16 framing as the Marta
-villager in ``make_opening_characters.py``; the concentrator follows the grid sprites
+transparent. Tomás uses the same proxy scheme as the 24px workers in ``make_opening_characters.py``
+(16x32 canvas, tile y counting up from the bottom); the concentrator follows the grid sprites
 in ``make_grid_sprites.py``.
 """
 from __future__ import annotations
@@ -33,7 +33,8 @@ OUT_DIR = ROOT / "assets" / "sprites"
 sys.path.insert(0, str(TOOLS_DIR))
 import ridge  # noqa: E402
 
-CANVAS = 16
+CANVAS = 16  # canvas width, and the concentrator canvas height
+TOMAS_CANVAS_H = 32  # Tomás uses the 16x32 opening_worker24 format
 ENGINE_SLOTS = 8
 TRANSPARENT = (0, 255, 0, 0)
 PROXY = {
@@ -49,54 +50,66 @@ GRID_SPRITE_HARDWARE = ["000000", "C7DCE1", "38C8D8", "142332"]
 MAX_ACCENT_PIXELS = 4  # the cyan accent is reserved for small lights and airflow
 
 # ---------------------------------------------------------------------------
-# Tomás: older man in a cardigan, front view, feet on row 15.
-# 1 = skin, 2 = cardigan green, 3 = hair, outline, trousers, shoes.
-# Waiting: worried mouth, hand to chest (A raised, B lowered for a slow breath).
-# Relieved: smile; A stands square, B lifts his head a pixel (happy bob).
+# Tomás: oldest villager, a 23-24px figure on a 16x32 canvas (the opening_worker24
+# format), feet on the canvas bottom row, a bit stooped (head forward/left, rounded
+# back). Drawn as 24 rows and padded with 8 blank rows on top.
+# 1 = skin, 2 = cardigan green, 3 = hair, outline, trousers, shoes, nasal tube.
+# Waiting: open mouth, hand to chest (A raised, B lowered for a slow breath).
+# Relieved: smile; A stands square, B lifts his head a pixel (easy breathing).
+# Nasal hose: prongs under the nose, tube hooked at the ear and down to the floor.
 # ---------------------------------------------------------------------------
-TOMAS_WAIT_A = [
-    "................",
-    ".....333333.....",
-    "....33111133....",
-    "....33311333....",  # glasses frame top
-    "....33133133....",  # lenses
-    "....31111113....",
-    "....31111113....",
-    "....31133113....",  # frown: middle higher than corners
-    "....31311313....",
-    ".....33111133...",
-    "...3222112223...",
-    "...3222312223...",  # hand to chest
-    "...3222322223...",
-    "....33333333....",
-    ".....33..33.....",
-    "....333..333....",
-]
-TOMAS_WAIT_B = TOMAS_WAIT_A[:11] + [
-    "...3222322223...",  # no hand: breath out
-    "...3222312223...",  # hand lowered a pixel
-] + TOMAS_WAIT_A[13:]
-TOMAS_REL_A = [
-    "................",
-    ".....333333.....",
-    "....33111133....",
-    "....33311333....",
-    "....33133133....",
-    "....31111113....",
-    "....31111113....",
-    "....31311313....",  # smile: corners higher
-    "....31133113....",  # smile: middle lower
-    ".....33111133...",
-    "...3222112223...",
-    "...3222322223...",
-    "..132223222231..",  # arms at his sides
-    "....33333333....",
-    ".....33..33.....",
-    "....333..333....",
-]
-# Head lifted one pixel: rows 1-8 move up, neck is shown on row 9.
-TOMAS_REL_B = TOMAS_REL_A[1:9] + [TOMAS_REL_A[9], ".......11.......",
-                                  *TOMAS_REL_A[10:]]
+def _row(*parts: tuple[int, str]) -> str:
+    cells = ["."] * CANVAS
+    for start, text in parts:
+        cells[start:start + len(text)] = text
+    return "".join(cells)
+
+
+def _tomas_frame(smile: bool, hand: int = 2, relaxed: bool = False, lift: bool = False):
+    """Head forward-left of a rounded back; bald crown, ears, moustache, nasal tube."""
+    tube = (13, "3")  # nasal tube drops to the floor on the right (reads as a cane too)
+    head = [
+        _row((2, "333333")),                  # thin outline over a bald crown
+        _row((1, "2"), (2, "111111"), (8, "2")),  # thinning hair wisps (gray)
+        _row((1, "2"), (2, "111111"), (8, "2")),
+        _row((1, "11111111")),
+        _row((1, "11311311")),                # eyes: two dark dots on skin
+        _row((0, "1113113111")),              # ears out to each side
+        _row((0, "1111111111"), (10, "3")),   # tube hooks over the ear
+        _row((1, "11333311"), (10, "3")),     # moustache
+        _row((1, "11111111"), (10, "3")),
+        _row((1, "11311311") if smile else (1, "11133111"), (10, "3")),  # mouth
+        _row((2, "333333"), (10, "3")),       # chin
+    ]
+    body = [
+        _row((3, "3"), (4, "222222"), (10, "3333")),     # shoulders, tube turns down
+        _row((3, "3"), (4, "22222222"), (12, "33")),     # rounded back bulges right
+        _row((3, "3"), (4, "22222222"), (12, "33")),
+        _row((3, "3"), (4, "2222222"), (11, "3"), tube),
+        _row((3, "3"), (4, "2222222"), (11, "3"), tube),
+        _row((3, "3"), (4, "2222222"), (11, "3"), tube),
+        _row((3, "3"), (4, "2222222"), (11, "3"), tube),
+        _row((3, "333333333"), tube),            # cardigan hem
+        _row((4, "333"), (8, "333"), tube),
+        _row((4, "333"), (8, "333"), tube),
+        _row((4, "333"), (8, "333"), tube),
+        _row((3, "333"), (8, "3333"), tube),     # shoes
+    ]
+    if relaxed:  # arms at his sides, hands visible
+        body[3] = _row((3, "1"), (4, "2222222"), (11, "1"), tube)
+        body[4] = _row((3, "1"), (4, "2222222"), (11, "1"), tube)
+    else:  # hand to chest
+        body[hand] = _row((3, "3"), (4, "22"), (6, "11"), (8, "222"), (11, "3"), tube)
+    rows = [_row()] + head + body
+    if lift:  # head up one pixel, neck shown
+        rows = rows[1:12] + [_row((4, "11"))] + rows[12:]
+    return [_row()] * 8 + rows
+
+
+TOMAS_WAIT_A = _tomas_frame(False, hand=3)
+TOMAS_WAIT_B = _tomas_frame(False, hand=4)
+TOMAS_REL_A = _tomas_frame(True, relaxed=True)
+TOMAS_REL_B = _tomas_frame(True, relaxed=True, lift=True)
 TOMAS_FRAMES = [TOMAS_WAIT_A, TOMAS_WAIT_B, TOMAS_REL_A, TOMAS_REL_B]
 TOMAS_STATE_FRAMES = {"Waiting": [0, 1], "Relieved": [2, 3]}
 
@@ -154,9 +167,10 @@ CONC_FRAMES = [_with_hose(frame) for frame in CONC_FRAMES]
 
 
 def _render(rows: list[str]) -> Image.Image:
-    if len(rows) != CANVAS:
-        raise ValueError(f"expected {CANVAS} rows, got {len(rows)}")
-    image = Image.new("RGBA", (CANVAS, CANVAS), TRANSPARENT)
+    height = len(rows)
+    if height not in (CANVAS, TOMAS_CANVAS_H):
+        raise ValueError(f"unexpected row count {height}")
+    image = Image.new("RGBA", (CANVAS, height), TRANSPARENT)
     for y, row in enumerate(rows):
         if len(row) != CANVAS:
             raise ValueError(f"row {y} has width {len(row)}, expected {CANVAS}")
@@ -168,7 +182,7 @@ def _render(rows: list[str]) -> Image.Image:
 
 
 def _sheet(frames: list[Image.Image]) -> Image.Image:
-    result = Image.new("RGBA", (CANVAS * len(frames), CANVAS), TRANSPARENT)
+    result = Image.new("RGBA", (CANVAS * len(frames), frames[0].height), TRANSPARENT)
     for index, frame in enumerate(frames):
         result.paste(frame, (index * CANVAS, 0))
     return result
@@ -189,7 +203,7 @@ def _bounds(sheet: Image.Image) -> tuple[int, int, int, int]:
                 ys.append(y)
     if not xs:
         raise AssertionError("sprite has no opaque pixels")
-    origin = CANVAS - 8
+    origin = sheet.height - 8
     left, right, top, bottom = min(xs), max(xs), min(ys), max(ys)
     return (left, top - origin, right - left + 1, bottom - top + 1)
 
@@ -217,18 +231,21 @@ def _sidecar(
             for animation_frame_index, frame_index in enumerate(authored):
                 frame_x = frame_index * CANVAS
                 tiles: list[dict] = []
-                for x in range(0, CANVAS, 8):
-                    crop = sheet.crop((frame_x + x, 0, frame_x + x + 8, CANVAS))
+                for slice_y, x in ((sy, x) for sy in range(0, sheet.height, 16)
+                                   for x in range(0, CANVAS, 8)):
+                    crop = sheet.crop((frame_x + x, slice_y, frame_x + x + 8, slice_y + 16))
                     if not any(_is_opaque(pixel) for pixel in crop.get_flattened_data()):
                         continue
                     key = (f"state:{state_index}:animation:{animation_index}:"
                            f"frame:{animation_frame_index}:object:{x}")
+                    if slice_y:
+                        key += f":row:{slice_y}"
                     tiles.append({
                         "id": _rid(name, key + ":tile"),
                         "x": x,
-                        "y": 0,
+                        "y": sheet.height - 16 - slice_y,  # tile y counts up from the bottom
                         "sliceX": frame_x + x,
-                        "sliceY": 0,
+                        "sliceY": slice_y,
                         "flipX": False,
                         "flipY": False,
                         "palette": 0,
@@ -269,7 +286,7 @@ def _sidecar(
         "canvasOriginX": 0,
         "canvasOriginY": 0,
         "canvasWidth": CANVAS,
-        "canvasHeight": CANVAS,
+        "canvasHeight": sheet.height,
         "boundsX": bounds[0],
         "boundsY": bounds[1],
         "boundsWidth": bounds[2],
@@ -308,13 +325,13 @@ def _concentrator_asset() -> tuple[str, Image.Image, dict]:
 
 
 def _frame_bytes(sheet: Image.Image, index: int) -> bytes:
-    return sheet.crop((index * CANVAS, 0, (index + 1) * CANVAS, CANVAS)).tobytes()
+    return sheet.crop((index * CANVAS, 0, (index + 1) * CANVAS, sheet.height)).tobytes()
 
 
 def _validate(name: str, image: Image.Image, meta: dict) -> None:
     if image.mode != "RGBA" or image.size != (meta["width"], meta["height"]):
         raise AssertionError(f"{name}: sheet is not RGBA with matching metadata size")
-    if image.height != CANVAS or image.width % CANVAS:
+    if image.height not in (CANVAS, TOMAS_CANVAS_H) or image.width % CANVAS:
         raise AssertionError(f"{name}: sheet is not aligned to {CANVAS}x{CANVAS} frames")
     opaque = {pixel for pixel in image.get_flattened_data() if _is_opaque(pixel)}
     if not opaque or not opaque <= set(PROXY.values()):
@@ -324,9 +341,9 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
     frame_count = image.width // CANVAS
     frames = [_frame_bytes(image, index) for index in range(frame_count)]
     for index in range(frame_count):
-        frame = image.crop((index * CANVAS, 0, (index + 1) * CANVAS, CANVAS))
-        ys = [y for y in range(CANVAS) for x in range(CANVAS) if _is_opaque(frame.getpixel((x, y)))]
-        if not ys or max(ys) != CANVAS - 1:
+        frame = image.crop((index * CANVAS, 0, (index + 1) * CANVAS, image.height))
+        ys = [y for y in range(image.height) for x in range(CANVAS) if _is_opaque(frame.getpixel((x, y)))]
+        if not ys or max(ys) != image.height - 1:
             raise AssertionError(f"{name}: frame {index} does not stand on the shared feet row")
         accents = sum(1 for pixel in frame.get_flattened_data() if pixel == PROXY[2])
         if name == "oxygen_concentrator" and accents > MAX_ACCENT_PIXELS:
@@ -342,7 +359,8 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
                         raise AssertionError(f"{name}: duplicate tile id")
                     tile_ids.add(tile["id"])
                     if (tile["sliceX"] < 0 or tile["sliceX"] + 8 > image.width
-                            or tile["y"] != 0 or tile["sliceY"] != 0):
+                            or tile["sliceY"] + 16 > image.height
+                            or tile["y"] != image.height - 16 - tile["sliceY"]):
                         raise AssertionError(f"{name}: tile slice outside its object")
     states_by_name = {state["name"]: state for state in meta["states"]}
     if name == "tomas":

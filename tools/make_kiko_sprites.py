@@ -73,34 +73,41 @@ def _torso_arm_up(inner: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Kiko: a child, front view, feet on row 15. The head sits lower than the adults'
-# (hair starts on row 3, tufts on row 2) and the body is shorter, so the figure reads
-# smaller next to Tomás and Rosa. Messy hair is a dark tuft row above a dark cap.
+# Kiko: a child, front view, on a 16x32 canvas like the 24px adults (8x16 sprite mode),
+# figure 20 rows tall standing on canvas row 31. Rows below are the 20 figure rows; the
+# 12 empty rows above are added by _kiko_frame. Taller than the old 16px kid, shorter
+# than the 24px adults. Eyes are two dark pixels stacked on skin (never a band); the
+# only blink is one idle frame where the eyes close to a single dark pixel row.
 # 1 = skin, 2 = mustard-yellow jacket, 3 = hair, outline, trousers, shoes, bowl rim.
-# Waiting (hungry): an empty bowl held at the belly, open mouth, eyes wide (A) or shut (B).
-# Relieved (happy): a grin, the bowl raised in the right hand (A); eyes shut (B).
+# Waiting (hungry): an empty bowl held at the belly, open mouth, eyes open (A) or blinking (B).
+# Relieved (happy): a grin, the bowl raised in the right hand; B closes the eyes, lifts a foot.
 # ---------------------------------------------------------------------------
+KIKO_CANVAS_H = 32
+KIKO_FIGURE_H = 20
+
+
+def _kiko_frame(figure: list[str]) -> list[str]:
+    assert len(figure) == KIKO_FIGURE_H, len(figure)
+    return [EMPTY] * (KIKO_CANVAS_H - KIKO_FIGURE_H) + figure
+
+
+def _arm(inner: str) -> str:
+    """Head row with the raised right arm: sleeve at x14, outline at x15."""
+    return "..." + inner + ".23"
+
+
 _TUFTS = "....3.33.3.3...."
 _CAP = _head("3333333333")
-_FACE = _head("3311111133")
-_EYES_OPEN = _head("3313113133")
-_EYES_SHUT = _head("3333333333")
-_MOUTH_OPEN = _head("3311331133")
-_GRIN = _head("3313333133")
+_FOREHEAD = _head("3311111133")
+_EYES = _head("3113113113")
+_CHEEKS = _head("3111111113")
+_MOUTH_OPEN = _head("3111331113")
+_GRIN = _head("3113333113")
+_CHIN = _head("3111111113")
 _JAW = "....33111133...."
 _LEGS = "....33....33...."
 _FEET = "...333....333..."
 _FEET_LIFTED = "...33.....333..."
-
-_BOWL_UP_TOP = "............3333"
-_BOWL_UP_MID = "............3113"
-_ARM_HEAD_2 = "....3.33.3.3..23"       # arm rises on the right from the shoulder
-_ARM_HEAD_3 = "...3333333333.23"
-_ARM_HEAD_4 = "...3311111133.23"
-_ARM_HEAD_5 = "...3313113133.23"
-_ARM_HEAD_6 = "...3313333133.23"
-_ARM_HEAD_7 = "...3311111133.23"
-_ARM_HEAD_8 = "....33111133..23"
 
 _WAIT_BOWL_RIM = "2223333222"
 _WAIT_BOWL_BASE = "2231111322"
@@ -109,73 +116,70 @@ _WAIT_BOWL_BASE_B = "2223111132"
 _JACKET = "2222222222"
 _JACKET_ZIP = "2222322222"
 
-KIKO_WAIT_A = [
-    EMPTY,
-    EMPTY,
-    _TUFTS,
-    _CAP,
-    _FACE,
-    _EYES_OPEN,
-    _MOUTH_OPEN,
-    _head("3311111133"),
-    _JAW,
-    _torso(_JACKET),
-    _torso(_JACKET_ZIP),
-    _torso(_WAIT_BOWL_RIM),
-    _torso(_WAIT_BOWL_BASE),
-    _LEGS,
-    _LEGS,
-    _FEET,
-]
-KIKO_WAIT_B = KIKO_WAIT_A[:5] + [
-    _EYES_SHUT,
-    _MOUTH_OPEN,
-    _head("3311111133"),
-    _JAW,
-    _torso(_JACKET),
-    _torso(_JACKET_ZIP),
-    _torso(_WAIT_BOWL_RIM_B),
-    _torso(_WAIT_BOWL_BASE_B),
-    _LEGS,
-    _LEGS,
-    _FEET,
-]
-KIKO_REL_A = [
-    _BOWL_UP_TOP,
-    _BOWL_UP_MID,
-    _ARM_HEAD_2,
-    _ARM_HEAD_3,
-    _ARM_HEAD_4,
-    _ARM_HEAD_5,
-    _ARM_HEAD_6,
-    _ARM_HEAD_7,
-    _ARM_HEAD_8,
-    _torso_arm_up(_JACKET),
-    _torso_arm_up(_JACKET_ZIP),
-    _torso_arm_up(_JACKET),
-    _torso_arm_up(_JACKET),
-    _LEGS,
-    _LEGS,
-    _FEET,
-]
-KIKO_REL_B = [
-    _BOWL_UP_TOP,
-    _BOWL_UP_MID,
-    _ARM_HEAD_2,
-    _ARM_HEAD_3,
-    _ARM_HEAD_4,
-    _ARM_HEAD_5.replace("3313113133", "3333333333"),  # eyes shut, happy
-    _ARM_HEAD_6,
-    _ARM_HEAD_7,
-    _ARM_HEAD_8,
-    _torso_arm_up(_JACKET),
-    _torso_arm_up(_JACKET_ZIP),
-    _torso_arm_up(_JACKET),
-    _torso_arm_up(_JACKET),
-    _LEGS,
-    _FEET_LIFTED,
-    _FEET,
-]
+_BOWL_TOP = "............3333"
+_BOWL_MID = "............3113"
+
+
+def _wait(blink: bool) -> list[str]:
+    rim, base = ((_WAIT_BOWL_RIM_B, _WAIT_BOWL_BASE_B) if blink
+                 else (_WAIT_BOWL_RIM, _WAIT_BOWL_BASE))
+    return _kiko_frame([
+        _TUFTS,                                  # 0
+        _CAP,                                    # 1
+        _CAP,                                    # 2
+        _FOREHEAD,                               # 3
+        _CHEEKS if blink else _EYES,             # 4 eyes (open), skin when blinking
+        _EYES,                                   # 5 eyes (a single dark row when blinking)
+        _CHEEKS,                                 # 6
+        _MOUTH_OPEN,                             # 7 hungry open mouth
+        _CHIN,                                   # 8
+        _JAW,                                    # 9
+        _torso(_JACKET),                         # 10
+        _torso(_JACKET_ZIP),                     # 11
+        _torso(_JACKET),                         # 12
+        _torso(rim),                             # 13 empty bowl at the belly
+        _torso(base),                            # 14
+        _torso(_JACKET),                         # 15
+        _LEGS,                                   # 16
+        _LEGS,                                   # 17
+        _LEGS,                                   # 18
+        _FEET,                                   # 19
+    ])
+
+
+def _overlay(base: str, over: str) -> str:
+    return "".join(o if o != "." else b for b, o in zip(base, over))
+
+
+def _relieved(shut: bool) -> list[str]:
+    return _kiko_frame([
+        _overlay(_TUFTS, _BOWL_TOP),             # 0 bowl raised above the head
+        _overlay(_CAP, _BOWL_MID),               # 1
+        _arm("3333333333"),                      # 2
+        _arm("3311111133"),                      # 3
+        _arm("3111111113" if shut else "3113113113"),   # 4
+        _arm("3113113113"),                      # 5 eyes (closed: one dark row)
+        _arm("3111111113"),                      # 6
+        _arm("3113333113"),                      # 7 grin
+        _arm("3111111113"),                      # 8
+        "....33111133..23",                      # 9
+        _torso_arm_up(_JACKET),                  # 10
+        _torso_arm_up(_JACKET_ZIP),              # 11
+        _torso_arm_up(_JACKET),                  # 12
+        _torso_arm_up(_JACKET),                  # 13
+        _torso_arm_up(_JACKET),                  # 14
+        _torso_arm_up(_JACKET),                  # 15
+        _LEGS,                                   # 16
+        _FEET_LIFTED if shut else _LEGS,         # 17
+        _LEGS,                                   # 18
+        _FEET,                                   # 19
+    ])
+
+
+KIKO_WAIT_A = _wait(False)
+KIKO_WAIT_B = _wait(True)
+KIKO_REL_A = _relieved(False)
+KIKO_REL_B = _relieved(True)
 KIKO_FRAMES = [KIKO_WAIT_A, KIKO_WAIT_B, KIKO_REL_A, KIKO_REL_B]
 KIKO_STATE_FRAMES = {"Waiting": [0, 1], "Relieved": [2, 3]}
 
@@ -235,9 +239,10 @@ STOVE_STATE_FRAMES = {"Off": [0], "On": [1, 2]}
 
 
 def _render(rows: list[str]) -> Image.Image:
-    if len(rows) != CANVAS:
-        raise ValueError(f"expected {CANVAS} rows, got {len(rows)}")
-    image = Image.new("RGBA", (CANVAS, CANVAS), TRANSPARENT)
+    height = len(rows)
+    if height not in (CANVAS, KIKO_CANVAS_H):
+        raise ValueError(f"expected {CANVAS} or {KIKO_CANVAS_H} rows, got {height}")
+    image = Image.new("RGBA", (CANVAS, height), TRANSPARENT)
     for y, row in enumerate(rows):
         if len(row) != CANVAS:
             raise ValueError(f"row {y} has width {len(row)}, expected {CANVAS}")
@@ -249,7 +254,7 @@ def _render(rows: list[str]) -> Image.Image:
 
 
 def _sheet(frames: list[Image.Image]) -> Image.Image:
-    result = Image.new("RGBA", (CANVAS * len(frames), CANVAS), TRANSPARENT)
+    result = Image.new("RGBA", (CANVAS * len(frames), frames[0].height), TRANSPARENT)
     for index, frame in enumerate(frames):
         result.paste(frame, (index * CANVAS, 0))
     return result
@@ -270,7 +275,7 @@ def _bounds(sheet: Image.Image) -> tuple[int, int, int, int]:
                 ys.append(y)
     if not xs:
         raise AssertionError("sprite has no opaque pixels")
-    origin = CANVAS - 8
+    origin = sheet.height - 8
     left, right, top, bottom = min(xs), max(xs), min(ys), max(ys)
     return (left, top - origin, right - left + 1, bottom - top + 1)
 
@@ -287,6 +292,7 @@ def _sidecar(
     palette_index: int,
     anim_speed: int,
 ) -> dict:
+    height = sheet.height
     state_data: list[dict] = []
     tile_signatures: set[bytes] = set()
     for state_index, (state_name, frame_indices) in enumerate(states):
@@ -298,27 +304,33 @@ def _sidecar(
             for animation_frame_index, frame_index in enumerate(authored):
                 frame_x = frame_index * CANVAS
                 tiles: list[dict] = []
-                for x in range(0, CANVAS, 8):
-                    crop = sheet.crop((frame_x + x, 0, frame_x + x + 8, CANVAS))
-                    if not any(_is_opaque(pixel) for pixel in crop.get_flattened_data()):
-                        continue
-                    key = (f"state:{state_index}:animation:{animation_index}:"
-                           f"frame:{animation_frame_index}:object:{x}")
-                    tiles.append({
-                        "id": _rid(name, key + ":tile"),
-                        "x": x,
-                        "y": 0,
-                        "sliceX": frame_x + x,
-                        "sliceY": 0,
-                        "flipX": False,
-                        "flipY": False,
-                        "palette": 0,
-                        "paletteIndex": palette_index,
-                        "objPalette": "OBP0",
-                        "priority": False,
-                    })
-                    tile_signatures.add(bytes(
-                        _shade(pixel) for pixel in crop.get_flattened_data()))
+                for slice_y in range(0, height, 16):
+                    for x in range(0, CANVAS, 8):
+                        crop = sheet.crop((frame_x + x, slice_y, frame_x + x + 8, slice_y + 16))
+                        if not any(_is_opaque(pixel) for pixel in crop.get_flattened_data()):
+                            continue
+                        key = (f"state:{state_index}:animation:{animation_index}:"
+                               f"frame:{animation_frame_index}:object:{x}")
+                        if slice_y:
+                            pass  # the bottom 16 rows keep the original 16px tile ids
+                        elif height > 16:
+                            key += ":top"
+                        tiles.append({
+                            "id": _rid(name, key + ":tile"),
+                            "x": x,
+                            # tile y counts UP from the canvas bottom (GB Studio)
+                            "y": height - 16 - slice_y,
+                            "sliceX": frame_x + x,
+                            "sliceY": slice_y,
+                            "flipX": False,
+                            "flipY": False,
+                            "palette": 0,
+                            "paletteIndex": palette_index,
+                            "objPalette": "OBP0",
+                            "priority": False,
+                        })
+                        tile_signatures.add(bytes(
+                            _shade(pixel) for pixel in crop.get_flattened_data()))
                 frame_key = f"state:{state_index}:animation:{animation_index}:frame:{animation_frame_index}"
                 animation_frames.append({"id": _rid(name, frame_key), "tiles": tiles})
             if not animation_frames:
@@ -350,7 +362,7 @@ def _sidecar(
         "canvasOriginX": 0,
         "canvasOriginY": 0,
         "canvasWidth": CANVAS,
-        "canvasHeight": CANVAS,
+        "canvasHeight": height,
         "boundsX": bounds[0],
         "boundsY": bounds[1],
         "boundsWidth": bounds[2],
@@ -389,14 +401,15 @@ def _stove_asset() -> tuple[str, Image.Image, dict]:
 
 
 def _frame_bytes(sheet: Image.Image, index: int) -> bytes:
-    return sheet.crop((index * CANVAS, 0, (index + 1) * CANVAS, CANVAS)).tobytes()
+    return sheet.crop((index * CANVAS, 0, (index + 1) * CANVAS, sheet.height)).tobytes()
 
 
 def _validate(name: str, image: Image.Image, meta: dict) -> None:
     if image.mode != "RGBA" or image.size != (meta["width"], meta["height"]):
         raise AssertionError(f"{name}: sheet is not RGBA with matching metadata size")
-    if image.height != CANVAS or image.width % CANVAS:
-        raise AssertionError(f"{name}: sheet is not aligned to {CANVAS}x{CANVAS} frames")
+    height = image.height
+    if height not in (CANVAS, KIKO_CANVAS_H) or image.width % CANVAS:
+        raise AssertionError(f"{name}: sheet is not aligned to {CANVAS}-wide frames")
     opaque = {pixel for pixel in image.get_flattened_data() if _is_opaque(pixel)}
     if not opaque or not opaque <= set(PROXY.values()):
         raise AssertionError(f"{name}: opaque pixels must be proxy colours")
@@ -405,11 +418,11 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
     frame_count = image.width // CANVAS
     frames = [_frame_bytes(image, index) for index in range(frame_count)]
     for index in range(frame_count):
-        frame = image.crop((index * CANVAS, 0, (index + 1) * CANVAS, CANVAS))
-        ys = [y for y in range(CANVAS) for x in range(CANVAS) if _is_opaque(frame.getpixel((x, y)))]
+        frame = image.crop((index * CANVAS, 0, (index + 1) * CANVAS, height))
+        ys = [y for y in range(height) for x in range(CANVAS) if _is_opaque(frame.getpixel((x, y)))]
         if not ys:
             raise AssertionError(f"{name}: frame {index} is empty")
-        if max(ys) != CANVAS - 1:
+        if max(ys) != height - 1:
             raise AssertionError(f"{name}: frame {index} does not stand on the shared feet row")
         accents = sum(1 for pixel in frame.get_flattened_data() if pixel == PROXY[2])
         if name == "kiko_stove" and accents > MAX_ACCENT_PIXELS:
@@ -426,7 +439,8 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
                         raise AssertionError(f"{name}: duplicate tile id")
                     tile_ids.add(tile["id"])
                     if (tile["sliceX"] < 0 or tile["sliceX"] + 8 > image.width
-                            or tile["y"] != 0 or tile["sliceY"] != 0):
+                            or tile["sliceY"] % 16 or tile["sliceY"] + 16 > height
+                            or tile["y"] != height - 16 - tile["sliceY"]):
                         raise AssertionError(f"{name}: tile slice outside its object")
     states_by_name = {state["name"]: state for state in meta["states"]}
     if name == "kiko":
@@ -449,7 +463,7 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
             raise AssertionError("On must be a two-frame loop")
         if frames[0] in (frames[1], frames[2]) or frames[1] == frames[2]:
             raise AssertionError("stove Off/On frames must differ and the On loop must alternate")
-        off_frame = image.crop((0, 0, CANVAS, CANVAS))
+        off_frame = image.crop((0, 0, CANVAS, height))
         if any(pixel == PROXY[2] for pixel in off_frame.get_flattened_data()):
             raise AssertionError("stove Off must be cold: no glowing or airflow pixels")
     if (meta["boundsX"], meta["boundsY"], meta["boundsWidth"], meta["boundsHeight"]) != _bounds(image):

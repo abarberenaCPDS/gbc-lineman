@@ -26,9 +26,13 @@ def _load(name: str) -> tuple[Image.Image, dict]:
     return Image.open(png).convert("RGBA"), meta
 
 
+def _h(name: str) -> int:
+    return 32 if name == TOMAS else 16
+
+
 def _frames(image: Image.Image) -> list[bytes]:
     return [
-        image.crop((index * 16, 0, (index + 1) * 16, 16)).tobytes()
+        image.crop((index * 16, 0, (index + 1) * 16, image.height)).tobytes()
         for index in range(image.width // 16)
     ]
 
@@ -101,8 +105,8 @@ class FrameTests(unittest.TestCase):
     def test_sheet_geometry(self):
         for name in NAMES:
             image, meta = _load(name)
-            self.assertEqual((meta["canvasWidth"], meta["canvasHeight"]), (16, 16), name)
-            self.assertEqual(image.height, 16, name)
+            self.assertEqual((meta["canvasWidth"], meta["canvasHeight"]), (16, _h(name)), name)
+            self.assertEqual(image.height, _h(name), name)
             self.assertEqual(image.width % 16, 0, name)
             self.assertEqual((meta["width"], meta["height"]), image.size, name)
 
@@ -124,9 +128,9 @@ class FrameTests(unittest.TestCase):
         for name in NAMES:
             image, _meta = _load(name)
             for index in range(image.width // 16):
-                frame = image.crop((index * 16, 0, index * 16 + 16, 16))
-                rows = {y for y in range(16) for x in range(16) if frame.getpixel((x, y))[3]}
-                self.assertEqual(max(rows), 15, f"{name} frame {index} floats off the feet row")
+                frame = image.crop((index * 16, 0, index * 16 + 16, image.height))
+                rows = {y for y in range(image.height) for x in range(16) if frame.getpixel((x, y))[3]}
+                self.assertEqual(max(rows), image.height - 1, f"{name} frame {index} floats off the feet row")
 
 
 class PaletteTests(unittest.TestCase):
@@ -141,8 +145,7 @@ class PaletteTests(unittest.TestCase):
                 self.assertEqual(tile["paletteIndex"], slot, name)
                 self.assertEqual(tile["palette"], 0, name)
                 self.assertEqual(tile["objPalette"], "OBP0", name)
-                self.assertEqual(tile["y"], 0, name)
-                self.assertEqual(tile["sliceY"], 0, name)
+                self.assertEqual(tile["y"], _h(name) - 16 - tile["sliceY"], name)
 
     def test_png_colours_are_restricted_to_proxy_palette(self):
         for name in NAMES:
@@ -167,13 +170,13 @@ class BoundsTests(unittest.TestCase):
         for name in NAMES:
             image, meta = _load(name)
             xs, ys = [], []
-            for y in range(16):
+            for y in range(image.height):
                 for x in range(image.width):
                     if image.getpixel((x, y))[3]:
                         xs.append(x % 16)
                         ys.append(y)
             self.assertEqual(meta["boundsX"], min(xs), name)
-            self.assertEqual(meta["boundsY"], min(ys) - 8, name)
+            self.assertEqual(meta["boundsY"], min(ys) - (image.height - 8), name)
             self.assertEqual(meta["boundsWidth"], max(xs) - min(xs) + 1, name)
             self.assertEqual(meta["boundsHeight"], max(ys) - min(ys) + 1, name)
             self.assertGreaterEqual(meta["boundsX"], 0, name)
@@ -181,12 +184,13 @@ class BoundsTests(unittest.TestCase):
             self.assertGreater(meta["boundsWidth"], 0, name)
             self.assertGreater(meta["boundsHeight"], 0, name)
 
-    def test_tomas_is_close_to_marta_framing(self):
+    def test_tomas_is_close_to_the_24px_hero_framing(self):
         _image, tomas = _load(TOMAS)
-        _image, marta = _load_marta()
-        self.assertEqual(tomas["boundsY"], marta["boundsY"])
-        self.assertEqual(tomas["boundsHeight"], marta["boundsHeight"])
-        self.assertLessEqual(abs(tomas["boundsWidth"] - marta["boundsWidth"]), 4)
+        _image, hero = _load("opening_worker24")
+        self.assertEqual((tomas["canvasWidth"], tomas["canvasHeight"]), (16, 32))
+        self.assertIn(tomas["boundsHeight"], (22, 23, 24))
+        self.assertEqual(tomas["boundsY"] + tomas["boundsHeight"], 8)  # bottom-anchored like the hero
+        self.assertLessEqual(abs(tomas["boundsWidth"] - hero["boundsWidth"]), 4)
 
     def test_checksums_match_png_bytes(self):
         for name in NAMES:
