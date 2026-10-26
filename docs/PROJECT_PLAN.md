@@ -98,7 +98,7 @@ reported for this build.
 - **SemVer:** version lives in root `VERSION`. `0.x` = pre-1.0. Additive
   content → MINOR, fixes/polish → PATCH. Dev suffix stays until a release.
 - **Subagents:** parallel subagents are mandatory for independent work (up to 5),
-  coding tasks to Haiku 5.5 (user override of GPT-6 Luna, 2026-10-25); pick specialist models per
+  coding tasks prefer GPT-6 Luna, falling back to Haiku 5.5; pick specialist models per
   task. Subagents must follow this plan doc and commit nothing themselves —
   review, verify, then commit.
   User requires **direct MCP** use by each child; check access first and report
