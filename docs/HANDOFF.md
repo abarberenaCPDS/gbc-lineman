@@ -16,7 +16,7 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 - **Committed:** speaker names + voices, 24px neighbours, animated storm poles, renamed
   neighbours, docs (see `git log`). `project/settings.gbsres` starts at the logo
   (`8f0deaff…`); never commit a `--test-start` override.
-- **Release ROM** `build/rom/mr-cfe.gbc` `63c67828…` (v0.10.0-dev), **flashed** 2026-10-26; Abe: "game launched fine v0.10.0-dev". Flashing:
+- **Release ROM** `build/rom/mr-cfe.gbc` `8d3f295e…` (v0.10.0-dev + B-13 cable fix), **flashed** 2026-10-26. Previous flash `63c67828…`: Abe "game launched fine", then got stuck (B-13, fixed). Flashing:
   later writes to that device need no new data-loss consent (given 2026-10-26), but
   always bind the exact ROM via `rom_inspect` and confirm Abe isn't mid-play.
 - **Names:** Marta → **Amara** (Nigeria), Tomás → **Hiroshi** (Japan), Rosa → **Priya**
@@ -30,6 +30,8 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 5. Bigger characters: three adults 24px, Emil 20px (a kid; easy to make 24 if Abe prefers).
 
 ## Open, in suggested order
+
+0. **Abe asked to build #2 + #3** (recommended hazards mix + work-order tickets, and the look fixes). Contracts are drafted and uncommitted: `tools/hazards.py` (boards + hidden cables, placement, timings, event builders) and `tools/tickets.py` (work-order/report scenes, ticket text, flow). Restart the five workers from these (board sprite, ticket card art, look fixes: Sonnet; hazard wiring, ticket scenes: Haiku), then main integrates exits/closing stamps and moves the cable end one tile right of the pole only if still cluttered.
 
 1. **B-12: Abe reported "we are missing the dialogs from the intro".** Not reproduced:
    all nine story captions render on `634ecdb6…`. Ask Abe where he saw it (cart still on
