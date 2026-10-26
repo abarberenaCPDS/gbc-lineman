@@ -6,9 +6,9 @@ Use the managed Python (Pillow). Examples:
   python tools/make_project.py ridge --verify
   python tools/make_project.py rosa --verify
   python tools/make_project.py kiko --verify
+  python tools/make_project.py intro --verify
 
-Never invokes the out-of-sync legacy Storm Night generators, changes the
-launch scene, or touches the user's live browser/emulator state.
+Never invokes the out-of-sync legacy Storm Night generators or touches the user's live browser/emulator state.
 """
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ PROFILES = {
     "ridge": ("make_ridge_art.py", "make_tomas_sprites.py", "make_grid_sprites.py", "make_climb_gust.py", "make_ridge_scene.py", "make_climb_scene.py"),
     "rosa": ("make_rosa_art.py", "make_rosa_sprites.py", "make_grid_sprites.py", "make_climb_gust.py", "make_rosa_scene.py", "make_ridge_scene.py"),
     "kiko": ("make_kiko_art.py", "make_kiko_sprites.py", "make_grid_sprites.py", "make_climb_gust.py", "make_kiko_scene.py", "make_rosa_scene.py"),
+    "intro": ("make_intro_art.py", "make_intro_sprites.py", "make_intro_scene.py"),
     "opening": ("make_opening_art.py", "make_opening_characters.py", "make_grid_sprites.py", "make_opening_scene.py"),
 }
 
@@ -46,7 +47,8 @@ def main() -> None:
     except ImportError:
         parser.error("Pillow is required; use the managed toolchain Python, not an unprepared system interpreter")
     if args.render_music:
-        run("tools/compose_climb.py", "--render")
+        run("tools/compose_intro.py" if args.profile == "intro" else "tools/compose_climb.py",
+            "--render")
     elif not (ROOT / "assets/music/cfe_storm_climb.uge.gbsres").exists():
         parser.error("native music is missing; use --render-music with the installed uge-builder image")
     for script in PROFILES[args.profile]:
@@ -57,10 +59,11 @@ def main() -> None:
         patterns = {"climb": ["test_climb*.py"], "opening": ["test_opening.py"],
                     "ridge": ["test_ridge*.py", "test_tomas_sprites.py", "test_climb.py"],
                     "rosa": ["test_rosa*.py", "test_ridge.py"],
-                    "kiko": ["test_kiko*.py", "test_rosa.py"]}
+                    "kiko": ["test_kiko*.py", "test_rosa.py"],
+                    "intro": ["test_intro*.py", "test_opening.py"]}
         for pattern in patterns[args.profile]:
             run("-m", "unittest", "discover", "-s", "tools", "-p", pattern)
-    print("Regeneration complete. Refresh, build and playtest through MCP; launch scene is unchanged.")
+    print("Regeneration complete. Refresh, build and playtest through MCP; only the intro profile writes the launch scene.")
 
 
 if __name__ == "__main__":
