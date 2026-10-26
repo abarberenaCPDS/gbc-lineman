@@ -619,3 +619,23 @@ class KikoTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PorchExitPriorityTests(unittest.TestCase):
+    """The engine fires the first trigger the hero's box overlaps.
+
+    At the right wall the hero overlaps both the door trigger and the porch
+    exit, so the exit must sort first or the next job is unreachable (cart
+    ROM 6bfec7b4: Signal Hill could not be reached from Tomas's porch).
+    """
+
+    def test_porch_exit_sorts_before_the_door(self):
+        import json
+        from pathlib import Path
+        scenes = Path(__file__).resolve().parent.parent / "project" / "scenes"
+        for scene in ("wind_ridge", "signal_hill"):
+            triggers = sorted((json.loads(p.read_text()) for p in
+                               (scenes / scene / "triggers").glob("*.gbsres")),
+                              key=lambda t: t["_index"])
+            first = json.dumps(triggers[0]["script"])
+            self.assertIn("EVENT_SWITCH_SCENE", first, scene)

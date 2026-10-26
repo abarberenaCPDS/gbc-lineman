@@ -648,7 +648,14 @@ def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[
 
 
 def build_triggers(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
-    return [door_trigger(audio_ids["connect"]), hollow_exit_trigger()]
+    # The exit must come first: the engine fires only the first trigger whose
+    # tiles the hero's box overlaps, and at the right wall the hero overlaps
+    # both the door (x35-37) and the exit (x38), so a door-first order made the
+    # next job unreachable (Abe on the flashed cartridge, ROM 6bfec7b4).
+    triggers = [hollow_exit_trigger(), door_trigger(audio_ids["connect"])]
+    for index, trigger in enumerate(triggers):
+        trigger["_index"] = index
+    return triggers
 
 
 # ---------------------------------------------------------------------------
