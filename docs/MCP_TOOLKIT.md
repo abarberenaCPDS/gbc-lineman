@@ -228,6 +228,9 @@ separate. Vendor success is not manual boot, gameplay, listening or save validat
 
 ## 8. Token budget: models, effort and images
 
+The step-by-step recipe ships as the project skill
+`.claude/skills/chromatic-budget-playtest/` (loads on demand).
+
 Learned on the repair jobs (2026-10-26). Our art is Python/Pillow code that draws
 pixel grids, so writing it costs about the same as other code. **The real cost is
 images returned into the conversation** (emulator frames, contact sheets, zoomed crops).
