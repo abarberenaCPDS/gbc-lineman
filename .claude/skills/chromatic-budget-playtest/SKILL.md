@@ -32,9 +32,17 @@ with text first and look with images only when judging appearance.
   `graphics_preview_scene`, `sprite_contact_sheet`, `world_dependencies` and
   `dialogue_analyze`.
 - Workers never call `project_select`, `rom_build`, `emulator_*` or `web_preview`.
+- Main runs `project_select` **before** spawning workers; otherwise their MCP checks
+  fail with `PROJECT_SELECTION_REQUIRED`.
+- Brief plumbing workers with the scene's OBJ palette slot map (`MCP_TOOLKIT.md` §5).
+  Sprite tiles bake their slot, so a reused sprite needs the same slot free everywhere.
+- Workers' test failures are often a neighbour's half-edited file. After all workers
+  finish, main regenerates every profile and runs the full suite.
 
 ## 2. Native verification: text first
 
+0. After regenerating, run `project_refresh` (mode `strong`) before
+   `graphics_analyze_scene`; the MCP index can be stale.
 1. Build once with `rom_build` (`captureDebugArtifacts: true`). For a test start scene,
    edit `project/settings.gbsres` temporarily and restore it before the release build.
 2. Run `emulator_run` with `debugMode: "source"`. If the recording quota is refused,

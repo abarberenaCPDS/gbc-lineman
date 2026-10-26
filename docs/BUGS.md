@@ -8,9 +8,8 @@ that showed it, and the regression test that guards it. Feature requests live in
 
 | # | Found | Where | Bug | Notes |
 |---|---|---|---|---|
+| B-12 | 2026-10-26, Abe | Intro | "We are missing the dialogs from the intro too." | **Not reproduced.** Native exact ROM `634ecdb6…` shows all nine story captions in order (contact sheet frames 300–2420). Needs Abe's repro: which screen, on the cart or in the browser? Possibly the cart still runs `9c776c6d…`, or he means in-game dialogue rather than the story captions. |
 | B-11 | 2026-10-26, Abe on cart | Climb, Wind Ridge, Pine Hollow | Falling rocks don't fit a line crew's job. | Design change, not a defect: replace with field hazards (shocks, hidden cables, wind, cracked wood/poles/platforms). See HANDOFF item 6. |
-| B-10 | 2026-10-26, Abe on cart | All jobs | Characters look small next to the 24px hero. | Marta, Tomás, Rosa, Kiko are 16px. HANDOFF item 5. |
-| B-09 | 2026-10-26, Abe on cart | All dialogue | Dialogue doesn't say who is speaking. | Add speaker names; HANDOFF item 2. |
 | B-08 | 2026-10-26 | Pine Hollow | Dead end after Kiko's house is powered. | No ending yet; HANDOFF item 7 (ticket / storm report). |
 | B-07 | 2026-10-25 (known) | Climb | Holding Down+A can drop through more than one level. | Deferred since the movement prototype. |
 | B-06 | 2026-10-26 | Pine Hollow | Junction box needs the hero right next to it (B at x243 does nothing, x≈253 works). | Minor; widen the interaction or add a hint. |
@@ -19,6 +18,8 @@ that showed it, and the regression test that guards it. Feature requests live in
 
 | # | Found | Bug | Cause | Fix and guard |
 |---|---|---|---|---|
+| B-10 | 2026-10-26, Abe on cart | Characters looked small next to the 24px hero. | Neighbour sprites were 16x16. | 16x32 canvases: Amara/Hiroshi/Priya 24px, Emil 20px (`make_opening_characters.py`, `make_{tomas,rosa,kiko}_sprites.py`); sprite tests assert canvas, bounds and tile-y layout. Release `63c67828…`; cart verdict pending. |
+| B-09 | 2026-10-26, Abe on cart | Dialogue didn't say who was speaking. | Boxes had no speaker. | `voices.py`: name line + per-character blip, narrator blip restored; `test_voices`. Release `63c67828…`; cart verdict pending. |
 | B-05 | 2026-10-26, Abe on cart (ROM `6bfec7b4…`) | After Tomás's house nothing led to Signal Hill, so Pine Hollow could not be tested. | At the right wall the hero's box overlaps both the door trigger (x35–37) and the porch exit (x38); the platform engine fires only the first matching trigger, the door. | Exits sort before doors on Tomás's and Rosa's porches (`make_ridge_scene.py`, `make_rosa_scene.py`); `test_kiko.PorchExitPriorityTests`. Verified on test ROM `bd8d0559…`; flashed `9c776c6d…`. A first guess (solid porch props) was wrong and reverted. |
 | B-04 | 2026-10-26, native (`23b2fc03…`) | Intro hero, pole and bolt drew with their top and bottom halves swapped. | GB Studio sprite tile `y` counts up from the canvas bottom; the intro sprite generator counted from the top. 16px sprites hid it. | `make_intro_sprites.py`; `test_intro_sprites.test_tile_y_counts_up_from_the_canvas_bottom` (checked against `opening_worker24`). |
 | B-03 | 2026-10-26, native (`04c6c4a4…`) | A/START could not skip the intro; START did nothing on the title. | Scene start scripts run VM-locked; button scripts only fire after the start script ends, and the timeline/blink loop never ended. | Timelines run in `EVENT_THREAD_START`; `test_intro` thread tests. |
@@ -29,3 +30,8 @@ that showed it, and the regression test that guards it. Feature requests live in
 corrected: an actor-offset conversion (the MCP OAM view already reports screen
 pixels) and the "worker24 is upside down" theory (it was the overlay hiding the
 lower half). Measure pixels or memory before concluding; see `MCP_TOOLKIT.md` §5.
+
+**Caught before a build (2026-10-26):** the intro pole and the live arc both baked OBJ
+slot 3 into their tiles, so Signal Hill and Pine Hollow could not show both. GB Studio
+ignores an actor's palette field; the slot lives in the sprite's tiles. Fixed by moving the
+pole to slot 7 everywhere (`intro.SPRITE_SLOTS`); see `MCP_TOOLKIT.md` §5.

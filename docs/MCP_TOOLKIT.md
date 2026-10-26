@@ -196,6 +196,23 @@ MCP static tool; each needed native play.
   return to the box margin). For static title text, bake it into the art and blink
   it by swapping its own BG palette slot.
 
+**Learned on the cart-feedback burst (2026-10-26).**
+- **A sprite's OBJ palette slot is baked into its tiles** (`paletteIndex` in the
+  `.gbsres`). GB Studio never reads an actor's palette field, so a sprite shared
+  across scenes needs the same slot free in every scene that uses it. Before reusing a
+  sprite, list each target scene's `spritePaletteIds`. Job scenes: 0 hero, 1 neighbour,
+  2 grid props, 3 live arc, 4 debris, 5 gust, 6 legacy, 7 intro pole.
+- **The MCP index can be stale after generators write files.** `graphics_analyze_scene`
+  reported 7 actors where 8 were on disk. Run `project_refresh` (mode `strong`) after
+  regenerating and before any analysis.
+- **Static per-line tests must model the screen.** Counting every actor on a row
+  flagged a pole that sits 17 tiles away from the house view; count only actors within
+  the 20-tile screen around the hero. The real check is still OAM `overLimitScanlines`.
+- **Renames: change what players see, keep keys.** Resource IDs derive from keys and
+  file names; variable registration refuses to rename existing variables. Edit display
+  strings only. For non-ASCII text ("Tomás"), edit with Python, not `perl -CSD`: perl
+  does not decode regex literals without `use utf8`, so the replace silently missed.
+
 **Revision kinds differ:** whole-project revisions guard operations such as
 `scene_apply`; script/actor/engine owner-resource revisions guard their respective
 edits. They are not interchangeable. Follow each returned signature and revision.
@@ -335,6 +352,14 @@ A read-only probe worker then ran each candidate tool once against their output.
 - Workers verify MCP access, then run `graphics_analyze_scene` and `sprite_inspect` on
   their own output (text only).
 - Workers add no preview beyond their one Pillow sheet.
-- Main keeps builds, emulator, project selection and web preview.
+- Main keeps builds, emulator, project selection and web preview. **Select the project
+  before spawning workers**: without it, worker `sprite_inspect` and
+  `graphics_analyze_scene` fail with `PROJECT_SELECTION_REQUIRED`.
+- Parallel workers that run `make_project.py` regenerate shared scenes and see each
+  other's half-edited files. Their failing tests are often a neighbour's in-progress work.
+  Main regenerates every profile and runs the full suite once all workers are done.
+- Give plumbing workers the scene's OBJ slot map (§5). The Haiku pole worker
+  (268k tokens, 69 tool calls) stopped halfway on a slot clash that a one-line brief
+  would have avoided. Sonnet art workers cost about 90–120k tokens each.
 - A stage-2 rerun of a worker with tools was skipped: the probe's value did not justify
   ~200k tokens.

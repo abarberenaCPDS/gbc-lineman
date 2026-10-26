@@ -17,7 +17,10 @@ Game Boy Color game "Mister CFE: After the Storm", built with GB Studio 4.2.0 (`
 Launch is the intro logo (`tools/intro.py` owns the settings start scene; only
 `make_intro_scene.py` writes it, `--test-start` for test ROMs): logo → story →
 title → `service_opening` (M-V1); after the B repair its awning exit enters
-`storm_climb`, whose summit door is Marta's checkpoint.
+`storm_climb`, whose summit door is Amara's checkpoint. The neighbours are Amara,
+Hiroshi, Priya and Emil on screen; code keys keep the old names (`marta`, `tomas`,
+`rosa`, `kiko`) so resource IDs stay stable. `tools/voices.py` owns speaker names
+and text blips; pass `speaker=` to a job's `say()`.
 Its preferred hero is 24px (opening size variable 5: 0=tall default,
 1=16px comparator); SELECT returns to safe ground before swapping colliders.
 Managed-Python command: `tools/make_project.py opening --fixtures --verify`.
