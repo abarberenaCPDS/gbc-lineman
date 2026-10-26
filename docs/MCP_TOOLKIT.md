@@ -167,6 +167,35 @@ recipe-aware edits, not direct `palette_paint` or `collision_edit`.
 - `script_transition` validates destination bounds, not collision passability.
   Inspect destination collisions separately and playtest the transition.
 
+**Engine facts learned on the intro (GB Studio 4.3.2 CLI, exact ROMs noted in
+`docs/PROJECT_PLAN.md`, 2026-10-26).** None of these showed up in a build or an
+MCP static tool; each needed native play.
+- **Scene start scripts are VM-locked.** Button scripts (`EVENT_SET_INPUT_SCRIPT`)
+  never fire until the start script ends. Register the buttons, then put timelines
+  and endless loops in `EVENT_THREAD_START`.
+- **No text in LOGO scenes.** `EVENT_TEXT_DRAW` there overwrites background tiles.
+  Scenes with text use TOPDOWN on a screen-sized map (the camera cannot move).
+- **The overlay survives a scene switch.** Hide it (`EVENT_OVERLAY_HIDE`) on
+  every exit path, or the next scene shows the last caption.
+- **Read OAM as screen pixels.** `emulator_inspect` view `oam` already reports
+  screen x/y (no hardware +8/+16 offset). Subtracting it again made actors look
+  misplaced and led to a wrong "fix" (exact ROM c816d5e4 exposed it). An actor's
+  tile is its canvas's bottom-left tile.
+- **Sprite tile y counts up from the canvas bottom** in `.gbsres` sprite data
+  (worker24: top slice at y=16). Measuring from the top swaps the halves of every
+  32px sprite; 16px sprites hide the bug.
+- **Overlapping triggers: the first one wins.** The platform state fires only the
+  first trigger (by `_index`) whose tiles the hero's box overlaps. At a wall the
+  hero can overlap two; put the one that must fire (an exit) first.
+- **Sprites under the overlay are hidden.** A caption band hides any sprite rows
+  below its top; keep actors above it.
+- **Actors pick animation slots by facing** (down, right, up, left; +4 while
+  moving). A `platform_player` sprite is laid out for the player state, so the
+  intro uses a fixed-type sprite built from worker24's pixels instead.
+- **Background text:** each draw re-renders through the dialogue engine (newlines
+  return to the box margin). For static title text, bake it into the art and blink
+  it by swapping its own BG palette slot.
+
 **Revision kinds differ:** whole-project revisions guard operations such as
 `scene_apply`; script/actor/engine owner-resource revisions guard their respective
 edits. They are not interchangeable. Follow each returned signature and revision.
@@ -268,3 +297,44 @@ One full native run with screenshots costs far more than the code that built the
   polishing pixels on its own.
 - One fresh session per task, started from `docs/HANDOFF.md`. Long sessions re-send their
   whole history every turn and eventually get summarized (lossy).
+
+**Worker MCP checks (measured 2026-10-26)**
+
+Context: intro and title work. Three generator workers ran without MCP (told not to).
+A read-only probe worker then ran each candidate tool once against their output.
+
+| Run | Model | Tokens | Notes |
+|---|---|---|---|
+| art | Sonnet | 117k | no MCP |
+| sprites | Sonnet | 101k | no MCP |
+| scene plumbing | Haiku | 201k | no MCP, 34 tool calls; much of it read vendored GB Studio event JS for argument formats |
+| MCP probe | Haiku | 129k | 24 tool calls, about 2x the estimate |
+
+- Workers do have direct MCP access: `session_status` worked from a Haiku subagent.
+- Run these routinely in workers (small text responses):
+  - `graphics_analyze_scene` (detail `summary`, `includeStaticOam`): tile counts,
+    per-slot palette histogram and static OAM estimate in one call. Replaces hand-written
+    budget checks. Does not count font/text VRAM.
+  - `sprite_inspect`: real pixel bounds per sprite (e.g. pole -22..+8). Our tests check
+    only canvas and frames. Its bounds found a real defect: the intro bolt ended ~24 px
+    above the pole top (confirmed in emulator OAM).
+- Marginal: `scene_inspect`; `script_inspect` (large, mostly repeats the generated JSON).
+  Scene scripts are keyed `script`, not `startScript`. The schema does not say so.
+- Not worth it for generator workers:
+  - `dialogue_analyze`: GBS Mono is fixed width; char-count tests suffice.
+  - `world_dependencies`: paged and large; first page uninformative.
+  - `graphics_preview_scene`: "limited" confidence for every pixel; does not verify colours.
+  - `sprite_contact_sheet`: one frame unless `stateIndex`/`includeFrames` are set; one call
+    per state.
+- No MCP tool flagged the defect that mattered. EVENT_TEXT_DRAW in a LOGO-type scene
+  corrupts background tiles: font tiles overwrite BG VRAM. Seen in exact ROM a8e4f0ad as
+  caption letters across the sky and houses. Fixed by making text scenes TOPDOWN on a
+  screen-sized map (ROM 4992e3a4). Runtime glitches need the emulator; main owns that.
+
+**Rule going forward**
+- Workers verify MCP access, then run `graphics_analyze_scene` and `sprite_inspect` on
+  their own output (text only).
+- Workers add no preview beyond their one Pillow sheet.
+- Main keeps builds, emulator, project selection and web preview.
+- A stage-2 rerun of a worker with tools was skipped: the probe's value did not justify
+  ~200k tokens.

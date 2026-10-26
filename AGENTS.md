@@ -14,7 +14,9 @@ Game Boy Color game "Mister CFE: After the Storm", built with GB Studio 4.2.0 (`
 
 ## Generated content
 
-Launch is `service_opening` (M-V1); after the B repair its awning exit enters
+Launch is the intro logo (`tools/intro.py` owns the settings start scene; only
+`make_intro_scene.py` writes it, `--test-start` for test ROMs): logo → story →
+title → `service_opening` (M-V1); after the B repair its awning exit enters
 `storm_climb`, whose summit door is Marta's checkpoint.
 Its preferred hero is 24px (opening size variable 5: 0=tall default,
 1=16px comparator); SELECT returns to safe ground before swapping colliders.

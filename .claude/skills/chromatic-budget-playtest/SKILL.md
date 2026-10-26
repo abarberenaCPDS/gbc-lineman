@@ -26,6 +26,12 @@ with text first and look with images only when judging appearance.
     Derive coordinates from contract tiles.
 - Each art worker renders one preview sheet, reviews it once and reports. No render
   loops.
+- Workers confirm MCP access with `session_status` first.
+- Art, sprite and scene workers run `graphics_analyze_scene` (detail `summary`) and
+  `sprite_inspect` on what they produced, and report the numbers. Skip
+  `graphics_preview_scene`, `sprite_contact_sheet`, `world_dependencies` and
+  `dialogue_analyze`.
+- Workers never call `project_select`, `rom_build`, `emulator_*` or `web_preview`.
 
 ## 2. Native verification: text first
 
@@ -44,6 +50,9 @@ with text first and look with images only when judging appearance.
    and zoom just that region with the managed Python Pillow. Use contact sheets only
    for side-by-side comparisons.
 5. For a scripted scene (intro, cutscene), do one run with one sample per shot.
+
+- Never draw text (`EVENT_TEXT_DRAW`, overlays) in LOGO-type scenes; use TOPDOWN for
+  scenes with text. Font tiles overwrite BG VRAM in LOGO scenes.
 
 ## 3. Hand off and stop
 
