@@ -8,7 +8,7 @@ Start a new session with: **"Read docs/HANDOFF.md and continue."**
 `AGENTS.md`, `CLAUDE.md`, the top of `docs/PROJECT_PLAN.md` and its progress log,
 `docs/MCP_TOOLKIT.md` §5 (engine facts, including the new OBJ palette slot map and the
 stale MCP index) and §8 (budget, worker rules). Load the `chromatic-budget-playtest` skill
-before emulator work or spawning workers. VERSION `0.10.0-dev`. Local-only repo; one-line
+before emulator work or spawning workers. VERSION `0.10.0` (tag `v0.10.0`). Local-only repo; one-line
 Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 
 ## State
@@ -31,7 +31,7 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 
 ## Open, in suggested order
 
-0. **#2 + #3 built** (release `2625c15d…`, not flashed). Natively checked: work-order card 1 → climb; climb board 1 breaks and respawns. Still to play: boards 2–3 and Wind Ridge's board (fairness of the 50-frame creak), both hidden cables, tickets 2–4, CLOSED boxes, the storm report → title. Pine Hollow's cable leaves only a 2-tile gap before the gust (contract asks 3); `climb_debris` sprite is now unused.
+0. **#2 + #3 built**, released as v0.10.0 (`f505db32…`). Natively checked: work-order card 1 → climb; climb board 1 breaks and respawns. Still to play: boards 2–3 and Wind Ridge's board (fairness of the 50-frame creak), both hidden cables, tickets 2–4, CLOSED boxes, the storm report → title. Pine Hollow's cable leaves only a 2-tile gap before the gust (contract asks 3); `climb_debris` sprite is now unused.
 
 1. **B-12: Abe reported "we are missing the dialogs from the intro".** Not reproduced:
    all nine story captions render on `634ecdb6…`. Ask Abe where he saw it (cart still on
