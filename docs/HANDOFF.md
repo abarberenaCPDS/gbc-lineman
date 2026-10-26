@@ -31,7 +31,7 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 
 ## Open, in suggested order
 
-0. **Abe asked to build #2 + #3** (recommended hazards mix + work-order tickets, and the look fixes). Contracts are drafted and uncommitted: `tools/hazards.py` (boards + hidden cables, placement, timings, event builders) and `tools/tickets.py` (work-order/report scenes, ticket text, flow). Restart the five workers from these (board sprite, ticket card art, look fixes: Sonnet; hazard wiring, ticket scenes: Haiku), then main integrates exits/closing stamps and moves the cable end one tile right of the pole only if still cluttered.
+0. **#2 + #3 built** (release `2625c15d…`, not flashed). Natively checked: work-order card 1 → climb; climb board 1 breaks and respawns. Still to play: boards 2–3 and Wind Ridge's board (fairness of the 50-frame creak), both hidden cables, tickets 2–4, CLOSED boxes, the storm report → title. Pine Hollow's cable leaves only a 2-tile gap before the gust (contract asks 3); `climb_debris` sprite is now unused.
 
 1. **B-12: Abe reported "we are missing the dialogs from the intro".** Not reproduced:
    all nine story captions render on `634ecdb6…`. Ask Abe where he saw it (cart still on

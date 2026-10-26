@@ -9,8 +9,8 @@ that showed it, and the regression test that guards it. Feature requests live in
 | # | Found | Where | Bug | Notes |
 |---|---|---|---|---|
 | B-12 | 2026-10-26, Abe | Intro | "We are missing the dialogs from the intro too." | **Not reproduced.** Native exact ROM `634ecdb6…` shows all nine story captions in order (contact sheet frames 300–2420). Needs Abe's repro: which screen, on the cart or in the browser? Possibly the cart still runs `9c776c6d…`, or he means in-game dialogue rather than the story captions. |
-| B-11 | 2026-10-26, Abe on cart | Climb, Wind Ridge, Pine Hollow | Falling rocks don't fit a line crew's job. | Design change, not a defect: replace with field hazards (shocks, hidden cables, wind, cracked wood/poles/platforms). See HANDOFF item 6. |
-| B-08 | 2026-10-26 | Pine Hollow | Dead end after Kiko's house is powered. | No ending yet; HANDOFF item 7 (ticket / storm report). |
+| B-11 | 2026-10-26, Abe on cart | Climb, Wind Ridge, Pine Hollow | Falling rocks don't fit a line crew's job. | **Built, awaiting Abe's play:** cracked boards + hidden cables replace every rock (`tools/hazards.py`, release `2625c15d…`). |
+| B-08 | 2026-10-26 | Pine Hollow | Dead end after Kiko's house is powered. | **Built, awaiting play:** Emil's porch exit → storm report → title (`tools/tickets.py`, release `2625c15d…`). |
 | B-07 | 2026-10-25 (known) | Climb | Holding Down+A can drop through more than one level. | Deferred since the movement prototype. |
 | B-06 | 2026-10-26 | Pine Hollow | Junction box needs the hero right next to it (B at x243 does nothing, x≈253 works). | Minor; widen the interaction or add a hint. |
 
