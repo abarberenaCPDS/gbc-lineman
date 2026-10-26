@@ -63,7 +63,9 @@ read it first and update it (status markers + progress log) after every work
 burst.
 Independent work uses up to five parallel subagents; coding-only workers
 prefer `openai/gpt-6-luna` and fall back to Haiku 5.5 (Agent `model: "haiku"`)
-when Luna is not selectable in the current harness. Each worker must verify direct MCP access (recent `general`
+when Luna is not selectable in the current harness; visual-art workers (logo, title,
+characters) use Agent `model: "sonnet"` instead. Token and image budgeting rules are in
+`docs/MCP_TOOLKIT.md` §8. Each worker must verify direct MCP access (recent `general`
 workers have it; earlier `explore` workers did not). Main serializes builds,
 emulator controls, project selection and preview updates.
 Reusable MCP capabilities, ownership rules and verification limits are in

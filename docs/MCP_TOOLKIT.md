@@ -225,3 +225,43 @@ do not infer generative-audio capability from MCP build or playback tools.
 
 Keep native ROM, browser export, host-stream demo and physical cartridge evidence
 separate. Vendor success is not manual boot, gameplay, listening or save validation.
+
+## 8. Token budget: models, effort and images
+
+Learned on the repair jobs (2026-10-26). Our art is Python/Pillow code that draws
+pixel grids, so writing it costs about the same as other code. **The real cost is
+images returned into the conversation** (emulator frames, contact sheets, zoomed crops).
+One full native run with screenshots costs far more than the code that built the scene.
+
+**Models and effort**
+- **Main session: a strong model.** Writes the contract, reviews worker output and
+  catches design defects before a build. Examples it caught: the drifted pole art, the
+  step-landing overlap and the sprite-per-line overflow.
+- **Art / sprite-art workers: a mid-tier model** (Agent `model: "sonnet"`), higher effort.
+  First-seen visuals (logo, title, characters) are where quality shows. Haiku's art was
+  the weak spot: Kiko's blink read as a visor, the stove steam and the arc warning sparks
+  were too faint.
+- **Plumbing workers** (scene scripts, events, triggers, palettes, tests): coding-worker
+  rule from `AGENTS.md` (GPT-6 Luna, else Haiku), default effort. They copy established
+  patterns well.
+
+**Spend fewer image tokens (biggest lever)**
+- Check state as text first: `emulator_inspect` memory/OAM (`includeScanlineSummary`),
+  `emulator_debug` variables. Take a screenshot only to judge a look.
+- `emulator_step` with `sampleCount: 1`. Use contact sheets only to compare frames side
+  by side. Crop and zoom only the region in question.
+- Scripted scenes (intro, cutscenes): one run with one sample per shot.
+- Art workers render **one** preview sheet and review it once; no render loops.
+- In gameplay, step in larger chunks between reads and let flags and positions (text)
+  drive timing.
+
+**Workflow**
+- Give a tight visual brief before the art worker starts: mood, palette slots, references
+  in `assets/backgrounds/samples/`, and what to avoid (faint 2-px effects, unreadable
+  faces). A clear brief prevents paid redo loops.
+- Reuse existing assets and palettes (worker24 hero, window/night palettes, climb hazard
+  sprites).
+- Abe's browser pass is the final judge of look and feel. One human pass beats the model
+  polishing pixels on its own.
+- One fresh session per task, started from `docs/HANDOFF.md`. Long sessions re-send their
+  whole history every turn and eventually get summarized (lossy).
