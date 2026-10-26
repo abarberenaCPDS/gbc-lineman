@@ -31,9 +31,9 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 
 ## Open, in suggested order
 
-0. **Abe is playing v0.10.2 on the cart** to judge voices, hazards and tickets. Gather his verdict on: boards (50-frame creak fairness), hidden cables, work orders 1–4, CLOSED boxes, storm report → title, voices. `climb_debris` sprite is now unused.
-1. **Attract loop** (title idle 15 s → story → title): on the cart in v0.10.2; Abe confirmed "idle replay". Cart verdict pending.
-2. Cart verdict still pending on names, sizes and poles.
+0. **Cart verdict on v0.10.2:** Abe: "all looks fantastic" (overall; no per-item notes). If he reports specifics later, the open questions were board creak fairness (50 frames), hidden cables, work orders 1–4, CLOSED boxes, storm report → title. `climb_debris` sprite is unused and can be retired.
+1. **Attract loop** shipped in v0.10.2 and covered by that verdict.
+2. Names, sizes and poles: covered only by the overall verdict above.
 3. Look items for Abe's pass: Emil's raised bowl is thin; Priya lost her glasses, so her
    only props now are long hair and a phone; Hiroshi's tube doubles as his cane. The
    storm pole's dangling wire overlaps the cable-end sprite on the same tile.
