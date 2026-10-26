@@ -33,7 +33,7 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 ## Open, in suggested order
 
 0. **Abe is playing v0.10.1 on the cart** to judge voices, hazards and tickets. Gather his verdict on: boards (50-frame creak fairness), hidden cables, work orders 1–4, CLOSED boxes, storm report → title, voices. `climb_debris` sprite is now unused.
-1. **Attract loop** (Abe: "the intro should 'loop' the storm cinematic"): built and verified natively, not flashed. Confirm with Abe that this is what he meant (title idle → replay the story) before the next flash.
+1. **Attract loop** (Abe: "the intro should 'loop' the storm cinematic"): built and verified natively, not flashed. Abe confirmed: "yes, idle replay". Ships with the next flash.
 2. Cart verdict still pending on names, sizes and poles.
 3. Look items for Abe's pass: Emil's raised bowl is thin; Priya lost her glasses, so her
    only props now are long hair and a phone; Hiroshi's tube doubles as his cane. The
