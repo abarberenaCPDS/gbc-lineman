@@ -9,6 +9,7 @@ import make_climb_scene as shared
 import make_ridge_scene as scene
 import opening
 import ridge
+import rosa
 
 # Hermetic fixtures: the builders only reference these IDs, so fixed strings
 # keep the structural tests independent of which art sidecars exist yet.
@@ -207,7 +208,7 @@ class RidgeTests(unittest.TestCase):
                     self.assertTrue(redraws, "HUD must be redrawn after text")
                     self.assertEqual(redraws[0]["args"]["text"], ridge.HUD_TEXT)
         # Authored in-play texts: init intro, Tomas x3, cable pickup, junction x3, door x2.
-        self.assertEqual(checked, 10)
+        self.assertEqual(checked, 11)
 
     def test_hud_uses_exact_two_digit_variable_tokens(self):
         self.assertEqual(ridge.HUD_TEXT, "LINE %D1$08$/1 HOME %D1$09$/1")
@@ -230,7 +231,7 @@ class RidgeTests(unittest.TestCase):
                         self.assertLessEqual(len(part), scene.MAX_DIALOGUE_CHARS, part)
                         checked += 1
         # One line per in-play text, two-line boxes count each part.
-        self.assertEqual(checked, 19)
+        self.assertEqual(checked, 21)
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
@@ -320,6 +321,28 @@ class RidgeTests(unittest.TestCase):
                                  for e in walk(guard["children"]["true"])),
                              "start delay must not enable the hazard early")
         self.assertEqual([g["_index"] for g in gusts], [len(built_actors()) - 2, len(built_actors()) - 1])
+
+    def test_hill_exit_leads_to_signal_hill_only_after_tomas_is_powered(self):
+        trigger = trigger_by_symbol("trigger_ridge_hill_exit")
+        self.assertEqual((trigger["x"], trigger["y"], trigger["width"], trigger["height"]),
+                         rosa.RIDGE_EXIT)
+        [gate] = trigger["script"]
+        self.assertEqual(gate["args"]["condition"]["valueA"], {"type": "variable", "value": "9"})
+        cutoff, hide, switch = gate["children"]["true"]
+        self.assertEqual(cutoff["args"]["y"]["value"], 150)
+        self.assertEqual(hide["command"], "EVENT_OVERLAY_HIDE")
+        self.assertEqual(switch["args"]["sceneId"], rosa.SCENE_ID)
+        self.assertEqual((switch["args"]["x"]["value"], switch["args"]["y"]["value"]), rosa.START)
+        # The refusal never moves the hero: a nudge re-entered the summit exit and looped.
+        refused = gate["children"]["false"]
+        self.assertNotIn("EVENT_ACTOR_SET_POSITION", [e["command"] for e in walk(refused)])
+        self.assertEqual(refused[0]["command"], "EVENT_OVERLAY_SET_SCANLINE_CUTOFF")
+        # Standing on the porch at the exit is clear of Tomas's door trigger.
+        tx, _, tw, _ = ridge.DOOR_TRIGGER
+        self.assertGreaterEqual(trigger["x"], tx + tw)
+        grid = ridge.collision_grid()
+        self.assertTrue(all(grid[r][trigger["x"]] == ridge.COL_EMPTY
+                            for r in range(trigger["y"], trigger["y"] + trigger["height"])))
 
     def test_house_view_stays_within_ten_sprites_per_scanline(self):
         # Exact ROM e05b693c showed the concentrator losing its top half when

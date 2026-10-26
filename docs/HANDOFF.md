@@ -1,4 +1,4 @@
-# Session handoff: Mister CFE (2026-10-26, after Tomás's job)
+# Session handoff: Mister CFE (2026-10-26, after Rosa's job)
 
 Start a new session with: **"Read docs/HANDOFF.md and continue."**
 Once this handoff's work is done, replace or delete this file. `PROJECT_PLAN.md` remains the
@@ -8,7 +8,7 @@ long-term status record.
 
 `AGENTS.md`, `CLAUDE.md`, `docs/PROJECT_PLAN.md` (top, "Second repair job: Tomás's Wind
 Ridge", progress log), `docs/redesign-brief.md`, `docs/action-climb-acceptance.md`,
-`docs/MCP_TOOLKIT.md`. VERSION is `0.6.0-dev`. Local-only repo: never add a remote.
+`docs/MCP_TOOLKIT.md`. VERSION is `0.7.0-dev`. Local-only repo: never add a remote.
 One-line Conventional Commits, no AI attribution.
 
 ## Current state
@@ -25,6 +25,20 @@ One-line Conventional Commits, no AI attribution.
   doing anything that could discard a recording, then open `build/web-tomas`.
 - Abe deferred cartridge flashing ("will flash later"). Hardware and Chromatic
   stream remain untested.
+
+## Update: Rosa's job (Signal Hill) built
+
+- Abe on Tomás's job: "works awesome" (browser) and "gameplay is awesome" (Chromatic stream).
+- Rosa's job: contract `tools/rosa.py`, profile `tools/make_project.py rosa --verify`;
+  vars 10/11; entry from the right end of Tomás's porch after var9=1. Full loop passed
+  natively (`3dd78a6e…`); landing defect fixed (`089f7a44…`). Release ROM `31fd2ac6…`.
+- Browser: `build/web-rosa` (web ROM `530b763a…`) served by a plain local server at
+  http://127.0.0.1:50734/ because the MCP preview server is stuck on an unresolved
+  browser-recording acknowledgement (restart the MCP server to clear it).
+- Open: Abe's browser verdict on Rosa's job; native check of the ridge→hill exit and an
+  arc hit; the arc Warning sparks may be too faint; next household Kiko's family (stove).
+- Landing rule learned: walking/holding right off a 3-tile step lands up to ~42px past
+  the edge; keep hazards ≥ 9 tiles from a step you walk off.
 
 ## Required work, in order
 

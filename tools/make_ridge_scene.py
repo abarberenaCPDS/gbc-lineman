@@ -40,8 +40,9 @@ try:
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
     import ridge  # noqa: E402  (Tomas's job contract: geometry, IDs, timings)
+    import rosa  # noqa: E402  (Rosa's job contract: the ridge exit leads there)
 except ModuleNotFoundError as error:
-    if error.name in {"climb", "opening", "ridge", "make_climb_scene"}:
+    if error.name in {"climb", "opening", "ridge", "rosa", "make_climb_scene"}:
         raise SystemExit(
             f"cannot generate wind_ridge: tools/{error.name}.py is missing"
         ) from error
@@ -426,6 +427,42 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
     }
 
 
+def hill_exit_trigger() -> dict[str, Any]:
+    """Right end of Tomas's porch leads on to Rosa's Signal Hill.
+
+    Gated on Tomas's checkpoint (var 9). The refusal only explains: it never
+    moves the hero, because a nudge plus leftover momentum re-entered the
+    summit exit and looped its text (exact ROM 147c23be). Like the climb
+    exits, it lifts the HUD cutoff and hides the overlay before switching.
+    """
+    x, y, width, height = rosa.RIDGE_EXIT
+    start_x, start_y = rosa.START
+    go = [
+        cutoff_event(150, "hill-exit:cutoff"),
+        event("EVENT_OVERLAY_HIDE", {}, "hill-exit:hud-hide"),
+        event("EVENT_SWITCH_SCENE", {
+            "x": shared.number(start_x), "y": shared.number(start_y), "direction": "right",
+            "sceneId": rosa.SCENE_ID, "fadeSpeed": "2",
+        }, "hill-exit:to-hill"),
+    ]
+    wait = say(short_lines("Power Tomas's\nhouse first."), "hill-exit:not-yet")
+    return {
+        "_resourceType": "trigger",
+        "id": ridge.resource_id("trigger:hill-exit"),
+        "name": "Hill Exit (to Signal Hill)",
+        "prefabId": "",
+        "x": x,
+        "y": y,
+        "symbol": "trigger_ridge_hill_exit",
+        "prefabScriptOverrides": {},
+        "width": width,
+        "height": height,
+        "script": [if_value(rosa.RIDGE_EXIT_GATE_VAR, 1, "hill-exit:gate", go, wait)],
+        "leaveScript": [],
+        "_index": 1,
+    }
+
+
 def debris_cycle(index: int, debris: dict[str, Any]) -> list[dict[str, Any]]:
     """Update scripts repeat natively; each cycle warns, falls, then rests.
 
@@ -608,7 +645,7 @@ def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[
 
 
 def build_triggers(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
-    return [door_trigger(audio_ids["connect"])]
+    return [door_trigger(audio_ids["connect"]), hill_exit_trigger()]
 
 
 # ---------------------------------------------------------------------------

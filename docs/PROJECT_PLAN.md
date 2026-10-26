@@ -20,7 +20,7 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Last updated:** 2026-10-26 · **Tomás's job (Wind Ridge) built and native-verified; two exact-ROM defects fixed (sprite-per-line overflow, looping summit refusal); browser export `build/web-tomas` built, human play pending**
+**Last updated:** 2026-10-26 · **Rosa's job (Signal Hill) built and native-verified end to end; live-cable arcs added (hazard ladder step 3); landing-zone defect fixed; browser export `build/web-rosa` served locally, human play pending**
 
 **Latest feedback:** Abe confirmed the Chrome preview and said the movement
 prototype looks good for now. Holding Down+A can drop multiple levels; keep
@@ -555,6 +555,31 @@ opened. **Stream/hardware:** none.
 
 ---
 
+### Third repair job: Rosa's Signal Hill (live-cable arcs) 🔄
+
+Contract `tools/rosa.py`; generators `make_rosa_art.py`, `make_rosa_sprites.py`,
+`make_rosa_scene.py` (profile `tools/make_project.py rosa --verify`), built by three
+parallel workers. Route: Tomás powered (var9=1) opens the right end of his porch
+(ridge trigger 38,9; text-only refusal, never a nudge) → Signal Hill (40×18) → two
+one-tap rock steps to the snapped pole → carry past live wire 1, a gust, live wire 2
+(arcs: 48f sparks warning, 24f arc hits, 80f rest) → porch → box (var10) → door
+(var11: warm windows, Rosa Relieved, computer + router On, "Router's on! I'm online
+again.", HUD `LINE 1/1 HOME 1/1`).
+
+**Native:** hill-start test ROM `3dd78a6e…` (unrecorded; quota): full loop passed
+(intro texts, both step taps, pickup, carry past wire/gust/wire, plug var10=1 with cyan
+route, door payoff var11=1, OAM peak 8/line, 0 over limit). **Defect:** walking off the
+upper step landed the hero over wire 1 (x138, box to x152 vs lane x144; holding right
+lands up to 42px past the edge, `c2aeecad…`). Fix: steps and pole moved to x4–8 / x7, and the
+contract now requires lanes ≥ 9 tiles past the upper step; verified on `089f7a44…`.
+Release ROM `31fd2ac6…`; 212 tests. **Not native-verified:** the ridge→hill exit
+(tests only), respawn after var11. **Art notes:** the wire's Warning sparks are faint
+(few pixels); judge the telegraph in play. **Browser:** `build/web-rosa` (web ROM
+`530b763a…`) on a local static server. **Stream/hardware:** none.
+
+
+---
+
 ## Phase 2 — Pipeline hardening ⬜
 
 Proposed hardening, not mandatory busywork before the next playable iteration.
@@ -624,6 +649,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-26 | Rosa's job | Signal Hill built by 3 parallel workers + main contract; live-cable arcs (hazard step 3); ridge porch exit gated on var9 (text-only refusal). Native play passed the full loop; caught a step landing over wire 1 → steps moved left + contract rule. VERSION 0.7.0-dev. | ROMs `3dd78a6e…` (loop), `089f7a44…` (landing fix); release `31fd2ac6…`; 212 tests; web `530b763a…` served locally, human play pending. |
 | 2026-10-26 | Tomás browser verdict | Abe played `build/web-tomas` (web ROM `1996a02b…`, local static server): **"works awesome."** Positive human-browser verdict on the full arc through Tomás's job; not a hazard-fairness or hardware verdict. Next: Rosa's job (Abe's choice). | Human browser report. |
 | 2026-10-26 | Chromatic stream verdict | After the 120 s host-emulated stream to Player 01, Abe: **"gameplay is awesome."** Recorded as Chromatic stream (host-emulated) feedback, not a cartridge/hardware run. Old browser preview could not close (unresolved browser-recording acknowledgement), so `build/web-tomas` was served by a plain local server for his browser check. | Human report; hardware/cartridge untested. |
 | 2026-10-26 | Chromatic stream (host-emulated) | At Abe's request, streamed release ROM `54570c84…` to Chromatic Player 01 (bus 00 port 1) for 120 s, saves off. Vendor-reported success and the process closed; ~7100 frames sent; device audio underruns 0. Host emulation only: not a cartridge run, nothing written; tools send no input and capture no frames, so readability/audio on the device are Abe's to judge. | Operation `9cad638f…`, request `stream-mrcfe-54570c84-2026-10-26-a`. Hardware/cartridge still untested. |
