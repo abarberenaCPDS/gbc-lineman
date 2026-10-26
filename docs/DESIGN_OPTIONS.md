@@ -20,10 +20,10 @@ the mesa. Every scene then has its own hazard, and no rocks are left.
 
 ## 7. Each job as a service ticket, and a storm report at the end
 
-| Option | Start of job | End of job | After Kiko |
+| Option | Start of job | End of job | After Emil |
 |---|---|---|---|
-| **A. Work-order cards** (recommended) | A full-screen ticket: `TICKET #0412 · Marta · Fridge out · Fix: reconnect line`, A to start. | The same card stamped **CLOSED** with a jingle. | A **Storm report**: jobs closed 4/4, falls, a thank-you, credits, then back to the title. |
-| **B. Dispatcher radio** | A radio call in the dialogue box ("Dispatch: Marta, fridge out, Calle 3"). | "Dispatch: ticket closed." | A short report box, then the title. |
+| **A. Work-order cards** (recommended) | A full-screen ticket: `TICKET #0412 · Amara · Fridge out · Fix: reconnect line`, A to start. | The same card stamped **CLOSED** with a jingle. | A **Storm report**: jobs closed 4/4, falls, a thank-you, credits, then back to the title. |
+| **B. Dispatcher radio** | A radio call in the dialogue box ("Dispatch: Amara, fridge out, Calle 3"). | "Dispatch: ticket closed." | A short report box, then the title. |
 | **C. Pre-storm prep plan** | At the title, a checklist of four homes; the HUD shows tickets left. | Ticks the list. | The checklist all ticked, then the storm report. |
 
 A costs the most (four card scenes, or one shared card scene driven by a variable).
