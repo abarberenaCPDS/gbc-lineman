@@ -107,6 +107,36 @@ HOUSE_A = {"x": 11, "y": 5}
 SUBSTATION = {"x": 1, "y": 32}
 START = (2, 32)
 
+# ---------------------------------------------------------------------------
+# Marta's line (first repair job): a storm-snapped pole on shelf 21 leaves a
+# dangling cable end. Carry it past debris 3 and up to the junction box on
+# shelf 15; plugging it in energizes the line, which Marta's door requires.
+# Positions are actor tiles (the tile the actor stands in).
+# ---------------------------------------------------------------------------
+DAMAGED_POLE = (3, 20)      # cable-end pickup, left end of shelf 21
+JUNCTION_BOX = (17, 14)     # plug-in point, right end of shelf 15
+VAR_CARRYING_CABLE = "6"
+VAR_LINE_LIVE = "7"
+# Grid sprites share OBJ palette slot 2 (free in the climb since the house icon
+# was replaced by Marta; the opening's slot 2 is the terminal palette).
+GRID_SPRITE_PALETTE_SLOT = 2
+# BG slot 5 (metal) carries the drawn cable route. Only colour index 1 may be
+# used by cable pixels anywhere in slot 5, so swapping index 1 to cyan lights
+# the whole route without recolouring any other slot-5 pixel.
+LINE_BG_SLOT = 5
+LINE_COLOR_INDEX = 1
+METAL_DEAD = ["17232E", "3D5364", "7791A3", "C7DCE1"]
+METAL_LIVE = ["17232E", "38C8D8", "7791A3", "C7DCE1"]
+
+import uuid as _uuid
+
+_GRID_NAMESPACE = _uuid.UUID("5b0e7f1c-3c41-5f0e-9a8b-6c1d2e3f4a5b")
+
+
+def grid_resource_id(key: str) -> str:
+    """Stable IDs for grid-repair resources shared by several generators."""
+    return str(_uuid.uuid5(_GRID_NAMESPACE, "mr-cfe:grid:" + key))
+
 
 def collision_grid() -> list[list[int]]:
     """Return the row-major PLATFORM collision bytes (MAP_H by MAP_W)."""
@@ -239,6 +269,12 @@ def _self_check() -> None:
         assert clear_pairs, (
             f"platform rows {lower_row}->{upper_row} have no two-tile hazard-free ascent"
         )
+
+    # Grid-repair props stand on shelves with 24px headroom, clear of hazards.
+    for x, y in (DAMAGED_POLE, JUNCTION_BOX):
+        assert grid[y][x] == COL_EMPTY and grid[y + 1][x] == COL_TOP, "grid prop footing"
+        assert grid[y - 1][x] == COL_EMPTY and grid[y - 2][x] == COL_EMPTY, "grid prop headroom"
+        assert (y, x) not in hazards, "grid prop inside a hazard"
 
 
 _self_check()

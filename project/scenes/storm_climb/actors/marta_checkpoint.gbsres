@@ -40,37 +40,178 @@
       "children": {
         "true": [
           {
-            "command": "EVENT_TEXT",
+            "command": "EVENT_IF",
             "args": {
-              "text": [
-                "Storm's coming.\nClimb up to me."
-              ],
-              "avatarId": "",
-              "minHeight": 4,
-              "maxHeight": 7,
-              "textX": 1,
-              "textY": 1,
-              "textHeight": 5,
-              "position": "bottom",
-              "clearPrevious": true,
-              "showFrame": true,
-              "speedIn": -1,
-              "speedOut": -1,
-              "closeWhen": "key",
-              "closeButton": "a",
-              "closeDelayUnits": "time",
-              "closeDelayTime": 0.5,
-              "closeDelayFrames": 30
+              "condition": {
+                "type": "eq",
+                "valueA": {
+                  "type": "variable",
+                  "value": "7"
+                },
+                "valueB": {
+                  "type": "number",
+                  "value": 0
+                }
+              }
             },
-            "id": "5c771211-1206-560c-b5c0-995c599a82d7"
+            "id": "e5af677b-5cf3-5c1a-8731-490ad3a93fa4",
+            "children": {
+              "true": [
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 150
+                    }
+                  },
+                  "id": "a2e2e213-907c-5f8b-94eb-eb5522a133d5"
+                },
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": [
+                      "Storm broke the\nline below."
+                    ],
+                    "avatarId": "",
+                    "minHeight": 4,
+                    "maxHeight": 7,
+                    "textX": 1,
+                    "textY": 1,
+                    "textHeight": 5,
+                    "position": "bottom",
+                    "clearPrevious": true,
+                    "showFrame": true,
+                    "speedIn": -1,
+                    "speedOut": -1,
+                    "closeWhen": "key",
+                    "closeButton": "a",
+                    "closeDelayUnits": "time",
+                    "closeDelayTime": 0.5,
+                    "closeDelayFrames": 30
+                  },
+                  "id": "fcb78f74-f444-5709-8547-d9d332630e45"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 16
+                    }
+                  },
+                  "id": "be947fc6-bb2c-5130-af6e-6b0060a12bb8"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SHOW",
+                  "args": {
+                    "color": "black",
+                    "x": 0,
+                    "y": 0
+                  },
+                  "id": "39cb64be-55de-55d2-a257-41892cb8b889"
+                },
+                {
+                  "command": "EVENT_TEXT_DRAW",
+                  "args": {
+                    "text": "LINE %D1$07$/1 HOME %D1$00$/1",
+                    "x": 0,
+                    "y": 0,
+                    "location": "overlay"
+                  },
+                  "id": "b2318571-8264-55e3-815d-ab7fa68ff6cb"
+                }
+              ],
+              "false": [
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 150
+                    }
+                  },
+                  "id": "fe6d2a75-36dc-523e-8747-289105ec4a69"
+                },
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": [
+                      "Line's live!\nGo to my door."
+                    ],
+                    "avatarId": "",
+                    "minHeight": 4,
+                    "maxHeight": 7,
+                    "textX": 1,
+                    "textY": 1,
+                    "textHeight": 5,
+                    "position": "bottom",
+                    "clearPrevious": true,
+                    "showFrame": true,
+                    "speedIn": -1,
+                    "speedOut": -1,
+                    "closeWhen": "key",
+                    "closeButton": "a",
+                    "closeDelayUnits": "time",
+                    "closeDelayTime": 0.5,
+                    "closeDelayFrames": 30
+                  },
+                  "id": "1f8794d1-f77e-51c2-a4eb-11bc599b51d6"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 16
+                    }
+                  },
+                  "id": "db5a0b0a-ac73-58c2-a2c7-5e9e15823e19"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SHOW",
+                  "args": {
+                    "color": "black",
+                    "x": 0,
+                    "y": 0
+                  },
+                  "id": "00d0a9f5-3839-5d9b-855a-e9acae04651b"
+                },
+                {
+                  "command": "EVENT_TEXT_DRAW",
+                  "args": {
+                    "text": "LINE %D1$07$/1 HOME %D1$00$/1",
+                    "x": 0,
+                    "y": 0,
+                    "location": "overlay"
+                  },
+                  "id": "3999034a-1cf3-53e8-963e-b7d5ec1639c8"
+                }
+              ]
+            }
           }
         ],
         "false": [
           {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "bf48ed2f-613b-5e55-b884-df9288270cfa"
+          },
+          {
             "command": "EVENT_TEXT",
             "args": {
               "text": [
-                "Power's back on.\nRest here, CFE."
+                "Food is saved.\nThank you, CFE!"
               ],
               "avatarId": "",
               "minHeight": 4,
@@ -90,6 +231,36 @@
               "closeDelayFrames": 30
             },
             "id": "327d5800-8748-5b12-a054-d75cf2745197"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 16
+              }
+            },
+            "id": "40f586ad-1d87-5ad0-9af7-da14e0fa8da2"
+          },
+          {
+            "command": "EVENT_OVERLAY_SHOW",
+            "args": {
+              "color": "black",
+              "x": 0,
+              "y": 0
+            },
+            "id": "a50e312c-417d-5d00-aca2-02cfa7f37606"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "LINE %D1$07$/1 HOME %D1$00$/1",
+              "x": 0,
+              "y": 0,
+              "location": "overlay"
+            },
+            "id": "600997bf-6658-5530-bcd8-962317387bb9"
           }
         ]
       }

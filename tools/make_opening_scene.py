@@ -105,13 +105,18 @@ def write_variables() -> None:
         print("registered opening variables without changing existing variables")
 
 
-def actor(key: str, name: str, position: tuple[int, int], sprite_name: str, index: int) -> dict:
+GATE_SPRITE_ID = climb.grid_resource_id("sprite:service_gate")
+GATE_SPRITE_PATH = ROOT / "assets/sprites/service_gate.png.gbsres"
+
+
+def actor(key: str, name: str, position: tuple[int, int], sprite_name: str, index: int,
+          sprite_id: str | None = None) -> dict:
     return {
         "_resourceType": "actor", "id": opening.resource_id("actor:" + key),
         "_index": index, "symbol": "opening_" + key, "name": name, "prefabId": "",
         "coordinateType": "tiles", "x": position[0], "y": position[1],
         "frame": 0, "animate": True,
-        "spriteSheetId": opening.resource_id("sprite:" + sprite_name), "paletteId": "",
+        "spriteSheetId": sprite_id or opening.resource_id("sprite:" + sprite_name), "paletteId": "",
         "direction": "left", "moveSpeed": 1, "animSpeed": 15,
         "isPinned": False, "persistent": False, "collisionGroup": "",
         "collisionExtraFlags": [], "prefabScriptOverrides": {},
@@ -190,6 +195,19 @@ def size_comparison_script() -> list[dict]:
     ]
 
 
+def gate_id() -> str:
+    return opening.resource_id("actor:service_gate")
+
+
+def service_gate_actor() -> dict:
+    gate = actor("service_gate", "Service gate - awning", opening.GATE, "service_gate", 2,
+                 sprite_id=GATE_SPRITE_ID)
+    gate["startScript"] = [if_value(RESTORED, 0, "gate:entry", [
+        actor_state("$self$", "Closed", "gate:closed"),
+    ], [actor_state("$self$", "Open", "gate:open")])]
+    return gate
+
+
 def repair_script() -> list[dict]:
     marta_id = opening.resource_id("actor:marta")
     # An ordinary actor interaction is natively locked; input/physics remain
@@ -205,6 +223,8 @@ def repair_script() -> list[dict]:
         palette_state(True, "repair:local-amber"),
         actor_state(marta_id, "Powered", "repair:marta-relieved"),
         actor_state("$self$", "On", "repair:terminal-lit"),
+        # The gate opens on the same beat as the existing connect sound; no second sound.
+        actor_state(gate_id(), "Open", "repair:gate-open"),
         sound("connect", "repair:connect-sound"),
         actor_state("player", "", "repair:resume-default"),
         if_value(HERO_SIZE, HERO_SIZE_24, "repair:resume-speed", [
@@ -228,7 +248,7 @@ def exit_trigger() -> dict:
             "fadeSpeed": "2",
         }, "exit:to-climb"),
     ], [
-        dialogue("No power yet.\nFix the panel.", "exit:unpowered"),
+        dialogue("Gate's locked.\nFix the panel.", "exit:unpowered"),
         event("EVENT_ACTOR_SET_POSITION", {
             "actorId": "player", "units": "tiles",
             "x": number(opening.EXIT_NUDGE[0]), "y": number(opening.EXIT_NUDGE[1]),
@@ -289,9 +309,15 @@ def main() -> None:
         actor_state("$self$", "Off", "terminal:off"),
     ], [actor_state("$self$", "On", "terminal:on")])]
     terminal["script"] = repair_script()
+    if GATE_SPRITE_PATH.exists():
+        # The gate sprite may be generated separately; when present its ID must match.
+        sprite_id = json.loads(GATE_SPRITE_PATH.read_text())["id"]
+        if sprite_id != GATE_SPRITE_ID:
+            raise ValueError(f"{GATE_SPRITE_PATH} id {sprite_id} != {GATE_SPRITE_ID}")
     write_owned(SCENE_DIR / "scene.gbsres", build_scene(backgrounds, sprites))
     write_owned(SCENE_DIR / "actors/marta.gbsres", marta)
     write_owned(SCENE_DIR / "actors/terminal.gbsres", terminal)
+    write_owned(SCENE_DIR / "actors/service_gate.gbsres", service_gate_actor())
     write_owned(SCENE_DIR / "triggers" / f"{EXIT_SYMBOL}.gbsres", exit_trigger())
     print("generated isolated M-V1 opening; launch scene unchanged")
 

@@ -20,7 +20,7 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Last updated:** 2026-10-25 · **Opening → climb → Marta checkpoint arc connected and native-verified; human preview pending**
+**Last updated:** 2026-10-25 · **First repair job (Marta's line: gate → carry cable → live line → fridge) native-verified; human preview pending**
 
 **Latest feedback:** Abe confirmed the Chrome preview and said the movement
 prototype looks good for now. Holding Down+A can drop multiple levels; keep
@@ -455,6 +455,42 @@ that MCP child was SIGTERMed. Three parallel subagents (two Haiku 5.5 coding
 workers with disjoint file ownership, one read-only route auditor) all used
 direct read-only MCP; main owned selection, builds, emulator and preview.
 
+### First repair job: Marta's line (Storm Run + Live Wire + Blackout Grid) 🔄
+
+Game structure approved by Abe (2026-10-25): Mister CFE repairs the storm-
+damaged grid household by household; each job = reach the damage, carry the
+snapped cable to a junction box, power returns visibly (see
+[redesign brief](redesign-brief.md) household/needs table).
+
+**Source (generator-owned, five parallel Haiku 5.5 workers + main):**
+`make_grid_sprites.py` (cable end, junction box, service gate; OBJ slot 2),
+`make_climb_art.py` (snapped pole at shelf 21, cable route drawn only with
+metal slot-5 colour index 1), `make_climb_scene.py` (vars 6 carrying / 7 line
+live, pickup + plug scripts, hazard drop returns the cable to the pole, metal
+slot 5 dead→live palette swap, door gated on the live line, fridge text,
+HUD `LINE x/1 HOME x/1`), `make_opening_scene.py` (service gate Closed until
+the panel repair). Shared contract in `climb.py` (DAMAGED_POLE, JUNCTION_BOX,
+grid_resource_id). 82 tests; regeneration byte-identical.
+
+**Exact-ROM defect found and fixed:** in-play dialogue was drawn behind the
+16 px HUD window cutoff, so the pickup text was invisible and the script
+waited for A — the game appeared frozen (`marta-line`, ROM `ac1b879f…`,
+needs-review). Generator `say()` now lifts the cutoff to 150 and restores the
+HUD; a regression test checks every in-play text.
+
+**Native evidence:** ROM `build/rom/marta-line-v2.gbc`, 262,144 B, SHA-256
+`a17ead019b292b9341843b4c30f6c7661bba1e0cb93e276e6b303cd1ab93c4b7`;
+recording `artifacts/playtests/marta-line-v2` session `6a776744…` (passed),
+frames 300–2032: gate Closed→Open on repair; B at pole sets var6=1 with
+visible text; cable carried past debris 3 while its rock fell (worker at
+x64.2, no contact); B at box sets var7=1, route lights cyan, HUD LINE 1/1;
+summit door: "Power's back! / My fridge hums.", var0=1, HUD HOME 1/1; OAM 9
+visible, peak 4/scanline. **Not exercised natively:** cable drop on a hazard
+hit, "No cable yet" box text, "Still no power" door text, 16px hero, re-entry.
+
+**Browser:** export `build/web-marta-line`, web ROM `0f4cb6ad…`, process-local
+URL; human play pending. **Hardware:** none.
+
 ---
 
 ## Phase 2 — Pipeline hardening ⬜
@@ -526,6 +562,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-25 | Marta's line | Grid-repair structure approved; first job built by five parallel workers: powered opening gate, snapped pole + carried cable, junction box lights the route, door gated on power with fridge payoff, LINE/HOME HUD. Exact-ROM play caught invisible in-play dialogue (frozen game); fixed and re-verified. VERSION 0.4.0-dev. | ROM `a17ead01…` recorded pass frames 300–2032; 82 tests; web `0f4cb6ad…`; human play pending. |
 | 2026-10-25 | Connected arc | Repair-gated opening exit, Marta summit reward (warm windows, powered Marta, HUD) and checkpoint respawn. Exact-ROM play caught an early-firing trigger and a dead HUD variable token; both fixed and re-verified. VERSION 0.3.0-dev. | ROM v2 `2274855c…` recorded pass frames 300–1584; v1 `ef64f624…` respawn evidence; 51 tests; web `36d3691e…` served, human play pending. |
 | 2026-10-25 | Lower-climb feedback | Abe called the playable lower-climb preview “brilliant!” Positive direction; precise hazard-fairness and full-route acceptance remain open. | Human browser reaction to `build/web-lower-climb` export. |
 | 2026-10-25 | Lower-climb preview | Staged separate 256-KiB browser build for human testing, then restored project start to Service Opening. 36 focused tests pass; 23 climb resources regenerate identically. | Web `c3370ce3…`; native `73ef60d6…`; static budget 142/384 BG; no human checkpoint feedback yet. |

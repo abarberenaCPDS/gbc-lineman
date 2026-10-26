@@ -28,6 +28,17 @@ MARTA_SHELF_POSITION = (8, 5)
 MARTA_SPRITE_PALETTE_SLOT = 1
 # Background slot 3 is the summit window family; the opening's repair swaps it.
 SUMMIT_WINDOW_BG_SLOT = 3
+# Live Wire repair job: variables 6 (carrying cable) and 7 (line live) are
+# project-global; both reset on every scene entry.
+CABLE_ACTOR_KEY = "cable-end"
+JUNCTION_ACTOR_KEY = "junction-box"
+# Grid sprite palette (OBJ slot climb.GRID_SPRITE_PALETTE_SLOT). Index 0 is the
+# transparent placeholder, as in opening.SPRITE_PALETTES.
+GRID_SPRITE_HARDWARE = ["000000", "C7DCE1", "38C8D8", "142332"]
+CABLE_ACTOR_SYMBOL = "grid_cable_end"
+JUNCTION_ACTOR_SYMBOL = "grid_junction_box"
+# Two-digit variable tokens only: GB Studio drops a single leading zero.
+HUD_TEXT = "LINE %D1$07$/1 HOME %D1$00$/1"
 
 sys.path.insert(0, str(TOOLS_DIR))
 try:
@@ -40,6 +51,11 @@ except ModuleNotFoundError as error:
             "it must provide the climb/opening data API"
         ) from error
     raise
+
+VAR_CARRYING_CABLE_ID = climb.VAR_CARRYING_CABLE
+VAR_LINE_LIVE_ID = climb.VAR_LINE_LIVE
+LINE_BG_SLOT = climb.LINE_BG_SLOT
+GRID_SPRITE_PALETTE_SLOT = climb.GRID_SPRITE_PALETTE_SLOT
 
 
 def resource_id(key: str) -> str:
@@ -77,6 +93,74 @@ def write_json(path: Path, data: dict[str, Any]) -> None:
             return
     path.write_text(contents, encoding="utf-8")
     print(f"wrote {path.relative_to(PROJECT_DIR)}")
+
+
+def merged_variables(data: dict[str, Any]) -> dict[str, Any]:
+    """Append the Live Wire variables without changing any existing entry.
+
+    Mirrors make_opening_scene.write_variables: an existing ID with a different
+    name or symbol is refused rather than silently renamed.
+    """
+    merged = json.loads(json.dumps(data))
+    for key, name, symbol in (
+        (VAR_CARRYING_CABLE_ID, "Carrying Cable", "var_carrying_cable"),
+        (VAR_LINE_LIVE_ID, "Line Live", "var_line_live"),
+    ):
+        value = {"id": key, "name": name, "symbol": symbol}
+        existing = next((v for v in merged["variables"] if v["id"] == key), None)
+        if existing is not None and existing != value:
+            raise ValueError(f"variable {key} is already owned by {existing}")
+        if existing is None:
+            merged["variables"].append(value)
+    return merged
+
+
+def write_variables() -> None:
+    path = PROJECT_DIR / "project" / "variables.gbsres"
+    data = load_json(path)
+    merged = merged_variables(data)
+    contents = json.dumps(merged, indent=2) + "\n"
+    if path.read_text(encoding="utf-8") != contents:
+        path.write_text(contents, encoding="utf-8")
+        print("registered storm_climb variables without changing existing variables")
+
+
+def palette_resource(kind: str, name: str, colors: list[str]) -> dict[str, Any]:
+    title = "Storm Climb " + kind + " " + name
+    return {
+        "_resourceType": "palette",
+        "id": climb.grid_resource_id(f"palette:{kind}:{name.replace(' ', '_').lower()}"),
+        "name": title,
+        "colors": colors,
+        "defaultName": title,
+        "defaultColors": colors,
+    }
+
+
+def editor_sprite_colors(hardware: list[str]) -> list[str]:
+    # GB Studio expands editor colors as [p0,p0,p1,p3]; serialize [light,mid,dark,dark]
+    # so the intended hardware indices survive, as make_opening_scene does.
+    return [hardware[1], hardware[2], hardware[3], hardware[3]]
+
+
+def grid_palettes() -> list[tuple[str, dict[str, Any]]]:
+    """Return (project-relative path, palette resource) for the Live Wire palettes."""
+    sprite = palette_resource("sprite", "grid", editor_sprite_colors(GRID_SPRITE_HARDWARE))
+    dead = palette_resource("bg", "metal dead", list(climb.METAL_DEAD))
+    live = palette_resource("bg", "metal live", list(climb.METAL_LIVE))
+    return [
+        ("project/palettes/storm_climb_sprite_grid.gbsres", sprite),
+        ("project/palettes/storm_climb_bg_metal_dead.gbsres", dead),
+        ("project/palettes/storm_climb_bg_metal_live.gbsres", live),
+    ]
+
+
+def grid_sprite_palette_id() -> str:
+    return climb.grid_resource_id("palette:sprite:grid")
+
+
+def metal_palette_id(live: bool) -> str:
+    return climb.grid_resource_id("palette:bg:metal_live" if live else "palette:bg:metal_dead")
 
 
 def event(command: str, args: dict[str, Any], key: str) -> dict[str, Any]:
@@ -167,13 +251,24 @@ def cutoff_event(y: int, key: str) -> dict[str, Any]:
     )
 
 
+def say(lines: list[str], key: str) -> list[dict[str, Any]]:
+    """In-play dialogue: lift the HUD's 16px window cutoff so the box is visible,
+    then restore the HUD. Exact-ROM play showed text behind the cutoff staying
+    invisible while the script waited for A, freezing the player."""
+    return [
+        cutoff_event(150, f"{key}:say-cutoff"),
+        text_event(lines, key),
+        *hud_events(f"{key}:say-hud"),
+    ]
+
+
 def hud_events(key: str) -> list[dict[str, Any]]:
     return [
         cutoff_event(16, f"{key}:cutoff"),
         event("EVENT_OVERLAY_SHOW", {"color": "black", "x": 0, "y": 0}, f"{key}:show"),
         event(
             "EVENT_TEXT_DRAW",
-            {"text": "CLIMBS %D1$00$ / 1", "x": 0, "y": 0, "location": "overlay"},
+            {"text": HUD_TEXT, "x": 0, "y": 0, "location": "overlay"},
             f"{key}:counter",
         ),
     ]
@@ -214,11 +309,42 @@ def background_palette_state(powered: bool, key: str) -> dict[str, Any]:
     Mirrors make_opening_scene.palette_state so both scenes use one repair
     language (window cold -> powered_window warm).
     """
+    return background_palette_event({
+        SUMMIT_WINDOW_BG_SLOT: opening.resource_id(
+            "palette:bg:" + ("powered_window" if powered else "window")
+        ),
+    }, key)
+
+
+def background_palette_event(slots: dict[int, str], key: str) -> dict[str, Any]:
+    """Set only the listed BG slots; every other slot is kept as-is."""
     args: dict[str, Any] = {f"palette{index}": "keep" for index in range(8)}
-    args[f"palette{SUMMIT_WINDOW_BG_SLOT}"] = opening.resource_id(
-        "palette:bg:" + ("powered_window" if powered else "window")
-    )
+    for slot, palette_id in slots.items():
+        args[f"palette{slot}"] = palette_id
     return event("EVENT_PALETTE_SET_BACKGROUND", args, key)
+
+
+def line_palette_state(live: bool, key: str) -> dict[str, Any]:
+    """Swap only BG slot 5 (the drawn cable route) between dead and live metal."""
+    return background_palette_event({LINE_BG_SLOT: metal_palette_id(live)}, key)
+
+
+def cable_actor_id() -> str:
+    return resource_id(f"actor:{CABLE_ACTOR_KEY}")
+
+
+def junction_actor_id() -> str:
+    return resource_id(f"actor:{JUNCTION_ACTOR_KEY}")
+
+
+def cable_drop_events(key: str) -> list[dict[str, Any]]:
+    """A carried cable falls back to the storm pole when the carrier is hit."""
+    return [if_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:cable-drop", [
+        set_value(VAR_CARRYING_CABLE_ID, 0, f"{key}:cable-clear"),
+        event("EVENT_ACTOR_SHOW", {"actorId": cable_actor_id()}, f"{key}:cable-show"),
+        actor_state(cable_actor_id(), "Dangling", f"{key}:cable-dangling"),
+        *hud_events(f"{key}:cable-hud"),
+    ])]
 
 
 def actor_state(actor_id: str, state: str, key: str, loop: bool = True) -> dict[str, Any]:
@@ -228,9 +354,14 @@ def actor_state(actor_id: str, state: str, key: str, loop: bool = True) -> dict[
 
 
 def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
-    """Shared checkpoint-aware reset for trigger and actor collisions."""
+    """Shared checkpoint-aware reset for trigger and actor collisions.
+
+    The cable drop runs before repositioning so the carrier's hands are empty
+    wherever the checkpoint sends them.
+    """
     return [
         sound_event(death_sound_id, f"{key}:death-sfx"),
+        *cable_drop_events(key),
         if_value(VARIABLE_CHECKPOINTS_REACHED, 0, f"{key}:respawn-check", [
             set_position(*climb.START, f"{key}:respawn-start"),
         ], [
@@ -324,8 +455,12 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
             "init-player-direction",
         ),
         set_value(VARIABLE_CHECKPOINTS_REACHED, 0, "init-checkpoints-reached"),
+        # Live Wire starts every entry with an empty hand and a dead line.
+        set_value(VAR_CARRYING_CABLE_ID, 0, "init-carrying-cable"),
+        set_value(VAR_LINE_LIVE_ID, 0, "init-line-live"),
         # Explicit cold summit window on every entry, matching the var 0 reset.
         background_palette_state(False, "init-summit-window-cold"),
+        line_palette_state(False, "init-line-dead"),
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-village-music"),
         text_event(short_lines("A: jump\nDown+A: drop"), "intro-controls"),
         *hud_events("initial-hud"),
@@ -400,13 +535,82 @@ def checkpoint_actor(index: int, marta_sprite_id: str) -> dict[str, Any]:
         sprite_id=marta_sprite_id,
         key=key,
         script=[if_value(VARIABLE_CHECKPOINTS_REACHED, 0, f"{key}:talk", [
-            text_event(short_lines("Storm's coming.\nClimb up to me."), f"{key}:talk-before"),
+            if_value(VAR_LINE_LIVE_ID, 0, f"{key}:talk-line", [
+                *say(short_lines("Storm broke the\nline below."), f"{key}:talk-dead"),
+            ], [
+                *say(short_lines("Line's live!\nGo to my door."), f"{key}:talk-live"),
+            ]),
         ], [
-            text_event(short_lines("Power's back on.\nRest here, CFE."), f"{key}:talk-after"),
+            *say(short_lines("Food is saved.\nThank you, CFE!"), f"{key}:talk-after"),
         ])],
         start_script=[actor_state("$self$", "Waiting", f"{key}:waiting")],
     )
     # Match the opening's Marta, whose Waiting/Powered states carry idle frames.
+    actor["animate"] = True
+    return actor
+
+
+def cable_end_actor(index: int, sprite_id: str, pickup_sound_id: str) -> dict[str, Any]:
+    """Dangling cable on the storm-snapped pole (shelf 21). B picks it up.
+
+    Only a visible cable can be picked up, and it is hidden once carried. The
+    start script is unconditional, like Marta's, because scene init resets
+    var 6 and 7 on every entry.
+    """
+    key = CABLE_ACTOR_KEY
+    x, y = climb.DAMAGED_POLE
+    pickup = [if_value(VAR_CARRYING_CABLE_ID, 0, f"{key}:empty-hands", [
+        if_value(VAR_LINE_LIVE_ID, 0, f"{key}:line-dead", [
+            set_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:carry"),
+            event("EVENT_ACTOR_HIDE", {"actorId": "$self$"}, f"{key}:hide"),
+            sound_event(pickup_sound_id, f"{key}:sfx"),
+            *say(short_lines("Got the cable!\nTake it up top."), f"{key}:text"),
+        ]),
+    ])]
+    actor = actor_resource(
+        index=index,
+        symbol=CABLE_ACTOR_SYMBOL,
+        name="Dangling Cable End",
+        x=x,
+        y=y,
+        sprite_id=sprite_id,
+        key=key,
+        script=pickup,
+        start_script=[actor_state("$self$", "Dangling", f"{key}:dangling")],
+    )
+    actor["animate"] = True
+    return actor
+
+
+def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dict[str, Any]:
+    """Dead junction box on shelf 15. Plugging in the carried cable energizes it."""
+    key = JUNCTION_ACTOR_KEY
+    x, y = climb.JUNCTION_BOX
+    plug = [if_value(VAR_LINE_LIVE_ID, 1, f"{key}:live", [
+        *say(short_lines("Line is live."), f"{key}:already-live"),
+    ], [
+        if_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:has-cable", [
+            set_value(VAR_CARRYING_CABLE_ID, 0, f"{key}:clear-cable"),
+            set_value(VAR_LINE_LIVE_ID, 1, f"{key}:set-live"),
+            actor_state("$self$", "Live", f"{key}:live-state"),
+            line_palette_state(True, f"{key}:metal-live"),
+            sound_event(connect_sound_id, f"{key}:sfx"),
+            *say(short_lines("Line is live!\nOn to Marta's."), f"{key}:text"),
+        ], [
+            *say(short_lines("No cable yet.\nCheck the pole."), f"{key}:no-cable"),
+        ]),
+    ])]
+    actor = actor_resource(
+        index=index,
+        symbol=JUNCTION_ACTOR_SYMBOL,
+        name="Junction Box (Shelf 15)",
+        x=x,
+        y=y,
+        sprite_id=sprite_id,
+        key=key,
+        script=plug,
+        start_script=[actor_state("$self$", "Dead", f"{key}:dead")],
+    )
     actor["animate"] = True
     return actor
 
@@ -436,14 +640,20 @@ def build_checkpoint_trigger(death_sound_id: str, connect_sound_id: str) -> dict
         "y": y,
         "width": width,
         "height": height,
-        "script": [if_value(VARIABLE_CHECKPOINTS_REACHED, 0, "checkpoint-arrival", [
-            set_value(VARIABLE_CHECKPOINTS_REACHED, 1, "checkpoint-arrival:set"),
-            sound_event(connect_sound_id, "checkpoint-arrival:sfx"),
-            background_palette_state(True, "checkpoint-arrival:summit-lit"),
-            actor_state(marta_actor_id(), "Powered", "checkpoint-arrival:marta-powered"),
-            cutoff_event(150, "checkpoint-arrival:cutoff"),
-            text_event(short_lines("Made it, CFE!\nRest here."), "checkpoint-arrival:text"),
-            *hud_events("checkpoint-arrival:hud"),
+        # Marta's door needs the line live. Without it nothing is saved and the
+        # checkpoint stays unset, so the reward can still fire later.
+        "script": [if_value(VAR_LINE_LIVE_ID, 1, "checkpoint-arrival:line", [
+            if_value(VARIABLE_CHECKPOINTS_REACHED, 0, "checkpoint-arrival", [
+                set_value(VARIABLE_CHECKPOINTS_REACHED, 1, "checkpoint-arrival:set"),
+                sound_event(connect_sound_id, "checkpoint-arrival:sfx"),
+                background_palette_state(True, "checkpoint-arrival:summit-lit"),
+                actor_state(marta_actor_id(), "Powered", "checkpoint-arrival:marta-powered"),
+                cutoff_event(150, "checkpoint-arrival:cutoff"),
+                text_event(short_lines("Power's back!\nMy fridge hums."), "checkpoint-arrival:text"),
+                *hud_events("checkpoint-arrival:hud"),
+            ]),
+        ], [
+            *say(short_lines("Still no power.\nFix the line!"), "checkpoint-arrival:no-power"),
         ])],
     })
     return checkpoint
@@ -532,7 +742,7 @@ def trigger_resource(index: int, lane: tuple[int, int, int], death_sound_id: str
         "prefabScriptOverrides": {},
         "width": x_end - x_start + 1,
         "height": 1,
-        "script": [sound_event(death_sound_id, f"{key}:death-sfx"), respawn],
+        "script": [sound_event(death_sound_id, f"{key}:death-sfx"), *cable_drop_events(key), respawn],
         "leaveScript": [],
         "_index": index - 1,
     }
@@ -562,11 +772,14 @@ def build_scene(music_id: str) -> dict[str, Any]:
     sprite_palette_ids = list(sprite_palette_ids)
     sprite_palette_ids[0] = opening.resource_id("palette:sprite:worker")
     sprite_palette_ids[MARTA_SPRITE_PALETTE_SLOT] = opening.resource_id("palette:sprite:marta")
+    sprite_palette_ids[GRID_SPRITE_PALETTE_SLOT] = grid_sprite_palette_id()
     background_palette_ids = [
         opening.resource_id(f"palette:bg:{name}") for name, _ in opening.BG_PALETTES
     ] + ["default-ui"]
     if len(background_palette_ids) != 8 or background_palette_ids[7] != "default-ui":
         raise ValueError("Storm Climb background palettes must preserve the UI in slot 7")
+    # Slot 5 starts dead; the scene init and the junction box swap it at runtime.
+    background_palette_ids[LINE_BG_SLOT] = metal_palette_id(False)
     scene.update(
         {
             "id": resource_id("scene:storm-climb"),
@@ -598,6 +811,7 @@ def main() -> None:
     audio_ids = {
         "death": sidecar_id("assets/sounds/death.wav.gbsres", "sound"),
         "connect": sidecar_id("assets/sounds/connect.wav.gbsres", "sound"),
+        "pickup": sidecar_id("assets/sounds/pickup.wav.gbsres", "sound"),
     }
 
     scene = build_scene(music_id)
@@ -608,9 +822,16 @@ def main() -> None:
         timed_gust_actor(index + 1, climb.GUST_LANES[index], sprite_ids["gust"])
         for index in climb.TIMED_GUST_LANE_INDICES
     )
+    actors.append(cable_end_actor(len(actors), climb.grid_resource_id("sprite:grid_cable_end"),
+                                  audio_ids["pickup"]))
+    actors.append(junction_box_actor(len(actors), climb.grid_resource_id("sprite:grid_junction_box"),
+                                     audio_ids["connect"]))
     triggers = gust_marker_triggers(audio_ids["death"])
     triggers.append(build_checkpoint_trigger(audio_ids["death"], audio_ids["connect"]))
 
+    write_variables()
+    for relative_path, palette in grid_palettes():
+        write_json(PROJECT_DIR / relative_path, palette)
     write_json(SCENE_DIR / "scene.gbsres", scene)
     for actor in actors:
         write_json(SCENE_DIR / "actors" / f"{actor['symbol']}.gbsres", actor)

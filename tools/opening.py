@@ -21,6 +21,7 @@ SOLID, ONE_WAY = 15, 1
 EXIT = (18, 6, 2, 4)
 EXIT_STAND = (17, 9)   # last safe feet tile before the exit, on the awning top
 EXIT_NUDGE = (16, 9)   # two tiles back; used when service is not yet restored
+GATE = (18, 9)         # service gate actor on the awning end, feet on row 9
 BG_PALETTES = [
     ("night", ["0B101E", "172338", "2C4054", "52647B"]),
     ("stone", ["111A24", "263642", "475664", "829091"]),
@@ -128,6 +129,9 @@ def _self_check() -> None:
     assert standing(sx, sy, 3, grid) and standing(sx, sy, 2, grid)
     nx, ny = EXIT_NUDGE
     assert standing(nx, ny, 3, grid) and x0 - nx >= 2
+    gx, gy = GATE
+    assert gx == x0 and gy == sy, "gate sits on the awning end beside the exit"
+    assert standing(gx, gy, 3, grid), "gate must stand on the awning"
 
 
 _self_check()

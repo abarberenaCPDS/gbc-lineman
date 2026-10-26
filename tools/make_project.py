@@ -16,8 +16,8 @@ import sys
 
 ROOT = Path(__file__).resolve().parent.parent
 PROFILES = {
-    "climb": ("make_climb_art.py", "make_climb_sprites.py", "make_climb_gust.py", "make_climb_scene.py", "make_engine_fields.py"),
-    "opening": ("make_opening_art.py", "make_opening_characters.py", "make_opening_scene.py"),
+    "climb": ("make_climb_art.py", "make_climb_sprites.py", "make_grid_sprites.py", "make_climb_gust.py", "make_climb_scene.py", "make_engine_fields.py"),
+    "opening": ("make_opening_art.py", "make_opening_characters.py", "make_grid_sprites.py", "make_opening_scene.py"),
 }
 
 

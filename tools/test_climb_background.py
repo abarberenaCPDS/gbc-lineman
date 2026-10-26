@@ -47,6 +47,66 @@ class ClimbBackgroundTests(unittest.TestCase):
         lit = {(i % climb.MAP_W, i // climb.MAP_W) for i, slot in enumerate(slots) if slot == 3}
         self.assertEqual(lit, set(make_climb_art.SUMMIT_WINDOW_TILES))
 
+    def _slot_and_proxy(self):
+        slots = decode_rle(json.loads(Path(str(BACKGROUND) + ".gbsres").read_text())["tileColors"])
+        with Image.open(BACKGROUND) as image:
+            return slots, image.convert("RGB")
+
+    def test_only_cable_pixels_use_the_line_index_in_metal_slot(self):
+        import make_climb_art as art
+        slots, proxy = self._slot_and_proxy()
+        route = art.cable_route_tiles()
+        line_cells = set()
+        for ty in range(climb.MAP_H):
+            for tx in range(climb.MAP_W):
+                if slots[ty * climb.MAP_W + tx] != climb.LINE_BG_SLOT:
+                    continue
+                for y in range(climb.TILE):
+                    for x in range(climb.TILE):
+                        gray = proxy.getpixel((tx * climb.TILE + x, ty * climb.TILE + y))[0]
+                        if art._gb_studio_native_index(gray) == climb.LINE_COLOR_INDEX:
+                            line_cells.add((tx, ty))
+        claimed_route = {
+            (tx, ty) for tx, ty in route
+            if slots[ty * climb.MAP_W + tx] == climb.LINE_BG_SLOT
+        }
+        # Every index-1 metal pixel is a cable pixel on a claimed route tile,
+        # and every claimed route tile carries cable pixels.
+        self.assertTrue(line_cells)
+        self.assertEqual(line_cells, claimed_route)
+
+    def test_cable_links_pole_and_junction_box(self):
+        import make_climb_art as art
+        slots, _ = self._slot_and_proxy()
+        cells = {
+            (tx, ty) for tx, ty in art.cable_route_tiles()
+            if slots[ty * climb.MAP_W + tx] == climb.LINE_BG_SLOT
+        }
+
+        def near(tiles, targets):
+            return any(max(abs(ax - bx), abs(ay - by)) <= 1
+                       for ax, ay in tiles for bx, by in targets)
+
+        self.assertTrue(near(cells, set(art.POLE_TILES) | {climb.DAMAGED_POLE}))
+        self.assertTrue(near(cells, {climb.JUNCTION_BOX}))
+
+    def test_cable_cells_are_empty_collision(self):
+        import make_climb_art as art
+        slots, _ = self._slot_and_proxy()
+        grid = climb.collision_grid()
+        for tx, ty in art.cable_route_tiles():
+            if slots[ty * climb.MAP_W + tx] == climb.LINE_BG_SLOT:
+                self.assertEqual(grid[ty][tx], climb.COL_EMPTY, f"cable on collision {tx},{ty}")
+        for tx, ty in art.POLE_TILES:
+            self.assertEqual(grid[ty][tx], climb.COL_EMPTY, f"pole on collision {tx},{ty}")
+
+    def test_background_tile_budget(self):
+        import make_climb_art as art
+        slots, proxy = self._slot_and_proxy()
+        grid_slots = [slots[row * climb.MAP_W:(row + 1) * climb.MAP_W]
+                      for row in range(climb.MAP_H)]
+        self.assertLessEqual(art._unique_indexed_tiles(proxy, grid_slots), 192)
+
 
 if __name__ == "__main__":
     unittest.main()

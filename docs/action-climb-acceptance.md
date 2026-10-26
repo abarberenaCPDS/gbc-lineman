@@ -19,6 +19,10 @@ is enjoyable and works. Only mark a row complete with the named evidence.
 | Upper climb 18→6 reachable with short taps | ✅ geometry asserts, read-only route audit | ✅ shelves 30→6 at y232…40 with 8-frame taps, no hazard contact (x72/x96/x72 takeoffs) | ⬜ feel | ⬜ |
 | Marta checkpoint: visible reward at the door | ✅ doorway trigger (11,3 3×1), warm slot-3 windows, Marta Waiting→Powered, connect SFX, HUD `$00$` | ✅ var0 stays 0 through 12→9 and summit landing; door sets var0=1, windows warm, Marta Powered, HUD 1/1; OAM 6 visible, peak 4/scanline | ⬜ reward feels earned | ⬜ |
 | Checkpoint respawn after hit | ✅ hit script: var0 ? House A : START | ✅ ROM `ef64f624…` (same respawn script): debris 4 hit on shelf 9 → reappeared on summit (y40) beside the door | ⬜ | ⬜ |
+| Opening service gate opens with the repair | ✅ gate actor Closed/Open on var4 | ✅ ROM `a17ead01…`: Closed before B, Open after | ⬜ | ⬜ |
+| Live Wire: pick up snapped cable, carry, plug in | ✅ vars 6/7, pole + box scripts, say() text | ✅ pickup var6=1, carried past falling debris 3, plug var7=1, HUD LINE 1/1 | ⬜ feel | ⬜ |
+| Cable drops back to pole on a hit | ✅ drop block before respawn (tests) | ⬜ not exercised | ⬜ | ⬜ |
+| Line lights up; Marta's fridge payoff gated on power | ✅ slot-5 index-1 route + door gate | ✅ cyan route after plug; door text + var0=1, HOME 1/1, OAM peak 4/line | ⬜ reward feels earned | ⬜ |
 | Full connected arc: repair → climb → checkpoint | ✅ 51 tests | ✅ one recorded deterministic pass, ROM `2274855c…`, frames 300–1584 | ⬜ preview served, human play pending | ⬜ |
 
 Evidence rules: project/graphics/static previews establish **authored** state,

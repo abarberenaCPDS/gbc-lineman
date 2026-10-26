@@ -2,7 +2,7 @@
 
 [![Platform: Game Boy Color](https://img.shields.io/badge/platform-Game%20Boy%20Color-326b4f)](https://modretro.com/products/chromatic)
 [![Engine: GB Studio](https://img.shields.io/badge/engine-GB%20Studio%204.2.0-4856a6)](https://www.gbstudio.dev/)
-[![Version](https://img.shields.io/badge/version-0.3.0--dev-orange)](VERSION)
+[![Version](https://img.shields.io/badge/version-0.4.0--dev-orange)](VERSION)
 
 **Current work:** an isolated **Service Opening (M-V1)** visual candidate is
 the configured start scene. It is not the full game. See the

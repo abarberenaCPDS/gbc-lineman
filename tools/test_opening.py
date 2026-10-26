@@ -5,6 +5,7 @@ import unittest
 
 from PIL import Image
 
+import climb
 import opening
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -271,6 +272,62 @@ class OpeningTests(unittest.TestCase):
         self.assertEqual(json.loads(path.read_text()), scene.exit_trigger())
         climb_scene = json.loads((ROOT / "project/scenes/storm_climb/scene.gbsres").read_text())
         self.assertEqual(climb_scene["id"], climb_id("scene:storm-climb"))
+
+    def test_service_gate_actor_has_stable_id_position_and_no_collision(self):
+        import make_opening_scene as scene
+        gate = scene.service_gate_actor()
+        self.assertEqual(gate["_resourceType"], "actor")
+        self.assertEqual(gate["id"], opening.resource_id("actor:service_gate"))
+        self.assertEqual(gate["symbol"], "opening_service_gate")
+        self.assertEqual((gate["x"], gate["y"]), opening.GATE)
+        self.assertEqual(gate["collisionGroup"], "")
+        self.assertEqual(gate["spriteSheetId"], climb.grid_resource_id("sprite:service_gate"))
+        # The gate stands on the awning end, beside the exit column.
+        self.assertEqual(opening.GATE[0], opening.EXIT[0])
+        self.assertEqual(opening.GATE[1], opening.EXIT_STAND[1])
+        self.assertTrue(opening.standing(*opening.GATE, body_rows=3))
+
+    def test_service_gate_start_script_is_gated_on_restored(self):
+        import make_opening_scene as scene
+        script = scene.service_gate_actor()["startScript"]
+        self.assertEqual(len(script), 1)
+        self.assertEqual(script[0]["command"], "EVENT_IF")
+        self.assertEqual(script[0]["args"]["condition"]["valueA"]["value"], scene.RESTORED)
+        self.assertEqual(script[0]["args"]["condition"]["valueB"]["value"], 0)
+        closed = next(e for e in script[0]["children"]["true"] if e["command"] == "EVENT_ACTOR_SET_STATE")
+        opened = next(e for e in script[0]["children"]["false"] if e["command"] == "EVENT_ACTOR_SET_STATE")
+        self.assertEqual((closed["args"]["actorId"], closed["args"]["spriteStateId"]), ("$self$", "Closed"))
+        self.assertEqual((opened["args"]["actorId"], opened["args"]["spriteStateId"]), ("$self$", "Open"))
+
+    def test_repair_opens_service_gate_after_restore_without_second_sound(self):
+        import make_opening_scene as scene
+        branch = scene.repair_script()[0]["children"]["true"]
+        restored = next(i for i, e in enumerate(branch) if e["command"] == "EVENT_SET_VALUE"
+                        and e["args"]["variable"] == scene.RESTORED)
+        gate_open = next(i for i, e in enumerate(branch) if e["command"] == "EVENT_ACTOR_SET_STATE"
+                         and e["args"]["actorId"] == opening.resource_id("actor:service_gate"))
+        self.assertGreater(gate_open, restored)
+        self.assertEqual(branch[gate_open]["args"]["spriteStateId"], "Open")
+        sounds = [e for e in branch if e["command"] == "EVENT_SOUND_PLAY_EFFECT"]
+        self.assertEqual(len(sounds), 1, "gate reuses the existing connect sound")
+
+    def test_service_gate_sprite_sidecar_id_when_present(self):
+        path = ROOT / "assets/sprites/service_gate.png.gbsres"
+        if not path.exists():
+            self.skipTest("service_gate sprite sidecar not generated yet")
+        self.assertEqual(json.loads(path.read_text())["id"], climb.grid_resource_id("sprite:service_gate"))
+
+    def test_service_gate_actor_file_matches_generator(self):
+        import make_opening_scene as scene
+        path = ROOT / "project/scenes/service_opening/actors/service_gate.gbsres"
+        self.assertEqual(json.loads(path.read_text()), scene.service_gate_actor())
+
+    def test_exit_unpowered_text_references_gate_and_fits(self):
+        import make_opening_scene as scene
+        gate = scene.exit_trigger()["script"][0]
+        text = next(e for e in gate["children"]["false"] if e["command"] == "EVENT_TEXT")["args"]["text"][0]
+        self.assertIn("Gate's locked", text)
+        self.assertTrue(all(len(line) <= 17 for line in text.split("\n")))
 
 
 if __name__ == "__main__":

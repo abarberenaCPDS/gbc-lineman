@@ -1,0 +1,343 @@
+{
+  "_resourceType": "actor",
+  "id": "8a5bccec-ce06-5dbb-9551-158ae2baac98",
+  "_index": 7,
+  "symbol": "grid_junction_box",
+  "prefabId": "",
+  "name": "Junction Box (Shelf 15)",
+  "coordinateType": "tiles",
+  "x": 17,
+  "y": 14,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "630a7522-b399-5c93-96e1-f99599fb29b3",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "7"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "a1bf0eee-9c94-5265-b8cc-e923cb4b5120",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "6bd9baa0-7c08-5492-b4ca-1ecaac53a538"
+          },
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "Line is live."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 7,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 5,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "time",
+              "closeDelayTime": 0.5,
+              "closeDelayFrames": 30
+            },
+            "id": "f110c56f-1a70-54b4-b8e6-1c4fa37b2e72"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 16
+              }
+            },
+            "id": "ab44a539-38cb-577f-9f62-df992b11da20"
+          },
+          {
+            "command": "EVENT_OVERLAY_SHOW",
+            "args": {
+              "color": "black",
+              "x": 0,
+              "y": 0
+            },
+            "id": "58b1d29e-1a78-5823-b9eb-808664d1808b"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "LINE %D1$07$/1 HOME %D1$00$/1",
+              "x": 0,
+              "y": 0,
+              "location": "overlay"
+            },
+            "id": "02882853-48bc-5a7a-9532-a8866966af4d"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_IF",
+            "args": {
+              "condition": {
+                "type": "eq",
+                "valueA": {
+                  "type": "variable",
+                  "value": "6"
+                },
+                "valueB": {
+                  "type": "number",
+                  "value": 1
+                }
+              }
+            },
+            "id": "79c5b2d3-7f22-5f3f-8fee-3dedca78ca4d",
+            "children": {
+              "true": [
+                {
+                  "command": "EVENT_SET_VALUE",
+                  "args": {
+                    "variable": "6",
+                    "value": {
+                      "type": "number",
+                      "value": 0
+                    }
+                  },
+                  "id": "90ce5826-2df2-545c-8cb0-9b8c4888bcbe"
+                },
+                {
+                  "command": "EVENT_SET_VALUE",
+                  "args": {
+                    "variable": "7",
+                    "value": {
+                      "type": "number",
+                      "value": 1
+                    }
+                  },
+                  "id": "31a2c8f2-72ac-54d1-bfc9-bb9d5f9b2d38"
+                },
+                {
+                  "command": "EVENT_ACTOR_SET_STATE",
+                  "args": {
+                    "actorId": "$self$",
+                    "spriteStateId": "Live",
+                    "loopAnim": true
+                  },
+                  "id": "80ffb5ac-bdbf-53e6-a9d0-cfd13f9ff800"
+                },
+                {
+                  "command": "EVENT_PALETTE_SET_BACKGROUND",
+                  "args": {
+                    "palette0": "keep",
+                    "palette1": "keep",
+                    "palette2": "keep",
+                    "palette3": "keep",
+                    "palette4": "keep",
+                    "palette5": "0cdd592b-0a2d-56bb-951c-67929aa856c7",
+                    "palette6": "keep",
+                    "palette7": "keep"
+                  },
+                  "id": "dd756d86-9fb4-52eb-bbab-d3853700b04a"
+                },
+                {
+                  "command": "EVENT_SOUND_PLAY_EFFECT",
+                  "args": {
+                    "units": "time",
+                    "type": "4aaccbc3-f775-5090-b007-bd5d189a487f",
+                    "priority": "high",
+                    "pitch": 4,
+                    "frequency": 200,
+                    "duration": 0.5,
+                    "wait": true,
+                    "effect": 0
+                  },
+                  "id": "f0c22a79-96d4-5c44-9eb8-95581432bac0"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 150
+                    }
+                  },
+                  "id": "73c874c3-306a-5062-894e-484c997dab69"
+                },
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": [
+                      "Line is live!\nOn to Marta's."
+                    ],
+                    "avatarId": "",
+                    "minHeight": 4,
+                    "maxHeight": 7,
+                    "textX": 1,
+                    "textY": 1,
+                    "textHeight": 5,
+                    "position": "bottom",
+                    "clearPrevious": true,
+                    "showFrame": true,
+                    "speedIn": -1,
+                    "speedOut": -1,
+                    "closeWhen": "key",
+                    "closeButton": "a",
+                    "closeDelayUnits": "time",
+                    "closeDelayTime": 0.5,
+                    "closeDelayFrames": 30
+                  },
+                  "id": "b0564f43-3d65-52d4-a9be-8ce73a0c3338"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 16
+                    }
+                  },
+                  "id": "2cd3d9c4-cc8f-5d97-9c2b-458ad61f0949"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SHOW",
+                  "args": {
+                    "color": "black",
+                    "x": 0,
+                    "y": 0
+                  },
+                  "id": "a7388232-581c-560f-9cd2-ea69653d589c"
+                },
+                {
+                  "command": "EVENT_TEXT_DRAW",
+                  "args": {
+                    "text": "LINE %D1$07$/1 HOME %D1$00$/1",
+                    "x": 0,
+                    "y": 0,
+                    "location": "overlay"
+                  },
+                  "id": "dc1ec034-a291-536f-8d18-c5e5a36547cc"
+                }
+              ],
+              "false": [
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 150
+                    }
+                  },
+                  "id": "79b5a6ae-65bc-531e-91ac-0e0bdf15405a"
+                },
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": [
+                      "No cable yet.\nCheck the pole."
+                    ],
+                    "avatarId": "",
+                    "minHeight": 4,
+                    "maxHeight": 7,
+                    "textX": 1,
+                    "textY": 1,
+                    "textHeight": 5,
+                    "position": "bottom",
+                    "clearPrevious": true,
+                    "showFrame": true,
+                    "speedIn": -1,
+                    "speedOut": -1,
+                    "closeWhen": "key",
+                    "closeButton": "a",
+                    "closeDelayUnits": "time",
+                    "closeDelayTime": 0.5,
+                    "closeDelayFrames": 30
+                  },
+                  "id": "39e923e9-468d-572e-afc8-21824fb9d2da"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 16
+                    }
+                  },
+                  "id": "079cdfc0-2247-508b-af5a-13a5310f875c"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SHOW",
+                  "args": {
+                    "color": "black",
+                    "x": 0,
+                    "y": 0
+                  },
+                  "id": "bd311d98-12ed-5b16-a2a5-c3d4f5241c37"
+                },
+                {
+                  "command": "EVENT_TEXT_DRAW",
+                  "args": {
+                    "text": "LINE %D1$07$/1 HOME %D1$00$/1",
+                    "x": 0,
+                    "y": 0,
+                    "location": "overlay"
+                  },
+                  "id": "bb84a144-a4c4-5f91-8d33-20b1cabdfc4a"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Dead",
+        "loopAnim": true
+      },
+      "id": "b9f8df73-b424-55b5-98b4-a7c8a26f044d"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}
