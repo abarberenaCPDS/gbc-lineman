@@ -80,7 +80,7 @@ def _torso_arm_up(inner: str) -> str:
 # only blink is one idle frame where the eyes close to a single dark pixel row.
 # 1 = skin, 2 = mustard-yellow jacket, 3 = hair, outline, trousers, shoes, bowl rim.
 # Waiting (hungry): an empty bowl held at the belly, open mouth, eyes open (A) or blinking (B).
-# Relieved (happy): a grin, the bowl raised in the right hand; B closes the eyes, lifts a foot.
+# Relieved (happy): a grin, the bowl held up at the chest; B closes the eyes, lifts a foot.
 # ---------------------------------------------------------------------------
 KIKO_CANVAS_H = 32
 KIKO_FIGURE_H = 20
@@ -116,10 +116,6 @@ _WAIT_BOWL_BASE_B = "2223111132"
 _JACKET = "2222222222"
 _JACKET_ZIP = "2222322222"
 
-_BOWL_TOP = "............3333"
-_BOWL_MID = "............3113"
-
-
 def _wait(blink: bool) -> list[str]:
     rim, base = ((_WAIT_BOWL_RIM_B, _WAIT_BOWL_BASE_B) if blink
                  else (_WAIT_BOWL_RIM, _WAIT_BOWL_BASE))
@@ -152,23 +148,24 @@ def _overlay(base: str, over: str) -> str:
 
 
 def _relieved(shut: bool) -> list[str]:
+    """Bowl held in front of the chest: 6 wide, dark rim, light soup, 2px arm, 2 steam pixels."""
     return _kiko_frame([
-        _overlay(_TUFTS, _BOWL_TOP),             # 0 bowl raised above the head
-        _overlay(_CAP, _BOWL_MID),               # 1
-        _arm("3333333333"),                      # 2
-        _arm("3311111133"),                      # 3
-        _arm("3111111113" if shut else "3113113113"),   # 4
-        _arm("3113113113"),                      # 5 eyes (closed: one dark row)
-        _arm("3111111113"),                      # 6
-        _arm("3113333113"),                      # 7 grin
-        _arm("3111111113"),                      # 8
-        "....33111133..23",                      # 9
-        _torso_arm_up(_JACKET),                  # 10
-        _torso_arm_up(_JACKET_ZIP),              # 11
-        _torso_arm_up(_JACKET),                  # 12
-        _torso_arm_up(_JACKET),                  # 13
-        _torso_arm_up(_JACKET),                  # 14
-        _torso_arm_up(_JACKET),                  # 15
+        _TUFTS,                                  # 0
+        _CAP,                                    # 1
+        _CAP,                                    # 2
+        _FOREHEAD,                               # 3
+        _CHEEKS if shut else _EYES,              # 4
+        _EYES,                                   # 5 eyes (closed: one dark row)
+        _CHEEKS,                                 # 6
+        _GRIN,                                   # 7 grin
+        _CHIN,                                   # 8
+        _JAW,                                    # 9
+        _torso("2221222122"),                    # 10 steam (light) above the bowl
+        _torso("2233333322") [:-3] + "223",      # 11 bowl rim, arm at x13-14
+        _torso("2231111311") [:-3] + "223",      # 12 soup, hand at x11-12
+        _torso("2223333222"),                    # 13 rounded bowl base
+        _torso(_JACKET),                         # 14
+        _torso(_JACKET),                         # 15
         _LEGS,                                   # 16
         _FEET_LIFTED if shut else _LEGS,         # 17
         _LEGS,                                   # 18

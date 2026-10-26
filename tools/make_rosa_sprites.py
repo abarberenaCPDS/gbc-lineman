@@ -53,7 +53,7 @@ EMPTY = "." * CANVAS
 # ---------------------------------------------------------------------------
 # Priya: a villager working online, front view, feet on row 15.
 # 1 = skin, 2 = rose cardigan, 3 = long hair, glasses, outline, skirt, shoes.
-# Long hair falls past the chin to the shoulders; glasses sit on row 4.
+# Long hair falls past the chin to the shoulders; a rose headset (band, earcup, mic boom).
 # Waiting: worried mouth (middle higher); A holds a dark phone at her side,
 #   B blinks behind her glasses and raises the phone to look at it.
 # Relieved: smile (corners higher); A arms at her sides, B raises her right hand to wave.
@@ -118,6 +118,23 @@ ROSA_REL_B = _ROSA_HEAD + _REL_B_FACE + [
     _JAW[1][:13] + "22.",
     _SHOULDERS,
 ] + _ARMS_DOWN + _SKIRT_LEGS_SHOES
+
+
+def _headset(rows: list[str]) -> list[str]:
+    """Headset in rose (2): band over the hair top, left earcup, mic boom toward the mouth."""
+    rows = list(rows)
+    pts = {1: [4, 5, 6, 7, 8, 9, 10, 11], 2: [3], 3: [3], 4: [2, 3], 5: [2, 3],
+           6: [3], 7: [4], 8: [5]}
+    for y, xs in pts.items():
+        r = list(rows[y])
+        for x in xs:
+            r[x] = "2"
+        rows[y] = "".join(r)
+    return rows
+
+
+ROSA_WAIT_A, ROSA_WAIT_B, ROSA_REL_A, ROSA_REL_B = (
+    _headset(f) for f in (ROSA_WAIT_A, ROSA_WAIT_B, ROSA_REL_A, ROSA_REL_B))
 ROSA_TALL = 32  # canvas rows; the 24px figure stands on the bottom 24 of them
 ROSA_FRAMES = [ROSA_WAIT_A, ROSA_WAIT_B, ROSA_REL_A, ROSA_REL_B]
 ROSA_STATE_FRAMES = {"Waiting": [0, 1], "Relieved": [2, 3]}
