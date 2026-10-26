@@ -562,6 +562,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-25 | Marta's line feedback | Abe on the first repair job: **"I love it."** Positive direction for the combined Storm Run + Live Wire + Blackout Grid structure; not a hazard-fairness, drop-on-hit or hardware verdict. | Human reaction after the `build/web-marta-line` handoff. |
 | 2026-10-25 | Marta's line | Grid-repair structure approved; first job built by five parallel workers: powered opening gate, snapped pole + carried cable, junction box lights the route, door gated on power with fridge payoff, LINE/HOME HUD. Exact-ROM play caught invisible in-play dialogue (frozen game); fixed and re-verified. VERSION 0.4.0-dev. | ROM `a17ead01…` recorded pass frames 300–2032; 82 tests; web `0f4cb6ad…`; human play pending. |
 | 2026-10-25 | Connected arc | Repair-gated opening exit, Marta summit reward (warm windows, powered Marta, HUD) and checkpoint respawn. Exact-ROM play caught an early-firing trigger and a dead HUD variable token; both fixed and re-verified. VERSION 0.3.0-dev. | ROM v2 `2274855c…` recorded pass frames 300–1584; v1 `ef64f624…` respawn evidence; 51 tests; web `36d3691e…` served, human play pending. |
 | 2026-10-25 | Lower-climb feedback | Abe called the playable lower-climb preview “brilliant!” Positive direction; precise hazard-fairness and full-route acceptance remain open. | Human browser reaction to `build/web-lower-climb` export. |
