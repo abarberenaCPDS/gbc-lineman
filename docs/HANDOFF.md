@@ -1,4 +1,4 @@
-# Session handoff: Mister CFE (2026-10-26) — v0.10.1 on the cart, attract loop built
+# Session handoff: Mister CFE (2026-10-26) — v0.10.2 on the cart (attract loop)
 
 Start a new session with: **"Read docs/HANDOFF.md and continue."**
 `PROJECT_PLAN.md` is the long-term record (progress log, newest first).
@@ -16,10 +16,9 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 - **Committed:** speaker names + voices, 24px neighbours, animated storm poles, renamed
   neighbours, docs (see `git log`). `project/settings.gbsres` starts at the logo
   (`8f0deaff…`); never commit a `--test-start` override.
-- **Cart:** v0.10.1 `31110ef7…` flashed 2026-10-26 (B-14/B-15 fixes + everything in v0.10.0). Flashing:
+- **Cart:** v0.10.2 `86d3d954…` flashed 2026-10-26 (attract loop + B-14/B-15 fixes + v0.10.0 hazards/tickets). Flashing:
   later writes to that device need no new data-loss consent (given 2026-10-26), but
   always bind the exact ROM via `rom_inspect` and confirm Abe isn't mid-play.
-- **Unflashed:** the title attract loop (idle 15 s → story → title), verified on test ROM `1584e27f…`.
 - **Names:** Marta → **Amara** (Nigeria), Tomás → **Hiroshi** (Japan), Rosa → **Priya**
   (India), Kiko → **Emil** (Denmark). Code keys keep the old names on purpose.
 
@@ -32,8 +31,8 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 
 ## Open, in suggested order
 
-0. **Abe is playing v0.10.1 on the cart** to judge voices, hazards and tickets. Gather his verdict on: boards (50-frame creak fairness), hidden cables, work orders 1–4, CLOSED boxes, storm report → title, voices. `climb_debris` sprite is now unused.
-1. **Attract loop** (Abe: "the intro should 'loop' the storm cinematic"): built and verified natively, not flashed. Abe confirmed: "yes, idle replay". Ships with the next flash.
+0. **Abe is playing v0.10.2 on the cart** to judge voices, hazards and tickets. Gather his verdict on: boards (50-frame creak fairness), hidden cables, work orders 1–4, CLOSED boxes, storm report → title, voices. `climb_debris` sprite is now unused.
+1. **Attract loop** (title idle 15 s → story → title): on the cart in v0.10.2; Abe confirmed "idle replay". Cart verdict pending.
 2. Cart verdict still pending on names, sizes and poles.
 3. Look items for Abe's pass: Emil's raised bowl is thin; Priya lost her glasses, so her
    only props now are long hair and a phone; Hiroshi's tube doubles as his cane. The
