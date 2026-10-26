@@ -104,6 +104,21 @@ simultaneous visibility, runtime sprite pressure or performance.
 `native_graphics_update` supports only the **wrecklight-title-v1** contract;
 it is not a general renderer or a recommendation to add custom engine code.
 
+### Native color pitfalls (verified with GB Studio 4.3.2)
+
+- Manual-color backgrounds are indexed from source brightness before native
+  palettes apply. Intended indices 0/1/2/3 can be encoded with source gray
+  255/170/85/0. Writing dark painted RGB directly can render as bright index 3.
+  Keep authored RGB fixtures separate from the compiler-facing proxy PNG.
+- Sprite proxies differ: transparent green/alpha → 0; white → 1; gray 160 → 2;
+  black → 3. Do not reuse the background indexer for sprite previews.
+- The compiler's `getSpritePalette` expands editor colors as `[p0,p0,p1,p3]`.
+  For three opaque colors light/mid/dark, serialize editor
+  `[light,mid,dark,dark]`, not `[transparent,light,mid,dark]`.
+- Inspect the installed quantizers/compiler before reusing these mappings in a
+  different version. Verify an exact-ROM frame against intended colors; valid
+  PNG budgets and attractive authored mockups alone missed both mistakes.
+
 ## 4. Optional tilemap recipes: one owner per output
 
 Useful combination: model-designed motifs and surface semantics →

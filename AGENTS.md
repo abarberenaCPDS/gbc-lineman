@@ -14,6 +14,12 @@ Game Boy Color game "Mister CFE: After the Storm", built with GB Studio 4.2.0 (`
 
 ## Generated content
 
+Current launch is the isolated `service_opening` M-V1 fixture, not the climb.
+Managed-Python command: `tools/make_project.py opening --fixtures --verify`.
+`tools/opening.py` owns its palette/geometry/ID contract; the scene generator
+does not change launch settings. Compiler-facing background PNGs are indexed
+proxies, not the authored RGB fixtures (color pitfalls: `docs/MCP_TOOLKIT.md`).
+
 The active redesign is `storm_climb`: `tools/climb.py` owns its geometry;
 regenerate with managed Python: `make_climb_art.py`, `make_climb_sprites.py`,
 then `make_climb_scene.py` and `make_engine_fields.py`. Music needs
@@ -26,16 +32,15 @@ redesign. Its authored resources diverged from generators; do not blindly rerun 
 `tools/level.py` supplies legacy geometry and shared palette definitions. Edit
 source modules/generators rather than generated art or scene resources.
 
-- Edit `level.py` → run the relevant generators (`tools/make_art.py`, `tools/make_scene.py`, `tools/make_sprites.py`, …). They use deterministic UUID5 namespaces, so reruns update only what they own, in place.
 - Pillow-based generators (`make_art`, `make_sprites`, `make_village_bg`, `make_village_sprites`) must run under the managed toolchain Python: `"$HOME/Library/Application Support/modretro-chromatic/toolchain/.local/pyboy-venv/bin/python"`.
-- `tools/make_sfx.py` **refuses to overwrite** existing sound assets — delete the target first if regenerating.
+- `tools/make_sfx.py` refuses to overwrite existing sounds; do not delete targets blindly. Inspect the asset/sidecar and owning refinement generator first.
 - Dialogue in generated scene scripts is validated to ≤ 17 chars per line (`MAX_DIALOGUE_CHARS`) and raises otherwise.
 
 ## Project gotchas
 
-- The start is `project/scenes/storm_climb/` (PLATFORM, 20×36). Storm Night and the topdown village are legacy scenes retained for reference, not current acceptance targets.
+- Current fixture: `project/scenes/service_opening/` (PLATFORM, 20×18); gameplay prototype: `project/scenes/storm_climb/` (20×36). Storm Night and the topdown village are legacy references, not acceptance targets.
 - `*.bak` files are GB Studio editor backups; `build/`, `artifacts/`, `save-states/`, `__pycache__/`, and `user_settings.gbsres` are gitignored generated/local state. Never force-add them.
-- Project settings: sprite mode 8x16, music driver `huge`, color-only; hazard triggers teleport the player back to start `(2,32)` — there is no game-over state.
+- Project settings: sprite mode 8x16, music driver `huge`, color-only. Respawn coordinates/state handling are scene-specific; inspect scripts rather than assuming a scene reload.
 
 ## Git and versioning (docs/GIT_WORKFLOW.md)
 

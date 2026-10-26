@@ -4,6 +4,13 @@
 [![Engine: GB Studio](https://img.shields.io/badge/engine-GB%20Studio%204.2.0-4856a6)](https://www.gbstudio.dev/)
 [![Version](https://img.shields.io/badge/version-0.2.0--dev-orange)](VERSION)
 
+**Current work:** an isolated **Service Opening (M-V1)** visual candidate is
+the configured start scene. It is not the full game. See the
+[master plan](docs/PROJECT_PLAN.md) and [current redesign](docs/redesign-brief.md);
+the original loop sketch below is historical, not the current acceptance target.
+In the fixture, **B/X** repairs or talks; **SELECT/Shift** compares hero sizes
+and returns to the starting spot.
+
 ## 🌧️ The game
 
 A tropical storm has cut the power to a lonely mountain village. Climb the

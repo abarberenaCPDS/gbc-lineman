@@ -20,7 +20,7 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Last updated:** 2026-10-25 · **Phase 1: debris/music human review pending; visual direction approved, M-V1 production pending**
+**Last updated:** 2026-10-25 · **M-V1 candidate built and headless-tested; browser/art/music acceptance pending**
 
 **Latest feedback:** Abe confirmed the Chrome preview and said the movement
 prototype looks good for now. Holding Down+A can drop multiple levels; keep
@@ -276,6 +276,48 @@ resolve file ownership before edits and serialize shared-runtime checks.
 is possible; **(B)** reference/style investigation now, then M-V1 production.
 Subsequent scene expansion is blocked on user approval of M-V1, not pixel count alone.
 
+**M-V1 production status: candidate built/tested; human review pending.**
+
+- Shared `tools/opening.py` owns geometry, palettes and stable IDs. Environment:
+  160×144, 166 indexed tiles (157 flip-deduplicated by MCP). Three localized
+  window/panel tiles use the power-swap slot. Both hero sizes, Marta, terminal,
+  native repair/size-switch scripts and palette resources are integrated.
+- Reproduce with managed Python:
+  `tools/make_project.py opening --fixtures --verify`. Ten opening tests and
+  twelve existing climb/music tests pass; all 25 opening resources regenerate
+  byte-identically. Orchestrator does not change launch settings.
+- Native debug ROM: `build/rom/service-opening-v2.gbc`, 131,072 bytes, SHA-256
+  `713876e212352d86624c47d2e8f1d6d6b5229f01e046a0debe2ef428091e4724`.
+  Initial build caught BG brightness indexing and OBJ editor-palette expansion
+  bugs; both were corrected and checked in real native frames. Independent
+  direct-MCP review confirmed source repairs, palette mapping and dialogue
+  ≤128 px with the actual font. See reusable lessons in `MCP_TOOLKIT.md`.
+- Retained recording: `artifacts/playtests/service-opening-v2`, session
+  `38da1c8ae3614c7bb93f5d9a5eb8a5da`. Branch 1 actions 57–70 / frames 398–422
+  cover tall-worker repair; branch 2 actions 88–101 / frames 448–472 cover small
+  repair. `emulator_review` verified retained endpoints and input delivery.
+- Headless verified: B changes `Service Restored` 0→1 with either hero size;
+  repeat B preserves 1; SELECT toggles size and returns to the start while
+  preserving restored state. Small worker walked past Marta and landed on the
+  upper walk; airborne SELECT returned the tall worker safely to the floor.
+  Sampled tall OAM: seven visible objects, peak five/scanline, none over limit.
+  These samples do not establish whole-game performance.
+- Native cold/warm frame comparison above actor height: exactly 128 window
+  pixels changed, all in BG slot 3. Workwear orange is present in actual frames.
+  Source repair poses now differ (18/24 pixels); an independent audit caught
+  and regression tests prevent the original duplicate-pose error.
+- Browser build staged separately at `build/web-opening`, ROM SHA-256
+  `43aec1c44a974237177197db2da0832d434673ecffd2bbb4e1f6992677b33844`.
+  Existing Chrome player remains unpaused on the old movement build; no reload
+  or handoff performed. Human art/music approval is still pending.
+- Preview controls: arrows move, A/Z jumps, B/X repairs or talks, SELECT/Shift
+  compares hero size and returns home. Authored comparison (not gameplay):
+  `artifacts/visual-opening/size_power_comparison.png`.
+- Remaining gates: user art/size/feel approval, music listening, actual scene
+  re-entry/save persistence, broader collision/timing checks and hardware.
+  Falling currently shares the jump pose; distinct fall/landing presentation
+  is not implemented or claimed. The climb's multi-level drop remains deferred.
+
 ---
 
 ## Phase 2 — Pipeline hardening ⬜
@@ -288,9 +330,11 @@ Adopt extractions only where they reduce current duplication or iteration risk.
   UGE, not a pure-Python binary writer. Keep the new climb pipeline distinct.
 - ⬜ Extract character/sprite data → `tools/characters.py` consumed by
   `make_sprites.py`
-- ⬜ Add `tools/make_project.py` orchestrator: one command regenerates
-  art → sprites → scene(s) → music → sfx in dependency order
-- ⬜ Byte-identical regen verified via fresh build + `project_refresh`
+- ✅ Add `tools/make_project.py` with explicit `opening`/`climb` profiles;
+  opening profile generation/fixtures/tests verified. Music rendering is an
+  explicit offline `--render-music` option; legacy generators are excluded.
+- ✅ Opening profile: 25 resources regenerate byte-identically; MCP refresh,
+  ROM/web build and focused tests pass. This is not proof for every legacy asset.
 
 **Proposed exit criteria:** agreed hardening scope, deterministic output and a
 measurably faster iteration loop; a refactor alone is not a playable milestone.
@@ -345,6 +389,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-25 | M-V1 | Three parallel direct-MCP workers delivered environment, characters and native integration guidance; follow-up audits caught/fixed duplicate repair poses and native color mappings. Isolated visual candidate builds, 22 tests pass, 25 resources regenerate identically. Native repair/size/movement and sampled OAM verified; web candidate staged without interrupting Chrome. | Native ROM `713876e2…`; web ROM `43aec1c4…`; human gate remains pending. |
 | 2026-10-25 | Pipeline | Inspected all 81 MCP tools and audited useful model/tool combinations; reusable guide separated from game status. Debris/theme integration committed as `d65ea1a`. | Direct capability audit plus bounded sprite, dialogue, collision and dependency probes; recipe/import/device mutations were not exercised. |
 | 2026-10-25 | 1 / visual | Final debris/music source audits and retained contact→base evidence recorded; visual approach approved, M-V1 browser gate and three parallel owned tracks added. Next: safe human debris/music handoff alongside reference/style work, then M-V1 production. | Main reports 12 tests, 23 byte-identical outputs, native ROM `6f9bdec3…`, PyBoy actions 26–62 / frames 348–414; exact identities and limits above. Three improvement reviewers + two final auditors confirmed direct MCP; earlier agents remain file-only. Documentation child directly inspected project health; no selection/build/preview operations. Human acceptance and scene scaling remain gated. |
 | 2026-10-25 | 1 | Abe played Chrome movement preview: good for now; multi-level Down+A drop deferred. Debris loops and original climb theme implemented, not accepted. Music is current work, not deferred. Phase 2 extraction and Phase 3 backlog clarified as proposals. | Child read-only MCP: zero health errors/warnings, Storm Climb + four debris actors. Main-session evidence: eight tests, debug ROM 131,072 B sha `9078cd2e…`, PyBoy boot frame 348. Dynamic contacts/checkpoint/fairness, listening and latest browser/hardware checks pending; preserve unpaused Chrome player. |

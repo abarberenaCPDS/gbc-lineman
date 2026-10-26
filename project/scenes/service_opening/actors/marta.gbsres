@@ -1,0 +1,143 @@
+{
+  "_resourceType": "actor",
+  "id": "01d84e24-371a-5d23-a51f-4f8d9be33899",
+  "_index": 0,
+  "symbol": "opening_marta",
+  "name": "Marta - waiting for light",
+  "prefabId": "",
+  "coordinateType": "tiles",
+  "x": 8,
+  "y": 15,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "4d94cf88-57ad-5c70-81b1-83ac39af0b3f",
+  "paletteId": "",
+  "direction": "left",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [
+    {
+      "id": "559751e7-8b1e-5238-ad88-f76d97d059e3",
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "4"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 0
+          }
+        }
+      },
+      "children": {
+        "true": [
+          {
+            "id": "d8dd7abd-3723-57cc-ad8a-060deb72a797",
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "The lights went\nwith the storm."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 5,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 3,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "frames",
+              "closeDelayFrames": 8
+            }
+          }
+        ],
+        "false": [
+          {
+            "id": "5e31cd36-cb1c-51e1-9b6d-91ced4199cdb",
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "Warm again.\nThank you, CFE."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 5,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 3,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "frames",
+              "closeDelayFrames": 8
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "startScript": [
+    {
+      "id": "826bbfc7-e8e7-54b6-9c6d-98a0084234ca",
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "4"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 0
+          }
+        }
+      },
+      "children": {
+        "true": [
+          {
+            "id": "0c1f1a6f-d0c3-512c-9bef-ab4a09e63b5b",
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "$self$",
+              "spriteStateId": "Waiting",
+              "loopAnim": true
+            }
+          }
+        ],
+        "false": [
+          {
+            "id": "88bc30fe-5b39-5ca1-9142-b30e22635213",
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "$self$",
+              "spriteStateId": "Powered",
+              "loopAnim": true
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}
