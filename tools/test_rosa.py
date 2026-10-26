@@ -365,7 +365,7 @@ class RosaTests(unittest.TestCase):
                                  ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_HIDE"])
         hazard_indices = [a["_index"] for a in built_actors()
                           if a["symbol"].startswith(("signal_arc_", "signal_gust_"))]
-        self.assertEqual(hazard_indices, list(range(4, 4 + len(arcs) + len(gusts))))
+        self.assertEqual(hazard_indices, list(range(5, 5 + len(arcs) + len(gusts))))  # after the storm pole
 
     def test_house_view_stays_within_ten_sprites_per_scanline(self):
         # Same budget as Wind Ridge: count OBJ columns per tile row with the hero
@@ -399,7 +399,9 @@ class RosaTests(unittest.TestCase):
         self.assertTrue(pole["animate"])
         self.assertEqual(pole["script"], [], "pole is not interactive")
         self.assertEqual(pole["collisionGroup"], "", "pole does not collide")
-        start = pole["startScript"][0]
+        self.assertEqual(pole["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE",
+                         "B must find the cable end on the pole's tile (B-13)")
+        start = pole["startScript"][1]
         self.assertTrue(is_var_if(start, rosa.VAR_LINE_LIVE, 1))
         self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
                           for e in start["children"]["true"]], [("$self$", "Standing")])
@@ -419,9 +421,8 @@ class RosaTests(unittest.TestCase):
         actors = built_actors()
         symbols = [a["symbol"] for a in actors]
         self.assertEqual(symbols, [
-            scene.ROSA_SYMBOL, scene.WORKSTATION_SYMBOL, scene.CABLE_SYMBOL,
+            scene.ROSA_SYMBOL, scene.WORKSTATION_SYMBOL, scene.POLE_SYMBOL, scene.CABLE_SYMBOL,
             scene.JUNCTION_SYMBOL, "signal_arc_01", "signal_arc_02", "signal_gust_01",
-            scene.POLE_SYMBOL,
         ])
         self.assertFalse(any("debris" in s for s in symbols), "no debris in Signal Hill")
         self.assertEqual([a["_index"] for a in actors], list(range(len(actors))))

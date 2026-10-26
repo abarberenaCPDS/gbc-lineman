@@ -662,11 +662,15 @@ def pole_actor(index: int, sprite_id: str) -> dict[str, Any]:
         y=y,
         sprite_id=sprite_id,
         key=key,
-        start_script=[if_value(VAR_LINE_LIVE_ID, 1, f"{key}:line-check", [
-            actor_state("$self$", "Standing", f"{key}:standing"),
-        ], [
-            actor_state("$self$", "Snapped", f"{key}:snapped"),
-        ])],
+        start_script=[
+            # Off, so B finds the cable end on this tile instead of the pole.
+            event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": "$self$"}, f"{key}:no-collision"),
+            if_value(VAR_LINE_LIVE_ID, 1, f"{key}:line-check", [
+                actor_state("$self$", "Standing", f"{key}:standing"),
+            ], [
+                actor_state("$self$", "Snapped", f"{key}:snapped"),
+            ]),
+        ],
     )
     actor["animate"] = True
     return actor
@@ -959,11 +963,14 @@ def main() -> None:
         timed_gust_actor(index + 1, climb.GUST_LANES[index], sprite_ids["gust"])
         for index in climb.TIMED_GUST_LANE_INDICES
     )
+    # The pole sits on the cable end's tile. Actors draw in descending index
+    # order (higher index = lower OAM = on top), so the pole goes first and the
+    # cable stays visible above it (cart bug B-13).
+    actors.append(pole_actor(len(actors), intro.POLE_SPRITE_ID))
     actors.append(cable_end_actor(len(actors), climb.grid_resource_id("sprite:grid_cable_end"),
                                   audio_ids["pickup"]))
     actors.append(junction_box_actor(len(actors), climb.grid_resource_id("sprite:grid_junction_box"),
                                      audio_ids["connect"]))
-    actors.append(pole_actor(len(actors), intro.POLE_SPRITE_ID))
     triggers = gust_marker_triggers(audio_ids["death"])
     triggers.append(build_checkpoint_trigger(audio_ids["death"], audio_ids["connect"]))
     triggers.append(street_exit_trigger())

@@ -322,7 +322,9 @@ class ClimbTests(unittest.TestCase):
         self.assertEqual(pole["script"], [], "pole is not interactive")
         self.assertEqual(pole["collisionGroup"], "", "pole does not collide")
 
-        start = pole["startScript"][0]
+        self.assertEqual(pole["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE",
+                         "B must find the cable end on the pole's tile (B-13)")
+        start = pole["startScript"][1]
         self.assertEqual(start["args"]["condition"]["valueA"], {"type": "variable", "value": "7"})
         self.assertEqual(start["args"]["condition"]["valueB"], {"type": "number", "value": 1})
         self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])

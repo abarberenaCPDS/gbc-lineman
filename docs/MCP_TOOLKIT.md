@@ -202,6 +202,10 @@ MCP static tool; each needed native play.
   across scenes needs the same slot free in every scene that uses it. Before reusing a
   sprite, list each target scene's `spritePaletteIds`. Job scenes: 0 hero, 1 neighbour,
   2 grid props, 3 live arc, 4 debris, 5 gust, 6 legacy, 7 intro pole.
+- **Actors draw in descending index order**: a higher `_index` gets a lower OAM slot
+  and draws on top (seen in OAM on two scenes). An actor sharing a tile with an
+  interactive one must have the lower index and collisions off, or it hides it and
+  takes the B press (cart bug B-13).
 - **The MCP index can be stale after generators write files.** `graphics_analyze_scene`
   reported 7 actors where 8 were on disk. Run `project_refresh` (mode `strong`) after
   regenerating and before any analysis.

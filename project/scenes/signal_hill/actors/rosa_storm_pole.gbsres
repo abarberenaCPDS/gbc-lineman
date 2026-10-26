@@ -1,7 +1,7 @@
 {
   "_resourceType": "actor",
   "id": "da049197-236f-50e8-97f8-ca7cb346bb44",
-  "_index": 7,
+  "_index": 2,
   "symbol": "rosa_storm_pole",
   "prefabId": "",
   "name": "Storm Pole",
@@ -22,6 +22,13 @@
   "prefabScriptOverrides": {},
   "script": [],
   "startScript": [
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "92f24590-a5b1-589b-81d4-5b9abc92a6c4"
+    },
     {
       "command": "EVENT_IF",
       "args": {

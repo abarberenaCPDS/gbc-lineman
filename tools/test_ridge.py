@@ -321,7 +321,7 @@ class RidgeTests(unittest.TestCase):
             self.assertFalse(any(e["command"] == "EVENT_ACTOR_COLLISIONS_ENABLE"
                                  for e in walk(guard["children"]["true"])),
                              "start delay must not enable the hazard early")
-        self.assertEqual([g["_index"] for g in gusts], [len(built_actors()) - 3, len(built_actors()) - 2])  # the storm pole is appended last
+        self.assertEqual([g["_index"] for g in gusts], [len(built_actors()) - 2, len(built_actors()) - 1])  # the storm pole sits before the cable end
 
     def test_hill_exit_leads_to_signal_hill_only_after_tomas_is_powered(self):
         trigger = trigger_by_symbol("trigger_ridge_hill_exit")
@@ -378,9 +378,8 @@ class RidgeTests(unittest.TestCase):
         actors = built_actors()
         symbols = [a["symbol"] for a in actors]
         self.assertEqual(symbols, [
-            scene.TOMAS_SYMBOL, scene.CONCENTRATOR_SYMBOL, scene.CABLE_SYMBOL,
+            scene.TOMAS_SYMBOL, scene.CONCENTRATOR_SYMBOL, scene.POLE_SYMBOL, scene.CABLE_SYMBOL,
             scene.JUNCTION_SYMBOL, "ridge_debris_01", "ridge_gust_01", "ridge_gust_02",
-            scene.POLE_SYMBOL,
         ])
         self.assertEqual([a["_index"] for a in actors], list(range(len(actors))))
         self.assertEqual(len(set(a["id"] for a in actors)), len(actors))
@@ -417,7 +416,9 @@ class RidgeTests(unittest.TestCase):
         self.assertTrue(pole["animate"])
         self.assertEqual(pole["script"], [], "pole is not interactive")
         self.assertEqual(pole["collisionGroup"], "", "pole does not collide")
-        start = pole["startScript"][0]
+        self.assertEqual(pole["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE",
+                         "B must find the cable end on the pole's tile (B-13)")
+        start = pole["startScript"][1]
         self.assertTrue(is_var_if(start, ridge.VAR_LINE_LIVE, 1))
         self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
                           for e in start["children"]["true"]], [("$self$", "Standing")])

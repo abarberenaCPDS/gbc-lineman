@@ -1,7 +1,7 @@
 {
   "_resourceType": "actor",
   "id": "fec793b2-55c9-5494-8e98-b16913cc83ae",
-  "_index": 8,
+  "_index": 6,
   "symbol": "climb_storm_pole",
   "prefabId": "",
   "name": "Storm Pole",
@@ -22,6 +22,13 @@
   "prefabScriptOverrides": {},
   "script": [],
   "startScript": [
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "d4cc18af-0688-5052-89d3-b9a6b975076b"
+    },
     {
       "command": "EVENT_IF",
       "args": {

@@ -396,11 +396,15 @@ def pole_actor(index: int, sprite_id: str) -> dict[str, Any]:
     return actor_resource(
         index=index, symbol=POLE_SYMBOL, name="Storm Pole", x=x, y=y,
         sprite_id=sprite_id, key=key,
-        start_script=[if_value(VAR_LINE_LIVE, 1, f"{key}:line-check", [
-            actor_state("$self$", "Standing", f"{key}:standing"),
-        ], [
-            actor_state("$self$", "Snapped", f"{key}:snapped"),
-        ])],
+        start_script=[
+            # Off, so B finds the cable end on this tile instead of the pole.
+            event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": "$self$"}, f"{key}:no-collision"),
+            if_value(VAR_LINE_LIVE, 1, f"{key}:line-check", [
+                actor_state("$self$", "Standing", f"{key}:standing"),
+            ], [
+                actor_state("$self$", "Snapped", f"{key}:snapped"),
+            ]),
+        ],
     )
 
 
@@ -681,7 +685,9 @@ def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[
         gust_actor(index + 1, lane, ridge.GUST_START_DELAYS[index], sprite_ids["gust"])
         for index, lane in enumerate(ridge.GUST_LANES)
     )
-    actors.append(pole_actor(len(actors), intro.POLE_SPRITE_ID))
+    # Before the cable end (index 2): higher indexes draw on top, so the cable
+    # stays visible over the pole on their shared tile (cart bug B-13).
+    actors.insert(2, pole_actor(2, intro.POLE_SPRITE_ID))
     # Editor order is list order: actors and triggers are indexed by position.
     for position, actor in enumerate(actors):
         actor["_index"] = position

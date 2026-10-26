@@ -386,7 +386,7 @@ class KikoTests(unittest.TestCase):
                                  ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_HIDE"])
         hazard_indices = [a["_index"] for a in built_actors()
                           if a["symbol"].startswith(("pine_arc_", "pine_gust_"))]
-        self.assertEqual(hazard_indices, [5, 6])
+        self.assertEqual(hazard_indices, [6, 7])  # after the storm pole
 
     def test_debris_collision_is_only_active_while_falling(self):
         debris = actor_by_symbol("pine_debris_01")
@@ -471,7 +471,9 @@ class KikoTests(unittest.TestCase):
         self.assertTrue(pole["animate"])
         self.assertEqual(pole["script"], [], "pole is not interactive")
         self.assertEqual(pole["collisionGroup"], "", "pole does not collide")
-        start = pole["startScript"][0]
+        self.assertEqual(pole["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE",
+                         "B must find the cable end on the pole's tile (B-13)")
+        start = pole["startScript"][1]
         self.assertTrue(is_var_if(start, kiko.VAR_LINE_LIVE, 1))
         self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
                           for e in start["children"]["true"]], [("$self$", "Standing")])
@@ -491,9 +493,8 @@ class KikoTests(unittest.TestCase):
         actors = built_actors()
         symbols = [a["symbol"] for a in actors]
         self.assertEqual(symbols, [
-            scene.KIKO_SYMBOL, scene.STOVE_SYMBOL, scene.CABLE_SYMBOL,
+            scene.KIKO_SYMBOL, scene.STOVE_SYMBOL, scene.POLE_SYMBOL, scene.CABLE_SYMBOL,
             scene.JUNCTION_SYMBOL, "pine_debris_01", "pine_arc_01", "pine_gust_01",
-            scene.POLE_SYMBOL,
         ])
         self.assertEqual([a["_index"] for a in actors], list(range(len(actors))))
         self.assertEqual(len(set(a["id"] for a in actors)), len(actors))
