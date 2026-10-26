@@ -64,9 +64,10 @@ class ClimbTests(unittest.TestCase):
         self.assertEqual(script[2]["command"], "EVENT_SET_VALUE")
         self.assertEqual(script[2]["args"]["variable"], "0")
         self.assertEqual(script[2]["args"]["value"]["value"], 0)
-        self.assertEqual(script[3]["args"]["musicId"], "test-music")
-        self.assertEqual(script[4]["args"]["text"], ["A: jump\nDown+A: drop"])
-        self.assertEqual([event["command"] for event in script[5:]], [
+        self.assertEqual(script[3]["command"], "EVENT_PALETTE_SET_BACKGROUND")
+        self.assertEqual(script[4]["args"]["musicId"], "test-music")
+        self.assertEqual(script[5]["args"]["text"], ["A: jump\nDown+A: drop"])
+        self.assertEqual([event["command"] for event in script[6:]], [
             "EVENT_OVERLAY_SET_SCANLINE_CUTOFF", "EVENT_OVERLAY_SHOW", "EVENT_TEXT_DRAW",
         ])
         self.assertFalse(any(
@@ -97,10 +98,171 @@ class ClimbTests(unittest.TestCase):
         self.assertEqual(len(resource["spritePaletteIds"]), 8)
         self.assertEqual(resource["spritePaletteIds"][0],
                          "030624ef-c88f-5e59-8664-65193264ce80")
-        self.assertEqual(resource["spritePaletteIds"][1:7], legacy_sprite_palettes[1:7])
+        # Slot 1 now carries Marta; debris (4), gust (5) and the rest keep legacy IDs.
+        self.assertEqual(resource["spritePaletteIds"][1], opening.resource_id("palette:sprite:marta"))
+        self.assertEqual(resource["spritePaletteIds"][2:7], legacy_sprite_palettes[2:7])
         self.assertEqual(resource["spritePaletteIds"][7], legacy_sprite_palettes[7])
         self.assertEqual(opening.resource_id("palette:sprite:worker"),
                          "030624ef-c88f-5e59-8664-65193264ce80")
+
+    @staticmethod
+    def _flatten(events):
+        for entry in events:
+            yield entry
+            for branch in entry.get("children", {}).values():
+                yield from ClimbTests._flatten(branch)
+
+    @staticmethod
+    def _checkpoint_trigger():
+        return scene.build_checkpoint_trigger(
+            scene.sidecar_id("assets/sounds/death.wav.gbsres", "sound"),
+            scene.sidecar_id("assets/sounds/connect.wav.gbsres", "sound"),
+        )
+
+    def test_checkpoint_gate_is_once_only_and_swaps_summit_window_warm(self):
+        trigger = self._checkpoint_trigger()
+        gate = trigger["script"][0]
+        self.assertEqual(gate["command"], "EVENT_IF")
+        self.assertEqual(gate["args"]["condition"]["valueA"], {"type": "variable", "value": "0"})
+        self.assertEqual(gate["args"]["condition"]["valueB"], {"type": "number", "value": 0})
+        self.assertEqual(gate["children"]["false"], [])
+        true_events = list(self._flatten(gate["children"]["true"]))
+        self.assertEqual(true_events[0]["command"], "EVENT_SET_VALUE")
+        self.assertEqual(true_events[0]["args"]["value"]["value"], 1)
+
+        palette = next(e for e in true_events if e["command"] == "EVENT_PALETTE_SET_BACKGROUND")
+        self.assertEqual(palette["args"]["palette3"],
+                         opening.resource_id("palette:bg:powered_window"))
+        self.assertEqual({k: v for k, v in palette["args"].items() if k != "palette3"},
+                         {f"palette{i}": "keep" for i in range(8) if i != 3})
+
+        marta = next(e for e in true_events if e["command"] == "EVENT_ACTOR_SET_STATE")
+        self.assertEqual(marta["args"]["actorId"], scene.marta_actor_id())
+        self.assertEqual(marta["args"]["spriteStateId"], "Powered")
+
+        sound = next(e for e in true_events if e["command"] == "EVENT_SOUND_PLAY_EFFECT")
+        self.assertEqual(sound["args"]["type"],
+                         scene.sidecar_id("assets/sounds/connect.wav.gbsres", "sound"))
+
+        text = next(e for e in true_events if e["command"] == "EVENT_TEXT")
+        self.assertEqual(text["args"]["text"], ["Made it, CFE!\nRest here."])
+        self.assertEqual(scene.MAX_DIALOGUE_CHARS, 17)
+
+    def test_scene_init_sets_summit_window_cold_on_every_entry(self):
+        script = scene.build_scene("test-music")["script"]
+        palette_events = [e for e in script if e["command"] == "EVENT_PALETTE_SET_BACKGROUND"]
+        self.assertEqual(len(palette_events), 1)
+        args = palette_events[0]["args"]
+        self.assertEqual(args["palette3"], opening.resource_id("palette:bg:window"))
+        self.assertEqual(args["palette3"], "7236f4af-b46f-5c4c-8d8b-827b1065a563")
+        self.assertEqual({k: v for k, v in args.items() if k != "palette3"},
+                         {f"palette{i}": "keep" for i in range(8) if i != 3})
+
+    def test_marta_checkpoint_actor_uses_opening_sprite_on_summit_shelf(self):
+        actor = scene.checkpoint_actor(0, opening.resource_id("sprite:opening_marta"))
+        self.assertEqual(actor["id"], "0a208a0e-9313-59b7-be31-3be4c204ab2a")
+        self.assertEqual(actor["id"], scene.resource_id("actor:marta-checkpoint"))
+        self.assertEqual(actor["symbol"], "marta_checkpoint")
+        self.assertEqual(actor["spriteSheetId"], opening.resource_id("sprite:opening_marta"))
+        self.assertEqual(actor["collisionGroup"], "")
+        self.assertTrue(actor["animate"])
+        self.assertEqual((actor["x"], actor["y"]), scene.MARTA_SHELF_POSITION)
+        x, y = actor["x"], actor["y"]
+        self.assertEqual(climb.collision_grid()[y + 1][x], climb.COL_TOP)
+        self.assertEqual(climb.collision_grid()[y][x], climb.COL_EMPTY)
+        self.assertEqual(actor["startScript"][0]["args"]["spriteStateId"], "Waiting")
+        self.assertEqual(actor["startScript"][0]["args"]["actorId"], "$self$")
+
+    def test_marta_sprite_palette_slot_is_free_and_matches_sprite_tiles(self):
+        def palette_indexes(path):
+            found = set()
+            def walk(node):
+                if isinstance(node, dict):
+                    if "paletteIndex" in node:
+                        found.add(node["paletteIndex"])
+                    for value in node.values():
+                        walk(value)
+                elif isinstance(node, list):
+                    for value in node:
+                        walk(value)
+            walk(json.loads((scene.PROJECT_DIR / path).read_text(encoding="utf-8")))
+            return found
+
+        marta_slots = palette_indexes("assets/sprites/opening_marta.png.gbsres")
+        self.assertEqual(marta_slots, {scene.MARTA_SPRITE_PALETTE_SLOT})
+        other_slots = set()
+        for path in ("assets/sprites/opening_worker24.png.gbsres",
+                     "assets/sprites/climb_debris.png.gbsres",
+                     "assets/sprites/climb_gust.png.gbsres"):
+            other_slots |= palette_indexes(path)
+        self.assertEqual(other_slots, {0, 4, 5})
+        self.assertNotIn(scene.MARTA_SPRITE_PALETTE_SLOT, other_slots)
+
+        resource = scene.build_scene("test-music")
+        self.assertEqual(resource["spritePaletteIds"][scene.MARTA_SPRITE_PALETTE_SLOT],
+                         opening.resource_id("palette:sprite:marta"))
+        self.assertEqual(resource["spritePaletteIds"][0],
+                         opening.resource_id("palette:sprite:worker"))
+
+    def test_arrival_trigger_covers_house_and_standing_24px_hero_without_hazards(self):
+        trigger = self._checkpoint_trigger()
+        x, y, width, height = scene.arrival_rect()
+        self.assertEqual((trigger["x"], trigger["y"], trigger["width"], trigger["height"]),
+                         (x, y, width, height))
+        house_x, house_y = climb.HOUSE_A["x"], climb.HOUSE_A["y"]
+        self.assertTrue(x <= house_x < x + width, "doorway columns include House A")
+
+        # Hero hitbox from the 24px worker asset: bounds y -16, height 24, so
+        # standing at House A's tile row covers rows house_y-2 .. house_y.
+        worker = scene.load_json(scene.PROJECT_DIR / "assets/sprites/opening_worker24.png.gbsres")
+        top = house_y * 8 + worker["boundsY"]
+        bottom = top + worker["boundsHeight"] - 1
+        covered_rows = range(top // 8, bottom // 8 + 1)
+        self.assertEqual(list(covered_rows), list(range(house_y - 2, house_y + 1)))
+        self.assertIn(top // 8, range(y, y + height))
+
+        # Regression from exact-ROM play: an 8-frame A tap rises 38px, so a
+        # jump from shelf 12 (or below) must not reach the trigger row, and
+        # the clear 12->9->6 takeoff at x72 (collider 74..85) stays left of it.
+        shelf12_top = (12 - 1) * 8 + worker["boundsY"]
+        self.assertGreater(shelf12_top - 38, (y + height) * 8 - 1)
+        self.assertGreater(x * 8, 72 + worker["boundsX"] + worker["boundsWidth"] - 1)
+
+        grid = climb.collision_grid()
+        hazards = climb._hazard_cells()
+        for row in range(y, y + height):
+            for column in range(x, x + width):
+                self.assertEqual(grid[row][column], climb.COL_EMPTY)
+                self.assertNotIn((row, column), hazards)
+
+    def test_respawn_remains_checkpoint_aware_for_debris_and_gusts(self):
+        player_hit = scene.build_scene("test-music")["playerHit1Script"]
+        branch = next(e for e in player_hit if e["command"] == "EVENT_IF")["children"]
+        self.assertEqual(branch["true"][0]["args"]["x"]["value"], climb.START[0])
+        self.assertEqual(branch["false"][0]["args"]["y"]["value"], climb.HOUSE_A["y"])
+        gust = scene.trigger_resource(1, climb.GUST_LANES[0], "death-sound")
+        gust_if = gust["script"][1]
+        self.assertEqual(gust_if["children"]["false"][0]["args"]["x"]["value"], climb.HOUSE_A["x"])
+        self.assertEqual(gust_if["children"]["true"][0]["args"]["x"]["value"], climb.START[0])
+
+    def test_checkpoint_trigger_keeps_stable_resource_id(self):
+        self.assertEqual(self._checkpoint_trigger()["id"],
+                         "b02fc406-5513-54f5-abd9-25c1adb2da51")
+
+    def test_every_storm_climb_dialogue_line_fits_limit(self):
+        scripts = [scene.build_scene("test-music")["script"],
+                   scene.checkpoint_actor(0, "sprite")["script"],
+                   self._checkpoint_trigger()["script"]]
+        checked = 0
+        for script in scripts:
+            for entry in self._flatten(script):
+                if entry["command"] != "EVENT_TEXT":
+                    continue
+                for line in entry["args"]["text"]:
+                    for part in line.split("\n"):
+                        self.assertLessEqual(len(part), scene.MAX_DIALOGUE_CHARS, part)
+                        checked += 1
+        self.assertGreaterEqual(checked, 6)
 
     def test_debris_has_safe_warning_then_damaging_fall(self):
         actor = scene.debris_actor(1, climb.HAZARD_DEBRIS[0], "test-sprite")

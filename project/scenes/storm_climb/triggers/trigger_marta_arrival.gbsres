@@ -4,10 +4,10 @@
   "name": "Marta Arrival Checkpoint",
   "prefabId": "",
   "x": 11,
-  "y": 5,
+  "y": 3,
   "symbol": "trigger_marta_arrival",
   "prefabScriptOverrides": {},
-  "width": 2,
+  "width": 3,
   "height": 1,
   "script": [
     {
@@ -43,7 +43,7 @@
             "command": "EVENT_SOUND_PLAY_EFFECT",
             "args": {
               "units": "time",
-              "type": "65c37f2f-2624-54f4-8b2a-392b556aa3a1",
+              "type": "4aaccbc3-f775-5090-b007-bd5d189a487f",
               "priority": "high",
               "pitch": 4,
               "frequency": 200,
@@ -52,6 +52,29 @@
               "effect": 0
             },
             "id": "638f27ce-072a-5229-93d5-36a263769a51"
+          },
+          {
+            "command": "EVENT_PALETTE_SET_BACKGROUND",
+            "args": {
+              "palette0": "keep",
+              "palette1": "keep",
+              "palette2": "keep",
+              "palette3": "526a8dac-f00a-5b38-b697-007f65334c4b",
+              "palette4": "keep",
+              "palette5": "keep",
+              "palette6": "keep",
+              "palette7": "keep"
+            },
+            "id": "a2405a11-172a-59f7-987f-29bd4bb5ef4f"
+          },
+          {
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "0a208a0e-9313-59b7-be31-3be4c204ab2a",
+              "spriteStateId": "Powered",
+              "loopAnim": true
+            },
+            "id": "c3e7c381-1857-5dc4-a3c2-ed1fe1a1eea9"
           },
           {
             "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -68,7 +91,7 @@
             "command": "EVENT_TEXT",
             "args": {
               "text": [
-                "Marta's home!"
+                "Made it, CFE!\nRest here."
               ],
               "avatarId": "",
               "minHeight": 4,
@@ -112,7 +135,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "CLIMBS %D1$0$ / 1",
+              "text": "CLIMBS %D1$00$ / 1",
               "x": 0,
               "y": 0,
               "location": "overlay"

@@ -1,0 +1,96 @@
+{
+  "_resourceType": "trigger",
+  "id": "a4ae5024-51db-5941-a02b-d0e6deaf667b",
+  "name": "Awning exit (gated on service restored)",
+  "prefabId": "",
+  "x": 18,
+  "y": 6,
+  "symbol": "trigger_service_exit",
+  "prefabScriptOverrides": {},
+  "width": 2,
+  "height": 4,
+  "script": [
+    {
+      "id": "d94c25f8-f3fa-5fde-8d86-264a31fe3d49",
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "4"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "children": {
+        "true": [
+          {
+            "id": "9401119f-4cd6-54a2-b4fb-59c772f6aae6",
+            "command": "EVENT_SWITCH_SCENE",
+            "args": {
+              "x": {
+                "type": "number",
+                "value": 2
+              },
+              "y": {
+                "type": "number",
+                "value": 32
+              },
+              "direction": "right",
+              "sceneId": "e8778f37-44a7-5d3a-ad39-49d52fe4c5c7",
+              "fadeSpeed": "2"
+            }
+          }
+        ],
+        "false": [
+          {
+            "id": "8871b963-83d3-5f2f-9cae-26839494aafb",
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "No power yet.\nFix the panel."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 5,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 3,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "frames",
+              "closeDelayFrames": 8
+            }
+          },
+          {
+            "id": "ea776c56-29d0-52a6-8924-e1b2f7fc844b",
+            "command": "EVENT_ACTOR_SET_POSITION",
+            "args": {
+              "actorId": "player",
+              "units": "tiles",
+              "x": {
+                "type": "number",
+                "value": 16
+              },
+              "y": {
+                "type": "number",
+                "value": 9
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "leaveScript": [],
+  "_index": 0
+}

@@ -20,6 +20,14 @@ REFERENCE_SCENE = PROJECT_DIR / "project" / "scenes" / "storm_night" / "scene.gb
 UUID_NAMESPACE = uuid.UUID("ae862b93-7877-5c2c-9a11-e71c74d4769f")
 MAX_DIALOGUE_CHARS = 17
 VARIABLE_CHECKPOINTS_REACHED = "0"
+# Marta stands on the summit shelf (row 6) two tiles left of House A. She has
+# no collision, so the 24px hero's respawn tile and landing stay unobstructed.
+MARTA_SHELF_POSITION = (8, 5)
+# Opening Marta's tiles reference OBJ palette slot 1, which is free in Storm
+# Climb (debris uses 4, gust 5, player 0). The old houses sprite used slot 2.
+MARTA_SPRITE_PALETTE_SLOT = 1
+# Background slot 3 is the summit window family; the opening's repair swaps it.
+SUMMIT_WINDOW_BG_SLOT = 3
 
 sys.path.insert(0, str(TOOLS_DIR))
 try:
@@ -165,7 +173,7 @@ def hud_events(key: str) -> list[dict[str, Any]]:
         event("EVENT_OVERLAY_SHOW", {"color": "black", "x": 0, "y": 0}, f"{key}:show"),
         event(
             "EVENT_TEXT_DRAW",
-            {"text": "CLIMBS %D1$0$ / 1", "x": 0, "y": 0, "location": "overlay"},
+            {"text": "CLIMBS %D1$00$ / 1", "x": 0, "y": 0, "location": "overlay"},
             f"{key}:counter",
         ),
     ]
@@ -198,6 +206,25 @@ def set_position(x: int, y: int, key: str) -> dict[str, Any]:
         {"units": "tiles", "actorId": "player", "x": number(x), "y": number(y)},
         key,
     )
+
+
+def background_palette_state(powered: bool, key: str) -> dict[str, Any]:
+    """Swap only the summit window slot; every other BG slot is kept as-is.
+
+    Mirrors make_opening_scene.palette_state so both scenes use one repair
+    language (window cold -> powered_window warm).
+    """
+    args: dict[str, Any] = {f"palette{index}": "keep" for index in range(8)}
+    args[f"palette{SUMMIT_WINDOW_BG_SLOT}"] = opening.resource_id(
+        "palette:bg:" + ("powered_window" if powered else "window")
+    )
+    return event("EVENT_PALETTE_SET_BACKGROUND", args, key)
+
+
+def actor_state(actor_id: str, state: str, key: str, loop: bool = True) -> dict[str, Any]:
+    return event("EVENT_ACTOR_SET_STATE", {
+        "actorId": actor_id, "spriteStateId": state, "loopAnim": loop,
+    }, key)
 
 
 def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
@@ -297,6 +324,8 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
             "init-player-direction",
         ),
         set_value(VARIABLE_CHECKPOINTS_REACHED, 0, "init-checkpoints-reached"),
+        # Explicit cold summit window on every entry, matching the var 0 reset.
+        background_palette_state(False, "init-summit-window-cold"),
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-village-music"),
         text_event(short_lines("A: jump\nDown+A: drop"), "intro-controls"),
         *hud_events("initial-hud"),
@@ -346,26 +375,78 @@ def actor_resource(
     }
 
 
-def checkpoint_actor(index: int, houses_sprite_id: str, place_sound_id: str) -> dict[str, Any]:
-    house = climb.HOUSE_A
-    key = "marta-checkpoint"
-    return actor_resource(
+MARTA_ACTOR_KEY = "marta-checkpoint"
+
+
+def marta_actor_id() -> str:
+    return resource_id(f"actor:{MARTA_ACTOR_KEY}")
+
+
+def checkpoint_actor(index: int, marta_sprite_id: str) -> dict[str, Any]:
+    """Marta on the summit shelf: Waiting until the arrival checkpoint.
+
+    The start script is unconditional. The scene script resets var 0 on every
+    entry, but actor start scripts give no ordering guarantee against it, so a
+    conditional here could read a stale value from a previous visit.
+    """
+    key = MARTA_ACTOR_KEY
+    x, y = MARTA_SHELF_POSITION
+    actor = actor_resource(
         index=index,
         symbol="marta_checkpoint",
-        name="Marta's Home Checkpoint",
-        x=int(house["x"]),
-        y=int(house["y"]),
-        sprite_id=houses_sprite_id,
+        name="Marta (Summit Checkpoint)",
+        x=x,
+        y=y,
+        sprite_id=marta_sprite_id,
         key=key,
-        script=[],
-        start_script=[
-            event(
-                "EVENT_ACTOR_SET_STATE",
-                {"actorId": "$self$", "spriteStateId": "Marta", "loopAnim": True},
-                f"{key}:set-marta-state",
-            )
-        ],
+        script=[if_value(VARIABLE_CHECKPOINTS_REACHED, 0, f"{key}:talk", [
+            text_event(short_lines("Storm's coming.\nClimb up to me."), f"{key}:talk-before"),
+        ], [
+            text_event(short_lines("Power's back on.\nRest here, CFE."), f"{key}:talk-after"),
+        ])],
+        start_script=[actor_state("$self$", "Waiting", f"{key}:waiting")],
     )
+    # Match the opening's Marta, whose Waiting/Powered states carry idle frames.
+    actor["animate"] = True
+    return actor
+
+
+def arrival_rect() -> tuple[int, int, int, int]:
+    """Return (x, y, width, height) for the arrival trigger.
+
+    Only the top row of a 24px hero standing on the summit shelf (row 3) is
+    covered, at the doorway columns 11-13. Exact-ROM play showed a rows 3-5
+    trigger firing early: an 8-frame jump from shelf 12 put the head in
+    row 4. Landing straight up from shelf 9's safe takeoff (x72) stays left
+    of column 11, so the reward plays on reaching Marta's door.
+    """
+    house = climb.HOUSE_A
+    return int(house["x"]), int(house["y"]) - 2, 3, 1
+
+
+def build_checkpoint_trigger(death_sound_id: str, connect_sound_id: str) -> dict[str, Any]:
+    x, y, width, height = arrival_rect()
+    # Keep the original stable trigger key (100) so the resource ID and file
+    # path are unchanged; only its geometry, name and script are new.
+    checkpoint = trigger_resource(100, (y, x, x + width - 1), death_sound_id)
+    checkpoint.update({
+        "name": "Marta Arrival Checkpoint",
+        "symbol": "trigger_marta_arrival",
+        "x": x,
+        "y": y,
+        "width": width,
+        "height": height,
+        "script": [if_value(VARIABLE_CHECKPOINTS_REACHED, 0, "checkpoint-arrival", [
+            set_value(VARIABLE_CHECKPOINTS_REACHED, 1, "checkpoint-arrival:set"),
+            sound_event(connect_sound_id, "checkpoint-arrival:sfx"),
+            background_palette_state(True, "checkpoint-arrival:summit-lit"),
+            actor_state(marta_actor_id(), "Powered", "checkpoint-arrival:marta-powered"),
+            cutoff_event(150, "checkpoint-arrival:cutoff"),
+            text_event(short_lines("Made it, CFE!\nRest here."), "checkpoint-arrival:text"),
+            *hud_events("checkpoint-arrival:hud"),
+        ])],
+    })
+    return checkpoint
 
 
 def debris_actor(index: int, debris: dict[str, Any], sprite_id: str) -> dict[str, Any]:
@@ -480,6 +561,7 @@ def build_scene(music_id: str) -> dict[str, Any]:
         raise ValueError("Storm Climb reference scene must have eight sprite palette slots")
     sprite_palette_ids = list(sprite_palette_ids)
     sprite_palette_ids[0] = opening.resource_id("palette:sprite:worker")
+    sprite_palette_ids[MARTA_SPRITE_PALETTE_SLOT] = opening.resource_id("palette:sprite:marta")
     background_palette_ids = [
         opening.resource_id(f"palette:bg:{name}") for name, _ in opening.BG_PALETTES
     ] + ["default-ui"]
@@ -508,16 +590,18 @@ def main() -> None:
     music_id = sidecar_id("assets/music/cfe_storm_climb.uge.gbsres", "music")
     sprite_ids = {
         "hazard": sidecar_id("assets/sprites/climb_debris.png.gbsres", "sprite"),
-        "houses": sidecar_id("assets/sprites/houses.png.gbsres", "sprite"),
+        "marta": sidecar_id("assets/sprites/opening_marta.png.gbsres", "sprite"),
         "gust": sidecar_id("assets/sprites/climb_gust.png.gbsres", "sprite"),
     }
+    if sprite_ids["marta"] != opening.resource_id("sprite:opening_marta"):
+        raise ValueError("opening_marta sidecar no longer matches opening.py identity")
     audio_ids = {
         "death": sidecar_id("assets/sounds/death.wav.gbsres", "sound"),
-        "place": sidecar_id("assets/sounds/place.wav.gbsres", "sound"),
+        "connect": sidecar_id("assets/sounds/connect.wav.gbsres", "sound"),
     }
 
     scene = build_scene(music_id)
-    actors = [checkpoint_actor(0, sprite_ids["houses"], audio_ids["place"])]
+    actors = [checkpoint_actor(0, sprite_ids["marta"])]
     actors.extend(debris_actor(index, item, sprite_ids["hazard"])
                   for index, item in enumerate(climb.HAZARD_DEBRIS, start=1))
     actors.extend(
@@ -525,19 +609,7 @@ def main() -> None:
         for index in climb.TIMED_GUST_LANE_INDICES
     )
     triggers = gust_marker_triggers(audio_ids["death"])
-    checkpoint = trigger_resource(100, (climb.HOUSE_A["y"], climb.HOUSE_A["x"], climb.HOUSE_A["x"] + 1), audio_ids["death"])
-    checkpoint.update({
-        "name": "Marta Arrival Checkpoint",
-        "symbol": "trigger_marta_arrival",
-        "script": [if_value(VARIABLE_CHECKPOINTS_REACHED, 0, "checkpoint-arrival", [
-            set_value(VARIABLE_CHECKPOINTS_REACHED, 1, "checkpoint-arrival:set"),
-            sound_event(audio_ids["place"], "checkpoint-arrival:sfx"),
-            cutoff_event(150, "checkpoint-arrival:cutoff"),
-            text_event(short_lines("Marta's home!"), "checkpoint-arrival:text"),
-            *hud_events("checkpoint-arrival:hud"),
-        ])],
-    })
-    triggers.append(checkpoint)
+    triggers.append(build_checkpoint_trigger(audio_ids["death"], audio_ids["connect"]))
 
     write_json(SCENE_DIR / "scene.gbsres", scene)
     for actor in actors:

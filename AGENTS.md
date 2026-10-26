@@ -14,7 +14,8 @@ Game Boy Color game "Mister CFE: After the Storm", built with GB Studio 4.2.0 (`
 
 ## Generated content
 
-Current launch is the isolated `service_opening` M-V1 fixture, not the climb.
+Launch is `service_opening` (M-V1); after the B repair its awning exit enters
+`storm_climb`, whose summit door is Marta's checkpoint.
 Its preferred hero is 24px (opening size variable 5: 0=tall default,
 1=16px comparator); SELECT returns to safe ground before swapping colliders.
 Managed-Python command: `tools/make_project.py opening --fixtures --verify`.
@@ -61,7 +62,7 @@ The current phase, status, and progress log live in `docs/PROJECT_PLAN.md` —
 read it first and update it (status markers + progress log) after every work
 burst.
 Independent work uses up to five parallel subagents; coding-only workers use
-`openai/gpt-6-luna`. Each worker must verify direct MCP access (recent `general`
+Haiku 5.5 (Agent `model: "haiku"`). Each worker must verify direct MCP access (recent `general`
 workers have it; earlier `explore` workers did not). Main serializes builds,
 emulator controls, project selection and preview updates.
 Reusable MCP capabilities, ownership rules and verification limits are in

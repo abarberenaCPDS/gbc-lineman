@@ -24,6 +24,8 @@ WIDTH, HEIGHT = climb.MAP_W * climb.TILE, climb.MAP_H * climb.TILE
 PALETTES = [[tuple(bytes.fromhex(color)) for color in colors]
             for _, colors in opening.BG_PALETTES]
 NATIVE_PROXY_BY_INDEX = (255, 170, 85, 0)
+# Marta's two windows flank the door; slot 3 is reserved for them alone.
+SUMMIT_WINDOW_TILES = ((11, 4), (14, 4))
 LANE_CELLS = {
     (row, x) for row, x0, x1 in climb.GUST_LANES for x in range(x0, x1 + 1)
 }
@@ -102,7 +104,10 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
 
     # Powered home: reserve its small facade/window area above the summit walk.
     _set_rect(slots, 2, 8, 17, 1, 5)
-    _set_rect(slots, 3, 11, 12, 4, 4)
+    # Each lit window owns exactly one whole tile, so the checkpoint's slot-3
+    # palette swap warms both windows and nothing else on the facade.
+    for tx, ty in SUMMIT_WINDOW_TILES:
+        _set_slot(slots, tx, ty, 3)
 
     # Base substation and its timber service frame near the spawn. The player
     # remains in front of this background structure at (2,32).
@@ -334,12 +339,13 @@ def _draw_home(c: _Canvas) -> None:
     c.point(2, (105, 41), p[2][3])
     # Slot 3 is the selective power/window family; bright source index 3 marks
     # a lit room without warming the whole facade.
-    c.rect(3, (88, 35, 95, 42), p[3][0])
-    c.rect(3, (90, 37, 93, 40), p[3][3])
-    c.line(3, [(91, 37), (91, 40)], p[3][2])
-    c.line(3, [(90, 38), (93, 38)], p[3][2])
-    c.rect(3, (113, 35, 120, 42), p[3][0])
-    c.rect(3, (115, 37, 118, 40), p[3][3])
+    for tx, ty in SUMMIT_WINDOW_TILES:
+        x, y = tx * 8, ty * 8
+        c.rect(3, (x, y, x + 7, y + 7), p[3][0])
+        c.rect(3, (x + 1, y + 1, x + 6, y + 6), p[3][1])
+        c.rect(3, (x + 2, y + 2, x + 5, y + 5), p[3][3])
+        c.line(3, [(x + 3, y + 2), (x + 3, y + 5)], p[3][2])
+        c.line(3, [(x + 2, y + 4), (x + 5, y + 4)], p[3][2])
 
 
 def _draw_infrastructure(c: _Canvas) -> None:

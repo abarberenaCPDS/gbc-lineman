@@ -10,11 +10,13 @@ import json
 from pathlib import Path
 from typing import Any
 
+import climb
 import opening
-from make_climb_scene import collision_rle
+from make_climb_scene import collision_rle, resource_id as climb_resource_id
 
 ROOT = Path(__file__).resolve().parent.parent
 SCENE_DIR = ROOT / "project/scenes/service_opening"
+EXIT_SYMBOL = "trigger_service_exit"
 RESTORED = "4"
 HERO_SIZE = "5"
 # var 5 defaults to 0 on a fresh boot: 0 selects the preferred 24px hero,
@@ -216,6 +218,30 @@ def hero_speed(size: int) -> int:
     return json.loads((ROOT / f"assets/sprites/opening_worker{size}.png.gbsres").read_text()).get("animSpeed", 15)
 
 
+def exit_trigger() -> dict:
+    """Awning exit: enters Storm Climb only after the repair set Service Restored."""
+    x, y, w, h = opening.EXIT
+    gate = if_value(RESTORED, 1, "exit:gate", [
+        event("EVENT_SWITCH_SCENE", {
+            "x": number(climb.START[0]), "y": number(climb.START[1]),
+            "direction": "right", "sceneId": climb_resource_id("scene:storm-climb"),
+            "fadeSpeed": "2",
+        }, "exit:to-climb"),
+    ], [
+        dialogue("No power yet.\nFix the panel.", "exit:unpowered"),
+        event("EVENT_ACTOR_SET_POSITION", {
+            "actorId": "player", "units": "tiles",
+            "x": number(opening.EXIT_NUDGE[0]), "y": number(opening.EXIT_NUDGE[1]),
+        }, "exit:nudge-back"),
+    ])
+    return {
+        "_resourceType": "trigger", "id": opening.resource_id("trigger:exit"),
+        "name": "Awning exit (gated on service restored)", "prefabId": "",
+        "x": x, "y": y, "symbol": EXIT_SYMBOL, "prefabScriptOverrides": {},
+        "width": w, "height": h, "script": [gate], "leaveScript": [], "_index": 0,
+    }
+
+
 def build_scene(backgrounds: list[str], sprites: list[str]) -> dict:
     music = json.loads((ROOT / "assets/music/cfe_storm_climb.uge.gbsres").read_text())["id"]
     return {
@@ -266,6 +292,7 @@ def main() -> None:
     write_owned(SCENE_DIR / "scene.gbsres", build_scene(backgrounds, sprites))
     write_owned(SCENE_DIR / "actors/marta.gbsres", marta)
     write_owned(SCENE_DIR / "actors/terminal.gbsres", terminal)
+    write_owned(SCENE_DIR / "triggers" / f"{EXIT_SYMBOL}.gbsres", exit_trigger())
     print("generated isolated M-V1 opening; launch scene unchanged")
 
 

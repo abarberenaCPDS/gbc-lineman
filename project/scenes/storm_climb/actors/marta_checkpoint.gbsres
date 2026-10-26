@@ -4,13 +4,13 @@
   "_index": 0,
   "symbol": "marta_checkpoint",
   "prefabId": "",
-  "name": "Marta's Home Checkpoint",
+  "name": "Marta (Summit Checkpoint)",
   "coordinateType": "tiles",
-  "x": 11,
+  "x": 8,
   "y": 5,
   "frame": 0,
-  "animate": false,
-  "spriteSheetId": "0bf0a48c-8a26-5877-8e03-276998c2809b",
+  "animate": true,
+  "spriteSheetId": "4d94cf88-57ad-5c70-81b1-83ac39af0b3f",
   "paletteId": "",
   "direction": "down",
   "moveSpeed": 1,
@@ -20,16 +20,90 @@
   "collisionGroup": "",
   "collisionExtraFlags": [],
   "prefabScriptOverrides": {},
-  "script": [],
+  "script": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "0"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 0
+          }
+        }
+      },
+      "id": "9c8778c4-2d84-5193-b90c-5204d533f355",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "Storm's coming.\nClimb up to me."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 7,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 5,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "time",
+              "closeDelayTime": 0.5,
+              "closeDelayFrames": 30
+            },
+            "id": "5c771211-1206-560c-b5c0-995c599a82d7"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "Power's back on.\nRest here, CFE."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 7,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 5,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "time",
+              "closeDelayTime": 0.5,
+              "closeDelayFrames": 30
+            },
+            "id": "327d5800-8748-5b12-a054-d75cf2745197"
+          }
+        ]
+      }
+    }
+  ],
   "startScript": [
     {
       "command": "EVENT_ACTOR_SET_STATE",
       "args": {
         "actorId": "$self$",
-        "spriteStateId": "Marta",
+        "spriteStateId": "Waiting",
         "loopAnim": true
       },
-      "id": "d4d0b1c9-ebe4-5a49-b00c-c42c3d4dc259"
+      "id": "e4e081b2-9cc7-575a-ba19-bfe6347826f2"
     }
   ],
   "updateScript": [],

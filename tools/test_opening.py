@@ -213,6 +213,65 @@ class OpeningTests(unittest.TestCase):
                     signatures.append(tuple(pieces))
             self.assertNotEqual(signatures[0], signatures[1], f"{size}px repair poses are identical")
 
+    @staticmethod
+    def all_commands(events):
+        for event in events:
+            yield event["command"]
+            for branch in event.get("children", {}).values():
+                yield from OpeningTests.all_commands(branch)
+
+    def test_exit_trigger_has_stable_id_and_geometry(self):
+        import make_opening_scene as scene
+        trigger = scene.exit_trigger()
+        self.assertEqual(trigger["_resourceType"], "trigger")
+        self.assertEqual(trigger["id"], opening.resource_id("trigger:exit"))
+        self.assertEqual((trigger["x"], trigger["y"], trigger["width"], trigger["height"]), opening.EXIT)
+        self.assertGreaterEqual(trigger["height"], 3, "exit must cover the 24px hero body")
+
+    def test_exit_is_gated_on_service_restored(self):
+        import make_opening_scene as scene
+        gate = scene.exit_trigger()["script"][0]
+        self.assertEqual(gate["command"], "EVENT_IF")
+        self.assertEqual(gate["args"]["condition"]["valueA"]["value"], scene.RESTORED)
+        self.assertEqual(gate["args"]["condition"]["valueB"]["value"], 1)
+
+    def test_exit_true_branch_switches_to_climb_start_facing_right(self):
+        import make_opening_scene as scene
+        import climb
+        from make_climb_scene import resource_id as climb_id
+        gate = scene.exit_trigger()["script"][0]
+        switches = [e for e in gate["children"]["true"] if e["command"] == "EVENT_SWITCH_SCENE"]
+        self.assertEqual(len(switches), 1)
+        args = switches[0]["args"]
+        self.assertEqual(args["sceneId"], climb_id("scene:storm-climb"))
+        self.assertEqual((args["x"]["value"], args["y"]["value"]), climb.START)
+        self.assertEqual(args["direction"], "right")
+        self.assertEqual(args["fadeSpeed"], "2")
+
+    def test_exit_false_branch_has_no_scene_switch_and_nudges_back(self):
+        import make_opening_scene as scene
+        gate = scene.exit_trigger()["script"][0]
+        self.assertNotIn("EVENT_SWITCH_SCENE", list(self.all_commands(gate["children"]["false"])))
+        nudge = next(e for e in gate["children"]["false"] if e["command"] == "EVENT_ACTOR_SET_POSITION")
+        self.assertEqual((nudge["args"]["x"]["value"], nudge["args"]["y"]["value"]), opening.EXIT_NUDGE)
+        dialogue_lines = next(e for e in gate["children"]["false"] if e["command"] == "EVENT_TEXT")["args"]["text"][0]
+        self.assertTrue(all(len(line) <= 17 for line in dialogue_lines.split("\n")))
+
+    def test_exit_geometry_is_reachable_for_both_hero_sizes(self):
+        for body_rows in (3, 2):  # 24px default and 16px comparison
+            with self.subTest(body_rows=body_rows):
+                reach = opening.reachable(opening.START, body_rows=body_rows)
+                self.assertIn(opening.EXIT_STAND, reach)
+                self.assertIn(opening.EXIT_NUDGE, reach)
+
+    def test_exit_trigger_file_matches_generator_and_climb_id(self):
+        import make_opening_scene as scene
+        from make_climb_scene import resource_id as climb_id
+        path = ROOT / "project/scenes/service_opening/triggers" / f"{scene.EXIT_SYMBOL}.gbsres"
+        self.assertEqual(json.loads(path.read_text()), scene.exit_trigger())
+        climb_scene = json.loads((ROOT / "project/scenes/storm_climb/scene.gbsres").read_text())
+        self.assertEqual(climb_scene["id"], climb_id("scene:storm-climb"))
+
 
 if __name__ == "__main__":
     unittest.main()

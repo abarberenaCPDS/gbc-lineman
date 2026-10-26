@@ -15,7 +15,11 @@ is enjoyable and works. Only mark a row complete with the named evidence.
 | First timed gust: safe warning, active burst, avoidable crossing | ✅ lane 1 native actor; old marker trigger inert, valid 256-KiB ROM | ✅ player at world `(86.8,264)` stood safe during warning frames 489–534; burst reset to `(16,256)` by frame 549 | ⬜ rhythm feels fair | ⬜ |
 | Other gust lanes: visible rhythm, avoidable while ascending | 🔄 seven old instant-reset scripts disabled after tall-collider route test; visible markers are inert placeholders | ⬜ re-author one by one | ⬜ | ⬜ |
 | Down+A descends *one* shelf reliably | ✅ engine toggle | ⚠️ existing drop-through works, repeated hold may cross shelves | ⚠️ Abe observed multi-level drop; fix deferred | ⬜ |
-| First checkpoint then full multi-area route | ⬜ source progression unfinished | ⬜ checkpoint/full route | ⬜ sustained play | ⬜ |
+| Opening → climb: exit only after repair | ✅ generator-owned awning exit (18,6 2×4), var4 gate + nudge; 19 opening tests | ✅ ROM `2274855c…`: repaired worker walked into exit → Storm Climb (2,32), var4=1; unrepaired branch not exercised natively | ⬜ | ⬜ |
+| Upper climb 18→6 reachable with short taps | ✅ geometry asserts, read-only route audit | ✅ shelves 30→6 at y232…40 with 8-frame taps, no hazard contact (x72/x96/x72 takeoffs) | ⬜ feel | ⬜ |
+| Marta checkpoint: visible reward at the door | ✅ doorway trigger (11,3 3×1), warm slot-3 windows, Marta Waiting→Powered, connect SFX, HUD `$00$` | ✅ var0 stays 0 through 12→9 and summit landing; door sets var0=1, windows warm, Marta Powered, HUD 1/1; OAM 6 visible, peak 4/scanline | ⬜ reward feels earned | ⬜ |
+| Checkpoint respawn after hit | ✅ hit script: var0 ? House A : START | ✅ ROM `ef64f624…` (same respawn script): debris 4 hit on shelf 9 → reappeared on summit (y40) beside the door | ⬜ | ⬜ |
+| Full connected arc: repair → climb → checkpoint | ✅ 51 tests | ✅ one recorded deterministic pass, ROM `2274855c…`, frames 300–1584 | ⬜ preview served, human play pending | ⬜ |
 
 Evidence rules: project/graphics/static previews establish **authored** state,
 not runtime behavior. Headless samples establish only the exact ROM and interval

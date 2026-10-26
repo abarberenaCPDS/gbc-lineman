@@ -41,6 +41,12 @@ class ClimbBackgroundTests(unittest.TestCase):
                 self.assertIn(slots[row * climb.MAP_W + x], (1, 2, 4, 5, 6))
         self.assertEqual(len(opening.BG_PALETTES), 7)
 
+    def test_summit_windows_alone_own_the_power_slot(self):
+        import make_climb_art
+        slots = decode_rle(json.loads(Path(str(BACKGROUND) + ".gbsres").read_text())["tileColors"])
+        lit = {(i % climb.MAP_W, i // climb.MAP_W) for i, slot in enumerate(slots) if slot == 3}
+        self.assertEqual(lit, set(make_climb_art.SUMMIT_WINDOW_TILES))
+
 
 if __name__ == "__main__":
     unittest.main()

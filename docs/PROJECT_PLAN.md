@@ -20,7 +20,7 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Last updated:** 2026-10-25 · **M-V1 visual direction liked, 24px hero selected, climb theme browser-listening accepted**
+**Last updated:** 2026-10-25 · **Opening → climb → Marta checkpoint arc connected and native-verified; human preview pending**
 
 **Latest feedback:** Abe confirmed the Chrome preview and said the movement
 prototype looks good for now. Holding Down+A can drop multiple levels; keep
@@ -30,6 +30,9 @@ new climb theme are implemented but not yet gameplay/listening accepted. Abe als
 approved the visual approach below, not finished assets. M-V1 preview handoff is
 now authorized and served; user permits interruptions for meaningful iteration
 updates and explicitly discarded the previous movement-preview state.
+On seeing the separate polished lower-climb preview he replied **“brilliant!”**
+(2026-10-25). Treat this as positive browser feedback, not a timed-gust
+fairness verdict, top-checkpoint completion or device approval.
 
 **M-V1 browser feedback (2026-10-25):** Abe played the new preview and said
 “wow! much better this time.” He selected the **24px electrician** as the
@@ -95,7 +98,7 @@ reported for this build.
 - **SemVer:** version lives in root `VERSION`. `0.x` = pre-1.0. Additive
   content → MINOR, fixes/polish → PATCH. Dev suffix stays until a release.
 - **Subagents:** parallel subagents are mandatory for independent work (up to 5),
-  coding tasks to GPT-6 Luna only; pick specialist models per
+  coding tasks to Haiku 5.5 (user override of GPT-6 Luna, 2026-10-25); pick specialist models per
   task. Subagents must follow this plan doc and commit nothing themselves —
   review, verify, then commit.
   User requires **direct MCP** use by each child; check access first and report
@@ -404,6 +407,54 @@ palette slots, static 11-OAM estimate; one boot frame observed peak 5/scanline.
 The combined managed-Python suite passes **36 tests**, and all 23 climb-owned
 resources regenerate byte-identically. Human browser/hardware approval pending.
 
+### Connected arc: Service Opening → Storm Climb → Marta checkpoint 🔄
+
+**Source (generator-owned):** `opening.py`/`make_opening_scene.py` add a
+repair-gated awning exit (tiles 18–19, rows 6–9): with `Service Restored`
+(var 4) = 1 it switches to Storm Climb at `(2,32)` facing right; otherwise
+"No power yet. / Fix the panel." and a nudge back to (16,9).
+`make_climb_scene.py` replaces the generic house icon with the M-V1 Marta
+sprite (OBJ slot 1, Waiting → Powered), swaps BG slot 3 to `powered_window` at
+the checkpoint (cold on every scene entry), plays `connect`, shows
+"Made it, CFE! / Rest here." and redraws the HUD. `make_climb_art.py` now gives
+each summit window exactly one slot-3 tile so the swap lights both windows.
+Launch settings unchanged: Service Opening `(1,15)`.
+
+**Exact-ROM defects found and fixed (native play, not source review):**
+1. The first doorway trigger (rows 3–5) fired during an 8-frame jump from
+   shelf 12 (head reached row 4). It is now row 3 only at the door columns
+   11–13; regression test asserts an 8-frame shelf-12 apex cannot reach it.
+   Residual: a ≥10-frame hold from shelf 12 at x≥75 could still touch it.
+2. HUD text `%D1$0$` never read variable 0 (GB Studio strips a leading zero
+   from single-digit ids); it showed `0 / 1` after checkpoint. Now `$00$`.
+
+**Native evidence (PyBoy 2.7.0, source-debug, recorded):**
+- ROM v1 `build/rom/opening-to-summit.gbc` SHA-256 `ef64f624…`, recording
+  `artifacts/playtests/opening-to-summit` session `8a528f03…` (needs-review):
+  found both defects; debris 4 hit on shelf 9 after checkpoint respawned the
+  worker on the summit beside the door (actions 234–245, frames 1470–1516).
+- ROM v2 `build/rom/opening-to-summit-v2.gbc` 262,144 B, SHA-256
+  `2274855c201a177ae9ca6847d7ba271bbb74dd8985137cd6958cf15001ff8ebf`,
+  recording `artifacts/playtests/opening-to-summit-v2` session `a41ba09c…`
+  (passed), frames 300–1584: B repair (var4=1) → awning exit → climb entry
+  (16,256) → shelves y232/208/184/160/136/112/88/64/40 with 8-frame A taps at
+  x≈71/94/72 → var0 still 0 on summit at x72 → walking to door sets var0=1,
+  warm windows, Marta Powered, HUD `CLIMBS 1 / 1`. OAM 6 visible, peak 4/line.
+  Player position read from WRAM `_actors[0]` (0xD220, subpixel >> 5).
+- One deterministic route only. Not covered natively: the unrepaired exit
+  dialogue/nudge, the 16px comparator through the climb (the climb forces the
+  24px sprite), re-entering the opening, lanes 2–8, coyote timing, Down+A.
+
+**Browser:** separate export `build/web-opening-to-summit`, web ROM SHA-256
+`36d3691e…`, served at a process-local URL (expires with the MCP process).
+Not opened by an agent; human play/feel/audio pending. **Hardware:** none.
+
+**Process note:** a stale ModRetro MCP server under a background
+`opencode serve` held the emulator recording lease; with user approval only
+that MCP child was SIGTERMed. Three parallel subagents (two Haiku 5.5 coding
+workers with disjoint file ownership, one read-only route auditor) all used
+direct read-only MCP; main owned selection, builds, emulator and preview.
+
 ---
 
 ## Phase 2 — Pipeline hardening ⬜
@@ -475,6 +526,8 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-25 | Connected arc | Repair-gated opening exit, Marta summit reward (warm windows, powered Marta, HUD) and checkpoint respawn. Exact-ROM play caught an early-firing trigger and a dead HUD variable token; both fixed and re-verified. VERSION 0.3.0-dev. | ROM v2 `2274855c…` recorded pass frames 300–1584; v1 `ef64f624…` respawn evidence; 51 tests; web `36d3691e…` served, human play pending. |
+| 2026-10-25 | Lower-climb feedback | Abe called the playable lower-climb preview “brilliant!” Positive direction; precise hazard-fairness and full-route acceptance remain open. | Human browser reaction to `build/web-lower-climb` export. |
 | 2026-10-25 | Lower-climb preview | Staged separate 256-KiB browser build for human testing, then restored project start to Service Opening. 36 focused tests pass; 23 climb resources regenerate identically. | Web `c3370ce3…`; native `73ef60d6…`; static budget 142/384 BG; no human checkpoint feedback yet. |
 | 2026-10-25 | Lower climb | Corrected unfair static-lane squeeze by inerting seven un-timed triggers; native 24px route reaches row18, and first gust warning is safe before its active burst resets the player. Opening start restored. | ROM `73ef60d6…` 256 KiB; exact WRAM/frame assertions in lower-climb evidence above. Human preview and top checkpoint pending. |
 | 2026-10-25 | Lower climb | Parallel direct-MCP review identified narrow edge-supported landings at rows 27→24 and 21→18. Luna integrated the 24px sprite/opening palettes into the *climb generator*; a second Luna authored a 24px-wide Warning/Burst gust sprite. Main wired lane 1's timed actor and disabled its old trigger script in generator source. **Art generator and full ROM/playtest are pending**; only 16 focused stdlib source tests + 3 gust tests pass so far. | `tools/climb.py`, `make_climb_scene.py`, `make_climb_gust.py`; no native outcome claimed. |
