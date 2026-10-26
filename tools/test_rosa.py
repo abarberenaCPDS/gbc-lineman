@@ -257,7 +257,7 @@ class RosaTests(unittest.TestCase):
                         self.assertNotIn("’", part, "use ASCII apostrophes in dialogue")
                         checked += 1
         # One part per line; two-line boxes count each part.
-        self.assertEqual(checked, 22)
+        self.assertEqual(checked, 26)  # +4 "Rosa:" name lines
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
@@ -305,7 +305,7 @@ class RosaTests(unittest.TestCase):
         self.assertEqual(states, {(scene.actor_id(scene.ROSA_KEY), "Relieved"),
                                   (scene.actor_id(scene.WORKSTATION_KEY), "On")})
         self.assertEqual([e["args"]["text"] for e in reward if e["command"] == "EVENT_TEXT"],
-                         [["Router's on!\nI'm online again."]])
+                         [["Rosa:\nRouter's on!\nI'm online again."]])
         dead = line["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
                          [["Still no power.\nFix the line!"]])
@@ -427,15 +427,15 @@ class RosaTests(unittest.TestCase):
         script = actor_by_symbol(scene.ROSA_SYMBOL)["script"]
         self.assertTrue(is_var_if(script[0], rosa.VAR_HOME_POWERED, 1))
         self.assertEqual([e["args"]["text"] for e in script[0]["children"]["true"]
-                          if e["command"] == "EVENT_TEXT"], [["I'm back online!\nThank you!"]])
+                          if e["command"] == "EVENT_TEXT"], [["Rosa:\nI'm back online!\nThank you!"]])
         otherwise = script[0]["children"]["false"]
         self.assertTrue(is_var_if(otherwise[0], rosa.VAR_LINE_LIVE, 1))
         live = otherwise[0]["children"]["true"]
         dead = otherwise[0]["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in live if e["command"] == "EVENT_TEXT"],
-                         [["Line's live!\nTry my door."]])
+                         [["Rosa:\nLine's live!\nTry my door."]])
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
-                         [["No internet...\nI can't work."]])
+                         [["Rosa:\nNo internet...\nI can't work."]])
 
     def test_junction_plugs_carried_cable_once_and_lights_slot_five(self):
         script = actor_by_symbol(scene.JUNCTION_SYMBOL)["script"]

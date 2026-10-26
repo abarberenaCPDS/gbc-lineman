@@ -39,10 +39,11 @@ try:
     import climb  # noqa: E402  (shared palettes, grid sprites and climb timings)
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
+    import voices  # noqa: E402  (speaker names and text blips)
     import rosa  # noqa: E402  (Rosa's job contract: geometry, IDs, timings)
     import kiko  # noqa: E402  (Kiko's job contract: the porch exit leads there)
 except ModuleNotFoundError as error:
-    if error.name in {"climb", "opening", "rosa", "kiko", "make_climb_scene"}:
+    if error.name in {"voices", "climb", "opening", "rosa", "kiko", "make_climb_scene"}:
         raise SystemExit(
             f"cannot generate signal_hill: tools/{error.name}.py is missing"
         ) from error
@@ -183,15 +184,25 @@ def hud_events(key: str) -> list[dict[str, Any]]:
     ]
 
 
-def say(lines: list[str], key: str) -> list[dict[str, Any]]:
+def say(lines: list[str], key: str, speaker: str | None = None) -> list[dict[str, Any]]:
     """In-play dialogue: lift the HUD's 16px cutoff so the box shows, then redraw the HUD.
 
     Exact-ROM play showed text behind the cutoff staying invisible while the
-    script waited for A, freezing the player.
+    script waited for A, freezing the player. A speaker names the box and gives
+    it that character's blip (voices.py).
     """
+    if speaker is None:
+        return [
+            cutoff_event(150, f"{key}:say-cutoff"),
+            text_event(lines, key),
+            *hud_events(f"{key}:say-hud"),
+        ]
+    # The cutoff stays directly before the text; the voice wraps both.
     return [
+        event("EVENT_TEXT_SET_SOUND_EFFECT", voices.sound_args(speaker), f"{key}:voice"),
         cutoff_event(150, f"{key}:say-cutoff"),
-        text_event(lines, key),
+        text_event(voices.labeled(speaker, lines), key),
+        event("EVENT_TEXT_SET_SOUND_EFFECT", voices.sound_args(None), f"{key}:narrator"),
         *hud_events(f"{key}:say-hud"),
     ]
 
@@ -330,12 +341,12 @@ def rosa_actor(index: int) -> dict[str, Any]:
     key = ROSA_KEY
     x, y = rosa.ROSA
     script = [if_value(VAR_HOME_POWERED, 1, f"{key}:home", [
-        *say(short_lines("I'm back online!\nThank you!"), f"{key}:thanks"),
+        *say(short_lines("I'm back online!\nThank you!"), f"{key}:thanks", "rosa"),
     ], [
         if_value(VAR_LINE_LIVE, 1, f"{key}:line", [
-            *say(short_lines("Line's live!\nTry my door."), f"{key}:live"),
+            *say(short_lines("Line's live!\nTry my door."), f"{key}:live", "rosa"),
         ], [
-            *say(short_lines("No internet...\nI can't work."), f"{key}:dead"),
+            *say(short_lines("No internet...\nI can't work."), f"{key}:dead", "rosa"),
         ]),
     ])]
     return actor_resource(
@@ -415,7 +426,7 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
             window_palette_event(True, "door:window-warm"),
             actor_state(actor_id(ROSA_KEY), "Relieved", "door:rosa-relieved"),
             actor_state(actor_id(WORKSTATION_KEY), "On", "door:workstation-on"),
-            *say(short_lines("Router's on!\nI'm online again."), "door:text"),
+            *say(short_lines("Router's on!\nI'm online again."), "door:text", "rosa"),
         ]),
     ], [
         *say(short_lines("Still no power.\nFix the line!"), "door:no-power"),

@@ -277,7 +277,7 @@ class KikoTests(unittest.TestCase):
                         self.assertNotIn("’", part, "use ASCII apostrophes in dialogue")
                         checked += 1
         # One part per line; two-line boxes count each part.
-        self.assertEqual(checked, 20)
+        self.assertEqual(checked, 24)  # +4 "Kiko:" name lines
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
@@ -326,7 +326,7 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(states, {(scene.actor_id(scene.KIKO_KEY), "Relieved"),
                                   (scene.actor_id(scene.STOVE_KEY), "On")})
         self.assertEqual([e["args"]["text"] for e in reward if e["command"] == "EVENT_TEXT"],
-                         [["Stove's on!\nSoup is cooking!"]])
+                         [["Kiko:\nStove's on!\nSoup is cooking!"]])
         dead = line["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
                          [["Still no power.\nFix the line!"]])
@@ -500,15 +500,15 @@ class KikoTests(unittest.TestCase):
         script = actor_by_symbol(scene.KIKO_SYMBOL)["script"]
         self.assertTrue(is_var_if(script[0], kiko.VAR_HOME_POWERED, 1))
         self.assertEqual([e["args"]["text"] for e in script[0]["children"]["true"]
-                          if e["command"] == "EVENT_TEXT"], [["Dinner time!\nThank you!"]])
+                          if e["command"] == "EVENT_TEXT"], [["Kiko:\nDinner time!\nThank you!"]])
         otherwise = script[0]["children"]["false"]
         self.assertTrue(is_var_if(otherwise[0], kiko.VAR_LINE_LIVE, 1))
         live = otherwise[0]["children"]["true"]
         dead = otherwise[0]["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in live if e["command"] == "EVENT_TEXT"],
-                         [["Line's live!\nTry our door."]])
+                         [["Kiko:\nLine's live!\nTry our door."]])
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
-                         [["Our stove's dead.\nI'm so hungry!"]])
+                         [["Kiko:\nOur stove's dead.\nI'm so hungry!"]])
 
     def test_junction_plugs_carried_cable_once_and_lights_line(self):
         script = actor_by_symbol(scene.JUNCTION_SYMBOL)["script"]

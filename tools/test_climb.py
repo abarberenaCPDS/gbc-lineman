@@ -328,9 +328,9 @@ class ClimbTests(unittest.TestCase):
         self.assertEqual(len(talk["children"]["true"]), 1)
         line = talk["children"]["true"][0]
         self.assertEqual(line["args"]["condition"]["valueA"], {"type": "variable", "value": "7"})
-        self.assertEqual(self._texts(line["children"]["true"]), [["Storm broke the\nline below."]])
-        self.assertEqual(self._texts(line["children"]["false"]), [["Line's live!\nGo to my door."]])
-        self.assertEqual(self._texts(talk["children"]["false"]), [["Food is saved.\nThank you, CFE!"]])
+        self.assertEqual(self._texts(line["children"]["true"]), [["Marta:\nStorm broke the\nline below."]])
+        self.assertEqual(self._texts(line["children"]["false"]), [["Marta:\nLine's live!\nGo to my door."]])
+        self.assertEqual(self._texts(talk["children"]["false"]), [["Marta:\nFood is saved.\nThank you, CFE!"]])
 
     def test_in_play_text_lifts_hud_cutoff_first(self):
         """Exact-ROM regression: text behind the 16px HUD cutoff was invisible

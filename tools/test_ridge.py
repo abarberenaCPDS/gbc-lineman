@@ -230,8 +230,8 @@ class RidgeTests(unittest.TestCase):
                     for part in line.split("\n"):
                         self.assertLessEqual(len(part), scene.MAX_DIALOGUE_CHARS, part)
                         checked += 1
-        # One line per in-play text, two-line boxes count each part.
-        self.assertEqual(checked, 21)
+        # One line per in-play text, two-line boxes count each part. Tomas names 4 boxes.
+        self.assertEqual(checked, 25)
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
@@ -278,7 +278,7 @@ class RidgeTests(unittest.TestCase):
                   for e in reward if e["command"] == "EVENT_ACTOR_SET_STATE"}
         self.assertEqual(states, {(scene.actor_id(scene.TOMAS_KEY), "Relieved"),
                                   (scene.actor_id(scene.CONCENTRATOR_KEY), "On")})
-        self.assertIn("Power's on!\nI can breathe.", [
+        self.assertIn("Tomas:\nPower's on!\nI can breathe.", [
             e["args"]["text"] for e in reward if e["command"] == "EVENT_TEXT"][0])
         dead = line["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
@@ -398,15 +398,15 @@ class RidgeTests(unittest.TestCase):
         script = actor_by_symbol(scene.TOMAS_SYMBOL)["script"]
         self.assertTrue(is_var_if(script[0], ridge.VAR_HOME_POWERED, 1))
         self.assertEqual([e["args"]["text"] for e in script[0]["children"]["true"]
-                          if e["command"] == "EVENT_TEXT"], [["Thanks, friend!\nBreathing easy."]])
+                          if e["command"] == "EVENT_TEXT"], [["Tomas:\nThanks, friend!\nBreathing easy."]])
         otherwise = script[0]["children"]["false"]
         self.assertTrue(is_var_if(otherwise[0], ridge.VAR_LINE_LIVE, 1))
         live = otherwise[0]["children"]["true"]
         dead = otherwise[0]["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in live if e["command"] == "EVENT_TEXT"],
-                         [["Line's live!\nTry my door."]])
+                         [["Tomas:\nLine's live!\nTry my door."]])
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
-                         [["The line's dead!\nMy machine's off."]])
+                         [["Tomas:\nThe line's dead!\nMy machine's off."]])
 
     def test_junction_plugs_carried_cable_once_and_lights_slot_five(self):
         script = actor_by_symbol(scene.JUNCTION_SYMBOL)["script"]

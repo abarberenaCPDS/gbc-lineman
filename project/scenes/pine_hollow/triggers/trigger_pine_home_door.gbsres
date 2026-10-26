@@ -104,6 +104,16 @@
                   "id": "c10259b7-c80e-54fa-a0a5-7c0f64a10425"
                 },
                 {
+                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+                  "args": {
+                    "type": "tone",
+                    "frequency": 1320,
+                    "duration": 0.03,
+                    "units": "time"
+                  },
+                  "id": "39896910-2dd1-5cab-b774-9900442894db"
+                },
+                {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
                   "args": {
                     "units": "pixels",
@@ -118,7 +128,7 @@
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Stove's on!\nSoup is cooking!"
+                      "Kiko:\nStove's on!\nSoup is cooking!"
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -138,6 +148,16 @@
                     "closeDelayFrames": 30
                   },
                   "id": "28121468-747c-5bbb-bffa-5012fd79e22c"
+                },
+                {
+                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+                  "args": {
+                    "type": "tone",
+                    "frequency": 880,
+                    "duration": 0.03,
+                    "units": "time"
+                  },
+                  "id": "978a2f33-a7f6-53ea-8258-ff6b4a3da361"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",

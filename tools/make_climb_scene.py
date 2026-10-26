@@ -44,9 +44,10 @@ sys.path.insert(0, str(TOOLS_DIR))
 try:
     import climb  # noqa: E402  (sibling module owns all authored climb data)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
+    import voices  # noqa: E402  (speaker names and text blips)
     import ridge  # noqa: E402  (Tomás's job contract: summit exit target)
 except ModuleNotFoundError as error:
-    if error.name in {"climb", "opening", "ridge"}:
+    if error.name in {"voices", "climb", "opening", "ridge"}:
         raise SystemExit(
             f"cannot generate storm_climb: tools/{error.name}.py is missing; "
             "it must provide the climb/opening data API"
@@ -252,13 +253,23 @@ def cutoff_event(y: int, key: str) -> dict[str, Any]:
     )
 
 
-def say(lines: list[str], key: str) -> list[dict[str, Any]]:
+def say(lines: list[str], key: str, speaker: str | None = None) -> list[dict[str, Any]]:
     """In-play dialogue: lift the HUD's 16px window cutoff so the box is visible,
     then restore the HUD. Exact-ROM play showed text behind the cutoff staying
-    invisible while the script waited for A, freezing the player."""
+    invisible while the script waited for A, freezing the player. A speaker
+    names the box and gives it that character's blip (voices.py)."""
+    if speaker is None:
+        return [
+            cutoff_event(150, f"{key}:say-cutoff"),
+            text_event(lines, key),
+            *hud_events(f"{key}:say-hud"),
+        ]
+    # The cutoff stays directly before the text; the voice wraps both.
     return [
+        event("EVENT_TEXT_SET_SOUND_EFFECT", voices.sound_args(speaker), f"{key}:voice"),
         cutoff_event(150, f"{key}:say-cutoff"),
-        text_event(lines, key),
+        text_event(voices.labeled(speaker, lines), key),
+        event("EVENT_TEXT_SET_SOUND_EFFECT", voices.sound_args(None), f"{key}:narrator"),
         *hud_events(f"{key}:say-hud"),
     ]
 
@@ -540,12 +551,12 @@ def checkpoint_actor(index: int, marta_sprite_id: str) -> dict[str, Any]:
         key=key,
         script=[if_value(VARIABLE_CHECKPOINTS_REACHED, 0, f"{key}:talk", [
             if_value(VAR_LINE_LIVE_ID, 0, f"{key}:talk-line", [
-                *say(short_lines("Storm broke the\nline below."), f"{key}:talk-dead"),
+                *say(short_lines("Storm broke the\nline below."), f"{key}:talk-dead", "marta"),
             ], [
-                *say(short_lines("Line's live!\nGo to my door."), f"{key}:talk-live"),
+                *say(short_lines("Line's live!\nGo to my door."), f"{key}:talk-live", "marta"),
             ]),
         ], [
-            *say(short_lines("Food is saved.\nThank you, CFE!"), f"{key}:talk-after"),
+            *say(short_lines("Food is saved.\nThank you, CFE!"), f"{key}:talk-after", "marta"),
         ])],
         start_script=[actor_state("$self$", "Waiting", f"{key}:waiting")],
     )

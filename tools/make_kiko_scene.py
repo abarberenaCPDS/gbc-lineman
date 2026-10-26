@@ -45,9 +45,10 @@ try:
     import kiko  # noqa: E402  (Kiko's job contract: geometry, IDs, timings)
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
+    import voices  # noqa: E402  (speaker names and text blips)
     import rosa  # noqa: E402  (Signal Hill owns the live arc palette this job reuses)
 except ModuleNotFoundError as error:
-    if error.name in {"climb", "kiko", "opening", "rosa", "make_climb_scene"}:
+    if error.name in {"voices", "climb", "kiko", "opening", "rosa", "make_climb_scene"}:
         raise SystemExit(
             f"cannot generate pine_hollow: tools/{error.name}.py is missing"
         ) from error
@@ -185,15 +186,25 @@ def hud_events(key: str) -> list[dict[str, Any]]:
     ]
 
 
-def say(lines: list[str], key: str) -> list[dict[str, Any]]:
+def say(lines: list[str], key: str, speaker: str | None = None) -> list[dict[str, Any]]:
     """In-play dialogue: lift the HUD's 16px cutoff so the box shows, then redraw the HUD.
 
     Exact-ROM play showed text behind the cutoff staying invisible while the
-    script waited for A, freezing the player.
+    script waited for A, freezing the player. A speaker names the box and gives
+    it that character's blip (voices.py).
     """
+    if speaker is None:
+        return [
+            cutoff_event(150, f"{key}:say-cutoff"),
+            text_event(lines, key),
+            *hud_events(f"{key}:say-hud"),
+        ]
+    # The cutoff stays directly before the text; the voice wraps both.
     return [
+        event("EVENT_TEXT_SET_SOUND_EFFECT", voices.sound_args(speaker), f"{key}:voice"),
         cutoff_event(150, f"{key}:say-cutoff"),
-        text_event(lines, key),
+        text_event(voices.labeled(speaker, lines), key),
+        event("EVENT_TEXT_SET_SOUND_EFFECT", voices.sound_args(None), f"{key}:narrator"),
         *hud_events(f"{key}:say-hud"),
     ]
 
@@ -332,12 +343,12 @@ def kiko_actor(index: int) -> dict[str, Any]:
     key = KIKO_KEY
     x, y = kiko.KIKO
     script = [if_value(VAR_HOME_POWERED, 1, f"{key}:home", [
-        *say(short_lines("Dinner time!\nThank you!"), f"{key}:thanks"),
+        *say(short_lines("Dinner time!\nThank you!"), f"{key}:thanks", "kiko"),
     ], [
         if_value(VAR_LINE_LIVE, 1, f"{key}:line", [
-            *say(short_lines("Line's live!\nTry our door."), f"{key}:live"),
+            *say(short_lines("Line's live!\nTry our door."), f"{key}:live", "kiko"),
         ], [
-            *say(short_lines("Our stove's dead.\nI'm so hungry!"), f"{key}:dead"),
+            *say(short_lines("Our stove's dead.\nI'm so hungry!"), f"{key}:dead", "kiko"),
         ]),
     ])]
     return actor_resource(
@@ -421,7 +432,7 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
             window_palette_event(True, "door:window-warm"),
             actor_state(actor_id(KIKO_KEY), "Relieved", "door:kiko-relieved"),
             actor_state(actor_id(STOVE_KEY), "On", "door:stove-on"),
-            *say(short_lines("Stove's on!\nSoup is cooking!"), "door:text"),
+            *say(short_lines("Stove's on!\nSoup is cooking!"), "door:text", "kiko"),
         ]),
     ], [
         *say(short_lines("Still no power.\nFix the line!"), "door:no-power"),

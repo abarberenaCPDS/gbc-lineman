@@ -12,6 +12,7 @@ from typing import Any
 
 import climb
 import opening
+import voices
 from make_climb_scene import collision_rle, resource_id as climb_resource_id
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -155,6 +156,15 @@ def dialogue(text: str, key: str) -> dict:
         "closeWhen": "key", "closeButton": "a", "closeDelayUnits": "frames",
         "closeDelayFrames": 8,
     }, key)
+
+
+def spoken(speaker: str, text: str, key: str) -> list[dict]:
+    """A character's box: name line, that character's blip, then the narrator's again."""
+    return [
+        event("EVENT_TEXT_SET_SOUND_EFFECT", voices.sound_args(speaker), f"{key}:voice"),
+        dialogue(voices.labeled(speaker, [text])[0], key),
+        event("EVENT_TEXT_SET_SOUND_EFFECT", voices.sound_args(None), f"{key}:narrator"),
+    ]
 
 
 def sound(asset_name: str, key: str) -> dict:
@@ -302,8 +312,8 @@ def main() -> None:
         actor_state("$self$", "Waiting", "marta:waiting"),
     ], [actor_state("$self$", "Powered", "marta:powered")])]
     marta["script"] = [if_value(RESTORED, 0, "marta:talk", [
-        dialogue("The lights went\nwith the storm.", "marta:dark-talk"),
-    ], [dialogue("Warm again.\nThank you, CFE.", "marta:lit-talk")])]
+        *spoken("marta", "The lights went\nwith the storm.", "marta:dark-talk"),
+    ], spoken("marta", "Warm again.\nThank you, CFE.", "marta:lit-talk"))]
     terminal = actor("terminal", "Substation repair panel", opening.PANEL, "opening_terminal", 1)
     terminal["startScript"] = [if_value(RESTORED, 0, "terminal:entry", [
         actor_state("$self$", "Off", "terminal:off"),

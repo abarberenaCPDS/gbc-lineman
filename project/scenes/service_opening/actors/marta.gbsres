@@ -40,11 +40,21 @@
       "children": {
         "true": [
           {
+            "id": "1cecf809-f6a3-5dc8-a684-9eaa8f220f39",
+            "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+            "args": {
+              "type": "tone",
+              "frequency": 660,
+              "duration": 0.03,
+              "units": "time"
+            }
+          },
+          {
             "id": "d8dd7abd-3723-57cc-ad8a-060deb72a797",
             "command": "EVENT_TEXT",
             "args": {
               "text": [
-                "The lights went\nwith the storm."
+                "Marta:\nThe lights went\nwith the storm."
               ],
               "avatarId": "",
               "minHeight": 4,
@@ -62,15 +72,35 @@
               "closeDelayUnits": "frames",
               "closeDelayFrames": 8
             }
+          },
+          {
+            "id": "fd55dac5-a24d-5549-aa0e-b54f1d44a06e",
+            "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+            "args": {
+              "type": "tone",
+              "frequency": 880,
+              "duration": 0.03,
+              "units": "time"
+            }
           }
         ],
         "false": [
+          {
+            "id": "41ebe34d-96fb-5116-99b6-0f08a45952bf",
+            "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+            "args": {
+              "type": "tone",
+              "frequency": 660,
+              "duration": 0.03,
+              "units": "time"
+            }
+          },
           {
             "id": "5e31cd36-cb1c-51e1-9b6d-91ced4199cdb",
             "command": "EVENT_TEXT",
             "args": {
               "text": [
-                "Warm again.\nThank you, CFE."
+                "Marta:\nWarm again.\nThank you, CFE."
               ],
               "avatarId": "",
               "minHeight": 4,
@@ -87,6 +117,16 @@
               "closeButton": "a",
               "closeDelayUnits": "frames",
               "closeDelayFrames": 8
+            }
+          },
+          {
+            "id": "23f4747c-8f3f-58df-9bb6-d0d3f484e82f",
+            "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+            "args": {
+              "type": "tone",
+              "frequency": 880,
+              "duration": 0.03,
+              "units": "time"
             }
           }
         ]

@@ -104,6 +104,16 @@
                   "id": "b405021d-bf27-58a1-98ba-ef06baa6cb69"
                 },
                 {
+                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+                  "args": {
+                    "type": "tone",
+                    "frequency": 440,
+                    "duration": 0.03,
+                    "units": "time"
+                  },
+                  "id": "96993927-d386-5ed2-beeb-29932b482143"
+                },
+                {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
                   "args": {
                     "units": "pixels",
@@ -118,7 +128,7 @@
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Power's on!\nI can breathe."
+                      "Tomas:\nPower's on!\nI can breathe."
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -138,6 +148,16 @@
                     "closeDelayFrames": 30
                   },
                   "id": "e5bbb60a-4369-516c-89ce-3661973f4978"
+                },
+                {
+                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+                  "args": {
+                    "type": "tone",
+                    "frequency": 880,
+                    "duration": 0.03,
+                    "units": "time"
+                  },
+                  "id": "ecc6f717-9084-5def-81df-9fe9a6689f08"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",

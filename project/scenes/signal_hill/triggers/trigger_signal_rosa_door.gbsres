@@ -104,6 +104,16 @@
                   "id": "7efd69a3-91d7-50c1-85aa-967f415da41d"
                 },
                 {
+                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+                  "args": {
+                    "type": "tone",
+                    "frequency": 990,
+                    "duration": 0.03,
+                    "units": "time"
+                  },
+                  "id": "44a767ee-83c8-54f4-9c83-48ab0d33d7e9"
+                },
+                {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
                   "args": {
                     "units": "pixels",
@@ -118,7 +128,7 @@
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Router's on!\nI'm online again."
+                      "Rosa:\nRouter's on!\nI'm online again."
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -138,6 +148,16 @@
                     "closeDelayFrames": 30
                   },
                   "id": "c5397bd6-4cf6-5d89-8550-f4e2b944013d"
+                },
+                {
+                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+                  "args": {
+                    "type": "tone",
+                    "frequency": 880,
+                    "duration": 0.03,
+                    "units": "time"
+                  },
+                  "id": "2aa4b6a7-d02a-56ee-9446-f117e4ce16b7"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
