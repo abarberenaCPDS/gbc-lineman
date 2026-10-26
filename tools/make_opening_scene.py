@@ -17,6 +17,10 @@ ROOT = Path(__file__).resolve().parent.parent
 SCENE_DIR = ROOT / "project/scenes/service_opening"
 RESTORED = "4"
 HERO_SIZE = "5"
+# var 5 defaults to 0 on a fresh boot: 0 selects the preferred 24px hero,
+# while 1 selects the 16px comparison sprite.
+HERO_SIZE_24 = 0
+HERO_SIZE_16 = 1
 
 
 def event(command: str, args: dict[str, Any], key: str, **children: list) -> dict:
@@ -167,14 +171,15 @@ def choose_hero(size: int, key: str) -> list[dict]:
 def size_comparison_script() -> list[dict]:
     return [
         event("EVENT_SCRIPT_LOCK", {}, "compare:lock"),
+        # Return to known clear ground before changing the taller sprite's bounds.
         event("EVENT_ACTOR_SET_POSITION", {
             "actorId": "player", "units": "tiles",
             "x": number(opening.START[0]), "y": number(opening.START[1]),
         }, "compare:safe-ground"),
-        if_value(HERO_SIZE, 0, "compare:toggle", [
-            *choose_hero(24, "compare:24"), set_value(HERO_SIZE, 1, "compare:mark24"),
+        if_value(HERO_SIZE, HERO_SIZE_24, "compare:toggle", [
+            *choose_hero(16, "compare:16"), set_value(HERO_SIZE, HERO_SIZE_16, "compare:mark16"),
         ], [
-            *choose_hero(16, "compare:16"), set_value(HERO_SIZE, 0, "compare:mark16"),
+            *choose_hero(24, "compare:24"), set_value(HERO_SIZE, HERO_SIZE_24, "compare:mark24"),
         ]),
         event("EVENT_ACTOR_SET_DIRECTION", {
             "actorId": "player", "direction": {"type": "direction", "value": "right"},
@@ -200,9 +205,9 @@ def repair_script() -> list[dict]:
         actor_state("$self$", "On", "repair:terminal-lit"),
         sound("connect", "repair:connect-sound"),
         actor_state("player", "", "repair:resume-default"),
-        if_value(HERO_SIZE, 0, "repair:resume-speed", [
-            actor_speed("player", hero_speed(16), "repair:speed16"),
-        ], [actor_speed("player", hero_speed(24), "repair:speed24")]),
+        if_value(HERO_SIZE, HERO_SIZE_24, "repair:resume-speed", [
+            actor_speed("player", hero_speed(24), "repair:speed24"),
+        ], [actor_speed("player", hero_speed(16), "repair:speed16")]),
     ]
     return [if_value(RESTORED, 0, "repair:once", work)]
 
@@ -222,7 +227,7 @@ def build_scene(backgrounds: list[str], sprites: list[str]) -> dict:
         "collisions": collision_rle(opening.collision_grid(), 20, 18),
         "autoFadeSpeed": 1, "x": 0, "y": 360,
         "script": [
-            if_value(HERO_SIZE, 0, "entry:hero", choose_hero(16, "entry:16"), choose_hero(24, "entry:24")),
+            if_value(HERO_SIZE, HERO_SIZE_24, "entry:hero", choose_hero(24, "entry:24"), choose_hero(16, "entry:16")),
             event("EVENT_ACTOR_SET_DIRECTION", {
                 "actorId": "player", "direction": {"type": "direction", "value": "right"},
             }, "entry:face-right"),
@@ -230,7 +235,7 @@ def build_scene(backgrounds: list[str], sprites: list[str]) -> dict:
             event("EVENT_MUSIC_PLAY", {"musicId": music}, "entry:music"),
             event("EVENT_SET_INPUT_SCRIPT", {"input": ["select"], "override": True},
                   "entry:compare-input", true=size_comparison_script()),
-            dialogue("B: repair panel\nSELECT:size/home", "entry:controls"),
+            dialogue("B: repair panel\nSELECT: swap", "entry:controls"),
         ],
         "playerHit1Script": [], "playerHit2Script": [], "playerHit3Script": [],
     }

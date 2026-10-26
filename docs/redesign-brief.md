@@ -89,6 +89,12 @@ scaling production. Readable silhouettes, intentional palettes, environmental
 storytelling and restrained effects matter more than adding decoration.
 See `PROJECT_PLAN.md` for the tracked visual lane and acceptance criteria.
 
+The first playable service-opening candidate received positive browser feedback;
+Abe selected the 24px electrician over the 16px comparison. The preference
+changes the default for this fixture, not the original 16px asset or movement
+collision tuning elsewhere. Music taste, climb integration, and physical-device
+readability remain separate acceptance gates.
+
 ## Non-negotiables
 
 - All content via deterministic generators (`tools/`); no hand-edited

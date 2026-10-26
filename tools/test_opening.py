@@ -26,6 +26,12 @@ def decode_rle(value):
 
 
 class OpeningTests(unittest.TestCase):
+    @staticmethod
+    def sprite_and_speed(events):
+        sprite = next(e for e in events if e["command"] == "EVENT_PLAYER_SET_SPRITE")
+        speed = next(e for e in events if e["command"] == "EVENT_ACTOR_SET_ANIMATION_SPEED")
+        return sprite["args"]["spriteSheetId"], speed["args"]["speed"]
+
     def test_editor_sprite_palette_expands_to_intended_opaque_colors(self):
         import make_opening_scene as scene
         for name, ramp in opening.SPRITE_PALETTES:
@@ -61,6 +67,55 @@ class OpeningTests(unittest.TestCase):
         self.assertEqual(script[-1]["command"], "EVENT_SCRIPT_UNLOCK")
         for branch in ("true", "false"):
             self.assertIn("EVENT_PLAYER_SET_SPRITE", [e["command"] for e in script[2]["children"][branch]])
+
+    def test_fresh_entry_selects_24px_hero_for_default_zero(self):
+        import make_opening_scene as scene
+        self.assertEqual((scene.HERO_SIZE_24, scene.HERO_SIZE_16), (0, 1))
+        entry = scene.build_scene([], [])["script"][0]
+        self.assertEqual(entry["args"]["condition"]["valueA"]["value"], scene.HERO_SIZE)
+        self.assertEqual(entry["args"]["condition"]["valueB"]["value"], scene.HERO_SIZE_24)
+        self.assertEqual(self.sprite_and_speed(entry["children"]["true"]), (
+            opening.resource_id("sprite:opening_worker24"), scene.hero_speed(24),
+        ))
+        self.assertEqual(self.sprite_and_speed(entry["children"]["false"]), (
+            opening.resource_id("sprite:opening_worker16"), scene.hero_speed(16),
+        ))
+
+    def test_select_toggles_default_24_to_16_then_back(self):
+        import make_opening_scene as scene
+        script = scene.size_comparison_script()
+        toggle = script[2]
+        self.assertEqual(toggle["args"]["condition"]["valueA"]["value"], scene.HERO_SIZE)
+        self.assertEqual(toggle["args"]["condition"]["valueB"]["value"], scene.HERO_SIZE_24)
+
+        # With default 0, SELECT chooses the 16px comparison sprite and writes 1.
+        from_24 = toggle["children"]["true"]
+        self.assertEqual(self.sprite_and_speed(from_24), (
+            opening.resource_id("sprite:opening_worker16"), scene.hero_speed(16),
+        ))
+        write_16 = next(e for e in from_24 if e["command"] == "EVENT_SET_VALUE")
+        self.assertEqual((write_16["args"]["variable"], write_16["args"]["value"]["value"]),
+                         (scene.HERO_SIZE, scene.HERO_SIZE_16))
+
+        # With 1, the next SELECT restores the 24px hero and writes 0.
+        from_16 = toggle["children"]["false"]
+        self.assertEqual(self.sprite_and_speed(from_16), (
+            opening.resource_id("sprite:opening_worker24"), scene.hero_speed(24),
+        ))
+        write_24 = next(e for e in from_16 if e["command"] == "EVENT_SET_VALUE")
+        self.assertEqual((write_24["args"]["variable"], write_24["args"]["value"]["value"]),
+                         (scene.HERO_SIZE, scene.HERO_SIZE_24))
+
+    def test_repair_restores_animation_speed_for_active_sprite(self):
+        import make_opening_scene as scene
+        script = scene.repair_script()[0]["children"]["true"]
+        resume = next(e for e in script if e.get("id") == opening.resource_id("event:repair:resume-speed"))
+        self.assertEqual(resume["args"]["condition"]["valueA"]["value"], scene.HERO_SIZE)
+        self.assertEqual(resume["args"]["condition"]["valueB"]["value"], scene.HERO_SIZE_24)
+        speed24 = resume["children"]["true"][0]
+        speed16 = resume["children"]["false"][0]
+        self.assertEqual(speed24["args"]["speed"], scene.hero_speed(24))
+        self.assertEqual(speed16["args"]["speed"], scene.hero_speed(16))
 
     def test_geometry(self):
         opening._self_check()

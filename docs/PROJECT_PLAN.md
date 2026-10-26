@@ -20,7 +20,7 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Last updated:** 2026-10-25 · **M-V1 candidate built and headless-tested; browser/art/music acceptance pending**
+**Last updated:** 2026-10-25 · **M-V1 visual direction liked, 24px hero selected, climb theme browser-listening accepted**
 
 **Latest feedback:** Abe confirmed the Chrome preview and said the movement
 prototype looks good for now. Holding Down+A can drop multiple levels; keep
@@ -30,6 +30,21 @@ new climb theme are implemented but not yet gameplay/listening accepted. Abe als
 approved the visual approach below, not finished assets. M-V1 preview handoff is
 now authorized and served; user permits interruptions for meaningful iteration
 updates and explicitly discarded the previous movement-preview state.
+
+**M-V1 browser feedback (2026-10-25):** Abe played the new preview and said
+“wow! much better this time.” He selected the **24px electrician** as the
+preferred in-game default; the 16px version remains a comparison fixture.
+This is positive visual-direction feedback, **not** a report that the
+entire climb or physical cartridge passed. Abe separately listened to the new
+climb theme in the opening preview and said it **works well**. The 24px default
+has since been verified in a fresh native ROM: size variable 0 maps to 24px,
+1 to the 16px comparator;
+fresh native boot displays seven objects and variable 5=0. SELECT toggles
+5→7→5 visible objects / variable 1→0; B still restores power (variable 4=1).
+Native ROM `build/rom/service-opening-default24.gbc` SHA-256
+`fd632ba2fd3195685e81369cbb616207a288fccfd7c42cb53a97e3abbf60e360`;
+all 25 focused tests pass. New browser export is separate; human re-check not yet
+reported for this build.
 
 ---
 
@@ -57,6 +72,9 @@ updates and explicitly discarded the previous movement-preview state.
   sprite, dialogue, collision/dependency and runtime checks—not just builds.
   Tilemap recipes are an isolated-fixture experiment before any adoption;
   never give recipes and generators ownership of the same outputs.
+- **Current game acceptance:** [action-climb evidence matrix](action-climb-acceptance.md)
+  replaces the superseded splice-loop test plan; keep authored, exact-ROM,
+  human-browser and hardware results separate.
 - **Pipeline only:** data in `tools/level.py` + sibling data modules →
   deterministic generators → `assets/` + `project/` → MCP build → headless
   emulator asserts → browser preview live check. No hand-edited generated
@@ -227,9 +245,10 @@ prototyped in the engine.
 shelves. User permits deferring a single-level descent fix; not resolved.
 
 **Remaining M-P1 gates:** safe-warning contact and checkpoint tests,
-full-route/coyote checks, timed gust implementation/verification, safe preview
-handoff, human hazard-feel and music listening acceptance. Movement approval
-alone is not full slice acceptance.
+full-route/coyote checks, timed gust implementation/verification, current
+gameplay preview and human hazard-feel. The climb theme has positive browser
+listening feedback; hardware audio remains untested. Movement approval alone
+is not full slice acceptance.
 
 ### Visual-production lane — approved direction, M-V1 pending 🔄
 
@@ -320,10 +339,19 @@ Subsequent scene expansion is blocked on user approval of M-V1, not pixel count 
 - Preview controls: arrows move, A/Z jumps, B/X repairs or talks, SELECT/Shift
   compares hero size and returns home. Authored comparison (not gameplay):
   `artifacts/visual-opening/size_power_comparison.png`.
-- Remaining gates: user art/size/feel approval, music listening, actual scene
+- Remaining gates: final art/interaction feel approval, actual scene
   re-entry/save persistence, broader collision/timing checks and hardware.
   Falling currently shares the jump pose; distinct fall/landing presentation
   is not implemented or claimed. The climb's multi-level drop remains deferred.
+
+**Next playable checkpoint after 24px default:** a bounded lower-climb section,
+not a full 20×36 makeover. Reuse the opening's seven-palette/night material
+language without stretching its 20×18 art, and map the 24px worker into the
+actual climb. Replace one lower static red-cross reset zone with a visibly
+telegraphed, navigable encounter; test safe ascent/respawn plus actual OAM.
+Leave eight-lane gust conversion, top checkpoint, complete route, coyote timing
+and single-level drop as explicit later gates. Divide environment, character
+integration and hazard/test generator ownership before parallel edits.
 
 ---
 
@@ -396,6 +424,9 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-25 | M-V1 | 24px worker now defaults on fresh boot; SELECT retains 16px comparison, repair works after toggling back. Source from direct-MCP Luna review, main exact-ROM native test, new isolated web preview. | Native `fd632ba2…`, browser `59eb4a2d…` at `http://127.0.0.1:57089/ab353aa1e1049f7ba089a0ac87744636bc43696f8428b2b57e70688806728fd7/`; 25 tests pass. |
+| 2026-10-25 | Audio | Abe listened to `cfe_storm_climb` in the opening browser preview and said it works well. This closes browser listening for the current track only; device audio remains untested. | Human browser report; UGE asset/version as above. |
+| 2026-10-25 | M-V1 | User liked the new browser art direction and chose 24px electrician. Parallel direct-MCP workers assigned default-size implementation and next-climb integration review. | Fresh ROM/default-boot check and user music listening still pending. |
 | 2026-10-25 | M-V1 handoff | User requested preview switch; old view was paused. Cached M-V1 export opened without a build. User permits preview interruptions and explicitly discarded the previous state; new session lists no saved states. | Current listener `e2b03c3e…`; web ROM `43aec1c4…`; human review pending. |
 | 2026-10-25 | M-V1 | Three parallel direct-MCP workers delivered environment, characters and native integration guidance; follow-up audits caught/fixed duplicate repair poses and native color mappings. Isolated visual candidate builds, 22 tests pass, 25 resources regenerate identically. Native repair/size/movement and sampled OAM verified; web candidate staged without interrupting Chrome. | Native ROM `713876e2…`; web ROM `43aec1c4…`; human gate remains pending. |
 | 2026-10-25 | Pipeline | Inspected all 81 MCP tools and audited useful model/tool combinations; reusable guide separated from game status. Debris/theme integration committed as `d65ea1a`. | Direct capability audit plus bounded sprite, dialogue, collision and dependency probes; recipe/import/device mutations were not exercised. |

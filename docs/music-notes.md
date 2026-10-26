@@ -80,9 +80,10 @@ above remains historical; those legacy assets are unchanged.
   tests pass. Native review ROM is 131,072 B, SHA-256
   `6f9bdec3623ff7400022d153ac5a1b9cad150356810fe40f0aa52c75009fbcd5`.
   Recorded headless play reaches frame 414; this does not establish audio taste.
-- **Listening pending:** no acceptance of the new theme in browser or hardware.
-  Check melody, loop seam, sustained-note harshness, channel balance and SFX
-  masking with Abe. Do not reload the live Chrome player during human play.
+- **Browser listening:** Abe reported that the new climb music works well in the
+  opening preview (2026-10-25). Keep this version as the current theme. Loop
+  seam, SFX masking over longer play and real-device audio remain untested;
+  don't claim hardware approval from browser listening alone.
 
 ## SFX pipeline note
 
