@@ -11,7 +11,10 @@ ENGINE_FIELDS_PATH = PROJECT_DIR / "project" / "engine_field_values.gbsres"
 DESIRED_VALUES: tuple[tuple[str, int | str], ...] = (
     ("FEAT_PLATFORM_COYOTE_TIME", 1),
     ("FEAT_PLATFORM_DROP_THROUGH", 1),
-    ("INPUT_PLATFORM_DROP_THROUGH", "DROP_THRU_INPUT_DOWN_JUMP_HOLD"),
+    # Tap, not hold (B-07): while falling, the engine re-arms its 15-frame
+    # drop timer every frame the drop input is true, so holding Down+A fell
+    # through every one-way shelf below. Tap re-arms only on a new press.
+    ("INPUT_PLATFORM_DROP_THROUGH", "DROP_THRU_INPUT_DOWN_JUMP_TAP"),
 )
 
 
@@ -52,7 +55,7 @@ def update_engine_fields() -> bool:
 def main() -> None:
     changed = update_engine_fields()
     state = "updated" if changed else "already current"
-    print(f"engine fields {state}: coyote time, drop-through, Down+A hold")
+    print(f"engine fields {state}: coyote time, drop-through, Down+A tap")
 
 
 if __name__ == "__main__":

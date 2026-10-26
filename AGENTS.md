@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Game Boy Color game "Mister CFE: After the Storm", built with GB Studio 4.2.0 (`mr-cfe.gbsproj`), currently mid-conversion to a 2D platformer. All data lives in GB Studio resource files (`project/**/*.gbsres`, JSON); there is no hand-written C/game code in this repo.
+Game Boy Color game "Mister CFE: After the Storm", built with GB Studio 4.2.0 (`mr-cfe.gbsproj`), currently mid-conversion to a 2D platformer. All data lives in GB Studio resource files (`project/**/*.gbsres`, JSON); there is no hand-written C/game code in this repo. The one engine change is a generated one-line overlay, `assets/engine/src/states/platform.c` (B-07 drop-through window, `tools/make_engine_patch.py`, climb profile); rerun it after a GB Studio upgrade, never edit it by hand.
 
 ## Authoring and building
 

@@ -37,7 +37,7 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 3. Look items for Abe's pass: Emil's raised bowl is thin; Priya lost her glasses, so her
    only props now are long hair and a phone; Hiroshi's tube doubles as his cane. The
    storm pole's dangling wire overlaps the cable-end sprite on the same tile.
-4. Known minors: B-06 junction reach, B-07 Down+A multi-drop.
+4. Known minor: B-06 junction reach. B-07 fixed (one shelf per Down+A, engine overlay), not yet flashed; Abe should feel-test the drop on the cart.
 
 Use parallel workers per the skill (art: Sonnet; plumbing: Haiku). Main selects the
 project **before** spawning workers, gives plumbing workers the OBJ slot map, and

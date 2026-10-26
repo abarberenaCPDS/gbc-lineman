@@ -92,8 +92,8 @@ splice inventory, ending scene.
 
 Current overrides: `FEAT_PLATFORM_DROP_THROUGH = 1`,
 `FEAT_PLATFORM_COYOTE_TIME = 1`, `FEAT_PLATFORM_RUN = 0`.
-Drop-through currently uses `DROP_THRU_INPUT_DOWN_JUMP_HOLD`; single-level
-descent needs a later pass rather than being assumed solved by this toggle.
+Drop-through uses `DROP_THRU_INPUT_DOWN_JUMP_TAP`: one Down+A press drops one
+level (B-07; hold mode re-armed the drop timer every falling frame).
 
 ## Hazard ladder (friendly-expert ordering), lowest → highest
 

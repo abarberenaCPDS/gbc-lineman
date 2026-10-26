@@ -6,7 +6,7 @@
 >
 > **Method:** everything is built with the existing deterministic generator
 > pipeline (`tools/`) + the ModRetro Chromatic MCP (build, emulator, browser
-> preview). No custom C, no engine forks. Every change is reproducible from
+> preview). No custom C; the only engine change is the generated one-line drop-through overlay (B-07, `tools/make_engine_patch.py`). Every change is reproducible from
 > source data.
 
 ---
@@ -676,6 +676,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-10-26 | B-07 one-shelf drop | Abe: "fix b-07 only", then picked the engine tweak. Down+A is now a tap (holding no longer chains) and the drop-through window is 7 frames instead of 15 through a generated one-line engine overlay (`assets/engine/src/states/platform.c` from `tools/make_engine_patch.py`, climb profile), the project's first engine change. | Test ROM `00e8d8f3…` (climb start 7,17): one press 17→20, held 90 frames stays; second press 20→23; A jump unaffected. Tap-only ROM `cc8261d5…` still dropped 17→23. 393 tests. Not released or flashed. |
 | 2026-10-26 | Cart verdict v0.10.2 | Abe on the cart after the v0.10.2 flash: **"all looks fantastic"** (cart). Positive overall verdict on the build (idle replay, voices, hazards, tickets); no per-item notes given, so creak fairness and ticket flow are not individually confirmed. | Human cart report on `86d3d954…`. |
 | 2026-10-26 | Flash v0.10.2 | Abe: "flash". VERSION 0.10.2 (title tag), tag `v0.10.2`: the attract loop on the cart. | Release `86d3d954…`; 389 tests. Flashed (request `flash-mrcfe-86d3d954-2026-10-26-a`, vendor success in 24.5 s, process closed). Cart play pending. |
 | 2026-10-26 | v0.10.1 flash + attract loop | Abe: "dialogs are back, good job!" (B-12 closed) and "let's flash the cart, so I can test voices, Hazards and tickets". VERSION 0.10.1 (title tag), tag `v0.10.1`, flashed. Then Abe: "the intro should 'loop' the storm cinematic": the title now blinks PRESS START 15 times (15 s) and, if START isn't pressed, fades back into the story, which returns to the title (`intro.TITLE_IDLE_BLINKS`, unrolled in the title thread). | Flashed `31110ef7…` (request `flash-mrcfe-31110ef7-2026-10-26-a`, vendor success in 26.7 s, process closed); cart play pending. Attract loop on test ROM `1584e27f…` (source debug): title at f3000 → story at f4000 with captions → title at f5760 → START → Service Opening. 389 tests. Loop not yet flashed; Abe confirmed the reading: "yes, idle replay". |

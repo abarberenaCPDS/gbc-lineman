@@ -19,7 +19,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parent.parent
 PROFILES = {
-    "climb": ("make_climb_art.py", "make_climb_sprites.py", "make_grid_sprites.py", "make_climb_gust.py", "make_climb_scene.py", "make_engine_fields.py"),
+    "climb": ("make_climb_art.py", "make_climb_sprites.py", "make_grid_sprites.py", "make_climb_gust.py", "make_climb_scene.py", "make_engine_fields.py", "make_engine_patch.py"),
     "ridge": ("make_ridge_art.py", "make_tomas_sprites.py", "make_grid_sprites.py", "make_climb_gust.py", "make_ridge_scene.py", "make_climb_scene.py"),
     "rosa": ("make_rosa_art.py", "make_rosa_sprites.py", "make_grid_sprites.py", "make_climb_gust.py", "make_rosa_scene.py", "make_ridge_scene.py"),
     "kiko": ("make_kiko_art.py", "make_kiko_sprites.py", "make_grid_sprites.py", "make_climb_gust.py", "make_kiko_scene.py", "make_rosa_scene.py"),
@@ -57,7 +57,7 @@ def main() -> None:
     if args.fixtures:
         run("tools/preview_opening.py")
     if args.verify:
-        patterns = {"climb": ["test_climb*.py"], "opening": ["test_opening.py"],
+        patterns = {"climb": ["test_climb*.py", "test_engine_*.py"], "opening": ["test_opening.py"],
                     "ridge": ["test_ridge*.py", "test_tomas_sprites.py", "test_climb.py"],
                     "rosa": ["test_rosa*.py", "test_ridge.py"],
                     "kiko": ["test_kiko*.py", "test_rosa.py"],
