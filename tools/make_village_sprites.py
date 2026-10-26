@@ -495,9 +495,9 @@ BETO = """\
 """.splitlines()
 
 FOLK = {
-    "Marta": (MARTA, "folk_a"),
-    "Rosa": (ROSA, "folk_b"),
-    "Kiko": (KIKO, "folk_c"),
+    "Amara": (MARTA, "folk_a"),
+    "Priya": (ROSA, "folk_b"),
+    "Emil": (KIKO, "folk_c"),
     "Tino": (TINO, "folk_a"),
     "Beto": (BETO, "folk_b"),
 }

@@ -122,7 +122,7 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     for tx, ty in _post_tiles(grid):
         slots[ty][tx] = TIMBER
 
-    # Tomas's cabin: timber body over the floor, two lit windows, one door.
+    # Hiroshi's cabin: timber body over the floor, two lit windows, one door.
     x0, x1, y0, y1 = ridge.HOUSE_RECT
     for ty in range(y0, y1 + 1):
         for tx in range(x0, x1 + 1):

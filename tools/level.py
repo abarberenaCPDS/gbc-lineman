@@ -68,10 +68,10 @@ SOLID_BLOCKS = [
 # on. A house only powers up if every house below it is already connected.
 # --------------------------------------------------------------------------
 HOUSES = [
-    {"id": "house_a", "name": "Marta",  "x": 3,  "platform": 30, "row": 29},
-    {"id": "house_b", "name": "Tomas",  "x": 14, "platform": 27, "row": 26},
-    {"id": "house_c", "name": "Rosa",   "x": 5,  "platform": 24, "row": 23},
-    {"id": "house_d", "name": "Kiko",   "x": 12, "platform": 21, "row": 20},
+    {"id": "house_a", "name": "Amara",  "x": 3,  "platform": 30, "row": 29},
+    {"id": "house_b", "name": "Hiroshi",  "x": 14, "platform": 27, "row": 26},
+    {"id": "house_c", "name": "Priya",   "x": 5,  "platform": 24, "row": 23},
+    {"id": "house_d", "name": "Emil",   "x": 12, "platform": 21, "row": 20},
     {"id": "house_e", "name": "Nuria",  "x": 8,  "platform": 18, "row": 17},
 ]
 
@@ -81,9 +81,9 @@ SUBSTATION = {"id": "substation", "x": 1, "platform": 33, "row": 32}
 
 # Locals to talk to. Placed on platforms, never on the critical path.
 NPCS = [
-    {"id": "npc_marta",  "name": "Marta",  "x": 9,  "platform": 30, "row": 29},
-    {"id": "npc_rosa",   "name": "Rosa",   "x": 11, "platform": 24, "row": 23},
-    {"id": "npc_kiko",   "name": "Kiko",   "x": 4,  "platform": 18, "row": 17},
+    {"id": "npc_marta",  "name": "Amara",  "x": 9,  "platform": 30, "row": 29},
+    {"id": "npc_rosa",   "name": "Priya",   "x": 11, "platform": 24, "row": 23},
+    {"id": "npc_kiko",   "name": "Emil",   "x": 4,  "platform": 18, "row": 17},
 ]
 
 # Hazard zones: storm flooded rock and live wire. Touching one kills the

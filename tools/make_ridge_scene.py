@@ -1,7 +1,7 @@
-"""Generate the deterministic Wind Ridge scene (Tomas's repair job) from ``ridge.py``.
+"""Generate the deterministic Wind Ridge scene (Hiroshi's repair job) from ``ridge.py``.
 
 Run with ``python3 tools/make_ridge_scene.py`` from any working directory.
-This writes only the Wind Ridge scene resources, the Tomas sprite palette and
+This writes only the Wind Ridge scene resources, the Hiroshi sprite palette and
 the Ridge variable registrations. The authored geometry, positions, gust
 timings and stable IDs live in the sibling ``ridge.py`` contract module.
 
@@ -41,8 +41,8 @@ try:
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
     import voices  # noqa: E402  (speaker names and text blips)
-    import ridge  # noqa: E402  (Tomas's job contract: geometry, IDs, timings)
-    import rosa  # noqa: E402  (Rosa's job contract: the ridge exit leads there)
+    import ridge  # noqa: E402  (Hiroshi's job contract: geometry, IDs, timings)
+    import rosa  # noqa: E402  (Priya's job contract: the ridge exit leads there)
 except ModuleNotFoundError as error:
     if error.name in {"voices", "climb", "intro", "opening", "ridge", "rosa", "make_climb_scene"}:
         raise SystemExit(
@@ -224,7 +224,7 @@ def background_palette_event(slots: dict[int, str], key: str) -> dict[str, Any]:
 
 
 def window_palette_event(powered: bool, key: str) -> dict[str, Any]:
-    """Swap only the Tomas window slot (cold -> powered_window)."""
+    """Swap only the Hiroshi window slot (cold -> powered_window)."""
     name = "powered_window" if powered else "window"
     return background_palette_event({
         ridge.WINDOW_BG_SLOT: opening.resource_id(f"palette:bg:{name}"),
@@ -256,7 +256,7 @@ def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
     """Death sound, then drop any cable, then respawn.
 
     The cable drop runs before repositioning so the carrier's hands are empty
-    wherever the checkpoint sends them. Before Tomas's power is on the hero
+    wherever the checkpoint sends them. Before Hiroshi's power is on the hero
     returns to START; afterwards, to the tile in front of the door.
     """
     door_x, door_y = ridge.HOUSE_DOOR
@@ -292,7 +292,7 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
         actor_state(pole_actor_id(), "Snapped", "init-pole-snapped"),
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-ridge-music"),
         # Intro box after the music cue; say() lifts the cutoff the previous visit may have left.
-        *say(short_lines("Tomas needs his\noxygen machine!"), "intro"),
+        *say(short_lines("Hiroshi needs his\noxygen machine!"), "intro"),
     ]
 
 
@@ -337,7 +337,7 @@ def actor_resource(*, index: int, symbol: str, name: str, x: int, y: int, sprite
 
 
 def tomas_actor(index: int) -> dict[str, Any]:
-    """Tomas outside his door: Waiting until the house is powered, then Relieved."""
+    """Hiroshi outside his door: Waiting until the house is powered, then Relieved."""
     key = TOMAS_KEY
     x, y = ridge.TOMAS
     script = [if_value(VAR_HOME_POWERED, 1, f"{key}:home", [
@@ -350,7 +350,7 @@ def tomas_actor(index: int) -> dict[str, Any]:
         ]),
     ])]
     return actor_resource(
-        index=index, symbol=TOMAS_SYMBOL, name="Tomas (Wind Ridge)", x=x, y=y,
+        index=index, symbol=TOMAS_SYMBOL, name="Hiroshi (Wind Ridge)", x=x, y=y,
         sprite_id=ridge.TOMAS_SPRITE_ID, key=key, script=script,
         start_script=[actor_state("$self$", "Waiting", f"{key}:waiting")],
     )
@@ -418,7 +418,7 @@ def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dic
             actor_state(pole_actor_id(), "Standing", f"{key}:pole-standing"),
             line_palette_event(True, f"{key}:metal-live"),
             sound_event(connect_sound_id, f"{key}:sfx"),
-            *say(short_lines("Line is live!\nGo see Tomas."), f"{key}:text"),
+            *say(short_lines("Line is live!\nGo see Hiroshi."), f"{key}:text"),
         ], [
             *say(short_lines("No cable yet.\nCheck the pole."), f"{key}:no-cable"),
         ]),
@@ -431,7 +431,7 @@ def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dic
 
 
 def door_trigger(connect_sound_id: str) -> dict[str, Any]:
-    """Tomas's door: powering the house is a once-only checkpoint (var 9).
+    """Hiroshi's door: powering the house is a once-only checkpoint (var 9).
 
     Only the top row of a standing 24px hero covers the door columns, so the
     respawn tile in front of the door also lands on this trigger. The var 9
@@ -453,7 +453,7 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
     return {
         "_resourceType": "trigger",
         "id": ridge.resource_id("trigger:tomas-door"),
-        "name": "Tomas Door Checkpoint",
+        "name": "Hiroshi Door Checkpoint",
         "prefabId": "",
         "x": x,
         "y": y,
@@ -468,9 +468,9 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
 
 
 def hill_exit_trigger() -> dict[str, Any]:
-    """Right end of Tomas's porch leads on to Rosa's Signal Hill.
+    """Right end of Hiroshi's porch leads on to Priya's Signal Hill.
 
-    Gated on Tomas's checkpoint (var 9). The refusal only explains: it never
+    Gated on Hiroshi's checkpoint (var 9). The refusal only explains: it never
     moves the hero, because a nudge plus leftover momentum re-entered the
     summit exit and looped its text (exact ROM 147c23be). Like the climb
     exits, it lifts the HUD cutoff and hides the overlay before switching.
@@ -485,7 +485,7 @@ def hill_exit_trigger() -> dict[str, Any]:
             "sceneId": rosa.SCENE_ID, "fadeSpeed": "2",
         }, "hill-exit:to-hill"),
     ]
-    wait = say(short_lines("Power Tomas's\nhouse first."), "hill-exit:not-yet")
+    wait = say(short_lines("Power Hiroshi's\nhouse first."), "hill-exit:not-yet")
     return {
         "_resourceType": "trigger",
         "id": ridge.resource_id("trigger:hill-exit"),
@@ -751,7 +751,7 @@ def main() -> None:
         "gust": shared.sidecar_id(GUST_SPRITE, "sprite"),
     }
     warn_if_missing_asset(ridge.BACKGROUND_ID, "backgrounds", "wind_ridge background")
-    warn_if_missing_asset(ridge.TOMAS_SPRITE_ID, "sprites", "Tomas sprite")
+    warn_if_missing_asset(ridge.TOMAS_SPRITE_ID, "sprites", "Hiroshi sprite")
     warn_if_missing_asset(ridge.CONCENTRATOR_SPRITE_ID, "sprites", "oxygen concentrator sprite")
 
     scene = build_scene(music_id, audio_ids["death"])

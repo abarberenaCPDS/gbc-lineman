@@ -191,7 +191,7 @@ class RidgeTests(unittest.TestCase):
         music = next(e for e in script if e["command"] == "EVENT_MUSIC_PLAY")
         self.assertEqual(music["args"]["musicId"], FAKE_MUSIC)
         intro = next(e for e in script if e["command"] == "EVENT_TEXT")
-        self.assertEqual(intro["args"]["text"], ["Tomas needs his\noxygen machine!"])
+        self.assertEqual(intro["args"]["text"], ["Hiroshi needs his\noxygen machine!"])
 
     def test_every_in_play_text_is_preceded_by_cutoff_and_followed_by_hud(self):
         checked = 0
@@ -208,7 +208,7 @@ class RidgeTests(unittest.TestCase):
                     redraws = [e for e in events[i + 1:] if e["command"] == "EVENT_TEXT_DRAW"]
                     self.assertTrue(redraws, "HUD must be redrawn after text")
                     self.assertEqual(redraws[0]["args"]["text"], ridge.HUD_TEXT)
-        # Authored in-play texts: init intro, Tomas x3, cable pickup, junction x3, door x2.
+        # Authored in-play texts: init intro, Hiroshi x3, cable pickup, junction x3, door x2.
         self.assertEqual(checked, 11)
 
     def test_hud_uses_exact_two_digit_variable_tokens(self):
@@ -231,7 +231,7 @@ class RidgeTests(unittest.TestCase):
                     for part in line.split("\n"):
                         self.assertLessEqual(len(part), scene.MAX_DIALOGUE_CHARS, part)
                         checked += 1
-        # One line per in-play text, two-line boxes count each part. Tomas names 4 boxes.
+        # One line per in-play text, two-line boxes count each part. Hiroshi names 4 boxes.
         self.assertEqual(checked, 25)
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
@@ -279,7 +279,7 @@ class RidgeTests(unittest.TestCase):
                   for e in reward if e["command"] == "EVENT_ACTOR_SET_STATE"}
         self.assertEqual(states, {(scene.actor_id(scene.TOMAS_KEY), "Relieved"),
                                   (scene.actor_id(scene.CONCENTRATOR_KEY), "On")})
-        self.assertIn("Tomas:\nPower's on!\nI can breathe.", [
+        self.assertIn("Hiroshi:\nPower's on!\nI can breathe.", [
             e["args"]["text"] for e in reward if e["command"] == "EVENT_TEXT"][0])
         dead = line["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
@@ -338,7 +338,7 @@ class RidgeTests(unittest.TestCase):
         refused = gate["children"]["false"]
         self.assertNotIn("EVENT_ACTOR_SET_POSITION", [e["command"] for e in walk(refused)])
         self.assertEqual(refused[0]["command"], "EVENT_OVERLAY_SET_SCANLINE_CUTOFF")
-        # Standing on the porch at the exit is clear of Tomas's door trigger.
+        # Standing on the porch at the exit is clear of Hiroshi's door trigger.
         tx, _, tw, _ = ridge.DOOR_TRIGGER
         self.assertGreaterEqual(trigger["x"], tx + tw)
         grid = ridge.collision_grid()
@@ -348,7 +348,7 @@ class RidgeTests(unittest.TestCase):
     def _scanline_load(self, hero_x, hero_feet):
         """OBJ columns per tile row on the 20-tile screen centred on the hero."""
         sprites = [((hero_x, hero_feet), 3, 3)]  # hero: 24px wide, 24px tall
-        sprites += [(ridge.TOMAS, 2, 3)]          # Tomás: 24px figure on a 16x32 canvas
+        sprites += [(ridge.TOMAS, 2, 3)]          # Hiroshi: 24px figure on a 16x32 canvas
         sprites += [(pos, 2, 2) for pos in (ridge.JUNCTION_BOX, ridge.CONCENTRATOR)]
         sprites += [((x0, row), 3, 2) for row, x0, _ in ridge.GUST_LANES]
         # Storm pole (2x4 intro sprite) and cable end (2x2) share the pickup's tile.
@@ -432,15 +432,15 @@ class RidgeTests(unittest.TestCase):
         script = actor_by_symbol(scene.TOMAS_SYMBOL)["script"]
         self.assertTrue(is_var_if(script[0], ridge.VAR_HOME_POWERED, 1))
         self.assertEqual([e["args"]["text"] for e in script[0]["children"]["true"]
-                          if e["command"] == "EVENT_TEXT"], [["Tomas:\nThanks, friend!\nBreathing easy."]])
+                          if e["command"] == "EVENT_TEXT"], [["Hiroshi:\nThanks, friend!\nBreathing easy."]])
         otherwise = script[0]["children"]["false"]
         self.assertTrue(is_var_if(otherwise[0], ridge.VAR_LINE_LIVE, 1))
         live = otherwise[0]["children"]["true"]
         dead = otherwise[0]["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in live if e["command"] == "EVENT_TEXT"],
-                         [["Tomas:\nLine's live!\nTry my door."]])
+                         [["Hiroshi:\nLine's live!\nTry my door."]])
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
-                         [["Tomas:\nThe line's dead!\nMy machine's off."]])
+                         [["Hiroshi:\nThe line's dead!\nMy machine's off."]])
 
     def test_junction_plugs_carried_cable_once_and_lights_slot_five(self):
         script = actor_by_symbol(scene.JUNCTION_SYMBOL)["script"]
@@ -518,7 +518,7 @@ class RidgeTests(unittest.TestCase):
         self.assertEqual(ridge.GRID_SPRITE_PALETTE_SLOT, 2)
 
     def test_shared_sidecars_exist(self):
-        """Sounds, music and the climb-owned sprites are already on disk; Tomas art is not required."""
+        """Sounds, music and the climb-owned sprites are already on disk; Hiroshi art is not required."""
         for path in (scene.DEATH_SOUND, scene.CONNECT_SOUND, scene.PICKUP_SOUND,
                      scene.MUSIC_SIDECAR, scene.DEBRIS_SPRITE, scene.GUST_SPRITE):
             self.assertTrue((PROJECT_DIR / path).exists(), path)

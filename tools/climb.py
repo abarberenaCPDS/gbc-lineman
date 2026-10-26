@@ -112,9 +112,9 @@ START = (2, 32)
 STREET_EXIT = (0, 30, 1, 3)
 
 # ---------------------------------------------------------------------------
-# Marta's line (first repair job): a storm-snapped pole on shelf 21 leaves a
+# Amara's line (first repair job): a storm-snapped pole on shelf 21 leaves a
 # dangling cable end. Carry it past debris 3 and up to the junction box on
-# shelf 15; plugging it in energizes the line, which Marta's door requires.
+# shelf 15; plugging it in energizes the line, which Amara's door requires.
 # Positions are actor tiles (the tile the actor stands in).
 # ---------------------------------------------------------------------------
 DAMAGED_POLE = (3, 20)      # cable-end pickup, left end of shelf 21
@@ -122,7 +122,7 @@ JUNCTION_BOX = (17, 14)     # plug-in point, right end of shelf 15
 VAR_CARRYING_CABLE = "6"
 VAR_LINE_LIVE = "7"
 # Grid sprites share OBJ palette slot 2 (free in the climb since the house icon
-# was replaced by Marta; the opening's slot 2 is the terminal palette).
+# was replaced by Amara; the opening's slot 2 is the terminal palette).
 GRID_SPRITE_PALETTE_SLOT = 2
 # BG slot 5 (metal) carries the drawn cable route. Only colour index 1 may be
 # used by cable pixels anywhere in slot 5, so swapping index 1 to cyan lights

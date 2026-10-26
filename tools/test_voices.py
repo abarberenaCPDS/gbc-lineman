@@ -31,7 +31,7 @@ def sequences(events):
 class VoiceTests(unittest.TestCase):
     def test_labeled_puts_the_name_on_its_own_line(self):
         self.assertEqual(voices.labeled("rosa", ["No internet...\nI can't work."]),
-                         ["Rosa:\nNo internet...\nI can't work."])
+                         ["Priya:\nNo internet...\nI can't work."])
         with self.assertRaises(ValueError):
             voices.labeled("kiko", ["one\ntwo\nthree"])
 

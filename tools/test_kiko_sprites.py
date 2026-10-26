@@ -1,4 +1,4 @@
-"""Kiko and the family's stove sprite checks; run with managed Python (Pillow).
+"""Emil and the family's stove sprite checks; run with managed Python (Pillow).
 
     cd tools && "$HOME/Library/Application Support/modretro-chromatic/toolchain/.local/pyboy-venv/bin/python" -m unittest test_kiko_sprites
 """
@@ -70,9 +70,9 @@ class ContractTests(unittest.TestCase):
         self.assertNotEqual(kiko.KIKO_SPRITE_HARDWARE, rosa.ROSA_SPRITE_HARDWARE)
         self.assertNotEqual(kiko.KIKO_SPRITE_HARDWARE, ridge.TOMAS_SPRITE_HARDWARE)
         self.assertNotEqual(kiko.KIKO_SPRITE_HARDWARE[2], rosa.ROSA_SPRITE_HARDWARE[2],
-                            "Kiko's mustard jacket must not read as Rosa's cardigan")
+                            "Emil's mustard jacket must not read as Priya's cardigan")
         self.assertNotEqual(kiko.KIKO_SPRITE_HARDWARE[2], ridge.TOMAS_SPRITE_HARDWARE[2],
-                            "Kiko's mustard jacket must not read as Tomás's cardigan")
+                            "Emil's mustard jacket must not read as Hiroshi's cardigan")
 
     def test_ids_come_from_kiko(self):
         self.assertEqual(kiko.KIKO_SPRITE_ID, kiko.resource_id("sprite:kiko"))
@@ -175,9 +175,9 @@ class SheetTests(unittest.TestCase):
         self.assertEqual(image.height, 32)
         for index in (0, 1):  # Waiting frames: the bowl does not raise the head line
             rows = _opaque_rows(_frame_image(image, index))
-            self.assertEqual(max(rows) - min(rows) + 1, 20, "Kiko is a 20px figure")
+            self.assertEqual(max(rows) - min(rows) + 1, 20, "Emil is a 20px figure")
         self.assertEqual((meta["boundsY"], meta["boundsHeight"]), (-12, 20))
-        self.assertLess(20, 24, "Kiko stays shorter than the 24px adults")
+        self.assertLess(20, 24, "Emil stays shorter than the 24px adults")
 
     def test_eyes_are_dark_pixels_not_a_band(self):
         image, _meta = _load(KIKO)

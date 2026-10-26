@@ -251,7 +251,7 @@ class KikoTests(unittest.TestCase):
                     redraws = [e for e in events[i + 1:] if e["command"] == "EVENT_TEXT_DRAW"]
                     self.assertTrue(redraws, "HUD must be redrawn after text")
                     self.assertEqual(redraws[0]["args"]["text"], kiko.HUD_TEXT)
-        # Authored in-play texts: two intro boxes, Kiko x3, cable pickup, junction x3, door x2.
+        # Authored in-play texts: two intro boxes, Emil x3, cable pickup, junction x3, door x2.
         self.assertEqual(checked, 11)
 
     def test_hud_uses_exact_two_digit_variable_tokens(self):
@@ -278,7 +278,7 @@ class KikoTests(unittest.TestCase):
                         self.assertNotIn("’", part, "use ASCII apostrophes in dialogue")
                         checked += 1
         # One part per line; two-line boxes count each part.
-        self.assertEqual(checked, 24)  # +4 "Kiko:" name lines
+        self.assertEqual(checked, 24)  # +4 "Emil:" name lines
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
@@ -327,7 +327,7 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(states, {(scene.actor_id(scene.KIKO_KEY), "Relieved"),
                                   (scene.actor_id(scene.STOVE_KEY), "On")})
         self.assertEqual([e["args"]["text"] for e in reward if e["command"] == "EVENT_TEXT"],
-                         [["Kiko:\nStove's on!\nSoup is cooking!"]])
+                         [["Emil:\nStove's on!\nSoup is cooking!"]])
         dead = line["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
                          [["Still no power.\nFix the line!"]])
@@ -424,7 +424,7 @@ class KikoTests(unittest.TestCase):
 
     def test_house_view_stays_within_ten_sprites_per_scanline(self):
         # Count OBJ columns per tile row with the hero standing anywhere on the
-        # porch, Kiko, the stove and the junction box drawn, and every hazard visible.
+        # porch, Emil, the stove and the junction box drawn, and every hazard visible.
         grid = kiko.collision_grid()
         porch = [x for x in range(kiko.PORCH[0], kiko.PORCH[1] + 1)
                  if stands(grid, x, kiko.PORCH_ROW)]
@@ -526,15 +526,15 @@ class KikoTests(unittest.TestCase):
         script = actor_by_symbol(scene.KIKO_SYMBOL)["script"]
         self.assertTrue(is_var_if(script[0], kiko.VAR_HOME_POWERED, 1))
         self.assertEqual([e["args"]["text"] for e in script[0]["children"]["true"]
-                          if e["command"] == "EVENT_TEXT"], [["Kiko:\nDinner time!\nThank you!"]])
+                          if e["command"] == "EVENT_TEXT"], [["Emil:\nDinner time!\nThank you!"]])
         otherwise = script[0]["children"]["false"]
         self.assertTrue(is_var_if(otherwise[0], kiko.VAR_LINE_LIVE, 1))
         live = otherwise[0]["children"]["true"]
         dead = otherwise[0]["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in live if e["command"] == "EVENT_TEXT"],
-                         [["Kiko:\nLine's live!\nTry our door."]])
+                         [["Emil:\nLine's live!\nTry our door."]])
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
-                         [["Kiko:\nOur stove's dead.\nI'm so hungry!"]])
+                         [["Emil:\nOur stove's dead.\nI'm so hungry!"]])
 
     def test_junction_plugs_carried_cable_once_and_lights_line(self):
         script = actor_by_symbol(scene.JUNCTION_SYMBOL)["script"]
@@ -554,7 +554,7 @@ class KikoTests(unittest.TestCase):
         states = [e["args"]["spriteStateId"] for e in branch if e["command"] == "EVENT_ACTOR_SET_STATE"]
         self.assertEqual(states, ["Live", "Standing"])  # junction box, then the pole
         self.assertEqual([e["args"]["text"] for e in branch if e["command"] == "EVENT_TEXT"],
-                         [["Line is live!\nGo see Kiko."]])
+                         [["Line is live!\nGo see Emil."]])
         # Empty hands at a dead line point back to the pole, like the other jobs.
         self.assertEqual([e["args"]["text"] for e in has_cable["children"]["false"]
                           if e["command"] == "EVENT_TEXT"], [["No cable yet.\nCheck the pole."]])
@@ -640,7 +640,7 @@ class KikoTests(unittest.TestCase):
         arc_palette = shared.load_json(PROJECT_DIR / "project" / "palettes" / "signal_hill_sprite_arc.gbsres")
         self.assertEqual(arc_palette["id"], scene.arc_palette_id())
         live_arc = shared.load_json(PROJECT_DIR / "assets" / "sprites" / "live_arc.png.gbsres")
-        self.assertEqual(live_arc["id"], kiko.ARC_SPRITE_ID, "Kiko reuses Signal Hill's live arc sprite")
+        self.assertEqual(live_arc["id"], kiko.ARC_SPRITE_ID, "Emil reuses Signal Hill's live arc sprite")
 
 
 if __name__ == "__main__":
@@ -652,7 +652,7 @@ class PorchExitPriorityTests(unittest.TestCase):
 
     At the right wall the hero overlaps both the door trigger and the porch
     exit, so the exit must sort first or the next job is unreachable (cart
-    ROM 6bfec7b4: Signal Hill could not be reached from Tomas's porch).
+    ROM 6bfec7b4: Signal Hill could not be reached from Hiroshi's porch).
     """
 
     def test_porch_exit_sorts_before_the_door(self):

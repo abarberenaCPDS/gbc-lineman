@@ -104,7 +104,7 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
             elif cell == climb.COL_TOP:
                 slots[ty][tx] = TIMBER
 
-    # Rosa's house: timber body over the floor, two lit windows, one door.
+    # Priya's house: timber body over the floor, two lit windows, one door.
     x0, x1, y0, y1 = rosa.HOUSE_RECT
     for ty in range(y0, y1 + 1):
         for tx in range(x0, x1 + 1):

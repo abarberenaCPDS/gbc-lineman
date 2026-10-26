@@ -1,15 +1,15 @@
-"""Pine Hollow - deterministic contract for Kiko's family's repair job (job 4).
+"""Pine Hollow - deterministic contract for Emil's family's repair job (job 4).
 
-Data only for a 40x18-tile PLATFORM scene reached from Rosa's porch once her
+Data only for a 40x18-tile PLATFORM scene reached from Priya's porch once her
 house is powered. The job mixes every hazard learned so far: falling debris and
 a wind gust on top of a long rock mesa (the pole stands up there), then a live
 cable arc on the floor below. Powering the line lights the family's window and
 switches on their electric stove so dinner can cook (Blackout Grid).
 
 Every generator for this job reads this module: ``make_kiko_art.py`` (art +
-collision-aligned background), ``make_kiko_sprites.py`` (Kiko and the stove)
+collision-aligned background), ``make_kiko_sprites.py`` (Emil and the stove)
 and ``make_kiko_scene.py`` (scene, actors, triggers, scripts). The live arc
-reuses ``live_arc`` from Rosa's job; debris and gust reuse the climb sprites.
+reuses ``live_arc`` from Priya's job; debris and gust reuse the climb sprites.
 
 Units are 8x8-pixel tiles. Actor positions are the tile the actor stands in
 (feet row). Collision bytes follow GB Studio PLATFORM semantics:
@@ -54,10 +54,10 @@ MESA_ROW = 8                        # feet row on the mesa
 PORCH_ROW = 11
 LEDGES: list[tuple[int, int, int]] = []
 
-START = (2, 14)            # entry from Rosa's porch, facing right
+START = (2, 14)            # entry from Priya's porch, facing right
 DAMAGED_POLE = (9, 8)      # cable-end pickup on the mesa
 JUNCTION_BOX = (33, 11)    # plug-in point on the porch
-KIKO = (34, 11)            # Kiko waits outside, left of the door
+KIKO = (34, 11)            # Emil waits outside, left of the door
 STOVE = (37, 11)           # electric stove with a pot, on the porch: Off -> On
 HOUSE_DOOR = (36, 11)
 HOUSE_RECT = (35, 38, 5, 11)
@@ -106,14 +106,14 @@ CABLE_ROUTE = [(9, 5), (9, 4), (33, 4), (33, 10), (33, 4), (35, 4)]
 # ---------------------------------------------------------------------------
 VAR_CARRYING_CABLE = climb.VAR_CARRYING_CABLE   # "6"
 VAR_LINE_LIVE = "12"
-VAR_HOME_POWERED = "13"    # Kiko's checkpoint; moves respawn to the door
+VAR_HOME_POWERED = "13"    # Emil's checkpoint; moves respawn to the door
 VARIABLES = [
     (VAR_LINE_LIVE, "Hollow Line Live", "var_hollow_line_live"),
     (VAR_HOME_POWERED, "Kiko Home Powered", "var_kiko_home_powered"),
 ]
 HUD_TEXT = "LINE %D1$12$/1 HOME %D1$13$/1"
 
-# Entry from Signal Hill: the right end of Rosa's porch, past her door, gated on
+# Entry from Signal Hill: the right end of Priya's porch, past her door, gated on
 # her checkpoint (var 11). Text-only refusal, never a nudge (see rosa.py).
 HILL_EXIT = (38, 9, 1, 3)
 HILL_EXIT_GATE_VAR = rosa.VAR_HOME_POWERED     # "11"
@@ -121,7 +121,7 @@ HILL_EXIT_GATE_VAR = rosa.VAR_HOME_POWERED     # "11"
 # ---------------------------------------------------------------------------
 # Palettes
 # ---------------------------------------------------------------------------
-# OBJ slots: 0 worker, 1 Kiko, 2 grid sprites (cable end, junction box, stove),
+# OBJ slots: 0 worker, 1 Emil, 2 grid sprites (cable end, junction box, stove),
 # 3 live arc, 4 debris, 5 gust - matching the climb/ridge/hill layout.
 KIKO_SPRITE_PALETTE_SLOT = 1
 GRID_SPRITE_PALETTE_SLOT = climb.GRID_SPRITE_PALETTE_SLOT
@@ -240,7 +240,7 @@ def _self_check() -> None:
     assert CABLE_ROUTE[0] == (DAMAGED_POLE[0], DAMAGED_POLE[1] - 3), "cable leaves the pole top"
     assert all(HUD_ROWS <= y < GROUND_ROW and 0 <= x < MAP_W for x, y in CABLE_ROUTE)
     assert START[0] < DAMAGED_POLE[0] < JUNCTION_BOX[0] < HOUSE_DOOR[0]
-    # Entry from Signal Hill: right end of Rosa's porch, clear of her door trigger.
+    # Entry from Signal Hill: right end of Priya's porch, clear of her door trigger.
     ex, ey, ew, eh = HILL_EXIT
     rtx, rty, rtw, _ = rosa.DOOR_TRIGGER
     assert ex >= rtx + rtw and ey + eh - 1 == rosa.PORCH_ROW and ex < rosa.MAP_W - 1

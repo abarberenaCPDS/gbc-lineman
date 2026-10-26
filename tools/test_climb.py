@@ -118,7 +118,7 @@ class ClimbTests(unittest.TestCase):
         self.assertEqual(len(resource["spritePaletteIds"]), 8)
         self.assertEqual(resource["spritePaletteIds"][0],
                          "030624ef-c88f-5e59-8664-65193264ce80")
-        # Slot 1 carries Marta and slot 2 the Live Wire grid; the rest keep legacy IDs.
+        # Slot 1 carries Amara and slot 2 the Live Wire grid; the rest keep legacy IDs.
         self.assertEqual(resource["spritePaletteIds"][1], opening.resource_id("palette:sprite:marta"))
         self.assertEqual(resource["spritePaletteIds"][2], climb.grid_resource_id("palette:sprite:grid"))
         # Slots 3-6 keep the legacy IDs; slot 7 (free in every job) carries the intro pole.
@@ -311,7 +311,7 @@ class ClimbTests(unittest.TestCase):
         sound = next(e for e in flat if e["command"] == "EVENT_SOUND_PLAY_EFFECT")
         self.assertEqual(sound["args"]["type"], "connect-sfx")
         text = next(e for e in flat if e["command"] == "EVENT_TEXT")
-        self.assertEqual(text["args"]["text"], ["Line is live!\nOn to Marta's."])
+        self.assertEqual(text["args"]["text"], ["Line is live!\nOn to Amara's."])
 
     def test_storm_pole_uses_intro_sprite_and_starts_snapped_unless_live(self):
         pole = scene.pole_actor(9, intro.POLE_SPRITE_ID)
@@ -355,9 +355,9 @@ class ClimbTests(unittest.TestCase):
         self.assertEqual(len(talk["children"]["true"]), 1)
         line = talk["children"]["true"][0]
         self.assertEqual(line["args"]["condition"]["valueA"], {"type": "variable", "value": "7"})
-        self.assertEqual(self._texts(line["children"]["true"]), [["Marta:\nStorm broke the\nline below."]])
-        self.assertEqual(self._texts(line["children"]["false"]), [["Marta:\nLine's live!\nGo to my door."]])
-        self.assertEqual(self._texts(talk["children"]["false"]), [["Marta:\nFood is saved.\nThank you, CFE!"]])
+        self.assertEqual(self._texts(line["children"]["true"]), [["Amara:\nStorm broke the\nline below."]])
+        self.assertEqual(self._texts(line["children"]["false"]), [["Amara:\nLine's live!\nGo to my door."]])
+        self.assertEqual(self._texts(talk["children"]["false"]), [["Amara:\nFood is saved.\nThank you, CFE!"]])
 
     def test_in_play_text_lifts_hud_cutoff_first(self):
         """Exact-ROM regression: text behind the 16px HUD cutoff was invisible

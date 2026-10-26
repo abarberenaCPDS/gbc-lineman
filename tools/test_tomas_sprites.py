@@ -1,4 +1,4 @@
-"""Tomás and oxygen concentrator sprite checks; run with managed Python (Pillow).
+"""Hiroshi and oxygen concentrator sprite checks; run with managed Python (Pillow).
 
     cd tools && "$HOME/Library/Application Support/modretro-chromatic/toolchain/.local/pyboy-venv/bin/python" -m unittest test_tomas_sprites
 """

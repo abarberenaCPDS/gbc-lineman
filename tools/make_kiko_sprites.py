@@ -1,4 +1,4 @@
-"""Generate Kiko and the family's electric stove for the Pine Hollow repair job.
+"""Generate Emil and the family's electric stove for the Pine Hollow repair job.
 
 Run with the project's managed Python (Pillow):
 
@@ -7,12 +7,12 @@ Run with the project's managed Python (Pillow):
 
 This generator owns only ``assets/sprites/kiko.png`` and ``assets/sprites/kiko_stove.png``
 plus their native GB Studio sidecars. Stable IDs, the sprite palette slots, the hardware
-colours and the state names come from ``tools/kiko.py``. The live arc is Rosa's
+colours and the state names come from ``tools/kiko.py``. The live arc is Priya's
 ``live_arc`` and is not generated here.
 
 Art is drawn from ASCII rows: ``.`` is transparent, and ``1``, ``2``, ``3`` are the three
 opaque proxy colours (white, gray 160, black). Proxy index N maps to hardware index N of
-the palette the scene worker builds: ``kiko.KIKO_SPRITE_HARDWARE`` for Kiko and the grid
+the palette the scene worker builds: ``kiko.KIKO_SPRITE_HARDWARE`` for Emil and the grid
 sprite palette for the stove. Index 0 is always transparent. Both sheets stand on the
 shared feet row 15, like the other 8x16 sprites in this job.
 """
@@ -73,7 +73,7 @@ def _torso_arm_up(inner: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Kiko: a child, front view, on a 16x32 canvas like the 24px adults (8x16 sprite mode),
+# Emil: a child, front view, on a 16x32 canvas like the 24px adults (8x16 sprite mode),
 # figure 20 rows tall standing on canvas row 31. Rows below are the 20 figure rows; the
 # 12 empty rows above are added by _kiko_frame. Taller than the old 16px kid, shorter
 # than the 24px adults. Eyes are two dark pixels stacked on skin (never a band); the
@@ -445,15 +445,15 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
     states_by_name = {state["name"]: state for state in meta["states"]}
     if name == "kiko":
         if list(states_by_name) != list(kiko.KIKO_STATES):
-            raise AssertionError("Kiko states must match kiko.KIKO_STATES in order")
+            raise AssertionError("Emil states must match kiko.KIKO_STATES in order")
         if len(states_by_name["Waiting"]["animations"][0]["frames"]) != 2:
             raise AssertionError("Waiting must be a two-frame loop")
         if len(states_by_name["Relieved"]["animations"][0]["frames"]) != 2:
             raise AssertionError("Relieved must be a two-frame loop")
         if frames[0] == frames[1] or frames[2] == frames[3]:
-            raise AssertionError("Kiko idle frames must differ within each state")
+            raise AssertionError("Emil idle frames must differ within each state")
         if frames[0] == frames[2]:
-            raise AssertionError("Kiko Waiting and Relieved must differ")
+            raise AssertionError("Emil Waiting and Relieved must differ")
     elif name == "kiko_stove":
         if list(states_by_name) != list(kiko.STOVE_STATES):
             raise AssertionError("stove states must match kiko.STOVE_STATES")

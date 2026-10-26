@@ -1,4 +1,4 @@
-"""Rosa, workstation and live arc sprite checks; run with managed Python (Pillow).
+"""Priya, workstation and live arc sprite checks; run with managed Python (Pillow).
 
     cd tools && "$HOME/Library/Application Support/modretro-chromatic/toolchain/.local/pyboy-venv/bin/python" -m unittest test_rosa_sprites
 """
@@ -288,17 +288,17 @@ class DistinctnessTests(unittest.TestCase):
                 1 for y in range(16) for x in range(16)
                 if (rosa_mask.getpixel((x, y)) != 0) != (tomas_mask.getpixel((x, y)) != 0)
             )
-            self.assertGreaterEqual(differing, 20, f"Rosa frame {rosa_index} too close to Tomás")
+            self.assertGreaterEqual(differing, 20, f"Priya frame {rosa_index} too close to Hiroshi")
 
     def test_rosa_has_long_hair_and_tomas_does_not(self):
         rosa_image, _meta = _load(ROSA)
         tomas_image, _tomas_meta = _load(TOMAS)
         for index in (0, 2):
             frame = _frame_image(rosa_image, index)
-            self.assertTrue(_opaque(frame, 3, 18), f"Rosa frame {index} lacks hair past the jaw")
-            self.assertTrue(_opaque(frame, 12, 18), f"Rosa frame {index} lacks hair past the jaw")
+            self.assertTrue(_opaque(frame, 3, 18), f"Priya frame {index} lacks hair past the jaw")
+            self.assertTrue(_opaque(frame, 12, 18), f"Priya frame {index} lacks hair past the jaw")
             self.assertFalse(_opaque(_frame_image(tomas_image, index), 12, 18),
-                             f"Tomás frame {index} should not have hair past the jaw")
+                             f"Hiroshi frame {index} should not have hair past the jaw")
 
 
 class RegenerationTests(unittest.TestCase):

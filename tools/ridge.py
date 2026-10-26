@@ -1,14 +1,14 @@
-"""Wind Ridge - deterministic contract for Tomás's repair job (job 2).
+"""Wind Ridge - deterministic contract for Hiroshi's repair job (job 2).
 
 Data only for a 40x18-tile PLATFORM scene: a two-screen horizontal traverse
-reached from Marta's summit once her line is live. Timed gusts are the
+reached from Amara's summit once her line is live. Timed gusts are the
 featured hazard (step 2 of the hazard ladder in docs/redesign-brief.md), with
 one falling-debris column. The Live Wire phase carries a snapped cable from a
-pole to a junction box; powering the line switches on Tomás's oxygen
+pole to a junction box; powering the line switches on Hiroshi's oxygen
 concentrator and warms his window (Blackout Grid).
 
 Every generator for this job reads this module: ``make_ridge_art.py`` (art +
-collision-aligned background), ``make_tomas_sprites.py`` (Tomás and the
+collision-aligned background), ``make_tomas_sprites.py`` (Hiroshi and the
 concentrator) and ``make_ridge_scene.py`` (scene, actors, triggers, scripts).
 
 Units are 8x8-pixel tiles. Actor positions are the tile the actor stands in
@@ -45,7 +45,7 @@ SOLID_BLOCKS = [
     (0, 0, 2, 14),        # left cliff wall
     (MAP_W - 1, MAP_W - 1, 2, 14),  # right cliff wall behind the house
     (13, 18, 12, 14),     # rock step plateau (top surface row 12); pole stands on it
-    (32, 38, 12, 14),     # Tomás's porch step (top surface row 12): one tap up from the gusts
+    (32, 38, 12, 14),     # Hiroshi's porch step (top surface row 12): one tap up from the gusts
 ]
 # Exact-ROM play showed the house props sharing the gusts' scanlines exceeded the
 # 10-sprites-per-line limit (the concentrator lost its top half). On the porch,
@@ -56,19 +56,19 @@ PORCH_ROW = 11
 # collectibles). Exact-ROM play showed a row-9 catwalk was unreachable.
 LEDGES: list[tuple[int, int, int]] = []
 
-START = (2, 14)            # entry from Marta's summit, facing right
+START = (2, 14)            # entry from Amara's summit, facing right
 DAMAGED_POLE = (16, 11)    # cable-end pickup on the step plateau (stands on row 12)
 JUNCTION_BOX = (33, 11)    # plug-in point at the top of the porch step
-TOMAS = (34, 11)           # Tomás waits outside, left of his door
+TOMAS = (34, 11)           # Hiroshi waits outside, left of his door
 CONCENTRATOR = (37, 11)    # oxygen concentrator on the porch: Off -> On
-HOUSE_DOOR = (36, 11)      # doorway column of Tomás's house (art)
+HOUSE_DOOR = (36, 11)      # doorway column of Hiroshi's house (art)
 # House body in the background art, inclusive tile rectangle.
 HOUSE_RECT = (35, 38, 5, 11)   # (x0, x1, row0, row1)
 # Each window must use exactly one BG slot-3 tile so the slot swap warms it.
 HOUSE_WINDOWS = [(35, 8), (38, 8)]
 
 # Door checkpoint trigger: top row of a 24px hero standing on the porch at the
-# door columns, like Marta's arrival trigger. (x, y, width, height).
+# door columns, like Amara's arrival trigger. (x, y, width, height).
 DOOR_TRIGGER = (35, 9, 3, 1)
 
 # ---------------------------------------------------------------------------
@@ -117,21 +117,21 @@ CABLE_ROUTE = [(16, 8), (16, 6), (33, 6), (33, 10), (33, 6), (35, 6)]
 # ---------------------------------------------------------------------------
 VAR_CARRYING_CABLE = climb.VAR_CARRYING_CABLE   # "6"
 VAR_LINE_LIVE = "8"
-VAR_HOME_POWERED = "9"     # Tomás checkpoint; moves respawn to the door
+VAR_HOME_POWERED = "9"     # Hiroshi checkpoint; moves respawn to the door
 VARIABLES = [
     (VAR_LINE_LIVE, "Ridge Line Live", "var_ridge_line_live"),
     (VAR_HOME_POWERED, "Tomas Home Powered", "var_tomas_home_powered"),
 ]
 HUD_TEXT = "LINE %D1$08$/1 HOME %D1$09$/1"
 
-# Entry gate from the climb summit: only after Marta's checkpoint (climb var 0).
+# Entry gate from the climb summit: only after Amara's checkpoint (climb var 0).
 CLIMB_SUMMIT_EXIT = (17, 3, 1, 3)   # climb-scene trigger (x, y, w, h), right end of summit
 CLIMB_EXIT_GATE_VAR = "0"
 
 # ---------------------------------------------------------------------------
 # Palettes
 # ---------------------------------------------------------------------------
-# OBJ slots in the ridge scene: 0 worker, 1 Tomás, 2 grid sprites (cable end,
+# OBJ slots in the ridge scene: 0 worker, 1 Hiroshi, 2 grid sprites (cable end,
 # junction box, concentrator), 4 debris, 5 gust - matching the climb's layout.
 TOMAS_SPRITE_PALETTE_SLOT = 1
 GRID_SPRITE_PALETTE_SLOT = climb.GRID_SPRITE_PALETTE_SLOT

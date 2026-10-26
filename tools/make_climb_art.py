@@ -25,13 +25,13 @@ WIDTH, HEIGHT = climb.MAP_W * climb.TILE, climb.MAP_H * climb.TILE
 PALETTES = [[tuple(bytes.fromhex(color)) for color in colors]
             for _, colors in opening.BG_PALETTES]
 NATIVE_PROXY_BY_INDEX = (255, 170, 85, 0)
-# Marta's two windows flank the door; slot 3 is reserved for them alone.
+# Amara's two windows flank the door; slot 3 is reserved for them alone.
 SUMMIT_WINDOW_TILES = ((11, 4), (14, 4))
 LANE_CELLS = {
     (row, x) for row, x0, x1 in climb.GUST_LANES for x in range(x0, x1 + 1)
 }
 
-# Marta's broken line (gameplay contract: climb.DAMAGED_POLE / JUNCTION_BOX).
+# Amara's broken line (gameplay contract: climb.DAMAGED_POLE / JUNCTION_BOX).
 # The snapped pole is the animated intro_pole actor on the shelf-21 pickup
 # corner (see make_climb_scene), so the background draws no pole. Its cable
 # starts at the top of that sprite (tile row DAMAGED_POLE y-3), rises to row

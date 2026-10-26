@@ -689,9 +689,9 @@ def build_scene(
                 linked_houses_id=variable_ids["connected"],
                 dialogue=short_lines(
                     {
-                        "Marta": "Marta: Watch out!",
-                        "Rosa": "Rosa: Step high!",
-                        "Kiko": "Kiko: Stay dry!",
+                        "Amara": "Amara: Watch out!",
+                        "Priya": "Priya: Step high!",
+                        "Emil": "Emil: Stay dry!",
                     }[name]
                 ),
             )

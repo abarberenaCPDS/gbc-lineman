@@ -2,7 +2,7 @@
 """Who is talking: speaker names and per-character text blips.
 
 Abe on the cart (2026-10-26): dialogue did not say who was speaking. A
-character's page starts with its name on its own line ("Marta:"), so the two
+character's page starts with its name on its own line ("Amara:"), so the two
 17-char lines below it keep their width, and the typed-character blip
 (EVENT_TEXT_SET_SOUND_EFFECT) switches to that character's pitch for the box.
 Unnamed boxes are narration and hints in the narrator blip (intro.TEXT_SOUND),
@@ -19,10 +19,10 @@ MAX_LINES = 3  # name + two lines fits the smallest in-play box (opening: textHe
 
 # name shown in the box, blip frequency in Hz (narrator is 880)
 SPEAKERS: dict[str, tuple[str, int]] = {
-    "marta": ("Marta", 660),   # warm, middle
-    "tomas": ("Tomas", 440),   # oldest, lowest
-    "rosa": ("Rosa", 990),     # quick, bright
-    "kiko": ("Kiko", 1320),    # the kid, highest
+    "marta": ("Amara", 660),   # warm, middle
+    "tomas": ("Hiroshi", 440),   # oldest, lowest
+    "rosa": ("Priya", 990),     # quick, bright
+    "kiko": ("Emil", 1320),    # the kid, highest
 }
 
 

@@ -1,4 +1,4 @@
-"""Generate Rosa, her workstation and the live arc for the Signal Hill repair job.
+"""Generate Priya, her workstation and the live arc for the Signal Hill repair job.
 
 Run with the project's managed Python (Pillow):
 
@@ -11,9 +11,9 @@ sprite palette slots and the state names come from ``tools/rosa.py``.
 
 Art is drawn from ASCII rows: ``.`` is transparent, and ``1``, ``2``, ``3`` are the three
 opaque proxy colours (white, gray 160, black). Proxy index N maps to hardware index N of the
-palette the scene worker builds: ``rosa.ROSA_SPRITE_HARDWARE`` for Rosa,
+palette the scene worker builds: ``rosa.ROSA_SPRITE_HARDWARE`` for Priya,
 ``rosa.ARC_SPRITE_HARDWARE`` for the arc, and the grid sprite palette for the workstation.
-Index 0 is always transparent. Rosa and the workstation keep the Tomás framing (feet on
+Index 0 is always transparent. Priya and the workstation keep the Hiroshi framing (feet on
 row 15); the live arc follows the gust convention: its art lives in canvas rows 8..15, the
 one 8px tile row of the hero's chest lane, so its bounds match the hit footprint.
 """
@@ -51,7 +51,7 @@ MAX_ACCENT_PIXELS = 4  # the cyan accent is reserved for small lights and airflo
 EMPTY = "." * CANVAS
 
 # ---------------------------------------------------------------------------
-# Rosa: a villager working online, front view, feet on row 15.
+# Priya: a villager working online, front view, feet on row 15.
 # 1 = skin, 2 = rose cardigan, 3 = long hair, glasses, outline, skirt, shoes.
 # Long hair falls past the chin to the shoulders; glasses sit on row 4.
 # Waiting: worried mouth (middle higher); A holds a dark phone at her side,
@@ -468,11 +468,11 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
     states_by_name = {state["name"]: state for state in meta["states"]}
     if name == "rosa":
         if list(states_by_name) != list(rosa.ROSA_STATES):
-            raise AssertionError("Rosa states must match rosa.ROSA_STATES in order")
+            raise AssertionError("Priya states must match rosa.ROSA_STATES in order")
         if frames[0] == frames[1] or frames[2] == frames[3]:
-            raise AssertionError("Rosa idle frames must differ within each state")
+            raise AssertionError("Priya idle frames must differ within each state")
         if frames[0] == frames[2]:
-            raise AssertionError("Rosa Waiting and Relieved must differ")
+            raise AssertionError("Priya Waiting and Relieved must differ")
     elif name == "rosa_workstation":
         if list(states_by_name) != list(rosa.WORKSTATION_STATES):
             raise AssertionError("workstation states must match rosa.WORKSTATION_STATES")

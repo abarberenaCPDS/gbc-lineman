@@ -214,7 +214,7 @@ def make_background() -> tuple[Image.Image, list[list[int]]]:
     c.line(2, [(49, 69), (56, 68), (61, 69)], p[2][2])
 
     # Facade boards and heavy corner posts.  Left lower wall is intentionally
-    # quiet behind Marta's resident/start zone.
+    # quiet behind Amara's resident/start zone.
     c.rect(2, (56, 65, 95, 127), p[2][1])
     for y in (72, 94, 110):
         c.line(2, [(57, y), (63, y)], p[2][2])

@@ -1,4 +1,4 @@
-"""Generate Tomás and his oxygen concentrator for the Wind Ridge repair job.
+"""Generate Hiroshi and his oxygen concentrator for the Wind Ridge repair job.
 
 Run with the project's managed Python (Pillow):
 
@@ -12,8 +12,8 @@ Stable IDs, the sprite palette slots and the state names come from ``tools/ridge
 Art is drawn from ASCII rows: ``.`` is transparent, and ``1``, ``2``, ``3`` are the
 three opaque proxy colours (white, gray 160, black). Proxy index N maps to hardware
 index N of the palette the scene worker builds: ``ridge.TOMAS_SPRITE_HARDWARE`` for
-Tomás and the grid sprite palette for the concentrator. Index 0 is always
-transparent. Tomás uses the same proxy scheme as the 24px workers in ``make_opening_characters.py``
+Hiroshi and the grid sprite palette for the concentrator. Index 0 is always
+transparent. Hiroshi uses the same proxy scheme as the 24px workers in ``make_opening_characters.py``
 (16x32 canvas, tile y counting up from the bottom); the concentrator follows the grid sprites
 in ``make_grid_sprites.py``.
 """
@@ -34,7 +34,7 @@ sys.path.insert(0, str(TOOLS_DIR))
 import ridge  # noqa: E402
 
 CANVAS = 16  # canvas width, and the concentrator canvas height
-TOMAS_CANVAS_H = 32  # Tomás uses the 16x32 opening_worker24 format
+TOMAS_CANVAS_H = 32  # Hiroshi uses the 16x32 opening_worker24 format
 ENGINE_SLOTS = 8
 TRANSPARENT = (0, 255, 0, 0)
 PROXY = {
@@ -50,7 +50,7 @@ GRID_SPRITE_HARDWARE = ["000000", "C7DCE1", "38C8D8", "142332"]
 MAX_ACCENT_PIXELS = 4  # the cyan accent is reserved for small lights and airflow
 
 # ---------------------------------------------------------------------------
-# Tomás: oldest villager, a 23-24px figure on a 16x32 canvas (the opening_worker24
+# Hiroshi: oldest villager, a 23-24px figure on a 16x32 canvas (the opening_worker24
 # format), feet on the canvas bottom row, a bit stooped (head forward/left, rounded
 # back). Drawn as 24 rows and padded with 8 blank rows on top.
 # 1 = skin, 2 = cardigan green, 3 = hair, outline, trousers, shoes, nasal tube.
@@ -365,9 +365,9 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
     states_by_name = {state["name"]: state for state in meta["states"]}
     if name == "tomas":
         if list(states_by_name) != list(ridge.TOMAS_STATES):
-            raise AssertionError("Tomás states must match ridge.TOMAS_STATES in order")
+            raise AssertionError("Hiroshi states must match ridge.TOMAS_STATES in order")
         if frames[0] == frames[1] or frames[2] == frames[3]:
-            raise AssertionError("Tomás idle frames must differ within each state")
+            raise AssertionError("Hiroshi idle frames must differ within each state")
     elif name == "oxygen_concentrator":
         if list(states_by_name) != list(ridge.CONCENTRATOR_STATES):
             raise AssertionError("concentrator states must match ridge.CONCENTRATOR_STATES")

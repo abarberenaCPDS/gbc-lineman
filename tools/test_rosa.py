@@ -214,7 +214,7 @@ class RosaTests(unittest.TestCase):
         self.assertEqual(music["args"]["musicId"], FAKE_MUSIC)
         intro = [e for e in script if e["command"] == "EVENT_TEXT"]
         self.assertEqual([e["args"]["text"] for e in intro],
-                         [["Rosa's offline!\nHer work is due."], ["Mind the sparks!"]])
+                         [["Priya's offline!\nHer work is due."], ["Mind the sparks!"]])
 
     def test_every_in_play_text_is_preceded_by_cutoff_and_followed_by_hud(self):
         checked = 0
@@ -231,7 +231,7 @@ class RosaTests(unittest.TestCase):
                     redraws = [e for e in events[i + 1:] if e["command"] == "EVENT_TEXT_DRAW"]
                     self.assertTrue(redraws, "HUD must be redrawn after text")
                     self.assertEqual(redraws[0]["args"]["text"], rosa.HUD_TEXT)
-        # Authored in-play texts: two init boxes, Rosa x3, cable pickup, junction x3, door x2.
+        # Authored in-play texts: two init boxes, Priya x3, cable pickup, junction x3, door x2.
         self.assertEqual(checked, 12)
 
     def test_hud_uses_exact_two_digit_variable_tokens(self):
@@ -258,7 +258,7 @@ class RosaTests(unittest.TestCase):
                         self.assertNotIn("’", part, "use ASCII apostrophes in dialogue")
                         checked += 1
         # One part per line; two-line boxes count each part.
-        self.assertEqual(checked, 26)  # +4 "Rosa:" name lines
+        self.assertEqual(checked, 26)  # +4 "Priya:" name lines
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
@@ -306,7 +306,7 @@ class RosaTests(unittest.TestCase):
         self.assertEqual(states, {(scene.actor_id(scene.ROSA_KEY), "Relieved"),
                                   (scene.actor_id(scene.WORKSTATION_KEY), "On")})
         self.assertEqual([e["args"]["text"] for e in reward if e["command"] == "EVENT_TEXT"],
-                         [["Rosa:\nRouter's on!\nI'm online again."]])
+                         [["Priya:\nRouter's on!\nI'm online again."]])
         dead = line["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
                          [["Still no power.\nFix the line!"]])
@@ -369,7 +369,7 @@ class RosaTests(unittest.TestCase):
 
     def test_house_view_stays_within_ten_sprites_per_scanline(self):
         # Same budget as Wind Ridge: count OBJ columns per tile row with the hero
-        # standing at the junction box, Rosa and her workstation drawn, and every
+        # standing at the junction box, Priya and her workstation drawn, and every
         # arc and gust visible.
         bx, by = rosa.JUNCTION_BOX
         sprites = [((bx, by), 3, 3)]  # hero: 24px wide, 24px tall
@@ -453,15 +453,15 @@ class RosaTests(unittest.TestCase):
         script = actor_by_symbol(scene.ROSA_SYMBOL)["script"]
         self.assertTrue(is_var_if(script[0], rosa.VAR_HOME_POWERED, 1))
         self.assertEqual([e["args"]["text"] for e in script[0]["children"]["true"]
-                          if e["command"] == "EVENT_TEXT"], [["Rosa:\nI'm back online!\nThank you!"]])
+                          if e["command"] == "EVENT_TEXT"], [["Priya:\nI'm back online!\nThank you!"]])
         otherwise = script[0]["children"]["false"]
         self.assertTrue(is_var_if(otherwise[0], rosa.VAR_LINE_LIVE, 1))
         live = otherwise[0]["children"]["true"]
         dead = otherwise[0]["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in live if e["command"] == "EVENT_TEXT"],
-                         [["Rosa:\nLine's live!\nTry my door."]])
+                         [["Priya:\nLine's live!\nTry my door."]])
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
-                         [["Rosa:\nNo internet...\nI can't work."]])
+                         [["Priya:\nNo internet...\nI can't work."]])
 
     def test_junction_plugs_carried_cable_once_and_lights_slot_five(self):
         script = actor_by_symbol(scene.JUNCTION_SYMBOL)["script"]
@@ -556,7 +556,7 @@ class RosaTests(unittest.TestCase):
         self.assertNotEqual(rosa_palette["id"], arc_palette["id"])
 
     def test_shared_sidecars_exist(self):
-        """Sounds, music and the gust sprite are already on disk; Rosa and arc art are not required."""
+        """Sounds, music and the gust sprite are already on disk; Priya and arc art are not required."""
         for path in (scene.DEATH_SOUND, scene.CONNECT_SOUND, scene.PICKUP_SOUND,
                      scene.MUSIC_SIDECAR, scene.GUST_SPRITE):
             self.assertTrue((PROJECT_DIR / path).exists(), path)

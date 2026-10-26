@@ -658,11 +658,11 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
                 raise AssertionError(f"{name}: tall candidate lost its lower-foot placement")
     elif name == "opening_marta":
         if (canvas_h, meta["boundsY"], meta["boundsHeight"]) != (32, -16, 24):
-            raise AssertionError("Marta must be a bottom-anchored 24px figure on a 16x32 canvas")
+            raise AssertionError("Amara must be a bottom-anchored 24px figure on a 16x32 canvas")
         waiting = meta["states"][0]["animations"]
         powered = meta["states"][1]["animations"]
         if len(waiting[0]["frames"]) != 2 or len(powered[0]["frames"]) != 1:
-            raise AssertionError("Marta needs a two-frame Waiting idle and one Powered pose")
+            raise AssertionError("Amara needs a two-frame Waiting idle and one Powered pose")
     elif name == "opening_terminal":
         if any(len(state["animations"][0]["frames"]) != 1 for state in meta["states"]):
             raise AssertionError("terminal Off/On states must each use one fixed icon frame")

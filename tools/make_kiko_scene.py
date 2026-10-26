@@ -1,14 +1,14 @@
-"""Generate the deterministic Pine Hollow scene (Kiko's repair job) from ``kiko.py``.
+"""Generate the deterministic Pine Hollow scene (Emil's repair job) from ``kiko.py``.
 
 Run with ``python3 tools/make_kiko_scene.py`` from any working directory.
-This writes only the Pine Hollow scene resources, Kiko's sprite palette and the
-Kiko variable registrations. The authored geometry, positions, hazard timings
+This writes only the Pine Hollow scene resources, Emil's sprite palette and the
+Emil variable registrations. The authored geometry, positions, hazard timings
 and stable IDs live in the sibling ``kiko.py`` contract module.
 
 The live arc reuses Signal Hill's arc sprite and arc palette resource (written
 by ``make_rosa_scene.py``); this generator only references that palette ID.
 The falling debris column copies the Wind Ridge debris cycle, and the gust
-copies the Signal Hill gust, both with Kiko's timings.
+copies the Signal Hill gust, both with Emil's timings.
 
 Generic GB Studio helpers (collision RLE, sidecar lookup, JSON writing, the
 dialogue length check) are reused from ``make_climb_scene``. Event builders are
@@ -43,7 +43,7 @@ sys.path.insert(0, str(TOOLS_DIR))
 try:
     import climb  # noqa: E402  (shared palettes, grid sprites and climb timings)
     import intro  # noqa: E402  (intro pole sprite and palette identities)
-    import kiko  # noqa: E402  (Kiko's job contract: geometry, IDs, timings)
+    import kiko  # noqa: E402  (Emil's job contract: geometry, IDs, timings)
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
     import voices  # noqa: E402  (speaker names and text blips)
@@ -103,7 +103,7 @@ def palette_resource(kind: str, name: str, colors: list[str]) -> dict[str, Any]:
 
 
 def kiko_palettes() -> list[tuple[str, dict[str, Any]]]:
-    # The arc palette is Signal Hill's (make_rosa_scene.py); only Kiko's is written here.
+    # The arc palette is Signal Hill's (make_rosa_scene.py); only Emil's is written here.
     kiko_sprite = palette_resource("sprite", "kiko",
                                    shared.editor_sprite_colors(kiko.KIKO_SPRITE_HARDWARE))
     return [("project/palettes/pine_hollow_sprite_kiko.gbsres", kiko_sprite)]
@@ -231,7 +231,7 @@ def background_palette_event(slots: dict[int, str], key: str) -> dict[str, Any]:
 
 
 def window_palette_event(powered: bool, key: str) -> dict[str, Any]:
-    """Swap only Kiko's window slot (cold -> powered_window)."""
+    """Swap only Emil's window slot (cold -> powered_window)."""
     name = "powered_window" if powered else "window"
     return background_palette_event({
         kiko.WINDOW_BG_SLOT: opening.resource_id(f"palette:bg:{name}"),
@@ -263,7 +263,7 @@ def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
     """Death sound, then drop any cable, then respawn.
 
     The cable drop runs before repositioning so the carrier's hands are empty
-    wherever the checkpoint sends them. Before Kiko's house is powered the hero
+    wherever the checkpoint sends them. Before Emil's house is powered the hero
     returns to START; afterwards, to the tile in front of the door.
     """
     door_x, door_y = kiko.HOUSE_DOOR
@@ -345,7 +345,7 @@ def actor_resource(*, index: int, symbol: str, name: str, x: int, y: int, sprite
 
 
 def kiko_actor(index: int) -> dict[str, Any]:
-    """Kiko outside the house: Waiting until the house is powered, then Relieved."""
+    """Emil outside the house: Waiting until the house is powered, then Relieved."""
     key = KIKO_KEY
     x, y = kiko.KIKO
     script = [if_value(VAR_HOME_POWERED, 1, f"{key}:home", [
@@ -358,7 +358,7 @@ def kiko_actor(index: int) -> dict[str, Any]:
         ]),
     ])]
     return actor_resource(
-        index=index, symbol=KIKO_SYMBOL, name="Kiko (Pine Hollow)", x=x, y=y,
+        index=index, symbol=KIKO_SYMBOL, name="Emil (Pine Hollow)", x=x, y=y,
         sprite_id=kiko.KIKO_SPRITE_ID, key=key, script=script,
         start_script=[actor_state("$self$", "Waiting", f"{key}:waiting")],
     )
@@ -417,7 +417,7 @@ def pole_actor(index: int, sprite_id: str) -> dict[str, Any]:
 
 
 def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dict[str, Any]:
-    """Dead junction box at the foot of Kiko's porch. Plugging in the carried cable lights the line.
+    """Dead junction box at the foot of Emil's porch. Plugging in the carried cable lights the line.
 
     With the line already live it repeats a short status line; with empty hands
     it points back to the pole, like the other jobs' boxes.
@@ -434,7 +434,7 @@ def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dic
             actor_state(pole_actor_id(), "Standing", f"{key}:pole-standing"),
             line_palette_event(True, f"{key}:metal-live"),
             sound_event(connect_sound_id, f"{key}:sfx"),
-            *say(short_lines("Line is live!\nGo see Kiko."), f"{key}:text"),
+            *say(short_lines("Line is live!\nGo see Emil."), f"{key}:text"),
         ], [
             *say(short_lines("No cable yet.\nCheck the pole."), f"{key}:no-cable"),
         ]),
@@ -447,7 +447,7 @@ def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dic
 
 
 def door_trigger(connect_sound_id: str) -> dict[str, Any]:
-    """Kiko's door: powering the house is a once-only checkpoint (var 13).
+    """Emil's door: powering the house is a once-only checkpoint (var 13).
 
     Only the top row of a standing 24px hero covers the door columns, so the
     respawn tile in front of the door also lands on this trigger. The var 13
@@ -469,7 +469,7 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
     return {
         "_resourceType": "trigger",
         "id": kiko.resource_id("trigger:kiko-door"),
-        "name": "Kiko Door Checkpoint",
+        "name": "Emil Door Checkpoint",
         "prefabId": "",
         "x": x,
         "y": y,
@@ -780,7 +780,7 @@ def main() -> None:
         "gust": shared.sidecar_id(GUST_SPRITE, "sprite"),
     }
     warn_if_missing_asset(kiko.BACKGROUND_ID, "backgrounds", "pine_hollow background")
-    warn_if_missing_asset(kiko.KIKO_SPRITE_ID, "sprites", "Kiko sprite")
+    warn_if_missing_asset(kiko.KIKO_SPRITE_ID, "sprites", "Emil sprite")
     warn_if_missing_asset(kiko.STOVE_SPRITE_ID, "sprites", "electric stove sprite")
     warn_if_missing_asset(kiko.ARC_SPRITE_ID, "sprites", "live arc sprite")
 

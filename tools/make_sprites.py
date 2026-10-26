@@ -391,7 +391,7 @@ def make_assets() -> list[Asset]:
     for i, name in enumerate(("marta", "rosa", "kiko")):
         local_frame(locals_sheet, i, name)
 
-    house_names = ["Marta", "Tomas", "Rosa", "Kiko", "Nuria"]
+    house_names = ["Amara", "Hiroshi", "Priya", "Emil", "Nuria"]
     houses_sheet = new_frame_sheet(len(house_names) * 2)
     for i in range(5):
         house_frame(houses_sheet, i, i)
@@ -419,7 +419,7 @@ def make_assets() -> list[Asset]:
         Asset(
             "locals",
             locals_sheet,
-            single_frame_states(["Marta", "Rosa", "Kiko"], "local", [0, 1, 2]),
+            single_frame_states(["Amara", "Priya", "Emil"], "local", [0, 1, 2]),
         ),
         Asset(
             "houses",

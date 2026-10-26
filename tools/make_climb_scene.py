@@ -20,10 +20,10 @@ REFERENCE_SCENE = PROJECT_DIR / "project" / "scenes" / "storm_night" / "scene.gb
 UUID_NAMESPACE = uuid.UUID("ae862b93-7877-5c2c-9a11-e71c74d4769f")
 MAX_DIALOGUE_CHARS = 17
 VARIABLE_CHECKPOINTS_REACHED = "0"
-# Marta stands on the summit shelf (row 6) two tiles left of House A. She has
+# Amara stands on the summit shelf (row 6) two tiles left of House A. She has
 # no collision, so the 24px hero's respawn tile and landing stay unobstructed.
 MARTA_SHELF_POSITION = (8, 5)
-# Opening Marta's tiles reference OBJ palette slot 1, which is free in Storm
+# Opening Amara's tiles reference OBJ palette slot 1, which is free in Storm
 # Climb (debris uses 4, gust 5, player 0). The old houses sprite used slot 2.
 MARTA_SPRITE_PALETTE_SLOT = 1
 # Background slot 3 is the summit window family; the opening's repair swaps it.
@@ -51,7 +51,7 @@ try:
     import intro  # noqa: E402  (intro pole sprite and palette identities)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
     import voices  # noqa: E402  (speaker names and text blips)
-    import ridge  # noqa: E402  (Tomás's job contract: summit exit target)
+    import ridge  # noqa: E402  (Hiroshi's job contract: summit exit target)
 except ModuleNotFoundError as error:
     if error.name in {"voices", "climb", "intro", "opening", "ridge"}:
         raise SystemExit(
@@ -548,7 +548,7 @@ def marta_actor_id() -> str:
 
 
 def checkpoint_actor(index: int, marta_sprite_id: str) -> dict[str, Any]:
-    """Marta on the summit shelf: Waiting until the arrival checkpoint.
+    """Amara on the summit shelf: Waiting until the arrival checkpoint.
 
     The start script is unconditional. The scene script resets var 0 on every
     entry, but actor start scripts give no ordering guarantee against it, so a
@@ -559,7 +559,7 @@ def checkpoint_actor(index: int, marta_sprite_id: str) -> dict[str, Any]:
     actor = actor_resource(
         index=index,
         symbol="marta_checkpoint",
-        name="Marta (Summit Checkpoint)",
+        name="Amara (Summit Checkpoint)",
         x=x,
         y=y,
         sprite_id=marta_sprite_id,
@@ -575,7 +575,7 @@ def checkpoint_actor(index: int, marta_sprite_id: str) -> dict[str, Any]:
         ])],
         start_script=[actor_state("$self$", "Waiting", f"{key}:waiting")],
     )
-    # Match the opening's Marta, whose Waiting/Powered states carry idle frames.
+    # Match the opening's Amara, whose Waiting/Powered states carry idle frames.
     actor["animate"] = True
     return actor
 
@@ -584,7 +584,7 @@ def cable_end_actor(index: int, sprite_id: str, pickup_sound_id: str) -> dict[st
     """Dangling cable on the storm-snapped pole (shelf 21). B picks it up.
 
     Only a visible cable can be picked up, and it is hidden once carried. The
-    start script is unconditional, like Marta's, because scene init resets
+    start script is unconditional, like Amara's, because scene init resets
     var 6 and 7 on every entry.
     """
     key = CABLE_ACTOR_KEY
@@ -626,7 +626,7 @@ def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dic
             actor_state(pole_actor_id(), "Standing", f"{key}:pole-standing"),
             line_palette_state(True, f"{key}:metal-live"),
             sound_event(connect_sound_id, f"{key}:sfx"),
-            *say(short_lines("Line is live!\nOn to Marta's."), f"{key}:text"),
+            *say(short_lines("Line is live!\nOn to Amara's."), f"{key}:text"),
         ], [
             *say(short_lines("No cable yet.\nCheck the pole."), f"{key}:no-cable"),
         ]),
@@ -679,7 +679,7 @@ def arrival_rect() -> tuple[int, int, int, int]:
     covered, at the doorway columns 11-13. Exact-ROM play showed a rows 3-5
     trigger firing early: an 8-frame jump from shelf 12 put the head in
     row 4. Landing straight up from shelf 9's safe takeoff (x72) stays left
-    of column 11, so the reward plays on reaching Marta's door.
+    of column 11, so the reward plays on reaching Amara's door.
     """
     house = climb.HOUSE_A
     return int(house["x"]), int(house["y"]) - 2, 3, 1
@@ -691,13 +691,13 @@ def build_checkpoint_trigger(death_sound_id: str, connect_sound_id: str) -> dict
     # path are unchanged; only its geometry, name and script are new.
     checkpoint = trigger_resource(100, (y, x, x + width - 1), death_sound_id)
     checkpoint.update({
-        "name": "Marta Arrival Checkpoint",
+        "name": "Amara Arrival Checkpoint",
         "symbol": "trigger_marta_arrival",
         "x": x,
         "y": y,
         "width": width,
         "height": height,
-        # Marta's door needs the line live. Without it nothing is saved and the
+        # Amara's door needs the line live. Without it nothing is saved and the
         # checkpoint stays unset, so the reward can still fire later.
         "script": [if_value(VAR_LINE_LIVE_ID, 1, "checkpoint-arrival:line", [
             if_value(VARIABLE_CHECKPOINTS_REACHED, 0, "checkpoint-arrival", [
@@ -755,9 +755,9 @@ SUMMIT_EXIT_NUDGE_TILES = 3
 
 
 def summit_exit_trigger() -> dict[str, Any]:
-    """Right end of the summit shelf leads on to Tomás's Wind Ridge.
+    """Right end of the summit shelf leads on to Hiroshi's Wind Ridge.
 
-    Gated on Marta's checkpoint (var 0) so the jobs stay in order; before
+    Gated on Amara's checkpoint (var 0) so the jobs stay in order; before
     that the hero is told why and nudged back onto the shelf. Like the street
     exit, it lifts the HUD cutoff and hides the overlay before switching.
     """
@@ -776,7 +776,7 @@ def summit_exit_trigger() -> dict[str, Any]:
     # looped. Step back three tiles first, then explain.
     wait = [
         set_position(x - SUMMIT_EXIT_NUDGE_TILES, climb.HOUSE_A["y"], "summit-exit:nudge-back"),
-        *say(short_lines("Marta needs\npower first."), "summit-exit:not-yet"),
+        *say(short_lines("Amara needs\npower first."), "summit-exit:not-yet"),
     ]
     return {
         "_resourceType": "trigger",

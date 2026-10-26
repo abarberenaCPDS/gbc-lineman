@@ -1,8 +1,8 @@
-"""Generate the deterministic Signal Hill scene (Rosa's repair job) from ``rosa.py``.
+"""Generate the deterministic Signal Hill scene (Priya's repair job) from ``rosa.py``.
 
 Run with ``python3 tools/make_rosa_scene.py`` from any working directory.
-This writes only the Signal Hill scene resources, the Rosa and live-arc sprite
-palettes and the Rosa variable registrations. The authored geometry, positions,
+This writes only the Signal Hill scene resources, the Priya and live-arc sprite
+palettes and the Priya variable registrations. The authored geometry, positions,
 arc and gust timings and stable IDs live in the sibling ``rosa.py`` contract
 module.
 
@@ -41,8 +41,8 @@ try:
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
     import voices  # noqa: E402  (speaker names and text blips)
-    import rosa  # noqa: E402  (Rosa's job contract: geometry, IDs, timings)
-    import kiko  # noqa: E402  (Kiko's job contract: the porch exit leads there)
+    import rosa  # noqa: E402  (Priya's job contract: geometry, IDs, timings)
+    import kiko  # noqa: E402  (Emil's job contract: the porch exit leads there)
 except ModuleNotFoundError as error:
     if error.name in {"intro", "voices", "climb", "opening", "rosa", "kiko", "make_climb_scene"}:
         raise SystemExit(
@@ -229,7 +229,7 @@ def background_palette_event(slots: dict[int, str], key: str) -> dict[str, Any]:
 
 
 def window_palette_event(powered: bool, key: str) -> dict[str, Any]:
-    """Swap only Rosa's window slot (cold -> powered_window)."""
+    """Swap only Priya's window slot (cold -> powered_window)."""
     name = "powered_window" if powered else "window"
     return background_palette_event({
         rosa.WINDOW_BG_SLOT: opening.resource_id(f"palette:bg:{name}"),
@@ -261,7 +261,7 @@ def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
     """Death sound, then drop any cable, then respawn.
 
     The cable drop runs before repositioning so the carrier's hands are empty
-    wherever the checkpoint sends them. Before Rosa's power is on the hero
+    wherever the checkpoint sends them. Before Priya's power is on the hero
     returns to START; afterwards, to the tile in front of the door.
     """
     door_x, door_y = rosa.HOUSE_DOOR
@@ -297,7 +297,7 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
         actor_state(pole_actor_id(), "Snapped", "init-pole-snapped"),
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-signal-hill-music"),
         # Intro boxes after the music cue; say() lifts the cutoff a previous visit may have left.
-        *say(short_lines("Rosa's offline!\nHer work is due."), "intro"),
+        *say(short_lines("Priya's offline!\nHer work is due."), "intro"),
         *say(short_lines("Mind the sparks!"), "spark"),
     ]
 
@@ -343,7 +343,7 @@ def actor_resource(*, index: int, symbol: str, name: str, x: int, y: int, sprite
 
 
 def rosa_actor(index: int) -> dict[str, Any]:
-    """Rosa outside her door: Waiting until her house is powered, then Relieved."""
+    """Priya outside her door: Waiting until her house is powered, then Relieved."""
     key = ROSA_KEY
     x, y = rosa.ROSA
     script = [if_value(VAR_HOME_POWERED, 1, f"{key}:home", [
@@ -356,18 +356,18 @@ def rosa_actor(index: int) -> dict[str, Any]:
         ]),
     ])]
     return actor_resource(
-        index=index, symbol=ROSA_SYMBOL, name="Rosa (Signal Hill)", x=x, y=y,
+        index=index, symbol=ROSA_SYMBOL, name="Priya (Signal Hill)", x=x, y=y,
         sprite_id=rosa.ROSA_SPRITE_ID, key=key, script=script,
         start_script=[actor_state("$self$", "Waiting", f"{key}:waiting")],
     )
 
 
 def workstation_actor(index: int) -> dict[str, Any]:
-    """Computer and router on Rosa's porch table: Off until the door switches them On."""
+    """Computer and router on Priya's porch table: Off until the door switches them On."""
     key = WORKSTATION_KEY
     x, y = rosa.WORKSTATION
     return actor_resource(
-        index=index, symbol=WORKSTATION_SYMBOL, name="Rosa Workstation", x=x, y=y,
+        index=index, symbol=WORKSTATION_SYMBOL, name="Priya Workstation", x=x, y=y,
         sprite_id=rosa.WORKSTATION_SPRITE_ID, key=key,
         start_script=[actor_state("$self$", "Off", f"{key}:off")],
     )
@@ -415,7 +415,7 @@ def pole_actor(index: int, sprite_id: str) -> dict[str, Any]:
 
 
 def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dict[str, Any]:
-    """Dead junction box at the foot of Rosa's porch. Plugging in the carried cable lights the line."""
+    """Dead junction box at the foot of Priya's porch. Plugging in the carried cable lights the line."""
     key = JUNCTION_KEY
     x, y = rosa.JUNCTION_BOX
     plug = [if_value(VAR_LINE_LIVE, 1, f"{key}:live", [
@@ -428,7 +428,7 @@ def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dic
             actor_state(pole_actor_id(), "Standing", f"{key}:pole-standing"),
             line_palette_event(True, f"{key}:metal-live"),
             sound_event(connect_sound_id, f"{key}:sfx"),
-            *say(short_lines("Line is live!\nGo see Rosa."), f"{key}:text"),
+            *say(short_lines("Line is live!\nGo see Priya."), f"{key}:text"),
         ], [
             *say(short_lines("No cable yet.\nCheck the pole."), f"{key}:no-cable"),
         ]),
@@ -441,7 +441,7 @@ def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dic
 
 
 def door_trigger(connect_sound_id: str) -> dict[str, Any]:
-    """Rosa's door: powering the house is a once-only checkpoint (var 11).
+    """Priya's door: powering the house is a once-only checkpoint (var 11).
 
     Only the top row of a standing 24px hero covers the door columns, so the
     respawn tile in front of the door also lands on this trigger. The var 11
@@ -463,7 +463,7 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
     return {
         "_resourceType": "trigger",
         "id": rosa.resource_id("trigger:rosa-door"),
-        "name": "Rosa Door Checkpoint",
+        "name": "Priya Door Checkpoint",
         "prefabId": "",
         "x": x,
         "y": y,
@@ -478,9 +478,9 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
 
 
 def hollow_exit_trigger() -> dict[str, Any]:
-    """Right end of Rosa's porch leads on to Kiko's Pine Hollow.
+    """Right end of Priya's porch leads on to Emil's Pine Hollow.
 
-    Gated on Rosa's checkpoint (var 11). The refusal only explains: a nudge
+    Gated on Priya's checkpoint (var 11). The refusal only explains: a nudge
     plus leftover momentum re-entered the summit exit and looped its text
     (exact ROM 147c23be). Lifts the HUD cutoff and hides the overlay first.
     """
@@ -494,7 +494,7 @@ def hollow_exit_trigger() -> dict[str, Any]:
             "sceneId": kiko.SCENE_ID, "fadeSpeed": "2",
         }, "hollow-exit:to-hollow"),
     ]
-    wait = say(short_lines("Power Rosa's\nhouse first."), "hollow-exit:not-yet")
+    wait = say(short_lines("Power Priya's\nhouse first."), "hollow-exit:not-yet")
     return {
         "_resourceType": "trigger",
         "id": rosa.resource_id("trigger:hollow-exit"),
@@ -751,8 +751,8 @@ def main() -> None:
         "gust": shared.sidecar_id(GUST_SPRITE, "sprite"),
     }
     warn_if_missing_asset(rosa.BACKGROUND_ID, "backgrounds", "signal_hill background")
-    warn_if_missing_asset(rosa.ROSA_SPRITE_ID, "sprites", "Rosa sprite")
-    warn_if_missing_asset(rosa.WORKSTATION_SPRITE_ID, "sprites", "Rosa workstation sprite")
+    warn_if_missing_asset(rosa.ROSA_SPRITE_ID, "sprites", "Priya sprite")
+    warn_if_missing_asset(rosa.WORKSTATION_SPRITE_ID, "sprites", "Priya workstation sprite")
     warn_if_missing_asset(rosa.ARC_SPRITE_ID, "sprites", "live arc sprite")
 
     scene = build_scene(music_id, audio_ids["death"])

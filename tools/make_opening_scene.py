@@ -307,7 +307,7 @@ def main() -> None:
             raise ValueError(f"unexpected resource identity in {path}")
     backgrounds, sprites = write_palettes()
     write_variables()
-    marta = actor("marta", "Marta - waiting for light", opening.MARTA, "opening_marta", 0)
+    marta = actor("marta", "Amara - waiting for light", opening.MARTA, "opening_marta", 0)
     marta["startScript"] = [if_value(RESTORED, 0, "marta:entry", [
         actor_state("$self$", "Waiting", "marta:waiting"),
     ], [actor_state("$self$", "Powered", "marta:powered")])]

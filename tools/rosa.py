@@ -1,16 +1,16 @@
-"""Signal Hill - deterministic contract for Rosa's repair job (job 3).
+"""Signal Hill - deterministic contract for Priya's repair job (job 3).
 
-Data only for a 40x18-tile PLATFORM scene reached from Tomás's porch once his
+Data only for a 40x18-tile PLATFORM scene reached from Hiroshi's porch once his
 house is powered. Live cable arcs are the featured hazard (step 3 of the hazard
 ladder in docs/redesign-brief.md): a downed wire between two posts sparks as a
 warning, then arcs (hits) and rests, like a gust lane. One wind gust from
-Tomás's job sits between the two arcs. The Live Wire phase carries the snapped
-cable from a pole on a two-step rock to a junction box on Rosa's porch;
+Hiroshi's job sits between the two arcs. The Live Wire phase carries the snapped
+cable from a pole on a two-step rock to a junction box on Priya's porch;
 powering the line lights her window and switches on her computer and router
 (Blackout Grid: she can work and study online again).
 
 Every generator for this job reads this module: ``make_rosa_art.py`` (art +
-collision-aligned background), ``make_rosa_sprites.py`` (Rosa, her
+collision-aligned background), ``make_rosa_sprites.py`` (Priya, her
 workstation and the live arc) and ``make_rosa_scene.py`` (scene, actors,
 triggers, scripts).
 
@@ -41,7 +41,7 @@ HUD_ROWS = 2
 #
 # The floor is solid from GROUND_ROW down; the 24px hero stands in rows 12-14.
 # A two-step rock (each step one 8-frame tap, three tiles) holds the pole.
-# Rosa's porch repeats the Wind Ridge lesson: props stand on row 11, above
+# Priya's porch repeats the Wind Ridge lesson: props stand on row 11, above
 # every hazard row, so the 10-sprites-per-scanline limit holds.
 # ---------------------------------------------------------------------------
 GROUND_ROW = 15
@@ -51,17 +51,17 @@ SOLID_BLOCKS = [
     (MAP_W - 1, MAP_W - 1, 2, 14),  # right cliff wall behind the house
     (4, 8, 12, 14),                 # lower rock step (top surface row 12)
     (6, 8, 9, 11),                  # upper rock step (top surface row 9); pole stands on it
-    (32, 38, 12, 14),               # Rosa's porch step (top surface row 12)
+    (32, 38, 12, 14),               # Priya's porch step (top surface row 12)
 ]
 PORCH_ROW = 11
 LEDGES: list[tuple[int, int, int]] = []
 
-START = (2, 14)            # entry from Tomás's porch, facing right
+START = (2, 14)            # entry from Hiroshi's porch, facing right
 DAMAGED_POLE = (7, 8)     # cable-end pickup on the upper step (stands on row 9)
 JUNCTION_BOX = (33, 11)    # plug-in point at the top of the porch step
-ROSA = (34, 11)            # Rosa waits outside, left of her door
+ROSA = (34, 11)            # Priya waits outside, left of her door
 WORKSTATION = (37, 11)     # computer + router on the porch table: Off -> On
-HOUSE_DOOR = (36, 11)      # doorway column of Rosa's house (art)
+HOUSE_DOOR = (36, 11)      # doorway column of Priya's house (art)
 HOUSE_RECT = (35, 38, 5, 11)    # (x0, x1, row0, row1)
 # Each window must use exactly one BG slot-3 tile so the slot swap warms it.
 HOUSE_WINDOWS = [(35, 8), (38, 8)]
@@ -107,14 +107,14 @@ CABLE_ROUTE = [(7, 5), (7, 4), (33, 4), (33, 10), (33, 4), (35, 4)]
 # ---------------------------------------------------------------------------
 VAR_CARRYING_CABLE = climb.VAR_CARRYING_CABLE   # "6"
 VAR_LINE_LIVE = "10"
-VAR_HOME_POWERED = "11"    # Rosa checkpoint; moves respawn to the door
+VAR_HOME_POWERED = "11"    # Priya checkpoint; moves respawn to the door
 VARIABLES = [
     (VAR_LINE_LIVE, "Hill Line Live", "var_hill_line_live"),
     (VAR_HOME_POWERED, "Rosa Home Powered", "var_rosa_home_powered"),
 ]
 HUD_TEXT = "LINE %D1$10$/1 HOME %D1$11$/1"
 
-# Entry from Wind Ridge: the right end of Tomás's porch, past his door. Gated
+# Entry from Wind Ridge: the right end of Hiroshi's porch, past his door. Gated
 # on his checkpoint (ridge var 9). The refusal shows text only; it never
 # nudges the hero, because a nudge plus leftover momentum re-enters the
 # trigger and loops (exact ROM 147c23be, summit exit).
@@ -124,7 +124,7 @@ RIDGE_EXIT_GATE_VAR = ridge.VAR_HOME_POWERED   # "9"
 # ---------------------------------------------------------------------------
 # Palettes
 # ---------------------------------------------------------------------------
-# OBJ slots: 0 worker, 1 Rosa, 2 grid sprites (cable end, junction box,
+# OBJ slots: 0 worker, 1 Priya, 2 grid sprites (cable end, junction box,
 # workstation), 3 live arc, 5 gust - matching the climb/ridge layout.
 ROSA_SPRITE_PALETTE_SLOT = 1
 GRID_SPRITE_PALETTE_SLOT = climb.GRID_SPRITE_PALETTE_SLOT
@@ -232,7 +232,7 @@ def _self_check() -> None:
     assert xs[0] == DAMAGED_POLE[0] and JUNCTION_BOX[0] in xs and HOUSE_RECT[0] in xs
     assert all(HUD_ROWS <= y < GROUND_ROW and 0 <= x < MAP_W for x, y in CABLE_ROUTE)
     assert START[0] < DAMAGED_POLE[0] < lanes[0][1] < JUNCTION_BOX[0] < HOUSE_DOOR[0]
-    # Ridge entry: the right end of Tomás's porch, clear of his door trigger.
+    # Ridge entry: the right end of Hiroshi's porch, clear of his door trigger.
     ex, ey, ew, eh = RIDGE_EXIT
     rtx, rty, rtw, _ = ridge.DOOR_TRIGGER
     assert ex >= rtx + rtw and ey + eh - 1 == ridge.PORCH_ROW and ex < ridge.MAP_W - 1
