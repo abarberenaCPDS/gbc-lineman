@@ -5,9 +5,12 @@ from pathlib import Path
 import unittest
 
 import climb
+import tickets
+import hazards
 import intro
 import level
 import make_climb_scene as scene
+import rosa
 import compose_climb
 import opening
 import ridge
@@ -71,15 +74,17 @@ class ClimbTests(unittest.TestCase):
             [(e["args"]["variable"], e["args"]["value"]["value"]) for e in script[3:5]],
             [(climb.VAR_CARRYING_CABLE, 0), (climb.VAR_LINE_LIVE, 0)],
         )
-        self.assertEqual(script[5]["command"], "EVENT_PALETTE_SET_BACKGROUND")
+        self.assertEqual((script[5]["args"]["variable"], script[5]["args"]["value"]["value"]),
+                         (hazards.VAR_ON_BOARD, 0))
         self.assertEqual(script[6]["command"], "EVENT_PALETTE_SET_BACKGROUND")
-        self.assertEqual(script[7]["command"], "EVENT_ACTOR_SET_STATE")
-        self.assertEqual((script[7]["args"]["actorId"], script[7]["args"]["spriteStateId"]),
+        self.assertEqual(script[7]["command"], "EVENT_PALETTE_SET_BACKGROUND")
+        self.assertEqual(script[8]["command"], "EVENT_ACTOR_SET_STATE")
+        self.assertEqual((script[8]["args"]["actorId"], script[8]["args"]["spriteStateId"]),
                          (scene.pole_actor_id(), "Snapped"))
-        self.assertEqual(script[8]["args"]["musicId"], "test-music")
-        self.assertEqual(script[9]["command"], "EVENT_OVERLAY_SET_SCANLINE_CUTOFF")
-        self.assertEqual(script[10]["args"]["text"], ["A: jump\nDown+A: drop"])
-        self.assertEqual([event["command"] for event in script[11:]], [
+        self.assertEqual(script[9]["args"]["musicId"], "test-music")
+        self.assertEqual(script[10]["command"], "EVENT_OVERLAY_SET_SCANLINE_CUTOFF")
+        self.assertEqual(script[11]["args"]["text"], ["A: jump\nDown+A: drop"])
+        self.assertEqual([event["command"] for event in script[12:]], [
             "EVENT_OVERLAY_SET_SCANLINE_CUTOFF", "EVENT_OVERLAY_SHOW", "EVENT_TEXT_DRAW",
         ])
         self.assertFalse(any(
@@ -121,9 +126,13 @@ class ClimbTests(unittest.TestCase):
         # Slot 1 carries Amara and slot 2 the Live Wire grid; the rest keep legacy IDs.
         self.assertEqual(resource["spritePaletteIds"][1], opening.resource_id("palette:sprite:marta"))
         self.assertEqual(resource["spritePaletteIds"][2], climb.grid_resource_id("palette:sprite:grid"))
-        # Slots 3-6 keep the legacy IDs; slot 7 (free in every job) carries the intro pole.
+        # Slot 3 carries the live arc (Signal Hill's palette), slot 4 the cracked boards.
+        self.assertEqual(resource["spritePaletteIds"][3], rosa.resource_id("palette:sprite:arc"))
+        self.assertEqual(resource["spritePaletteIds"][hazards.BOARD_SPRITE_PALETTE_SLOT],
+                         hazards.BOARD_PALETTE_ID)
+        # Slots 5-6 keep the legacy IDs; slot 7 (free in every job) carries the intro pole.
         self.assertEqual(scene.POLE_SPRITE_PALETTE_SLOT, 7)
-        self.assertEqual(resource["spritePaletteIds"][3:7], legacy_sprite_palettes[3:7])
+        self.assertEqual(resource["spritePaletteIds"][5:7], legacy_sprite_palettes[5:7])
         self.assertEqual(resource["spritePaletteIds"][7], intro.palette_id("pole"))
         self.assertEqual(opening.resource_id("palette:sprite:worker"),
                          "030624ef-c88f-5e59-8664-65193264ce80")
@@ -180,7 +189,7 @@ class ClimbTests(unittest.TestCase):
                          scene.sidecar_id("assets/sounds/connect.wav.gbsres", "sound"))
 
         text = next(e for e in true_events if e["command"] == "EVENT_TEXT")
-        self.assertEqual(text["args"]["text"], ["Power's back!\nMy fridge hums."])
+        self.assertEqual(text["args"]["text"], ["Power's back!\nMy fridge hums.", *tickets.closed_lines(1)])
         self.assertEqual(scene.MAX_DIALOGUE_CHARS, 17)
 
     def test_scene_init_sets_summit_window_cold_and_line_dead_on_every_entry(self):
@@ -401,7 +410,7 @@ class ClimbTests(unittest.TestCase):
         script = scene.build_scene("test-music")["script"]
         resets = [(e["args"]["variable"], e["args"]["value"]["value"])
                   for e in script if e["command"] == "EVENT_SET_VALUE"]
-        self.assertEqual(resets, [("0", 0), ("6", 0), ("7", 0)])
+        self.assertEqual(resets, [("0", 0), ("6", 0), ("7", 0), (hazards.VAR_ON_BOARD, 0)])
 
     def test_marta_checkpoint_actor_uses_opening_sprite_on_summit_shelf(self):
         actor = scene.checkpoint_actor(0, opening.resource_id("sprite:opening_marta"))
@@ -437,10 +446,9 @@ class ClimbTests(unittest.TestCase):
         self.assertEqual(marta_slots, {scene.MARTA_SPRITE_PALETTE_SLOT})
         other_slots = set()
         for path in ("assets/sprites/opening_worker24.png.gbsres",
-                     "assets/sprites/climb_debris.png.gbsres",
                      "assets/sprites/climb_gust.png.gbsres"):
             other_slots |= palette_indexes(path)
-        self.assertEqual(other_slots, {0, 4, 5})
+        self.assertEqual(other_slots, {0, 5})
         # The pole sprite's own OBJ slot (intro_pole tiles) must be free here too.
         self.assertEqual(palette_indexes("assets/sprites/intro_pole.png.gbsres"),
                          {scene.POLE_SPRITE_PALETTE_SLOT})
@@ -541,14 +549,6 @@ class ClimbTests(unittest.TestCase):
                          "e8778f37-44a7-5d3a-ad39-49d52fe4c5c7")
         self.assertEqual(scene.checkpoint_actor(0, "s")["id"],
                          "0a208a0e-9313-59b7-be31-3be4c204ab2a")
-        debris_ids = [scene.debris_actor(index, item, "s")["id"]
-                      for index, item in enumerate(climb.HAZARD_DEBRIS, start=1)]
-        self.assertEqual(debris_ids, [
-            "e065f722-1457-5d3d-9e51-7208b614a0df",
-            "894ce2e9-3c76-5793-887a-40e6496dc1e7",
-            "ff2edd10-6c19-5348-b65f-badd72b3f151",
-            "1975435b-c282-5c47-9cbe-9edae2c5e0b5",
-        ])
         self.assertEqual(scene.timed_gust_actor(1, climb.GUST_LANES[0], "s")["id"],
                          "87bc8be0-aafb-5804-af87-3bd9a2efef96")
         self.assertEqual([t["id"] for t in scene.gust_marker_triggers("s")], [
@@ -588,7 +588,8 @@ class ClimbTests(unittest.TestCase):
         sets = {entry["args"]["variable"]: entry["args"]["value"]["value"]
                 for entry in script if entry["command"] == "EVENT_SET_VALUE"}
         self.assertEqual(sets, {scene.VARIABLE_CHECKPOINTS_REACHED: 0,
-                                scene.VAR_CARRYING_CABLE_ID: 0, scene.VAR_LINE_LIVE_ID: 0})
+                                scene.VAR_CARRYING_CABLE_ID: 0, scene.VAR_LINE_LIVE_ID: 0,
+                                hazards.VAR_ON_BOARD: 0})
         written = {entry["args"]["variable"] for s in self._all_scripts()
                    for entry in self._flatten(s) if entry["command"] == "EVENT_SET_VALUE"}
         self.assertNotIn("4", written, "the climb must never clear Service Restored")
@@ -599,11 +600,15 @@ class ClimbTests(unittest.TestCase):
                          ridge.CLIMB_SUMMIT_EXIT)
         [gate] = trigger["script"]
         self.assertEqual(gate["args"]["condition"]["valueA"], {"type": "variable", "value": "0"})
-        cutoff, hide, switch = gate["children"]["true"]
+        cutoff, hide, ticket, switch = gate["children"]["true"]
         self.assertEqual(cutoff["args"]["y"]["value"], 150)
         self.assertEqual(hide["command"], "EVENT_OVERLAY_HIDE")
-        self.assertEqual(switch["args"]["sceneId"], ridge.SCENE_ID)
-        self.assertEqual((switch["args"]["x"]["value"], switch["args"]["y"]["value"]), ridge.START)
+        # Work order 2 first; its card then switches to the next job's start.
+        self.assertEqual((ticket["args"]["variable"], ticket["args"]["value"]["value"]),
+                         (tickets.VAR_TICKET, 2))
+        self.assertEqual(switch["args"]["sceneId"], tickets.WORK_ORDER_SCENE_ID)
+        self.assertEqual(tickets.TICKETS[2]["scene_id"], ridge.SCENE_ID)
+        self.assertEqual(tickets.TICKETS[2]["start"], ridge.START)
         refused = gate["children"]["false"]
         # Step clear of the exit before the modal text so it cannot re-fire:
         # the 24px hero's box spans x+2..x+14 and can drift 2px after a stop.
@@ -644,18 +649,135 @@ class ClimbTests(unittest.TestCase):
                 self.assertEqual(palette_indexes(data, set()), {climb.GRID_SPRITE_PALETTE_SLOT},
                                  path.name)
 
-    def test_debris_has_safe_warning_then_damaging_fall(self):
-        actor = scene.debris_actor(1, climb.HAZARD_DEBRIS[0], "test-sprite")
+    def _hazard_actor(self, symbol):
+        actors = [a for a in scene.hazard_actors(0) if a["symbol"] == symbol]
+        self.assertEqual(len(actors), 1, symbol)
+        return actors[0]
+
+    def test_storm_climb_has_no_falling_debris(self):
+        self.assertFalse(hasattr(scene, "debris_actor"))
+        self.assertFalse(hasattr(climb, "HAZARD_DEBRIS"))
+        self.assertEqual(list((scene.SCENE_DIR / "actors").glob("debris_*.gbsres")), [])
+
+    def test_cracked_boards_sit_on_contract_shelves_with_group_one(self):
+        boards = hazards.BOARDS["storm_climb"]
+        self.assertEqual(len(boards), 3)
+        for number, board in enumerate(boards, start=1):
+            actor = self._hazard_actor(f"board_{number:02d}")
+            self.assertEqual((actor["x"], actor["y"]), hazards.board_actor_position(board))
+            self.assertEqual(actor["spriteSheetId"], hazards.BOARD_SPRITE_ID)
+            self.assertEqual(actor["collisionGroup"], "1")
+            self.assertEqual(actor["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
+            self.assertEqual(actor["startScript"][1]["args"]["spriteStateId"], "Idle")
+            update = actor["updateScript"]
+            ifs = [e for e in update if e["command"] == "EVENT_IF"]
+            self.assertEqual(len(ifs), 1)
+            self.assertEqual(ifs[0]["args"]["condition"]["valueA"],
+                             {"type": "variable", "value": hazards.VAR_ON_BOARD})
+            self.assertEqual(ifs[0]["args"]["condition"]["valueB"]["value"], number)
+            states = [e["args"]["spriteStateId"] for e in self._flatten(update)
+                      if e["command"] == "EVENT_ACTOR_SET_STATE"]
+            self.assertEqual(set(states), {"Creak", "Break", "Idle"})
+            waits = [e["args"]["frames"]["value"] for e in self._flatten(update)
+                     if e["command"] == "EVENT_WAIT"]
+            self.assertIn(hazards.CREAK_FRAMES, waits)
+            self.assertIn(hazards.BREAK_FRAMES, waits)
+            self.assertIn("EVENT_ACTOR_COLLISIONS_ENABLE", [
+                e["command"] for e in self._flatten(update)])
+
+    def test_board_triggers_set_and_clear_variable_fifteen_after_every_exit(self):
+        triggers = {t["symbol"]: t for t in scene.hazard_triggers()}
+        exits = [scene.street_exit_trigger(), scene.summit_exit_trigger(),
+                 self._checkpoint_trigger()]
+        for number, board in enumerate(hazards.BOARDS["storm_climb"], start=1):
+            trigger = triggers[f"trigger_cracked_board_{number:02d}"]
+            x, y, w, h = hazards.board_trigger_rect(board)
+            self.assertEqual((trigger["x"], trigger["y"], trigger["width"], trigger["height"]),
+                             (x, y, w, h))
+            [on] = trigger["script"]
+            self.assertEqual(on["args"]["variable"], hazards.VAR_ON_BOARD)
+            self.assertEqual(on["args"]["value"]["value"], number)
+            [off] = trigger["leaveScript"]
+            self.assertEqual((off["args"]["variable"], off["args"]["value"]["value"]),
+                             (hazards.VAR_ON_BOARD, 0))
+            for exit_trigger in exits:
+                self.assertGreater(trigger["_index"], exit_trigger["_index"])
+
+    def test_board_triggers_do_not_overlap_any_earlier_trigger(self):
+        def rect(t):
+            return (t["x"], t["y"], t["x"] + t["width"], t["y"] + t["height"])
+
+        def overlaps(a, b):
+            return a[0] < b[2] and b[0] < a[2] and a[1] < b[3] and b[1] < a[3]
+
+        triggers = scene.gust_marker_triggers("s") + [
+            scene.build_checkpoint_trigger("s", "c"), scene.street_exit_trigger(),
+            scene.summit_exit_trigger()]
+        for board_trigger in scene.hazard_triggers():
+            for other in triggers:
+                self.assertFalse(overlaps(rect(board_trigger), rect(other)),
+                                 f"{board_trigger['symbol']} overlaps {other['symbol']}")
+
+    def test_hidden_cable_is_hidden_group_one_and_uses_live_arc(self):
+        actor = self._hazard_actor("hidden_cable_01")
+        row, x0, _ = hazards.HIDDEN_CABLES["storm_climb"][0]
+        self.assertEqual((actor["x"], actor["y"]), (x0, row))
+        self.assertEqual(actor["spriteSheetId"], rosa.ARC_SPRITE_ID)
         self.assertEqual(actor["collisionGroup"], "1")
-        commands = [e["command"] for e in actor["updateScript"]]
-        self.assertEqual(commands[0], "EVENT_ACTOR_COLLISIONS_DISABLE")
-        warning = next(e for e in actor["updateScript"] if e["command"] == "EVENT_WAIT")
-        self.assertEqual(warning["args"]["frames"]["value"], climb.DEBRIS_WARNING_FRAMES)
-        self.assertGreater(commands.index("EVENT_ACTOR_COLLISIONS_ENABLE"), commands.index("EVENT_WAIT"))
-        self.assertEqual(commands[-3:], ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_HIDE", "EVENT_WAIT"])
-        positions = [e["args"]["y"]["value"] for e in actor["updateScript"]
-                     if e["command"] == "EVENT_ACTOR_SET_POSITION"]
-        self.assertEqual(positions[-1], climb.HAZARD_DEBRIS[0]["row_bottom"] * 8)
+        self.assertEqual([e["command"] for e in actor["startScript"]],
+                         ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_HIDE"])
+        update = actor["updateScript"]
+        self.assertEqual(update[0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
+        self.assertEqual(update[1]["command"], "EVENT_ACTOR_HIDE")
+        first = next(e for e in update if e["command"] == "EVENT_IF_ACTOR_DIRECTION")
+        delay = [e["args"]["frames"]["value"] for e in first["children"]["true"]
+                 if e["command"] == "EVENT_WAIT"]
+        self.assertEqual(delay, [hazards.CABLE_START_DELAYS["storm_climb"][0]])
+        states = [e["args"]["spriteStateId"] for e in self._flatten(update)
+                  if e["command"] == "EVENT_ACTOR_SET_STATE"]
+        self.assertEqual(states, ["Warning", "Arc"])
+
+    def test_hazard_actors_come_last_and_pole_stays_below_cable_end(self):
+        pole = scene.pole_actor(2, "sprite")
+        cable = scene.cable_end_actor(3, "sprite", "pickup")
+        self.assertLess(pole["_index"], cable["_index"])
+        self.assertTrue(all(a["_index"] > cable["_index"] for a in scene.hazard_actors(9)))
+
+    def test_hidden_cable_lane_is_open_air_on_a_shelf(self):
+        grid = climb.collision_grid()
+        for row, x0, x1 in hazards.HIDDEN_CABLES["storm_climb"]:
+            for x in range(x0, x1 + 1):
+                self.assertEqual(grid[row][x], climb.COL_EMPTY)
+                self.assertEqual(grid[row + 1][x], climb.COL_EMPTY)
+                self.assertNotEqual(grid[row + 2][x], climb.COL_EMPTY,
+                                    "chest row sits two rows above the surface")
+
+    def test_hidden_cable_leaves_a_two_tile_ascent_in_every_gap(self):
+        cells = climb._hazard_cells()
+        for row, x0, x1 in hazards.HIDDEN_CABLES["storm_climb"]:
+            cells.update((row, x) for x in range(x0, x1 + 1))
+        for lower, upper in zip(climb.PLATFORMS, climb.PLATFORMS[1:]):
+            lower_row, lx0, lx1 = lower
+            upper_row, ux0, ux1 = upper
+            clear = any(
+                all((row, col) not in cells
+                    for row in range(upper_row + 1, lower_row)
+                    for col in (x, x + 1))
+                for x in range(max(lx0, ux0), min(lx1, ux1))
+            )
+            self.assertTrue(clear, f"no two-tile ascent for {lower_row}->{upper_row}")
+
+    def test_hazard_palettes_and_variable_registration(self):
+        [(path, palette)] = scene.hazard_palettes()
+        self.assertEqual(palette["id"], hazards.BOARD_PALETTE_ID)
+        self.assertEqual(palette["colors"][0], hazards.BOARD_SPRITE_HARDWARE[1])
+        registered = scene.merged_variables({"variables": []})["variables"]
+        self.assertIn({"id": hazards.VAR_ON_BOARD, "name": "On Cracked Board",
+                       "symbol": "var_on_cracked_board"}, registered)
+        renamed = {"variables": [{"id": hazards.VAR_ON_BOARD, "name": "Other",
+                                  "symbol": "var_other"}]}
+        with self.assertRaises(ValueError):
+            scene.merged_variables(renamed)
 
     def test_first_timed_gust_has_safe_warning_and_actor_owned_collision(self):
         lane = climb.GUST_LANES[0]

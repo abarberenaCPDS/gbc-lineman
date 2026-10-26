@@ -42,9 +42,10 @@ try:
     import opening  # noqa: E402  (shared approved palette/sprite identities)
     import voices  # noqa: E402  (speaker names and text blips)
     import rosa  # noqa: E402  (Priya's job contract: geometry, IDs, timings)
+    import tickets  # noqa: E402  (work orders: exit to ticket 4, CLOSED box)
     import kiko  # noqa: E402  (Emil's job contract: the porch exit leads there)
 except ModuleNotFoundError as error:
-    if error.name in {"intro", "voices", "climb", "opening", "rosa", "kiko", "make_climb_scene"}:
+    if error.name in {"intro", "tickets", "voices", "climb", "opening", "rosa", "kiko", "make_climb_scene"}:
         raise SystemExit(
             f"cannot generate signal_hill: tools/{error.name}.py is missing"
         ) from error
@@ -460,6 +461,7 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
             actor_state(actor_id(ROSA_KEY), "Relieved", "door:rosa-relieved"),
             actor_state(actor_id(WORKSTATION_KEY), "On", "door:workstation-on"),
             *say(short_lines("Router's on!\nI'm online again."), "door:text", "rosa"),
+            *say(tickets.closed_lines(3), "door:closed"),
         ]),
     ], [
         *say(short_lines("Still no power.\nFix the line!"), "door:no-power"),
@@ -489,14 +491,11 @@ def hollow_exit_trigger() -> dict[str, Any]:
     (exact ROM 147c23be). Lifts the HUD cutoff and hides the overlay first.
     """
     x, y, width, height = kiko.HILL_EXIT
-    start_x, start_y = kiko.START
     go = [
         cutoff_event(150, "hollow-exit:cutoff"),
         event("EVENT_OVERLAY_HIDE", {}, "hollow-exit:hud-hide"),
-        event("EVENT_SWITCH_SCENE", {
-            "x": shared.number(start_x), "y": shared.number(start_y), "direction": "right",
-            "sceneId": kiko.SCENE_ID, "fadeSpeed": "2",
-        }, "hollow-exit:to-hollow"),
+        # Emil's work order first; its card switches on to Pine Hollow's start.
+        *tickets.to_work_order(4, "hollow-exit", event, set_value, shared.number),
     ]
     wait = say(short_lines("Power Priya's\nhouse first."), "hollow-exit:not-yet")
     return {

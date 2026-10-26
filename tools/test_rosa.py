@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 import climb
+import tickets
 import intro
 import make_climb_scene as shared
 import make_rosa_scene as scene
@@ -232,7 +233,7 @@ class RosaTests(unittest.TestCase):
                     self.assertTrue(redraws, "HUD must be redrawn after text")
                     self.assertEqual(redraws[0]["args"]["text"], rosa.HUD_TEXT)
         # Authored in-play texts: two init boxes, Priya x3, cable pickup, junction x3, door x2.
-        self.assertEqual(checked, 12)
+        self.assertEqual(checked, 13)  # + CLOSED box
 
     def test_hud_uses_exact_two_digit_variable_tokens(self):
         self.assertEqual(rosa.HUD_TEXT, "LINE %D1$10$/1 HOME %D1$11$/1")
@@ -258,7 +259,7 @@ class RosaTests(unittest.TestCase):
                         self.assertNotIn("’", part, "use ASCII apostrophes in dialogue")
                         checked += 1
         # One part per line; two-line boxes count each part.
-        self.assertEqual(checked, 26)  # +4 "Priya:" name lines
+        self.assertEqual(checked, 28)  # +4 "Priya:" name lines, +2 CLOSED
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
@@ -306,7 +307,7 @@ class RosaTests(unittest.TestCase):
         self.assertEqual(states, {(scene.actor_id(scene.ROSA_KEY), "Relieved"),
                                   (scene.actor_id(scene.WORKSTATION_KEY), "On")})
         self.assertEqual([e["args"]["text"] for e in reward if e["command"] == "EVENT_TEXT"],
-                         [["Priya:\nRouter's on!\nI'm online again."]])
+                         [["Priya:\nRouter's on!\nI'm online again."], tickets.closed_lines(3)])
         dead = line["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
                          [["Still no power.\nFix the line!"]])
@@ -568,11 +569,15 @@ class RosaTests(unittest.TestCase):
                          kiko.HILL_EXIT)
         [gate] = trigger["script"]
         self.assertEqual(gate["args"]["condition"]["valueA"], {"type": "variable", "value": "11"})
-        cutoff, hide, switch = gate["children"]["true"]
+        cutoff, hide, ticket, switch = gate["children"]["true"]
         self.assertEqual(cutoff["args"]["y"]["value"], 150)
         self.assertEqual(hide["command"], "EVENT_OVERLAY_HIDE")
-        self.assertEqual(switch["args"]["sceneId"], kiko.SCENE_ID)
-        self.assertEqual((switch["args"]["x"]["value"], switch["args"]["y"]["value"]), kiko.START)
+        # Work order 4 first; its card then switches to the next job's start.
+        self.assertEqual((ticket["args"]["variable"], ticket["args"]["value"]["value"]),
+                         (tickets.VAR_TICKET, 4))
+        self.assertEqual(switch["args"]["sceneId"], tickets.WORK_ORDER_SCENE_ID)
+        self.assertEqual(tickets.TICKETS[4]["scene_id"], kiko.SCENE_ID)
+        self.assertEqual(tickets.TICKETS[4]["start"], kiko.START)
         refused = gate["children"]["false"]
         self.assertNotIn("EVENT_ACTOR_SET_POSITION", [e["command"] for e in walk(refused)])
         tx, _, tw, _ = rosa.DOOR_TRIGGER

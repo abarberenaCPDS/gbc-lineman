@@ -65,10 +65,6 @@ ARC_POST_TILES = [(tx, ty) for tx, top in ARC_POST_TOPS for ty in (top, top + 1)
 # Lane cells, arc and gust alike: no art may sit on them.
 LANE_CELLS = {(row, x) for row, x0, x1 in kiko.hazard_lanes()
               for x in range(x0, x1 + 1)}
-# Debris fall column: open air above the mesa, so the falling rock reads clearly.
-DEBRIS_CELLS = {(row, debris["x"])
-                for debris in kiko.HAZARD_DEBRIS
-                for row in range(debris["row_top"], debris["row_bottom"] + 1)}
 
 
 @functools.lru_cache(maxsize=None)
@@ -114,8 +110,7 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     for x, top, w, bottom in PINES:
         for ty in range(top // TILE, (bottom - 1) // TILE + 1):
             for tx in range(x // TILE, (x + w - 1) // TILE + 1):
-                if (grid[ty][tx] == climb.COL_EMPTY and (ty, tx) not in LANE_CELLS
-                        and (ty, tx) not in DEBRIS_CELLS):
+                if grid[ty][tx] == climb.COL_EMPTY and (ty, tx) not in LANE_CELLS:
                     slots[ty][tx] = SKY
 
     # The house: timber body over the floor, two lit windows, one door.
@@ -249,16 +244,6 @@ def _draw_rock(c: _Canvas, grid: list[list[int]]) -> None:
                 c.point(slot, (x + 6, y + 6), ramp[3])
 
 
-def _draw_scars(c: _Canvas) -> None:
-    """A short crack in the mesa top under each debris column (stone only)."""
-    ramp = PALETTES[STONE]
-    for debris in kiko.HAZARD_DEBRIS:
-        x = debris["x"] * TILE
-        y = (debris["row_bottom"] + 1) * TILE
-        c.line(STONE, [(x + 2, y + 2), (x + 4, y + 4), (x + 3, y + 7)], ramp[0])
-        c.point(STONE, (x + 5, y + 6), ramp[0])
-
-
 def _draw_cabin(c: _Canvas) -> None:
     p = PALETTES[TIMBER]
     x0, x1, y0, y1 = kiko.HOUSE_RECT
@@ -344,7 +329,6 @@ def make_background() -> tuple[Image.Image, list[list[int]]]:
     _draw_sky(canvas)
     _draw_pines(canvas)
     _draw_rock(canvas, grid)
-    _draw_scars(canvas)
     _draw_cabin(canvas)
     _draw_windows(canvas)
     _draw_arc_posts(canvas)

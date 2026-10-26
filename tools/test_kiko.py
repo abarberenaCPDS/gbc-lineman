@@ -5,6 +5,8 @@ import unittest
 from pathlib import Path
 
 import climb
+import tickets
+import hazards
 import intro
 import make_climb_scene as shared
 import make_kiko_scene as scene
@@ -16,7 +18,7 @@ import kiko
 # keep the structural tests independent of which art sidecars exist yet.
 FAKE_MUSIC = "test-music"
 FAKE_AUDIO = {"death": "death-sound", "connect": "connect-sound", "pickup": "pickup-sound"}
-FAKE_SPRITES = {"hazard": "hazard-sprite", "gust": "gust-sprite"}
+FAKE_SPRITES = {"gust": "gust-sprite"}
 PROJECT_DIR = scene.PROJECT_DIR
 
 
@@ -119,17 +121,14 @@ def gust_sprites():
     return [((x0, row), 3, 2) for row, x0, _ in kiko.GUST_LANES]
 
 
-def debris_sprites(y):
-    """Debris is 16px: two OBJ columns. Counted one tile taller than its feet row, as a margin."""
-    return [((debris["x"], y + 1), 2, 3) for debris in kiko.HAZARD_DEBRIS]
+def hidden_cable_sprites():
+    """The hidden cable is the live arc sprite: two OBJ columns, visible while it arcs."""
+    return [((x0, row), 2, 2) for row, x0, _ in hazards.HIDDEN_CABLES["pine_hollow"]]
 
 
 def hazard_sprites():
-    """Every arc, gust and the debris column at its lowest, all visible at once."""
-    sprites = arc_sprites() + gust_sprites()
-    for debris in kiko.HAZARD_DEBRIS:
-        sprites += debris_sprites(debris["row_bottom"])
-    return sprites
+    """Every arc, gust and hidden cable, all visible at once."""
+    return arc_sprites() + gust_sprites() + hidden_cable_sprites()
 
 
 class KikoTests(unittest.TestCase):
@@ -208,7 +207,7 @@ class KikoTests(unittest.TestCase):
         grown = scene.merged_variables(synthetic)
         self.assertEqual(grown["variables"][:12], synthetic["variables"])
         self.assertEqual([v["id"] for v in grown["variables"]],
-                         [str(i) for i in range(12)] + ["12", "13"])
+                         [str(i) for i in range(12)] + ["12", "13", hazards.VAR_ON_BOARD])
         with self.assertRaises(ValueError):
             scene.merged_variables({"variables": [{"id": "12", "name": "Other", "symbol": "x"}]})
 
@@ -252,7 +251,7 @@ class KikoTests(unittest.TestCase):
                     self.assertTrue(redraws, "HUD must be redrawn after text")
                     self.assertEqual(redraws[0]["args"]["text"], kiko.HUD_TEXT)
         # Authored in-play texts: two intro boxes, Emil x3, cable pickup, junction x3, door x2.
-        self.assertEqual(checked, 11)
+        self.assertEqual(checked, 13)  # + CLOSED box, + report-exit refusal
 
     def test_hud_uses_exact_two_digit_variable_tokens(self):
         self.assertEqual(kiko.HUD_TEXT, "LINE %D1$12$/1 HOME %D1$13$/1")
@@ -278,7 +277,7 @@ class KikoTests(unittest.TestCase):
                         self.assertNotIn("’", part, "use ASCII apostrophes in dialogue")
                         checked += 1
         # One part per line; two-line boxes count each part.
-        self.assertEqual(checked, 24)  # +4 "Emil:" name lines
+        self.assertEqual(checked, 28)  # +4 "Emil:" name lines, +2 CLOSED, +2 refusal
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
@@ -327,7 +326,7 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(states, {(scene.actor_id(scene.KIKO_KEY), "Relieved"),
                                   (scene.actor_id(scene.STOVE_KEY), "On")})
         self.assertEqual([e["args"]["text"] for e in reward if e["command"] == "EVENT_TEXT"],
-                         [["Emil:\nStove's on!\nSoup is cooking!"]])
+                         [["Emil:\nStove's on!\nSoup is cooking!"], tickets.closed_lines(4)])
         dead = line["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
                          [["Still no power.\nFix the line!"]])
@@ -386,41 +385,35 @@ class KikoTests(unittest.TestCase):
                                  ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_HIDE"])
         hazard_indices = [a["_index"] for a in built_actors()
                           if a["symbol"].startswith(("pine_arc_", "pine_gust_"))]
-        self.assertEqual(hazard_indices, [6, 7])  # after the storm pole
+        self.assertEqual(hazard_indices, [5, 6])  # after the storm pole and cable end
 
-    def test_debris_collision_is_only_active_while_falling(self):
-        debris = actor_by_symbol("pine_debris_01")
-        self.assertEqual(debris["collisionGroup"], "1")
-        self.assertEqual((debris["x"], debris["y"]),
-                         (kiko.HAZARD_DEBRIS[0]["x"], kiko.HAZARD_DEBRIS[0]["row_top"]))
-        self.assertEqual(debris["spriteSheetId"], FAKE_SPRITES["hazard"])
-        self.assertEqual(debris["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
-        update = debris["updateScript"]
-        self.assertTrue(all(e["command"] != "EVENT_IF" for e in update), "debris has no branches")
-        collide = [i for i, e in enumerate(update)
-                   if e["command"] in ("EVENT_ACTOR_COLLISIONS_ENABLE", "EVENT_ACTOR_COLLISIONS_DISABLE")]
-        enables = [i for i in collide if update[i]["command"] == "EVENT_ACTOR_COLLISIONS_ENABLE"]
-        self.assertEqual(len(enables), 1, "one hitbox window per fall")
-        enable = enables[0]
-        rest_disable = next(i for i in collide if i > enable)
-        self.assertEqual(update[rest_disable]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
-        self.assertEqual(update[collide[0]]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE",
-                         "warning is safe")
-        self.assertTrue(all(e["command"] in ("EVENT_ACTOR_SET_POSITION", "EVENT_WAIT")
-                            for e in update[enable + 1:rest_disable]),
-                        "only falling steps sit inside the hitbox window")
-        states = [e["args"]["spriteStateId"] for e in update if e["command"] == "EVENT_ACTOR_SET_STATE"]
-        self.assertEqual(states, ["Warning", "Rock"])
-        self.assertLess(next(i for i, e in enumerate(update) if e["command"] == "EVENT_ACTOR_SET_STATE"
-                             and e["args"]["spriteStateId"] == "Rock"), enable)
-        fall = [e["args"]["y"]["value"] for e in update[enable + 1:rest_disable]
-                if e["command"] == "EVENT_ACTOR_SET_POSITION"]
-        top, bottom = kiko.HAZARD_DEBRIS[0]["row_top"] * 8, kiko.HAZARD_DEBRIS[0]["row_bottom"] * 8
-        self.assertEqual(fall, list(range(top, bottom + 1, kiko.DEBRIS_STEP_PIXELS)))
-        waits = [e["args"]["frames"]["value"] for e in update if e["command"] == "EVENT_WAIT"]
-        self.assertEqual(waits[0], kiko.DEBRIS_WARNING_FRAMES)
-        self.assertEqual(waits[-1], kiko.DEBRIS_REST_FRAMES + 1 * 13)
-        self.assertEqual(update[rest_disable + 1]["command"], "EVENT_ACTOR_HIDE")
+    def test_hidden_cable_lane_is_open_air_on_the_mesa(self):
+        grid = kiko.collision_grid()
+        for row, x0, x1 in hazards.HIDDEN_CABLES["pine_hollow"]:
+            for x in range(x0, x1 + 1):
+                self.assertEqual(grid[row][x], climb.COL_EMPTY)
+                self.assertEqual(grid[row + 1][x], climb.COL_EMPTY)
+                self.assertEqual(grid[row + 2][x], climb.COL_SOLID, "mesa rock under the lane")
+
+    def test_hidden_cable_is_hidden_and_group_one_until_it_arcs(self):
+        cable = actor_by_symbol("pine_hidden_cable_01")
+        row, x0, _ = hazards.HIDDEN_CABLES["pine_hollow"][0]
+        self.assertEqual((cable["x"], cable["y"]), (x0, row))
+        self.assertEqual(cable["collisionGroup"], "1")
+        self.assertEqual(cable["spriteSheetId"], kiko.ARC_SPRITE_ID)
+        self.assertEqual([e["command"] for e in cable["startScript"]],
+                         ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_HIDE"])
+        update = cable["updateScript"]
+        commands = [e["command"] for e in update]
+        self.assertEqual(commands[:2], ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_HIDE"])
+        enables = [i for i, c in enumerate(commands) if c == "EVENT_ACTOR_COLLISIONS_ENABLE"]
+        self.assertEqual(len(enables), 1, "one hitbox window per arc")
+        self.assertLess(commands.index("EVENT_ACTOR_SHOW"), enables[0])
+        self.assertEqual([e["args"]["spriteStateId"] for e in update
+                          if e["command"] == "EVENT_ACTOR_SET_STATE"], ["Warning", "Arc"])
+        first = next(e for e in update if e["command"] == "EVENT_IF_ACTOR_DIRECTION")
+        self.assertEqual([e["args"]["frames"]["value"] for e in first["children"]["true"]
+                          if e["command"] == "EVENT_WAIT"], [hazards.CABLE_START_DELAYS["pine_hollow"][0]])
 
     def test_house_view_stays_within_ten_sprites_per_scanline(self):
         # Count OBJ columns per tile row with the hero standing anywhere on the
@@ -437,20 +430,18 @@ class KikoTests(unittest.TestCase):
             self.assertLessEqual(max(load.values()), 10, (x, load))
 
     def test_mesa_view_stays_within_ten_sprites_per_scanline(self):
-        # The mesa carries the hero, the falling debris, the gust and the cable end.
+        # The mesa carries the hero, the gust, the hidden cable and the cable end.
         grid = kiko.collision_grid()
         mesa = [x for x in range(kiko.MESA[0], kiko.MESA[1] + 1)
                 if stands(grid, x, kiko.MESA_ROW)]
         self.assertTrue(mesa)
-        debris = kiko.HAZARD_DEBRIS[0]
         for x in mesa:
-            for y in range(debris["row_top"], debris["row_bottom"] + 1):
-                sprites = [((x, kiko.MESA_ROW), 3, 3)]
-                sprites += [(kiko.DAMAGED_POLE, 2, 2)]
-                sprites += debris_sprites(y)
-                sprites += gust_sprites()
-                load = sprite_load(sprites)
-                self.assertLessEqual(max(load.values()), 10, (x, y, load))
+            sprites = [((x, kiko.MESA_ROW), 3, 3)]
+            sprites += [(kiko.DAMAGED_POLE, 2, 2)]
+            sprites += gust_sprites()
+            sprites += hidden_cable_sprites()
+            load = sprite_load(sprites)
+            self.assertLessEqual(max(load.values()), 10, (x, load))
 
     def test_floor_view_stays_within_ten_sprites_per_scanline(self):
         # Every floor tile the hero can stand on, with the live arc visible.
@@ -489,12 +480,23 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(sprites[intro.SPRITE_SLOTS["pole"]], intro.palette_id("pole"))
         self.assertNotEqual(intro.SPRITE_SLOTS["pole"], kiko.ARC_SPRITE_PALETTE_SLOT)
 
+    def test_report_exit_follows_emils_house_and_wins_over_the_door(self):
+        triggers = scene.build_triggers({"connect": "sfx"})
+        exit_, door = triggers
+        self.assertEqual(exit_["symbol"], "trigger_pine_report_exit")
+        self.assertLess(exit_["_index"], door["_index"], "first matching trigger wins (B-05)")
+        self.assertEqual((exit_["x"], exit_["y"], exit_["width"], exit_["height"]), tickets.REPORT_EXIT)
+        [gate] = exit_["script"]
+        self.assertTrue(is_var_if(gate, kiko.VAR_HOME_POWERED, 1))
+        switch = gate["children"]["true"][-1]
+        self.assertEqual(switch["args"]["sceneId"], tickets.REPORT_SCENE_ID)
+
     def test_actor_roster(self):
         actors = built_actors()
         symbols = [a["symbol"] for a in actors]
         self.assertEqual(symbols, [
             scene.KIKO_SYMBOL, scene.STOVE_SYMBOL, scene.POLE_SYMBOL, scene.CABLE_SYMBOL,
-            scene.JUNCTION_SYMBOL, "pine_debris_01", "pine_arc_01", "pine_gust_01",
+            scene.JUNCTION_SYMBOL, "pine_arc_01", "pine_gust_01", "pine_hidden_cable_01",
         ])
         self.assertEqual([a["_index"] for a in actors], list(range(len(actors))))
         self.assertEqual(len(set(a["id"] for a in actors)), len(actors))
@@ -517,8 +519,7 @@ class KikoTests(unittest.TestCase):
         self.assertEqual((junction["x"], junction["y"]), kiko.JUNCTION_BOX)
         self.assertEqual(junction["spriteSheetId"], climb.grid_resource_id("sprite:grid_junction_box"))
         self.assertEqual(junction["startScript"][0]["args"]["spriteStateId"], "Dead")
-        debris = actor_by_symbol("pine_debris_01")
-        self.assertEqual(debris["spriteSheetId"], FAKE_SPRITES["hazard"])
+        self.assertFalse([a for a in actors if "debris" in a["symbol"]])
         arc = actor_by_symbol("pine_arc_01")
         self.assertEqual(arc["spriteSheetId"], kiko.ARC_SPRITE_ID)
         self.assertEqual(arc["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
@@ -583,7 +584,6 @@ class KikoTests(unittest.TestCase):
             "pickup": shared.sidecar_id(scene.PICKUP_SOUND, "sound"),
         }
         sprites = {
-            "hazard": shared.sidecar_id(scene.DEBRIS_SPRITE, "sprite"),
             "gust": shared.sidecar_id(scene.GUST_SPRITE, "sprite"),
         }
         expected = scene.build_scene(music, audio["death"])
@@ -610,11 +610,10 @@ class KikoTests(unittest.TestCase):
                          climb.grid_resource_id("palette:sprite:grid"))
         self.assertEqual(sprites[kiko.ARC_SPRITE_PALETTE_SLOT], rosa.resource_id("palette:sprite:arc"))
         self.assertEqual(sprites[4:], template["spritePaletteIds"][4:],
-                         "debris (slot 4) and gust (slot 5) keep the climb palettes")
+                         "unused slot 4 and the gust (slot 5) keep the climb palettes")
         self.assertEqual(kiko.KIKO_SPRITE_PALETTE_SLOT, 1)
         self.assertEqual(kiko.GRID_SPRITE_PALETTE_SLOT, 2)
         self.assertEqual(kiko.ARC_SPRITE_PALETTE_SLOT, 3)
-        self.assertEqual(kiko.DEBRIS_SPRITE_PALETTE_SLOT, 4)
         self.assertEqual(kiko.GUST_SPRITE_PALETTE_SLOT, 5)
         backgrounds = resource["paletteIds"]
         self.assertEqual(len(backgrounds), 8)
@@ -634,9 +633,9 @@ class KikoTests(unittest.TestCase):
                          "arc palette is Signal Hill's resource, not a duplicate")
 
     def test_shared_sidecars_exist(self):
-        """Sounds, music, debris/gust sprites and Signal Hill's arc are already on disk."""
+        """Sounds, music, the gust sprite and Signal Hill's arc are already on disk."""
         for path in (scene.DEATH_SOUND, scene.CONNECT_SOUND, scene.PICKUP_SOUND,
-                     scene.MUSIC_SIDECAR, scene.GUST_SPRITE, scene.DEBRIS_SPRITE):
+                     scene.MUSIC_SIDECAR, scene.GUST_SPRITE):
             self.assertTrue((PROJECT_DIR / path).exists(), path)
         arc_palette = shared.load_json(PROJECT_DIR / "project" / "palettes" / "signal_hill_sprite_arc.gbsres")
         self.assertEqual(arc_palette["id"], scene.arc_palette_id())

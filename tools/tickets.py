@@ -117,6 +117,22 @@ REPORT_EXIT_GATE_VAR = kiko.VAR_HOME_POWERED
 TITLE_SCENE_ID = intro.TITLE_SCENE_ID
 
 
+def to_work_order(ticket: int, key: str, event, set_value, number) -> list[dict]:
+    """Events that open ticket ``ticket``: set VAR_TICKET, switch to the card scene.
+
+    ``event(command, args, key)``, ``set_value(variable, value, key)`` and
+    ``number(value)`` are the calling generator's own builders.
+    """
+    x, y = HERO_POSITION
+    return [
+        set_value(VAR_TICKET, ticket, f"{key}:ticket"),
+        event("EVENT_SWITCH_SCENE", {
+            "x": number(x), "y": number(y), "direction": "down",
+            "sceneId": WORK_ORDER_SCENE_ID, "fadeSpeed": "2",
+        }, f"{key}:to-work-order"),
+    ]
+
+
 def check() -> None:
     for number, ticket in TICKETS.items():
         assert ticket["scene_id"], f"ticket {number} has no destination scene"

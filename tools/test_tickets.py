@@ -35,7 +35,17 @@ def text_pages(events):
 
 
 def branch_for(script, number):
-    """The true branch of the work_order `variable 16 == number` EVENT_IF."""
+    """The true branch of the work_order `variable 16 == number` EVENT_IF.
+
+    Ticket 1 has no IF of its own: it is the innermost else (the fallback).
+    """
+    if number == 1:
+        node = next(e for e in script if e["command"] == "EVENT_IF")
+        while True:
+            inner = [e for e in node["children"]["false"] if e["command"] == "EVENT_IF"]
+            if not inner:
+                return node["children"]["false"]
+            node = inner[0]
     for entry in walk(script):
         if entry["command"] != "EVENT_IF":
             continue
@@ -139,7 +149,7 @@ class WorkOrderTests(unittest.TestCase):
         destinations = {n: t["scene_id"] for n, t in tickets.TICKETS.items()}
         self.assertEqual(len(set(destinations.values())), 4)
 
-    def test_fallback_goes_to_ticket_one_destination(self):
+    def test_fallback_is_ticket_one_with_its_card(self):
         top = [entry for entry in self.script if entry["command"] == "EVENT_IF"]
         self.assertEqual(len(top), 1)
         node = top[0]
@@ -152,7 +162,9 @@ class WorkOrderTests(unittest.TestCase):
         switches = commands(false, "EVENT_SWITCH_SCENE")
         self.assertEqual(len(switches), 1)
         self.assertEqual(switches[0]["args"]["sceneId"], tickets.TICKETS[1]["scene_id"])
-        self.assertEqual(commands(false, "EVENT_TEXT"), [])
+        # Ticket 1 and any unset value share the fallback: Amara's card.
+        self.assertEqual([e["args"]["text"] for e in commands(false, "EVENT_TEXT")],
+                         [tickets.TICKETS[1]["pages"]])
 
     def test_variable_branches_only_test_ticket_variable(self):
         for entry in walk(self.script):

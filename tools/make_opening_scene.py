@@ -12,8 +12,9 @@ from typing import Any
 
 import climb
 import opening
+import tickets
 import voices
-from make_climb_scene import collision_rle, resource_id as climb_resource_id
+from make_climb_scene import collision_rle
 
 ROOT = Path(__file__).resolve().parent.parent
 SCENE_DIR = ROOT / "project/scenes/service_opening"
@@ -249,15 +250,10 @@ def hero_speed(size: int) -> int:
 
 
 def exit_trigger() -> dict:
-    """Awning exit: enters Storm Climb only after the repair set Service Restored."""
+    """Awning exit: opens Amara's work order (then Storm Climb) once Service Restored is set."""
     x, y, w, h = opening.EXIT
-    gate = if_value(RESTORED, 1, "exit:gate", [
-        event("EVENT_SWITCH_SCENE", {
-            "x": number(climb.START[0]), "y": number(climb.START[1]),
-            "direction": "right", "sceneId": climb_resource_id("scene:storm-climb"),
-            "fadeSpeed": "2",
-        }, "exit:to-climb"),
-    ], [
+    # Amara's work order first; its card switches on to the climb's start.
+    gate = if_value(RESTORED, 1, "exit:gate", tickets.to_work_order(1, "exit", event, set_value, number), [
         dialogue("Gate's locked.\nFix the panel.", "exit:unpowered"),
         event("EVENT_ACTOR_SET_POSITION", {
             "actorId": "player", "units": "tiles",

@@ -1,8 +1,9 @@
 """Storm Climb - deterministic geometry source for the vertical-climb slice.
 
-This is data only for a 20x36-tile PLATFORM scene.  The existing storm-night
+this is data only for a 20x36-tile PLATFORM scene.  The existing storm-night
 background supplies the mountain art; these values describe walkable ledges,
-rock collision, timed debris columns, and wind-gust respawn lanes.
+rock collision, timed wind-gust respawn lanes, and the grid-repair props.
+Cracked boards and hidden cables are placed by ``hazards.py``.
 
 Units are 8x8-pixel tiles.  Collision bytes follow GB Studio's PLATFORM
 semantics: solid=15 (0x0F), top/one-way=1 (0x01), and empty=0 (0x00).
@@ -29,10 +30,10 @@ COL_SOLID = 0x0F
 # ---------------------------------------------------------------------------
 PLATFORMS = [
     (33, 0, 7),
-    (30, 3, 16),  # room to steer around the lower debris before the next jump
+    (30, 3, 16),
     (27, 9, 18),
-    (24, 5, 15),  # two-tile supported landing right of the row-25 hazard
-    (21, 1, 10), # preserve a two-tile corridor clear of the next falling rock
+    (24, 5, 15),
+    (21, 1, 10),
     (18, 6, 15),
     (15, 11, 19),
     (12, 7, 15),
@@ -62,9 +63,6 @@ SOLID_BLOCKS = [
 # between shelves; lane 1 has an actor-owned timed collision, while the other
 # seven trigger resources are inert until their routes are proven in play.
 # Their staggered placement leaves a climbable corridor through every gap.
-# Debris entries are timed actor-drop columns, with inclusive row bounds.
-# They can cross one-way shelves (but never solid rock); landing columns stay
-# within the overlap and away from platform edges. Runtime fairness needs play.
 # ---------------------------------------------------------------------------
 GUST_LANES = [
     (31, 9, 11),
@@ -84,19 +82,6 @@ GUST_WARNING_FRAMES = 54
 GUST_ACTIVE_FRAMES = 20
 GUST_REST_FRAMES = 90
 
-HAZARD_DEBRIS = [
-    {"row_top": 29, "x": 6, "row_bottom": 32},  # clear the 24px worker's first-jump corridor
-    {"row_top": 25, "x": 15, "row_bottom": 29},
-    {"row_top": 17, "x": 7, "row_bottom": 20},
-    {"row_top": 8, "x": 8, "row_bottom": 11},
-]
-
-# Frames are authored explicitly so warnings can be tuned without script edits.
-DEBRIS_WARNING_FRAMES = 60
-DEBRIS_REST_FRAMES = 90
-DEBRIS_STEP_PIXELS = 2
-DEBRIS_STEP_FRAMES = 2
-
 # The checkpoint tile is immediately above the summit shelf, with open
 # headroom.  The last hazard lane is below row 10, leaving the house safe.
 HOUSE_A = {"x": 11, "y": 5}
@@ -113,7 +98,7 @@ STREET_EXIT = (0, 30, 1, 3)
 
 # ---------------------------------------------------------------------------
 # Amara's line (first repair job): a storm-snapped pole on shelf 21 leaves a
-# dangling cable end. Carry it past debris 3 and up to the junction box on
+# dangling cable end. Carry it past the hazards and up to the junction box on
 # shelf 15; plugging it in energizes the line, which Amara's door requires.
 # Positions are actor tiles (the tile the actor stands in).
 # ---------------------------------------------------------------------------
@@ -156,15 +141,10 @@ def collision_grid() -> list[list[int]]:
 
 
 def _hazard_cells() -> set[tuple[int, int]]:
-    """Expand all gust and debris geometry into (row, x) cells."""
+    """Expand the gust geometry into (row, x) cells."""
     cells: set[tuple[int, int]] = set()
     for row, x0, x1 in GUST_LANES:
         cells.update((row, x) for x in range(x0, x1 + 1))
-    for debris in HAZARD_DEBRIS:
-        cells.update(
-            (row, debris["x"])
-            for row in range(debris["row_top"], debris["row_bottom"] + 1)
-        )
     return cells
 
 
@@ -221,8 +201,7 @@ def _self_check() -> None:
     assert grid[hy + 1][hx] == COL_TOP, "house has no one-way standing surface"
     assert all(abs(row - hy) > 2 for row, _ in _hazard_cells()), "house too close to hazard"
 
-    # Static reset lanes must occupy empty cells. Falling rocks may cross a
-    # one-way shelf, but must never pass through solid rock.
+    # Static reset lanes must occupy empty cells.
     for row, x0, x1 in GUST_LANES:
         assert 0 <= row < MAP_H and 0 <= x0 <= x1 < MAP_W, "gust lane bounds"
         for x in range(x0, x1 + 1):
@@ -231,32 +210,8 @@ def _self_check() -> None:
     assert TIMED_GUST_LANE_INDICES == tuple(sorted(set(TIMED_GUST_LANE_INDICES)))
     assert all(0 <= i < len(GUST_LANES) and GUST_LANES[i][2] - GUST_LANES[i][1] == 2
                for i in TIMED_GUST_LANE_INDICES), "timed gusts need three-tile lanes"
-    assert len(HAZARD_DEBRIS) >= 2, "need at least two debris columns"
-    for debris in HAZARD_DEBRIS:
-        row_top, x, row_bottom = (
-            debris["row_top"], debris["x"], debris["row_bottom"]
-        )
-        assert 0 <= row_top <= row_bottom < MAP_H and 0 <= x < MAP_W, (
-            "debris column bounds"
-        )
-        assert all(grid[row][x] != COL_SOLID for row in range(row_top, row_bottom + 1)), (
-            f"debris column x={x} intersects solid rock"
-        )
-        containing_gap = None
-        for lower, upper in zip(PLATFORMS, PLATFORMS[1:]):
-            lower_row, lower_x0, lower_x1 = lower
-            upper_row, upper_x0, upper_x1 = upper
-            if upper_row < row_bottom < lower_row:
-                containing_gap = (lower_x0, lower_x1, upper_x0, upper_x1)
-                break
-        assert containing_gap is not None, "debris must end within an ascent gap"
-        lower_x0, lower_x1, upper_x0, upper_x1 = containing_gap
-        assert lower_x0 < x < lower_x1 and upper_x0 < x < upper_x1, (
-            "debris must avoid both platform edges"
-        )
-
     # For every three-row jump gap, a two-tile footprint remains free of all
-    # gust/debris cells AND supported by both shelves. This conservative
+    # gust cells AND supported by both shelves. This conservative
     # corridor matches the approved 24px worker's 12px-wide collision bounds.
     hazards = _hazard_cells()
     for lower, upper in zip(PLATFORMS, PLATFORMS[1:]):

@@ -236,7 +236,7 @@ class OpeningTests(unittest.TestCase):
         self.assertEqual(gate["args"]["condition"]["valueA"]["value"], scene.RESTORED)
         self.assertEqual(gate["args"]["condition"]["valueB"]["value"], 1)
 
-    def test_exit_true_branch_switches_to_climb_start_facing_right(self):
+    def test_exit_true_branch_opens_amaras_work_order(self):
         import make_opening_scene as scene
         import climb
         from make_climb_scene import resource_id as climb_id
@@ -244,10 +244,12 @@ class OpeningTests(unittest.TestCase):
         switches = [e for e in gate["children"]["true"] if e["command"] == "EVENT_SWITCH_SCENE"]
         self.assertEqual(len(switches), 1)
         args = switches[0]["args"]
-        self.assertEqual(args["sceneId"], climb_id("scene:storm-climb"))
-        self.assertEqual((args["x"]["value"], args["y"]["value"]), climb.START)
-        self.assertEqual(args["direction"], "right")
+        # Amara's work order first; ticket 1 then switches to the climb's start.
+        import tickets
+        self.assertEqual(args["sceneId"], tickets.WORK_ORDER_SCENE_ID)
         self.assertEqual(args["fadeSpeed"], "2")
+        self.assertEqual(tickets.TICKETS[1]["scene_id"], climb_id("scene:storm-climb"))
+        self.assertEqual(tickets.TICKETS[1]["start"], climb.START)
 
     def test_exit_false_branch_has_no_scene_switch_and_nudges_back(self):
         import make_opening_scene as scene

@@ -188,6 +188,72 @@
                     "location": "overlay"
                   },
                   "id": "49f14f91-11ec-5f4c-ad21-9c27ce2a2b52"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 150
+                    }
+                  },
+                  "id": "9ad7088a-3e52-50ed-a314-6e231d189a6f"
+                },
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": [
+                      "WO-0413\nCLOSED. Nice!"
+                    ],
+                    "avatarId": "",
+                    "minHeight": 4,
+                    "maxHeight": 7,
+                    "textX": 1,
+                    "textY": 1,
+                    "textHeight": 5,
+                    "position": "bottom",
+                    "clearPrevious": true,
+                    "showFrame": true,
+                    "speedIn": -1,
+                    "speedOut": -1,
+                    "closeWhen": "key",
+                    "closeButton": "a",
+                    "closeDelayUnits": "time",
+                    "closeDelayTime": 0.5,
+                    "closeDelayFrames": 30
+                  },
+                  "id": "ec3fe915-1592-51f8-9fff-d11f8a703eb9"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 16
+                    }
+                  },
+                  "id": "e6875824-3f2e-5adc-9fc4-39122767c876"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SHOW",
+                  "args": {
+                    "color": "black",
+                    "x": 0,
+                    "y": 0
+                  },
+                  "id": "c747d9a9-a6aa-5813-bbbf-2d147d4d465f"
+                },
+                {
+                  "command": "EVENT_TEXT_DRAW",
+                  "args": {
+                    "text": "LINE %D1$08$/1 HOME %D1$09$/1",
+                    "x": 0,
+                    "y": 0,
+                    "location": "overlay"
+                  },
+                  "id": "dc8fcc6b-361a-5a83-b816-b8daf6c3213a"
                 }
               ],
               "false": []

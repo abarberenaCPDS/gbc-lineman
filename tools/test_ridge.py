@@ -5,6 +5,8 @@ import unittest
 from pathlib import Path
 
 import climb
+import tickets
+import hazards
 import intro
 import make_climb_scene as shared
 import make_ridge_scene as scene
@@ -16,7 +18,7 @@ import rosa
 # keep the structural tests independent of which art sidecars exist yet.
 FAKE_MUSIC = "test-music"
 FAKE_AUDIO = {"death": "death-sound", "connect": "connect-sound", "pickup": "pickup-sound"}
-FAKE_SPRITES = {"hazard": "hazard-sprite", "gust": "gust-sprite"}
+FAKE_SPRITES = {"gust": "gust-sprite"}
 PROJECT_DIR = scene.PROJECT_DIR
 
 
@@ -160,6 +162,8 @@ class RidgeTests(unittest.TestCase):
                          {"id": "8", "name": "Ridge Line Live", "symbol": "var_ridge_line_live"})
         self.assertEqual(by_id[ridge.VAR_HOME_POWERED],
                          {"id": "9", "name": "Tomas Home Powered", "symbol": "var_tomas_home_powered"})
+        self.assertEqual(by_id[hazards.VAR_ON_BOARD],
+                         {"id": "15", "name": "On Cracked Board", "symbol": "var_on_cracked_board"})
         self.assertEqual(by_id["6"]["symbol"], "var_carrying_cable")
         self.assertEqual(by_id["7"]["symbol"], "var_line_live")
 
@@ -167,7 +171,8 @@ class RidgeTests(unittest.TestCase):
                                    for i in range(8)]}
         grown = scene.merged_variables(synthetic)
         self.assertEqual(grown["variables"][:8], synthetic["variables"])
-        self.assertEqual([v["id"] for v in grown["variables"]], [str(i) for i in range(10)])
+        self.assertEqual([v["id"] for v in grown["variables"]],
+                         [str(i) for i in range(10)] + [hazards.VAR_ON_BOARD])
         with self.assertRaises(ValueError):
             scene.merged_variables({"variables": [{"id": "8", "name": "Other", "symbol": "x"}]})
 
@@ -209,7 +214,7 @@ class RidgeTests(unittest.TestCase):
                     self.assertTrue(redraws, "HUD must be redrawn after text")
                     self.assertEqual(redraws[0]["args"]["text"], ridge.HUD_TEXT)
         # Authored in-play texts: init intro, Hiroshi x3, cable pickup, junction x3, door x2.
-        self.assertEqual(checked, 11)
+        self.assertEqual(checked, 12)  # + CLOSED box
 
     def test_hud_uses_exact_two_digit_variable_tokens(self):
         self.assertEqual(ridge.HUD_TEXT, "LINE %D1$08$/1 HOME %D1$09$/1")
@@ -232,7 +237,7 @@ class RidgeTests(unittest.TestCase):
                         self.assertLessEqual(len(part), scene.MAX_DIALOGUE_CHARS, part)
                         checked += 1
         # One line per in-play text, two-line boxes count each part. Hiroshi names 4 boxes.
-        self.assertEqual(checked, 25)
+        self.assertEqual(checked, 27)  # + CLOSED box
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
@@ -321,7 +326,10 @@ class RidgeTests(unittest.TestCase):
             self.assertFalse(any(e["command"] == "EVENT_ACTOR_COLLISIONS_ENABLE"
                                  for e in walk(guard["children"]["true"])),
                              "start delay must not enable the hazard early")
-        self.assertEqual([g["_index"] for g in gusts], [len(built_actors()) - 2, len(built_actors()) - 1])  # the storm pole sits before the cable end
+        actors = built_actors()
+        self.assertEqual([g["_index"] for g in gusts], [len(actors) - 3, len(actors) - 2])
+        # The storm pole sits before the cable end, and the board draws last.
+        self.assertEqual(actors[-1]["symbol"], "ridge_board_01")
 
     def test_hill_exit_leads_to_signal_hill_only_after_tomas_is_powered(self):
         trigger = trigger_by_symbol("trigger_ridge_hill_exit")
@@ -329,11 +337,15 @@ class RidgeTests(unittest.TestCase):
                          rosa.RIDGE_EXIT)
         [gate] = trigger["script"]
         self.assertEqual(gate["args"]["condition"]["valueA"], {"type": "variable", "value": "9"})
-        cutoff, hide, switch = gate["children"]["true"]
+        cutoff, hide, ticket, switch = gate["children"]["true"]
         self.assertEqual(cutoff["args"]["y"]["value"], 150)
         self.assertEqual(hide["command"], "EVENT_OVERLAY_HIDE")
-        self.assertEqual(switch["args"]["sceneId"], rosa.SCENE_ID)
-        self.assertEqual((switch["args"]["x"]["value"], switch["args"]["y"]["value"]), rosa.START)
+        # Work order 3 first; its card then switches to the next job's start.
+        self.assertEqual((ticket["args"]["variable"], ticket["args"]["value"]["value"]),
+                         (tickets.VAR_TICKET, 3))
+        self.assertEqual(switch["args"]["sceneId"], tickets.WORK_ORDER_SCENE_ID)
+        self.assertEqual(tickets.TICKETS[3]["scene_id"], rosa.SCENE_ID)
+        self.assertEqual(tickets.TICKETS[3]["start"], rosa.START)
         # The refusal never moves the hero: a nudge re-entered the summit exit and looped.
         refused = gate["children"]["false"]
         self.assertNotIn("EVENT_ACTOR_SET_POSITION", [e["command"] for e in walk(refused)])
@@ -351,6 +363,8 @@ class RidgeTests(unittest.TestCase):
         sprites += [(ridge.TOMAS, 2, 3)]          # Hiroshi: 24px figure on a 16x32 canvas
         sprites += [(pos, 2, 2) for pos in (ridge.JUNCTION_BOX, ridge.CONCENTRATOR)]
         sprites += [((x0, row), 3, 2) for row, x0, _ in ridge.GUST_LANES]
+        # Cracked board: three 8x16 OBJ columns, standing row plus the plank row.
+        sprites += [(hazards.board_actor_position(board), 3, 2) for board in hazards.BOARDS["wind_ridge"]]
         # Storm pole (2x4 intro sprite) and cable end (2x2) share the pickup's tile.
         sprites += [(ridge.DAMAGED_POLE, 2, 4), (ridge.DAMAGED_POLE, 2, 2)]
         left = hero_x - 10
@@ -366,7 +380,7 @@ class RidgeTests(unittest.TestCase):
         # Exact ROM e05b693c showed the concentrator losing its top half when
         # the house props shared the gusts' rows (13 8x16 OBJs on one line).
         # Count OBJ columns per tile row with the hero standing at the box and
-        # every on-screen gust visible; debris passes through briefly and is excluded.
+        # every on-screen gust and the cracked board visible.
         load = self._scanline_load(*ridge.JUNCTION_BOX)
         self.assertLessEqual(max(load.values()), 10, load)
 
@@ -379,7 +393,7 @@ class RidgeTests(unittest.TestCase):
         symbols = [a["symbol"] for a in actors]
         self.assertEqual(symbols, [
             scene.TOMAS_SYMBOL, scene.CONCENTRATOR_SYMBOL, scene.POLE_SYMBOL, scene.CABLE_SYMBOL,
-            scene.JUNCTION_SYMBOL, "ridge_debris_01", "ridge_gust_01", "ridge_gust_02",
+            scene.JUNCTION_SYMBOL, "ridge_gust_01", "ridge_gust_02", "ridge_board_01",
         ])
         self.assertEqual([a["_index"] for a in actors], list(range(len(actors))))
         self.assertEqual(len(set(a["id"] for a in actors)), len(actors))
@@ -401,12 +415,35 @@ class RidgeTests(unittest.TestCase):
         self.assertEqual((junction["x"], junction["y"]), ridge.JUNCTION_BOX)
         self.assertEqual(junction["spriteSheetId"], climb.grid_resource_id("sprite:grid_junction_box"))
         self.assertEqual(junction["startScript"][0]["args"]["spriteStateId"], "Dead")
-        debris = actor_by_symbol("ridge_debris_01")
-        self.assertEqual(debris["collisionGroup"], "1")
-        self.assertEqual((debris["x"], debris["y"]), (ridge.HAZARD_DEBRIS[0]["x"],
-                                                     ridge.HAZARD_DEBRIS[0]["row_top"]))
-        self.assertEqual(debris["spriteSheetId"], FAKE_SPRITES["hazard"])
         self.assertEqual(len(actors), 8, "keep the actor count modest")
+        self.assertFalse([a for a in actors if "debris" in a["symbol"]])
+
+    def test_cracked_board_sits_on_the_floor_with_group_one(self):
+        board = hazards.BOARDS["wind_ridge"][0]
+        actor = actor_by_symbol("ridge_board_01")
+        self.assertEqual((actor["x"], actor["y"]), hazards.board_actor_position(board))
+        self.assertEqual(actor["spriteSheetId"], hazards.BOARD_SPRITE_ID)
+        self.assertEqual(actor["collisionGroup"], "1")
+        self.assertEqual(actor["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
+        self.assertEqual(actor["startScript"][1]["args"]["spriteStateId"], "Idle")
+        ifs = [e for e in actor["updateScript"] if e["command"] == "EVENT_IF"]
+        self.assertEqual(ifs[0]["args"]["condition"]["valueB"]["value"], 1)
+        # Floor boards: the plank row is ground and the standing row above it is clear.
+        grid = ridge.collision_grid()
+        row, x0, x1 = board
+        self.assertTrue(all(grid[row][x] == ridge.COL_SOLID for x in range(x0, x1 + 1)))
+        self.assertTrue(all(grid[row - 1][x] == ridge.COL_EMPTY for x in range(x0, x1 + 1)))
+
+    def test_cracked_board_trigger_is_after_the_hill_exit_and_door(self):
+        triggers = scene.build_triggers(FAKE_AUDIO)
+        board = next(t for t in triggers if t["symbol"] == "trigger_ridge_cracked_board_01")
+        self.assertEqual((board["x"], board["y"], board["width"], board["height"]),
+                         hazards.board_trigger_rect(hazards.BOARDS["wind_ridge"][0]))
+        self.assertEqual(board["script"][0]["args"]["value"]["value"], 1)
+        self.assertEqual(board["leaveScript"][0]["args"]["value"]["value"], 0)
+        exits = [t["_index"] for t in triggers if t is not board]
+        self.assertTrue(all(board["_index"] > index for index in exits))
+        self.assertEqual(hazards.VAR_ON_BOARD, "15")
 
     def test_storm_pole_uses_intro_sprite_and_starts_snapped_unless_live(self):
         pole = actor_by_symbol(scene.POLE_SYMBOL)
@@ -479,7 +516,6 @@ class RidgeTests(unittest.TestCase):
             "pickup": shared.sidecar_id(scene.PICKUP_SOUND, "sound"),
         }
         sprites = {
-            "hazard": shared.sidecar_id(scene.DEBRIS_SPRITE, "sprite"),
             "gust": shared.sidecar_id(scene.GUST_SPRITE, "sprite"),
         }
         expected = scene.build_scene(music, audio["death"])
@@ -490,8 +526,9 @@ class RidgeTests(unittest.TestCase):
         for trigger in scene.build_triggers(audio):
             path = scene.SCENE_DIR / "triggers" / f"{trigger['symbol']}.gbsres"
             self.assertEqual(shared.load_json(path), trigger)
-        for relative, palette in scene.tomas_palettes():
+        for relative, palette in scene.tomas_palettes() + shared.hazard_palettes():
             self.assertEqual(shared.load_json(PROJECT_DIR / relative), palette)
+        self.assertEqual(list((scene.SCENE_DIR / "actors").glob("ridge_debris_*.gbsres")), [])
 
     def test_palette_slots_and_tomas_palette(self):
         resource = built_scene()
@@ -502,7 +539,8 @@ class RidgeTests(unittest.TestCase):
         self.assertEqual(sprites[1], scene.tomas_palette_id())
         self.assertEqual(sprites[2], climb.grid_resource_id("palette:sprite:grid"))
         self.assertEqual(sprites[shared.POLE_SPRITE_PALETTE_SLOT], intro.palette_id("pole"))
-        self.assertEqual(sprites[4:], template["spritePaletteIds"][4:])
+        self.assertEqual(sprites[hazards.BOARD_SPRITE_PALETTE_SLOT], hazards.BOARD_PALETTE_ID)
+        self.assertEqual(sprites[5:7], template["spritePaletteIds"][5:7])
         backgrounds = resource["paletteIds"]
         self.assertEqual(len(backgrounds), 8)
         self.assertEqual(backgrounds[:5], [opening.resource_id(f"palette:bg:{name}")
@@ -521,7 +559,7 @@ class RidgeTests(unittest.TestCase):
     def test_shared_sidecars_exist(self):
         """Sounds, music and the climb-owned sprites are already on disk; Hiroshi art is not required."""
         for path in (scene.DEATH_SOUND, scene.CONNECT_SOUND, scene.PICKUP_SOUND,
-                     scene.MUSIC_SIDECAR, scene.DEBRIS_SPRITE, scene.GUST_SPRITE):
+                     scene.MUSIC_SIDECAR, scene.GUST_SPRITE):
             self.assertTrue((PROJECT_DIR / path).exists(), path)
 
 

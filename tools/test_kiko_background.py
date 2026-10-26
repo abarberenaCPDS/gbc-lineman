@@ -8,6 +8,7 @@ import unittest
 from PIL import Image
 
 import climb
+import hazards
 import kiko
 import make_kiko_art as art
 import opening
@@ -97,17 +98,14 @@ class KikoBackgroundTests(unittest.TestCase):
         self.assertEqual(mesa[2] - 1, kiko.MESA_ROW)
         self.assertEqual(step[2] - mesa[2], 3)
 
-    def test_debris_lands_on_mesa_with_scar(self):
-        for debris in kiko.HAZARD_DEBRIS:
-            x = debris["x"]
-            landing = debris["row_bottom"] + 1
-            self.assertEqual(self.grid[landing][x], climb.COL_SOLID, "debris lands on rock")
-            self.assertEqual(self.slot(x, landing), art.STONE, "debris scar must be stone")
-            self.assertIn(0, self.natives(x, landing), "no crack drawn under debris")
-            for row in range(debris["row_top"], debris["row_bottom"] + 1):
+    def test_hidden_cable_lane_is_open_air_with_no_art(self):
+        # The hidden cable draws no wire or posts: its chest-row cells stay
+        # open sky, so the arc is the only clue where the buried line runs.
+        for row, x0, x1 in hazards.HIDDEN_CABLES["pine_hollow"]:
+            for x in range(x0, x1 + 1):
                 self.assertEqual(self.grid[row][x], climb.COL_EMPTY)
                 self.assertIn(self.slot(x, row), (art.SKY, art.LINE),
-                              f"debris column {x},{row} must stay open air")
+                              f"hidden cable lane {x},{row} must stay open air")
 
     def test_pole_stands_on_mesa_and_background_draws_no_stub(self):
         # The pole is the intro_pole actor: its footprint (rows py-3..py, two

@@ -31,7 +31,6 @@ MUSIC_SIDECAR = "assets/music/cfe_storm_climb.uge.gbsres"
 DEATH_SOUND = "assets/sounds/death.wav.gbsres"
 CONNECT_SOUND = "assets/sounds/connect.wav.gbsres"
 PICKUP_SOUND = "assets/sounds/pickup.wav.gbsres"
-DEBRIS_SPRITE = "assets/sprites/climb_debris.png.gbsres"
 GUST_SPRITE = "assets/sprites/climb_gust.png.gbsres"
 
 sys.path.insert(0, str(TOOLS_DIR))
@@ -43,8 +42,11 @@ try:
     import voices  # noqa: E402  (speaker names and text blips)
     import ridge  # noqa: E402  (Hiroshi's job contract: geometry, IDs, timings)
     import rosa  # noqa: E402  (Priya's job contract: the ridge exit leads there)
+    import tickets  # noqa: E402  (work orders: hill exit, CLOSED box)
+    import hazards  # noqa: E402  (cracked boards: placement, IDs and timings)
 except ModuleNotFoundError as error:
-    if error.name in {"voices", "climb", "intro", "opening", "ridge", "rosa", "make_climb_scene"}:
+    if error.name in {"tickets", "voices", "climb", "intro", "opening", "ridge", "rosa", "make_climb_scene",
+                      "hazards"}:
         raise SystemExit(
             f"cannot generate wind_ridge: tools/{error.name}.py is missing"
         ) from error
@@ -74,6 +76,7 @@ DOOR_TRIGGER_SYMBOL = "trigger_ridge_tomas_door"
 # ---------------------------------------------------------------------------
 def tomas_palette_id() -> str:
     return ridge.resource_id("palette:sprite:tomas")
+
 
 
 def actor_id(key: str) -> str:
@@ -263,6 +266,8 @@ def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
     return [
         sound_event(death_sound_id, f"{key}:death-sfx"),
         *cable_drop_events(key),
+        # The respawn teleports the hero without a leave event: forget the board.
+        set_value(hazards.VAR_ON_BOARD, 0, f"{key}:clear-board"),
         if_value(VAR_HOME_POWERED, 0, f"{key}:respawn-check", [
             set_position(*ridge.START, f"{key}:respawn-start"),
         ], [
@@ -285,6 +290,8 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
         set_value(VAR_CARRYING_CABLE, 0, "init-carrying-cable"),
         set_value(VAR_LINE_LIVE, 0, "init-line-live"),
         set_value(VAR_HOME_POWERED, 0, "init-home-powered"),
+        # Standing on a cracked board is tracked by its trigger; a fresh entry starts off it.
+        set_value(hazards.VAR_ON_BOARD, 0, "init-on-board"),
         window_palette_event(False, "init-window-cold"),
         line_palette_event(False, "init-line-dead"),
         # Pinned Snapped on every entry: the pole's own start script reads var 8,
@@ -450,6 +457,7 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
             actor_state(actor_id(TOMAS_KEY), "Relieved", "door:tomas-relieved"),
             actor_state(actor_id(CONCENTRATOR_KEY), "On", "door:concentrator-on"),
             *say(short_lines("Power's on!\nI can breathe."), "door:text", "tomas"),
+            *say(tickets.closed_lines(2), "door:closed"),
         ]),
     ], [
         *say(short_lines("Still no power.\nFix the line!"), "door:no-power"),
@@ -480,14 +488,11 @@ def hill_exit_trigger() -> dict[str, Any]:
     exits, it lifts the HUD cutoff and hides the overlay before switching.
     """
     x, y, width, height = rosa.RIDGE_EXIT
-    start_x, start_y = rosa.START
     go = [
         cutoff_event(150, "hill-exit:cutoff"),
         event("EVENT_OVERLAY_HIDE", {}, "hill-exit:hud-hide"),
-        event("EVENT_SWITCH_SCENE", {
-            "x": shared.number(start_x), "y": shared.number(start_y), "direction": "right",
-            "sceneId": rosa.SCENE_ID, "fadeSpeed": "2",
-        }, "hill-exit:to-hill"),
+        # Priya's work order first; its card switches on to Signal Hill's start.
+        *tickets.to_work_order(3, "hill-exit", event, set_value, shared.number),
     ]
     wait = say(short_lines("Power Hiroshi's\nhouse first."), "hill-exit:not-yet")
     return {
@@ -507,63 +512,47 @@ def hill_exit_trigger() -> dict[str, Any]:
     }
 
 
-def debris_cycle(index: int, debris: dict[str, Any]) -> list[dict[str, Any]]:
-    """Update scripts repeat natively; each cycle warns, falls, then rests.
-
-    Position stepping (not a blocking move) keeps collision checks running,
-    and the engine's group-1 contact handler supplies the hitbox.
-    """
-    key = f"debris:{index}"
-    x, top, bottom = debris["x"] * 8, debris["row_top"] * 8, debris["row_bottom"] * 8
-
-    def own_position(y: int, suffix: str) -> dict[str, Any]:
-        return event("EVENT_ACTOR_SET_POSITION", {
-            "actorId": "$self$", "units": "pixels", "x": shared.number(x), "y": shared.number(y),
-        }, f"{key}:{suffix}")
-
-    def own(command: str, suffix: str) -> dict[str, Any]:
-        return event(command, {"actorId": "$self$"}, f"{key}:{suffix}")
-
-    def state(name: str) -> dict[str, Any]:
-        return event("EVENT_ACTOR_SET_STATE", {
-            "actorId": "$self$", "spriteStateId": name, "loopAnim": False,
-        }, f"{key}:state-{name}")
-
-    result = [
-        own("EVENT_ACTOR_COLLISIONS_DISABLE", "safe-warning"),
-        own_position(top, "reset-top"),
-        state("Warning"),
-        own("EVENT_ACTOR_SHOW", "show-warning"),
-        wait_event(ridge.DEBRIS_WARNING_FRAMES, f"{key}:warning-wait"),
-        state("Rock"),
-        own("EVENT_ACTOR_COLLISIONS_ENABLE", "danger-fall"),
-    ]
-    for y in range(top, bottom + 1, ridge.DEBRIS_STEP_PIXELS):
-        result.extend([
-            own_position(y, f"fall-{y}"),
-            wait_event(ridge.DEBRIS_STEP_FRAMES, f"{key}:fall-wait-{y}"),
-        ])
-    result.extend([
-        own("EVENT_ACTOR_COLLISIONS_DISABLE", "safe-rest"),
-        own("EVENT_ACTOR_HIDE", "hide-rest"),
-        wait_event(ridge.DEBRIS_REST_FRAMES + index * 13, f"{key}:rest-wait"),
-    ])
-    return result
+# ---------------------------------------------------------------------------
+# Cracked boards (hazards.py owns placement, IDs and timings)
+# ---------------------------------------------------------------------------
+# After the hill exit (0) and Hiroshi's door (1): the first matching trigger wins.
+BOARD_TRIGGER_BASE_INDEX = 2
 
 
-def debris_actor(index: int, debris: dict[str, Any], sprite_id: str) -> dict[str, Any]:
-    row_top, x, row_bottom = int(debris["row_top"]), int(debris["x"]), int(debris["row_bottom"])
-    if row_bottom < row_top:
-        raise ValueError(f"debris {index} has row_bottom above row_top")
-    key = f"debris:{index}"
-    return actor_resource(
-        index=index, symbol=f"ridge_debris_{index:02d}", name=f"Falling Debris {index}",
-        x=x, y=row_top, sprite_id=sprite_id, key=key,
-        start_script=[event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": "$self$"},
-                            f"{key}:init-safe")],
-        update_script=debris_cycle(index, debris),
-        collision_group="1",
+def board_actor(number: int, board: tuple[int, int, int], index: int) -> dict[str, Any]:
+    key = f"board:{number}"
+    x, y = hazards.board_actor_position(board)
+    actor = actor_resource(
+        index=index, symbol=f"ridge_board_{number:02d}", name=f"Cracked Board {number}",
+        x=x, y=y, sprite_id=hazards.BOARD_SPRITE_ID, key=key,
+        start_script=hazards.board_start_script(key, event),
     )
+    actor["collisionGroup"] = "1"
+    actor["animate"] = True
+    actor["updateScript"] = hazards.board_update_script(
+        number, key, event, wait_event, if_value, set_value)
+    return actor
+
+
+def board_trigger(number: int, board: tuple[int, int, int], index: int) -> dict[str, Any]:
+    key = f"board:{number}"
+    x, y, width, height = hazards.board_trigger_rect(board)
+    on_script, leave_script = hazards.board_trigger_scripts(number, f"{key}:trigger", set_value)
+    return {
+        "_resourceType": "trigger",
+        "id": ridge.resource_id(f"trigger:{key}"),
+        "name": f"Cracked Board {number} Stand",
+        "prefabId": "",
+        "x": x,
+        "y": y,
+        "symbol": f"trigger_ridge_cracked_board_{number:02d}",
+        "prefabScriptOverrides": {},
+        "width": width,
+        "height": height,
+        "script": on_script,
+        "leaveScript": leave_script,
+        "_index": index,
+    }
 
 
 def gust_actor(index: int, lane: tuple[int, int, int], start_delay: int,
@@ -640,6 +629,8 @@ def build_scene(music_id: str, death_sound_id: str) -> dict[str, Any]:
     # The intro pole sprite's tiles carry OBJ slot intro.SPRITE_SLOTS["pole"]; set it
     # here rather than inheriting it from the climb template.
     sprite_palette_ids[shared.POLE_SPRITE_PALETTE_SLOT] = intro.palette_id("pole")
+    if hazards.BOARDS["wind_ridge"]:
+        sprite_palette_ids[hazards.BOARD_SPRITE_PALETTE_SLOT] = hazards.BOARD_PALETTE_ID
     background_palette_ids = [
         opening.resource_id(f"palette:bg:{name}") for name, _ in opening.BG_PALETTES
     ] + ["default-ui"]
@@ -678,16 +669,15 @@ def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[
         junction_box_actor(3, climb.grid_resource_id(JUNCTION_SPRITE_KEY), audio_ids["connect"]),
     ]
     actors.extend(
-        debris_actor(index, item, sprite_ids["hazard"])
-        for index, item in enumerate(ridge.HAZARD_DEBRIS, start=1)
-    )
-    actors.extend(
         gust_actor(index + 1, lane, ridge.GUST_START_DELAYS[index], sprite_ids["gust"])
         for index, lane in enumerate(ridge.GUST_LANES)
     )
     # Before the cable end (index 2): higher indexes draw on top, so the cable
     # stays visible over the pole on their shared tile (cart bug B-13).
     actors.insert(2, pole_actor(2, intro.POLE_SPRITE_ID))
+    # Cracked boards come last: the highest indexes draw on top.
+    for number, board in enumerate(hazards.BOARDS["wind_ridge"], start=1):
+        actors.append(board_actor(number, board, len(actors)))
     # Editor order is list order: actors and triggers are indexed by position.
     for position, actor in enumerate(actors):
         actor["_index"] = position
@@ -700,6 +690,10 @@ def build_triggers(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
     # both the door (x35-37) and the exit (x38), so a door-first order made the
     # next job unreachable (Abe on the flashed cartridge, ROM 6bfec7b4).
     triggers = [hill_exit_trigger(), door_trigger(audio_ids["connect"])]
+    triggers.extend(
+        board_trigger(number, board, BOARD_TRIGGER_BASE_INDEX + number - 1)
+        for number, board in enumerate(hazards.BOARDS["wind_ridge"], start=1)
+    )
     for index, trigger in enumerate(triggers):
         trigger["_index"] = index
     return triggers
@@ -715,7 +709,7 @@ def merged_variables(data: dict[str, Any]) -> dict[str, Any]:
     different name or symbol is refused rather than renamed.
     """
     merged = json.loads(json.dumps(data))
-    for key, name, symbol in ridge.VARIABLES:
+    for key, name, symbol in (*ridge.VARIABLES, *hazards.VARIABLES):
         value = {"id": key, "name": name, "symbol": symbol}
         existing = next((v for v in merged["variables"] if v["id"] == key), None)
         if existing is not None and existing != value:
@@ -753,9 +747,9 @@ def main() -> None:
         "pickup": shared.sidecar_id(PICKUP_SOUND, "sound"),
     }
     sprite_ids = {
-        "hazard": shared.sidecar_id(DEBRIS_SPRITE, "sprite"),
         "gust": shared.sidecar_id(GUST_SPRITE, "sprite"),
     }
+    warn_if_missing_asset(hazards.BOARD_SPRITE_ID, "sprites", "cracked board sprite")
     warn_if_missing_asset(ridge.BACKGROUND_ID, "backgrounds", "wind_ridge background")
     warn_if_missing_asset(ridge.TOMAS_SPRITE_ID, "sprites", "Hiroshi sprite")
     warn_if_missing_asset(ridge.CONCENTRATOR_SPRITE_ID, "sprites", "oxygen concentrator sprite")
@@ -765,8 +759,9 @@ def main() -> None:
     triggers = build_triggers(audio_ids)
 
     write_variables()
-    for relative_path, palette in tomas_palettes():
+    for relative_path, palette in tomas_palettes() + shared.hazard_palettes():
         shared.write_json(PROJECT_DIR / relative_path, palette)
+    shared.remove_retired_debris_actors(SCENE_DIR, prefix="ridge_")
     shared.write_json(SCENE_DIR / "scene.gbsres", scene)
     for actor in actors:
         shared.write_json(SCENE_DIR / "actors" / f"{actor['symbol']}.gbsres", actor)
@@ -775,7 +770,8 @@ def main() -> None:
     print(
         f"generated wind_ridge: {ridge.MAP_W}x{ridge.MAP_H} PLATFORM, "
         f"{len(actors)} actors, {len(triggers)} triggers; "
-        f"{len(ridge.GUST_LANES)} timed gusts, delays {ridge.GUST_START_DELAYS}"
+        f"{len(ridge.GUST_LANES)} timed gusts, delays {ridge.GUST_START_DELAYS}; "
+        f"{len(hazards.BOARDS['wind_ridge'])} cracked board"
     )
 
 

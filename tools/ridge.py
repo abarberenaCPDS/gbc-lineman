@@ -3,7 +3,7 @@
 Data only for a 40x18-tile PLATFORM scene: a two-screen horizontal traverse
 reached from Amara's summit once her line is live. Timed gusts are the
 featured hazard (step 2 of the hazard ladder in docs/redesign-brief.md), with
-one falling-debris column. The Live Wire phase carries a snapped cable from a
+one cracked board from ``hazards.py`` on the floor. The Live Wire phase carries a snapped cable from a
 pole to a junction box; powering the line switches on Hiroshi's oxygen
 concentrator and warms his window (Blackout Grid).
 
@@ -88,16 +88,7 @@ GUST_WARNING_FRAMES = climb.GUST_WARNING_FRAMES
 GUST_ACTIVE_FRAMES = climb.GUST_ACTIVE_FRAMES
 GUST_REST_FRAMES = climb.GUST_REST_FRAMES
 
-# One debris column between the pole plateau and the first gust. Exact-ROM play
-# showed x21 is where the hero lands walking off the plateau; x22 keeps the
-# landing (x19-21) clear so the rock can be timed from the floor.
-HAZARD_DEBRIS = [
-    {"row_top": 4, "x": 22, "row_bottom": 14},
-]
-DEBRIS_WARNING_FRAMES = climb.DEBRIS_WARNING_FRAMES
-DEBRIS_REST_FRAMES = climb.DEBRIS_REST_FRAMES
-DEBRIS_STEP_PIXELS = climb.DEBRIS_STEP_PIXELS
-DEBRIS_STEP_FRAMES = climb.DEBRIS_STEP_FRAMES
+# The cracked board (hazards.BOARDS["wind_ridge"]) replaces the old falling rock.
 
 # ---------------------------------------------------------------------------
 # Cable route (background art). Drawn only with BG slot LINE_BG_SLOT colour
@@ -132,7 +123,7 @@ CLIMB_EXIT_GATE_VAR = "0"
 # Palettes
 # ---------------------------------------------------------------------------
 # OBJ slots in the ridge scene: 0 worker, 1 Hiroshi, 2 grid sprites (cable end,
-# junction box, concentrator), 4 debris, 5 gust - matching the climb's layout.
+# junction box, concentrator), 4 cracked board, 5 gust - matching the climb's layout.
 TOMAS_SPRITE_PALETTE_SLOT = 1
 GRID_SPRITE_PALETTE_SLOT = climb.GRID_SPRITE_PALETTE_SLOT
 # Hardware colours, index 0 transparent placeholder: warm cardigan, skin, dark.
@@ -177,9 +168,6 @@ def _hazard_cells() -> set[tuple[int, int]]:
     cells: set[tuple[int, int]] = set()
     for row, x0, x1 in GUST_LANES:
         cells.update((row, x) for x in range(x0, x1 + 1))
-    for debris in HAZARD_DEBRIS:
-        cells.update((row, debris["x"])
-                     for row in range(debris["row_top"], debris["row_bottom"] + 1))
     return cells
 
 
@@ -212,11 +200,6 @@ def _self_check() -> None:
     # Lanes are separated by walkable floor so the hero can wait between them.
     for (_, _, a1), (_, b0, _) in zip(GUST_LANES, GUST_LANES[1:]):
         assert b0 - a1 >= 3, "need a standing gap between gust lanes"
-    for debris in HAZARD_DEBRIS:
-        x = debris["x"]
-        assert all(grid[r][x] == COL_EMPTY
-                   for r in range(debris["row_top"], debris["row_bottom"] + 1)), "debris in rock"
-        assert grid[debris["row_bottom"] + 1][x] == COL_SOLID, "debris lands on the floor"
     # Rock steps are one tap high (three tiles) from the floor.
     for x0, x1, row0, row1 in SOLID_BLOCKS[2:]:
         assert row1 == GROUND_ROW - 1 and GROUND_ROW - row0 == 3, "steps are 3 tiles high"

@@ -7,8 +7,8 @@ and stable IDs live in the sibling ``kiko.py`` contract module.
 
 The live arc reuses Signal Hill's arc sprite and arc palette resource (written
 by ``make_rosa_scene.py``); this generator only references that palette ID.
-The falling debris column copies the Wind Ridge debris cycle, and the gust
-copies the Signal Hill gust, both with Emil's timings.
+The gust copies the Signal Hill gust, and the hidden cable copies the cable
+lane pattern, both with Emil's timings. Falling debris is retired.
 
 Generic GB Studio helpers (collision RLE, sidecar lookup, JSON writing, the
 dialogue length check) are reused from ``make_climb_scene``. Event builders are
@@ -36,7 +36,6 @@ MUSIC_SIDECAR = "assets/music/cfe_storm_climb.uge.gbsres"
 DEATH_SOUND = "assets/sounds/death.wav.gbsres"
 CONNECT_SOUND = "assets/sounds/connect.wav.gbsres"
 PICKUP_SOUND = "assets/sounds/pickup.wav.gbsres"
-DEBRIS_SPRITE = "assets/sprites/climb_debris.png.gbsres"
 GUST_SPRITE = "assets/sprites/climb_gust.png.gbsres"
 
 sys.path.insert(0, str(TOOLS_DIR))
@@ -48,8 +47,11 @@ try:
     import opening  # noqa: E402  (shared approved palette/sprite identities)
     import voices  # noqa: E402  (speaker names and text blips)
     import rosa  # noqa: E402  (Signal Hill owns the live arc palette this job reuses)
+    import tickets  # noqa: E402  (work orders: CLOSED box, report exit)
+    import hazards  # noqa: E402  (hidden cable placement, IDs and timings)
 except ModuleNotFoundError as error:
-    if error.name in {"intro", "voices", "climb", "kiko", "opening", "rosa", "make_climb_scene"}:
+    if error.name in {"tickets", "intro", "voices", "climb", "kiko", "opening", "rosa", "make_climb_scene",
+                      "hazards"}:
         raise SystemExit(
             f"cannot generate pine_hollow: tools/{error.name}.py is missing"
         ) from error
@@ -466,6 +468,7 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
             actor_state(actor_id(KIKO_KEY), "Relieved", "door:kiko-relieved"),
             actor_state(actor_id(STOVE_KEY), "On", "door:stove-on"),
             *say(short_lines("Stove's on!\nSoup is cooking!"), "door:text", "kiko"),
+            *say(tickets.closed_lines(4), "door:closed"),
         ]),
     ], [
         *say(short_lines("Still no power.\nFix the line!"), "door:no-power"),
@@ -482,6 +485,40 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
         "width": width,
         "height": height,
         "script": script,
+        "leaveScript": [],
+        "_index": 1,
+    }
+
+
+def report_exit_trigger() -> dict[str, Any]:
+    """Right end of Emil's porch leads to the storm report, after his house is powered.
+
+    Sorted before the door (first matching trigger wins, BUGS B-05). Lifts the
+    HUD cutoff and hides the overlay before switching, like the other exits.
+    """
+    x, y, width, height = tickets.REPORT_EXIT
+    hx, hy = tickets.HERO_POSITION
+    go = [
+        cutoff_event(150, "report-exit:cutoff"),
+        event("EVENT_OVERLAY_HIDE", {}, "report-exit:hud-hide"),
+        event("EVENT_SWITCH_SCENE", {
+            "x": shared.number(hx), "y": shared.number(hy), "direction": "down",
+            "sceneId": tickets.REPORT_SCENE_ID, "fadeSpeed": "2",
+        }, "report-exit:to-report"),
+    ]
+    wait = say(short_lines("Power Emil's\nhouse first."), "report-exit:not-yet")
+    return {
+        "_resourceType": "trigger",
+        "id": kiko.resource_id("trigger:report-exit"),
+        "name": "Report Exit (to Storm Report)",
+        "prefabId": "",
+        "x": x,
+        "y": y,
+        "symbol": "trigger_pine_report_exit",
+        "prefabScriptOverrides": {},
+        "width": width,
+        "height": height,
+        "script": [if_value(tickets.REPORT_EXIT_GATE_VAR, 1, "report-exit:gate", go, wait)],
         "leaveScript": [],
         "_index": 0,
     }
@@ -592,61 +629,18 @@ def gust_actor(index: int, lane: tuple[int, int, int], start_delay: int,
     )
 
 
-def debris_cycle(index: int, debris: dict[str, Any]) -> list[dict[str, Any]]:
-    """Update scripts repeat natively; each cycle warns, falls, then rests.
-
-    Position stepping (not a blocking move) keeps collision checks running,
-    and the engine's group-1 contact handler supplies the hitbox.
-    """
-    key = f"debris:{index}"
-    x, top, bottom = debris["x"] * 8, debris["row_top"] * 8, debris["row_bottom"] * 8
-
-    def own_position(y: int, suffix: str) -> dict[str, Any]:
-        return event("EVENT_ACTOR_SET_POSITION", {
-            "actorId": "$self$", "units": "pixels", "x": shared.number(x), "y": shared.number(y),
-        }, f"{key}:{suffix}")
-
-    def own(command: str, suffix: str) -> dict[str, Any]:
-        return event(command, {"actorId": "$self$"}, f"{key}:{suffix}")
-
-    def state(name: str) -> dict[str, Any]:
-        return event("EVENT_ACTOR_SET_STATE", {
-            "actorId": "$self$", "spriteStateId": name, "loopAnim": False,
-        }, f"{key}:state-{name}")
-
-    result = [
-        own("EVENT_ACTOR_COLLISIONS_DISABLE", "safe-warning"),
-        own_position(top, "reset-top"),
-        state("Warning"),
-        own("EVENT_ACTOR_SHOW", "show-warning"),
-        wait_event(kiko.DEBRIS_WARNING_FRAMES, f"{key}:warning-wait"),
-        state("Rock"),
-        own("EVENT_ACTOR_COLLISIONS_ENABLE", "danger-fall"),
-    ]
-    for y in range(top, bottom + 1, kiko.DEBRIS_STEP_PIXELS):
-        result.extend([
-            own_position(y, f"fall-{y}"),
-            wait_event(kiko.DEBRIS_STEP_FRAMES, f"{key}:fall-wait-{y}"),
-        ])
-    result.extend([
-        own("EVENT_ACTOR_COLLISIONS_DISABLE", "safe-rest"),
-        own("EVENT_ACTOR_HIDE", "hide-rest"),
-        wait_event(kiko.DEBRIS_REST_FRAMES + index * 13, f"{key}:rest-wait"),
-    ])
-    return result
-
-
-def debris_actor(index: int, debris: dict[str, Any], sprite_id: str) -> dict[str, Any]:
-    row_top, x, row_bottom = int(debris["row_top"]), int(debris["x"]), int(debris["row_bottom"])
-    if row_bottom < row_top:
-        raise ValueError(f"debris {index} has row_bottom above row_top")
-    key = f"debris:{index}"
+def hidden_cable_actor(number: int, lane: tuple[int, int, int], start_delay: int,
+                       index: int) -> dict[str, Any]:
+    """Buried line on the mesa: no wire art, dark, a brief spark, then the arc (group 1)."""
+    row, x0, x1 = lane
+    if x1 - x0 + 1 != 2:
+        raise ValueError("the live arc sprite is exactly two tiles wide")
+    key = f"hidden-cable:{number}"
     return actor_resource(
-        index=index, symbol=f"pine_debris_{index:02d}", name=f"Falling Debris {index}",
-        x=x, y=row_top, sprite_id=sprite_id, key=key,
-        start_script=[event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": "$self$"},
-                            f"{key}:init-safe")],
-        update_script=debris_cycle(index, debris),
+        index=index, symbol=f"pine_hidden_cable_{number:02d}", name=f"Hidden Cable {number}",
+        x=x0, y=row, sprite_id=rosa.ARC_SPRITE_ID, key=key, anim_speed=8,
+        start_script=hazards.cable_start_script(key, event),
+        update_script=hazards.cable_update_script(key, start_delay, event, wait_event, branch_event),
         collision_group="1",
     )
 
@@ -671,7 +665,7 @@ def build_scene(music_id: str, death_sound_id: str) -> dict[str, Any]:
     sprite_palette_ids[kiko.GRID_SPRITE_PALETTE_SLOT] = climb.grid_resource_id("palette:sprite:grid")
     sprite_palette_ids[kiko.ARC_SPRITE_PALETTE_SLOT] = arc_palette_id()
     sprite_palette_ids[intro.SPRITE_SLOTS["pole"]] = intro.palette_id("pole")
-    # Debris (slot 4) and gust (slot 5) keep the climb palettes, as Wind Ridge and Signal Hill do.
+    # Slot 4 is unused here (the debris slot is retired); the gust keeps the climb palette.
     background_palette_ids = [
         opening.resource_id(f"palette:bg:{name}") for name, _ in opening.BG_PALETTES
     ] + ["default-ui"]
@@ -710,10 +704,6 @@ def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[
         junction_box_actor(3, climb.grid_resource_id(JUNCTION_SPRITE_KEY), audio_ids["connect"]),
     ]
     actors.extend(
-        debris_actor(index, item, sprite_ids["hazard"])
-        for index, item in enumerate(kiko.HAZARD_DEBRIS, start=1)
-    )
-    actors.extend(
         arc_actor(index, lane, kiko.ARC_START_DELAYS[index - 1], kiko.ARC_SPRITE_ID)
         for index, lane in enumerate(kiko.ARC_LANES, start=1)
     )
@@ -724,6 +714,11 @@ def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[
     # Before the cable end (index 2): higher indexes draw on top, so the cable
     # stays visible over the pole on their shared tile (cart bug B-13).
     actors.insert(2, pole_actor(2, intro.POLE_SPRITE_ID))
+    # Hidden cables come last: the highest indexes draw on top.
+    for number, (lane, delay) in enumerate(
+            zip(hazards.HIDDEN_CABLES["pine_hollow"], hazards.CABLE_START_DELAYS["pine_hollow"]),
+            start=1):
+        actors.append(hidden_cable_actor(number, lane, delay, len(actors)))
     # Editor order is list order: actors and triggers are indexed by position.
     for position, actor in enumerate(actors):
         actor["_index"] = position
@@ -731,7 +726,7 @@ def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[
 
 
 def build_triggers(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
-    return [door_trigger(audio_ids["connect"])]
+    return [report_exit_trigger(), door_trigger(audio_ids["connect"])]
 
 
 # ---------------------------------------------------------------------------
@@ -744,7 +739,7 @@ def merged_variables(data: dict[str, Any]) -> dict[str, Any]:
     different name or symbol is refused rather than renamed.
     """
     merged = json.loads(json.dumps(data))
-    for key, name, symbol in kiko.VARIABLES:
+    for key, name, symbol in (*kiko.VARIABLES, *hazards.VARIABLES):
         value = {"id": key, "name": name, "symbol": symbol}
         existing = next((v for v in merged["variables"] if v["id"] == key), None)
         if existing is not None and existing != value:
@@ -782,7 +777,6 @@ def main() -> None:
         "pickup": shared.sidecar_id(PICKUP_SOUND, "sound"),
     }
     sprite_ids = {
-        "hazard": shared.sidecar_id(DEBRIS_SPRITE, "sprite"),
         "gust": shared.sidecar_id(GUST_SPRITE, "sprite"),
     }
     warn_if_missing_asset(kiko.BACKGROUND_ID, "backgrounds", "pine_hollow background")
@@ -797,6 +791,7 @@ def main() -> None:
     write_variables()
     for relative_path, palette in kiko_palettes():
         shared.write_json(PROJECT_DIR / relative_path, palette)
+    shared.remove_retired_debris_actors(SCENE_DIR, prefix="pine_")
     shared.write_json(SCENE_DIR / "scene.gbsres", scene)
     for actor in actors:
         shared.write_json(SCENE_DIR / "actors" / f"{actor['symbol']}.gbsres", actor)
@@ -805,7 +800,7 @@ def main() -> None:
     print(
         f"generated pine_hollow: {kiko.MAP_W}x{kiko.MAP_H} PLATFORM, "
         f"{len(actors)} actors, {len(triggers)} triggers; "
-        f"{len(kiko.HAZARD_DEBRIS)} debris column, "
+        f"{len(hazards.HIDDEN_CABLES['pine_hollow'])} hidden cable, "
         f"{len(kiko.ARC_LANES)} live arc, delays {kiko.ARC_START_DELAYS}; "
         f"{len(kiko.GUST_LANES)} gust, delays {kiko.GUST_START_DELAYS}"
     )

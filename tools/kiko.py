@@ -1,15 +1,15 @@
 """Pine Hollow - deterministic contract for Emil's family's repair job (job 4).
 
 Data only for a 40x18-tile PLATFORM scene reached from Priya's porch once her
-house is powered. The job mixes every hazard learned so far: falling debris and
-a wind gust on top of a long rock mesa (the pole stands up there), then a live
-cable arc on the floor below. Powering the line lights the family's window and
+house is powered. The job mixes the hazards learned so far: a wind gust on top
+of a long rock mesa (the pole stands up there), a hidden cable lane on the mesa,
+then a live cable arc on the floor below. Powering the line lights the family's window and
 switches on their electric stove so dinner can cook (Blackout Grid).
 
 Every generator for this job reads this module: ``make_kiko_art.py`` (art +
 collision-aligned background), ``make_kiko_sprites.py`` (Emil and the stove)
 and ``make_kiko_scene.py`` (scene, actors, triggers, scripts). The live arc
-reuses ``live_arc`` from Priya's job; debris and gust reuse the climb sprites.
+reuses ``live_arc`` from Priya's job; the gust reuses the climb sprites.
 
 Units are 8x8-pixel tiles. Actor positions are the tile the actor stands in
 (feet row). Collision bytes follow GB Studio PLATFORM semantics:
@@ -67,17 +67,11 @@ DOOR_TRIGGER = (35, 9, 3, 1)
 # ---------------------------------------------------------------------------
 # Hazards
 #
-# Debris columns: {"x", "row_top", "row_bottom"}; the rock falls onto the mesa.
 # Lanes are (row, x0, x1) inclusive on the walking hero's chest row: row 7 on
 # the mesa, row 13 on the floor. Gust lanes are 3 wide (climb_gust), arcs 2.
+# The mesa's hidden cable (hazards.HIDDEN_CABLES["pine_hollow"]) is placed by
+# hazards.py; the falling debris column is retired.
 # ---------------------------------------------------------------------------
-HAZARD_DEBRIS = [
-    {"row_top": 3, "x": 11, "row_bottom": MESA_ROW},
-]
-DEBRIS_WARNING_FRAMES = climb.DEBRIS_WARNING_FRAMES
-DEBRIS_REST_FRAMES = climb.DEBRIS_REST_FRAMES
-DEBRIS_STEP_PIXELS = climb.DEBRIS_STEP_PIXELS
-DEBRIS_STEP_FRAMES = climb.DEBRIS_STEP_FRAMES
 
 GUST_LANES = [(MESA_ROW - 1, 15, 17)]
 GUST_START_DELAYS = [40]
@@ -122,11 +116,10 @@ HILL_EXIT_GATE_VAR = rosa.VAR_HOME_POWERED     # "11"
 # Palettes
 # ---------------------------------------------------------------------------
 # OBJ slots: 0 worker, 1 Emil, 2 grid sprites (cable end, junction box, stove),
-# 3 live arc, 4 debris, 5 gust - matching the climb/ridge/hill layout.
+# 3 live arc, 4 unused (the retired debris slot), 5 gust.
 KIKO_SPRITE_PALETTE_SLOT = 1
 GRID_SPRITE_PALETTE_SLOT = climb.GRID_SPRITE_PALETTE_SLOT
 ARC_SPRITE_PALETTE_SLOT = rosa.ARC_SPRITE_PALETTE_SLOT
-DEBRIS_SPRITE_PALETTE_SLOT = 4
 GUST_SPRITE_PALETTE_SLOT = 5
 # Hardware colours, index 0 transparent: skin, mustard-yellow jacket, dark.
 KIKO_SPRITE_HARDWARE = ["000000", "D9A97E", "E0A82E", "2B2420"]
@@ -167,16 +160,12 @@ def collision_grid() -> list[list[int]]:
 
 
 def hazard_lanes() -> list[tuple[int, int, int]]:
-    """Gust and arc lanes, left to right (debris columns are separate)."""
+    """Gust and arc lanes, left to right."""
     return sorted([*GUST_LANES, *ARC_LANES], key=lambda lane: lane[1])
 
 
 def _hazard_cells() -> set[tuple[int, int]]:
-    cells = {(row, x) for row, x0, x1 in hazard_lanes() for x in range(x0, x1 + 1)}
-    for debris in HAZARD_DEBRIS:
-        cells.update((row, debris["x"])
-                     for row in range(debris["row_top"], debris["row_bottom"] + 1))
-    return cells
+    return {(row, x) for row, x0, x1 in hazard_lanes() for x in range(x0, x1 + 1)}
 
 
 def _stands(grid: list[list[int]], x: int, y: int) -> bool:
@@ -213,14 +202,8 @@ def _self_check() -> None:
         assert x1 - x0 == 2, "gust lanes match the 24px gust sprite"
     for row, x0, x1 in ARC_LANES:
         assert x1 - x0 == 1, "arc lanes match the 16px arc sprite"
-    for debris in HAZARD_DEBRIS:
-        x = debris["x"]
-        assert all(grid[r][x] == COL_EMPTY
-                   for r in range(debris["row_top"], debris["row_bottom"] + 1)), "debris in rock"
-        assert grid[debris["row_bottom"] + 1][x] == COL_SOLID, "debris lands on rock"
-    # Standing gaps of three tiles between every hazard column/lane on the mesa.
-    columns = sorted([(d["x"], d["x"]) for d in HAZARD_DEBRIS]
-                     + [(x0, x1) for _, x0, x1 in hazard_lanes()])
+    # Standing gaps of three tiles between every hazard lane on the mesa.
+    columns = sorted([(x0, x1) for _, x0, x1 in hazard_lanes()])
     for (_, a1), (b0, _) in zip(columns, columns[1:]):
         assert b0 - a1 >= 4, "need a three-tile standing gap between hazards"
     # Walking off the mesa lands clear of every floor lane.

@@ -167,15 +167,10 @@ def ticket_exit(number: int) -> list[dict[str, Any]]:
 
 
 def work_order_script() -> list[dict[str, Any]]:
-    # Fallback (variable out of range, e.g. never set): ticket 1's destination, no card.
-    first = tickets.TICKETS[1]
-    fallback_x, fallback_y = first["start"]
-    branches: list[dict[str, Any]] = [
-        fade_out("work-order:fallback:fade"),
-        switch_scene(first["scene_id"], fallback_x, fallback_y, "right",
-                     "work-order:fallback:to-job"),
-    ]
-    for number in reversed(range(1, tickets.LAST_TICKET + 1)):
+    # Tickets 2-4 branch on the variable; anything else (1, or never set) is
+    # ticket 1, so a test ROM that starts here shows Amara's card.
+    branches: list[dict[str, Any]] = ticket_exit(1)
+    for number in reversed(range(2, tickets.LAST_TICKET + 1)):
         branches = [if_value(tickets.VAR_TICKET, number, f"work-order:ticket{number}",
                              ticket_exit(number), branches)]
     return [*setup("work-order"), *branches]
