@@ -16,8 +16,7 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 - **Committed:** speaker names + voices, 24px neighbours, animated storm poles, renamed
   neighbours, docs (see `git log`). `project/settings.gbsres` starts at the logo
   (`8f0deaff…`); never commit a `--test-start` override.
-- **Release ROM** `build/rom/mr-cfe.gbc` `63c67828…` (v0.10.0-dev). **Not flashed.**
-  The cartridge still holds `9c776c6d…` (porch-exit fix, before this burst). Flashing:
+- **Release ROM** `build/rom/mr-cfe.gbc` `63c67828…` (v0.10.0-dev), **flashed** 2026-10-26; Abe: "game launched fine v0.10.0-dev". Flashing:
   later writes to that device need no new data-loss consent (given 2026-10-26), but
   always bind the exact ROM via `rom_inspect` and confirm Abe isn't mid-play.
 - **Names:** Marta → **Amara** (Nigeria), Tomás → **Hiroshi** (Japan), Rosa → **Priya**
