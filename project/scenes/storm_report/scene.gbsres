@@ -1,0 +1,140 @@
+{
+  "_resourceType": "scene",
+  "id": "87eb95ce-7a29-5e5f-a362-e92762f6cb26",
+  "_index": 1,
+  "name": "Storm Report",
+  "symbol": "scene_storm_report",
+  "backgroundId": "03197e36-bd9e-5364-94dc-553056ba2bc8",
+  "tilesetId": "",
+  "width": 20,
+  "height": 18,
+  "type": "TOPDOWN",
+  "colorModeOverride": "none",
+  "paletteIds": [
+    "b89262f0-2914-5dff-8e14-0c54976ff608",
+    "19c5a231-8d4b-5c9b-8337-72d1898eade6",
+    "e9e46e1f-56f5-52de-b77f-56a6e323e0f9",
+    "2abb3267-9996-5ee3-980f-f7e5995a1346",
+    "d168e519-971e-519e-b3f4-fe59fd7b4163",
+    "b89262f0-2914-5dff-8e14-0c54976ff608",
+    "b89262f0-2914-5dff-8e14-0c54976ff608",
+    "default-ui"
+  ],
+  "spritePaletteIds": [
+    "3899672d-e8b7-5b7e-b3b4-69854d249e4f",
+    "86a73456-ce20-5846-94ac-30a3534c4eff",
+    "5e64c787-fa01-57de-8f11-cc439886012b",
+    "default-sprite",
+    "default-sprite",
+    "default-sprite",
+    "default-sprite",
+    "0f42aecb-f04b-5823-8a3f-212ef9df444a"
+  ],
+  "collisions": "00168+",
+  "autoFadeSpeed": 1,
+  "x": 960,
+  "y": -240,
+  "script": [
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "player"
+      },
+      "id": "a2421978-b598-5dc8-adad-c30e97b4b704"
+    },
+    {
+      "command": "EVENT_OVERLAY_HIDE",
+      "args": {},
+      "id": "39e36ba0-c73e-5706-b0d9-ed79f2263ba6"
+    },
+    {
+      "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+      "args": {
+        "type": "tone",
+        "frequency": 880,
+        "duration": 0.03,
+        "units": "time"
+      },
+      "id": "978b09ef-42b5-5045-a907-5ad1fd46e77e"
+    },
+    {
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": [
+          "STORM REPORT",
+          "Tickets closed:\n4 of 4.",
+          "Amara's food is\nsafe and cold.",
+          "Hiroshi breathes\neasy again.",
+          "Priya is back\nonline.",
+          "Emil's soup is\nhot.",
+          "Thank you,\nMister CFE!",
+          "A game by\nAbe's Games"
+        ],
+        "avatarId": "",
+        "minHeight": 4,
+        "maxHeight": 7,
+        "textX": 1,
+        "textY": 1,
+        "textHeight": 5,
+        "position": "bottom",
+        "clearPrevious": true,
+        "showFrame": true,
+        "speedIn": -1,
+        "speedOut": -1,
+        "closeWhen": "key",
+        "closeButton": "a",
+        "closeDelayUnits": "time",
+        "closeDelayTime": 0.5,
+        "closeDelayFrames": 30
+      },
+      "id": "b50d3b3d-1d86-54c4-9c8f-30f4526945d3"
+    },
+    {
+      "command": "EVENT_SOUND_PLAY_EFFECT",
+      "args": {
+        "units": "time",
+        "type": "e6a2223b-5928-59b0-a771-9efef4cf2e96",
+        "priority": "high",
+        "pitch": 4,
+        "frequency": 200,
+        "duration": 0.5,
+        "wait": true,
+        "effect": 0
+      },
+      "id": "0b9bc751-e55d-5e51-b21a-2e07aacb9b49"
+    },
+    {
+      "command": "EVENT_OVERLAY_HIDE",
+      "args": {},
+      "id": "bf4b070e-a98a-5912-9fa7-6bc4d6805cba"
+    },
+    {
+      "command": "EVENT_FADE_OUT",
+      "args": {
+        "speed": "2"
+      },
+      "id": "884dac8f-c142-5b6b-a720-e5f7895770ae"
+    },
+    {
+      "command": "EVENT_SWITCH_SCENE",
+      "args": {
+        "sceneId": "1688d107-3ca8-5b04-8574-611c1abf292f",
+        "x": {
+          "type": "number",
+          "value": 0
+        },
+        "y": {
+          "type": "number",
+          "value": 0
+        },
+        "direction": "right",
+        "fadeSpeed": "2"
+      },
+      "id": "8b051ef0-9793-5e01-924b-6d0a34246a52"
+    }
+  ],
+  "playerHit1Script": [],
+  "playerHit2Script": [],
+  "playerHit3Script": [],
+  "playerSpriteSheetId": "a8179eaa-d52a-5074-b27c-55a31c549589"
+}

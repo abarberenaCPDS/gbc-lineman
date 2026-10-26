@@ -1,0 +1,385 @@
+{
+  "_resourceType": "scene",
+  "id": "6d76ca16-f510-5fd7-bb1c-c915a1367045",
+  "_index": 0,
+  "name": "Work Order",
+  "symbol": "scene_work_order",
+  "backgroundId": "03197e36-bd9e-5364-94dc-553056ba2bc8",
+  "tilesetId": "",
+  "width": 20,
+  "height": 18,
+  "type": "TOPDOWN",
+  "colorModeOverride": "none",
+  "paletteIds": [
+    "b89262f0-2914-5dff-8e14-0c54976ff608",
+    "19c5a231-8d4b-5c9b-8337-72d1898eade6",
+    "e9e46e1f-56f5-52de-b77f-56a6e323e0f9",
+    "2abb3267-9996-5ee3-980f-f7e5995a1346",
+    "d168e519-971e-519e-b3f4-fe59fd7b4163",
+    "b89262f0-2914-5dff-8e14-0c54976ff608",
+    "b89262f0-2914-5dff-8e14-0c54976ff608",
+    "default-ui"
+  ],
+  "spritePaletteIds": [
+    "3899672d-e8b7-5b7e-b3b4-69854d249e4f",
+    "86a73456-ce20-5846-94ac-30a3534c4eff",
+    "5e64c787-fa01-57de-8f11-cc439886012b",
+    "default-sprite",
+    "default-sprite",
+    "default-sprite",
+    "default-sprite",
+    "0f42aecb-f04b-5823-8a3f-212ef9df444a"
+  ],
+  "collisions": "00168+",
+  "autoFadeSpeed": 1,
+  "x": 720,
+  "y": -240,
+  "script": [
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "player"
+      },
+      "id": "1145ef64-3128-52b6-8d1b-98e29afd4367"
+    },
+    {
+      "command": "EVENT_OVERLAY_HIDE",
+      "args": {},
+      "id": "a97e519e-7a20-5fee-94c7-80501d77ac87"
+    },
+    {
+      "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+      "args": {
+        "type": "tone",
+        "frequency": 880,
+        "duration": 0.03,
+        "units": "time"
+      },
+      "id": "b3548f8e-8327-57c7-8ccf-5d34f99f35e2"
+    },
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "16"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "5988210b-4035-51ef-b706-eb358ef15ca4",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "WORK ORDER\nWO-0412",
+                "Amara, hilltop:\nfridge is out.",
+                "Fix: reconnect\nthe snapped line."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 7,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 5,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "time",
+              "closeDelayTime": 0.5,
+              "closeDelayFrames": 30
+            },
+            "id": "b30b699a-cbd5-5998-bce0-47f718cd0a8b"
+          },
+          {
+            "command": "EVENT_FADE_OUT",
+            "args": {
+              "speed": "2"
+            },
+            "id": "b4cea33c-0b93-5021-b98b-45a5fc1f36b7"
+          },
+          {
+            "command": "EVENT_SWITCH_SCENE",
+            "args": {
+              "sceneId": "e8778f37-44a7-5d3a-ad39-49d52fe4c5c7",
+              "x": {
+                "type": "number",
+                "value": 2
+              },
+              "y": {
+                "type": "number",
+                "value": 32
+              },
+              "direction": "right",
+              "fadeSpeed": "2"
+            },
+            "id": "f47241f7-11a3-56d9-b563-a7ebde4c1636"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_IF",
+            "args": {
+              "condition": {
+                "type": "eq",
+                "valueA": {
+                  "type": "variable",
+                  "value": "16"
+                },
+                "valueB": {
+                  "type": "number",
+                  "value": 2
+                }
+              }
+            },
+            "id": "9128e88a-3b5e-5a74-bd3a-b5eab517f1a7",
+            "children": {
+              "true": [
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": [
+                      "WORK ORDER\nWO-0413",
+                      "Hiroshi, ridge:\noxygen machine\nhas no power.",
+                      "Fix: run the\nline to his box."
+                    ],
+                    "avatarId": "",
+                    "minHeight": 4,
+                    "maxHeight": 7,
+                    "textX": 1,
+                    "textY": 1,
+                    "textHeight": 5,
+                    "position": "bottom",
+                    "clearPrevious": true,
+                    "showFrame": true,
+                    "speedIn": -1,
+                    "speedOut": -1,
+                    "closeWhen": "key",
+                    "closeButton": "a",
+                    "closeDelayUnits": "time",
+                    "closeDelayTime": 0.5,
+                    "closeDelayFrames": 30
+                  },
+                  "id": "a56a7129-5f88-5667-ada5-21e87eeb3480"
+                },
+                {
+                  "command": "EVENT_FADE_OUT",
+                  "args": {
+                    "speed": "2"
+                  },
+                  "id": "369bef6b-ab03-58b0-a771-3dad9fa13278"
+                },
+                {
+                  "command": "EVENT_SWITCH_SCENE",
+                  "args": {
+                    "sceneId": "20ae4686-7e62-5a4d-b3ab-0fddf0ad0d19",
+                    "x": {
+                      "type": "number",
+                      "value": 2
+                    },
+                    "y": {
+                      "type": "number",
+                      "value": 14
+                    },
+                    "direction": "right",
+                    "fadeSpeed": "2"
+                  },
+                  "id": "7da03c29-23ee-58a5-86a9-453c2cd40c7d"
+                }
+              ],
+              "false": [
+                {
+                  "command": "EVENT_IF",
+                  "args": {
+                    "condition": {
+                      "type": "eq",
+                      "valueA": {
+                        "type": "variable",
+                        "value": "16"
+                      },
+                      "valueB": {
+                        "type": "number",
+                        "value": 3
+                      }
+                    }
+                  },
+                  "id": "af70ed57-83a8-5e99-b755-666be842c0d2",
+                  "children": {
+                    "true": [
+                      {
+                        "command": "EVENT_TEXT",
+                        "args": {
+                          "text": [
+                            "WORK ORDER\nWO-0414",
+                            "Priya, hill:\nno internet,\nwork is due.",
+                            "Fix: reconnect.\nMind live wires."
+                          ],
+                          "avatarId": "",
+                          "minHeight": 4,
+                          "maxHeight": 7,
+                          "textX": 1,
+                          "textY": 1,
+                          "textHeight": 5,
+                          "position": "bottom",
+                          "clearPrevious": true,
+                          "showFrame": true,
+                          "speedIn": -1,
+                          "speedOut": -1,
+                          "closeWhen": "key",
+                          "closeButton": "a",
+                          "closeDelayUnits": "time",
+                          "closeDelayTime": 0.5,
+                          "closeDelayFrames": 30
+                        },
+                        "id": "71f8f225-e83f-5778-809c-74667c6ddcbe"
+                      },
+                      {
+                        "command": "EVENT_FADE_OUT",
+                        "args": {
+                          "speed": "2"
+                        },
+                        "id": "5a25ea1e-1ee1-5ae0-9506-017c6561b302"
+                      },
+                      {
+                        "command": "EVENT_SWITCH_SCENE",
+                        "args": {
+                          "sceneId": "7c856987-bbdf-5d75-a97e-327259a90956",
+                          "x": {
+                            "type": "number",
+                            "value": 2
+                          },
+                          "y": {
+                            "type": "number",
+                            "value": 14
+                          },
+                          "direction": "right",
+                          "fadeSpeed": "2"
+                        },
+                        "id": "0f77b631-1d2a-5012-abd3-49bc370981a5"
+                      }
+                    ],
+                    "false": [
+                      {
+                        "command": "EVENT_IF",
+                        "args": {
+                          "condition": {
+                            "type": "eq",
+                            "valueA": {
+                              "type": "variable",
+                              "value": "16"
+                            },
+                            "valueB": {
+                              "type": "number",
+                              "value": 4
+                            }
+                          }
+                        },
+                        "id": "1380181e-3e72-5cfa-8ba6-f270327c44d1",
+                        "children": {
+                          "true": [
+                            {
+                              "command": "EVENT_TEXT",
+                              "args": {
+                                "text": [
+                                  "WORK ORDER\nWO-0415",
+                                  "Emil, hollow:\nstove is dead,\ndinner's cold.",
+                                  "Fix: reconnect\nthe mesa line."
+                                ],
+                                "avatarId": "",
+                                "minHeight": 4,
+                                "maxHeight": 7,
+                                "textX": 1,
+                                "textY": 1,
+                                "textHeight": 5,
+                                "position": "bottom",
+                                "clearPrevious": true,
+                                "showFrame": true,
+                                "speedIn": -1,
+                                "speedOut": -1,
+                                "closeWhen": "key",
+                                "closeButton": "a",
+                                "closeDelayUnits": "time",
+                                "closeDelayTime": 0.5,
+                                "closeDelayFrames": 30
+                              },
+                              "id": "b1dc7ae3-f815-57b6-9fd2-15607cdc6c0b"
+                            },
+                            {
+                              "command": "EVENT_FADE_OUT",
+                              "args": {
+                                "speed": "2"
+                              },
+                              "id": "a7f79f7b-6880-556b-b5b2-d9dfac6555f6"
+                            },
+                            {
+                              "command": "EVENT_SWITCH_SCENE",
+                              "args": {
+                                "sceneId": "4d9329db-9c79-52dd-8372-d215a891bcb8",
+                                "x": {
+                                  "type": "number",
+                                  "value": 2
+                                },
+                                "y": {
+                                  "type": "number",
+                                  "value": 14
+                                },
+                                "direction": "right",
+                                "fadeSpeed": "2"
+                              },
+                              "id": "d3ca6750-e85e-5dfb-9f82-070d47055033"
+                            }
+                          ],
+                          "false": [
+                            {
+                              "command": "EVENT_FADE_OUT",
+                              "args": {
+                                "speed": "2"
+                              },
+                              "id": "a8b7d9ee-75d0-52e8-a63e-1d9493d36e42"
+                            },
+                            {
+                              "command": "EVENT_SWITCH_SCENE",
+                              "args": {
+                                "sceneId": "e8778f37-44a7-5d3a-ad39-49d52fe4c5c7",
+                                "x": {
+                                  "type": "number",
+                                  "value": 2
+                                },
+                                "y": {
+                                  "type": "number",
+                                  "value": 32
+                                },
+                                "direction": "right",
+                                "fadeSpeed": "2"
+                              },
+                              "id": "9c38aeba-93e0-597f-a84c-08ec7d6b330a"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "playerHit1Script": [],
+  "playerHit2Script": [],
+  "playerHit3Script": [],
+  "playerSpriteSheetId": "a8179eaa-d52a-5074-b27c-55a31c549589"
+}

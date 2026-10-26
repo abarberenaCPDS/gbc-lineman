@@ -25,6 +25,7 @@ PROFILES = {
     "kiko": ("make_kiko_art.py", "make_kiko_sprites.py", "make_grid_sprites.py", "make_climb_gust.py", "make_kiko_scene.py", "make_rosa_scene.py"),
     "intro": ("make_intro_art.py", "make_intro_sprites.py", "make_intro_scene.py"),
     "opening": ("make_opening_art.py", "make_opening_characters.py", "make_grid_sprites.py", "make_opening_scene.py"),
+    "tickets": ("make_ticket_art.py", "make_ticket_scene.py"),
 }
 
 
@@ -60,7 +61,8 @@ def main() -> None:
                     "ridge": ["test_ridge*.py", "test_tomas_sprites.py", "test_climb.py"],
                     "rosa": ["test_rosa*.py", "test_ridge.py"],
                     "kiko": ["test_kiko*.py", "test_rosa.py"],
-                    "intro": ["test_intro*.py", "test_opening.py"]}
+                    "intro": ["test_intro*.py", "test_opening.py"],
+                    "tickets": ["test_tickets.py"]}
         for pattern in patterns[args.profile]:
             run("-m", "unittest", "discover", "-s", "tools", "-p", pattern)
     print("Regeneration complete. Refresh, build and playtest through MCP; only the intro profile writes the launch scene.")
