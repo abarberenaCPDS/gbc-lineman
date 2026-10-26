@@ -260,6 +260,10 @@ VERSION_ROW = 16                # right-aligned, VERSION_SLOT
 COPYRIGHT = "\u00a92026 ABE'S GAMES"
 COPYRIGHT_ROW = 17              # centred, VERSION_SLOT
 BLINK_FRAMES = 30               # on, then off, repeating
+# Attract loop (Abe, 2026-10-26: "the intro should loop the storm cinematic"):
+# PRESS START blinks this many times, then the title fades back into the story,
+# whose end returns to the title.
+TITLE_IDLE_BLINKS = 15         # 15 x (30 on + 30 off) = 15 s
 
 
 # ---------------------------------------------------------------------------

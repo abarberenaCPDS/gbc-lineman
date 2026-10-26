@@ -446,12 +446,20 @@ def title_script() -> list[dict[str, Any]]:
             switch_scene(intro.OPENING_SCENE_ID, *intro.OPENING_START,
                          intro.OPENING_DIRECTION, "title:start:to-opening"),
         ], "title:start-input"),
-        thread_start([loop([
-            palette_slots({intro.PRESS_SLOT: "ui"}, "title:blink:on-palette"),
-            wait(intro.BLINK_FRAMES, "title:blink:on"),
-            palette_slots({intro.PRESS_SLOT: "press_off"}, "title:blink:off-palette"),
-            wait(intro.BLINK_FRAMES, "title:blink:off"),
-        ], "title:blink")], "title:blink-thread"),
+        thread_start([
+            # Unrolled, not EVENT_LOOP: a fixed number of blinks, then replay the story.
+            *[event for n in range(intro.TITLE_IDLE_BLINKS) for event in (
+                palette_slots({intro.PRESS_SLOT: "ui"}, f"title:blink{n}:on-palette"),
+                wait(intro.BLINK_FRAMES, f"title:blink{n}:on"),
+                palette_slots({intro.PRESS_SLOT: "press_off"}, f"title:blink{n}:off-palette"),
+                wait(intro.BLINK_FRAMES, f"title:blink{n}:off"),
+            )],
+            input_script_remove(TITLE_START_INPUTS, "title:idle:remove-input"),
+            *([input_script_remove(["select"], "title:idle:remove-audition")]
+              if intro.AUDITION_THEMES else []),
+            fade_out("title:idle:fade"),
+            switch_scene(intro.STORY_SCENE_ID, 0, 0, "right", "title:idle:to-story"),
+        ], "title:blink-thread"),
     ]
 
 

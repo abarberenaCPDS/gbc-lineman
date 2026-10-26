@@ -8,7 +8,6 @@ that showed it, and the regression test that guards it. Feature requests live in
 
 | # | Found | Where | Bug | Notes |
 |---|---|---|---|---|
-| B-12 | 2026-10-26, Abe | Intro | "We are missing the dialogs from the intro too." | **Not reproduced.** Native exact ROM `634ecdb6…` shows all nine story captions in order (contact sheet frames 300–2420). Needs Abe's repro: which screen, on the cart or in the browser? Possibly the cart still runs `9c776c6d…`, or he means in-game dialogue rather than the story captions. |
 | B-11 | 2026-10-26, Abe on cart | Climb, Wind Ridge, Pine Hollow | Falling rocks don't fit a line crew's job. | **Built, awaiting Abe's play:** cracked boards + hidden cables replace every rock (`tools/hazards.py`, release `2625c15d…`). |
 | B-08 | 2026-10-26 | Pine Hollow | Dead end after Kiko's house is powered. | **Built, awaiting play:** Emil's porch exit → storm report → title (`tools/tickets.py`, release `2625c15d…`). |
 | B-07 | 2026-10-25 (known) | Climb | Holding Down+A can drop through more than one level. | Deferred since the movement prototype. |
@@ -18,6 +17,7 @@ that showed it, and the regression test that guards it. Feature requests live in
 
 | # | Found | Bug | Cause | Fix and guard |
 |---|---|---|---|---|
+| B-12 | 2026-10-26, Abe | "We are missing the dialogs from the intro too." | Never reproduced natively; the cart likely still ran an older ROM. | Abe on the v0.10.1 cart (`31110ef7…`): **"dialogs are back, good job!"** Closed. |
 | B-14 | 2026-10-26, native (`454403…`) | Pine Hollow's entry box said "No power at Kiko's house!": the rename missed one caption. | The line was a literal in `make_kiko_scene.py`, not `voices.name()`. | Caption uses `voices.name("kiko")`; `test_voices.test_no_player_text_uses_a_code_key_name` scans every scene script for Marta/Tomás/Rosa/Kiko. Release `a3f5bba4…`. |
 | B-15 | 2026-10-26, contract check | Pine Hollow's hidden cable (x11–12) left only 2 standing tiles before the gust (x15–17); the 12 px hero box had a ~4 px safe window. | `hazards.HIDDEN_CABLES` was placed outside `kiko.py`'s three-tile gap check. | Gust moved to x16–18 (mesa's right end); `kiko._self_check` now includes hidden cables in the gap rule. Native test ROM `45440321…`: hero parked at x≈107 px survived 600 frames of gust + cable cycles; safe window x 102–113 px. |
 | B-13 | 2026-10-26, Abe on cart (`63c67828…`) | "I don't see the cable": the climb's cable end was invisible and B did nothing, so the junction box only said "No cable yet" and the game was stuck. | The storm pole actor shares the cable end's tile. Actors draw in descending index order (higher index = lower OAM = on top) and the pole was appended last, so it covered the cable. Its 16x32 box also caught the B probe and it has no script. | In all four jobs the pole comes before the cable end and starts with collisions off (`make_*_scene.py`); `test_poles`. Verified on test ROM `8fa0d9e0…`: cable visible in front of the pole, B gives "Got the cable!" and var 6 = 1. Release `8d3f295e…`. |

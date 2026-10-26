@@ -280,14 +280,20 @@ class TitleTests(unittest.TestCase):
 
     def test_press_start_blinks_by_palette_swap(self):
         self.assertEqual(self.script[-1]["command"], "EVENT_THREAD_START")
-        loops = [e for e in walk(self.script) if e["command"] == "EVENT_LOOP"]
-        self.assertEqual(len(loops), 1)
-        body = loops[0]["children"]["true"]
+        body = self.script[-1]["children"]["true"]
         swaps = [e["args"][f"palette{intro.PRESS_SLOT}"] for e in body
                  if e["command"] == "EVENT_PALETTE_SET_BACKGROUND"]
-        self.assertEqual(swaps, [intro.palette_id("ui"), intro.palette_id("press_off")])
+        self.assertEqual(swaps, [intro.palette_id("ui"), intro.palette_id("press_off")]
+                         * intro.TITLE_IDLE_BLINKS)
         waits = [frames_of(e) for e in body if e["command"] == "EVENT_WAIT"]
-        self.assertEqual(waits, [intro.BLINK_FRAMES, intro.BLINK_FRAMES])
+        self.assertEqual(waits, [intro.BLINK_FRAMES] * (2 * intro.TITLE_IDLE_BLINKS))
+
+    def test_idle_title_loops_back_to_the_story(self):
+        body = self.script[-1]["children"]["true"]
+        self.assertEqual([e["command"] for e in body[-3:]],
+                         ["EVENT_REMOVE_INPUT_SCRIPT", "EVENT_FADE_OUT", "EVENT_SWITCH_SCENE"])
+        self.assertEqual(body[-3]["args"]["input"], ["start"])
+        self.assertEqual(body[-1]["args"]["sceneId"], intro.STORY_SCENE_ID)
 
 
 class LogoTests(unittest.TestCase):

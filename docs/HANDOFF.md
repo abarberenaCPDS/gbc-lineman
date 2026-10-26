@@ -1,4 +1,4 @@
-# Session handoff: Mister CFE (2026-10-26) — after the Pine Hollow gap fix
+# Session handoff: Mister CFE (2026-10-26) — v0.10.1 on the cart, attract loop built
 
 Start a new session with: **"Read docs/HANDOFF.md and continue."**
 `PROJECT_PLAN.md` is the long-term record (progress log, newest first).
@@ -16,9 +16,10 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 - **Committed:** speaker names + voices, 24px neighbours, animated storm poles, renamed
   neighbours, docs (see `git log`). `project/settings.gbsres` starts at the logo
   (`8f0deaff…`); never commit a `--test-start` override.
-- **Release ROM** `build/rom/mr-cfe.gbc` `f505db32…` (v0.10.0: hazards, work orders, B-13 fix), **flashed** 2026-10-26. Previous flash `63c67828…`: Abe "game launched fine", then got stuck (B-13, fixed). Flashing:
+- **Cart:** v0.10.1 `31110ef7…` flashed 2026-10-26 (B-14/B-15 fixes + everything in v0.10.0). Flashing:
   later writes to that device need no new data-loss consent (given 2026-10-26), but
   always bind the exact ROM via `rom_inspect` and confirm Abe isn't mid-play.
+- **Unflashed:** the title attract loop (idle 15 s → story → title), verified on test ROM `1584e27f…`.
 - **Names:** Marta → **Amara** (Nigeria), Tomás → **Hiroshi** (Japan), Rosa → **Priya**
   (India), Kiko → **Emil** (Denmark). Code keys keep the old names on purpose.
 
@@ -31,22 +32,13 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 
 ## Open, in suggested order
 
-0. **#2 + #3 built**, released as v0.10.0 (`f505db32…`, on the cart). Natively checked: work-order card 1 → climb; climb board 1 breaks and respawns; Pine Hollow's cable/gust gap (fixed, B-15). Still to play: boards 2–3 and Wind Ridge's board (fairness of the 50-frame creak), the climb's hidden cable, tickets 2–4, CLOSED boxes, the storm report → title. `climb_debris` sprite is now unused.
-   **Unflashed fixes since v0.10.0:** release `a3f5bba4…` = B-14 (Pine Hollow caption said "Kiko's house") + B-15 (gust moved to x16–18). Before flashing: bump VERSION to 0.10.1, regenerate the intro profile (title tag), rebuild, tag.
-
-1. **B-12: Abe reported "we are missing the dialogs from the intro".** Not reproduced:
-   all nine story captions render on `634ecdb6…`. Ask Abe where he saw it (cart still on
-   `9c776c6d…`? browser? in-game boxes rather than story captions?). If it's on the cart,
-   check whether the caption overlay color (`intro.CAPTION_OVERLAY_COLOR`, "verify in
-   build") behaves differently on hardware.
-2. **Flash `63c67828…`** when Abe wants it, then gather his cart verdict on names, voices,
-   sizes and poles.
-3. **Hazards (item 6) and tickets (item 7):** options and three questions are in
-   `docs/DESIGN_OPTIONS.md`. Build only after Abe picks.
-4. Look items for Abe's pass: Emil's raised bowl is thin; Priya lost her glasses, so her
+0. **Abe is playing v0.10.1 on the cart** to judge voices, hazards and tickets. Gather his verdict on: boards (50-frame creak fairness), hidden cables, work orders 1–4, CLOSED boxes, storm report → title, voices. `climb_debris` sprite is now unused.
+1. **Attract loop** (Abe: "the intro should 'loop' the storm cinematic"): built and verified natively, not flashed. Confirm with Abe that this is what he meant (title idle → replay the story) before the next flash.
+2. Cart verdict still pending on names, sizes and poles.
+3. Look items for Abe's pass: Emil's raised bowl is thin; Priya lost her glasses, so her
    only props now are long hair and a phone; Hiroshi's tube doubles as his cane. The
    storm pole's dangling wire overlaps the cable-end sprite on the same tile.
-5. Known minors: B-06 junction reach, B-07 Down+A multi-drop.
+4. Known minors: B-06 junction reach, B-07 Down+A multi-drop.
 
 Use parallel workers per the skill (art: Sonnet; plumbing: Haiku). Main selects the
 project **before** spawning workers, gives plumbing workers the OBJ slot map, and
