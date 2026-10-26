@@ -233,7 +233,7 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(music["args"]["musicId"], FAKE_MUSIC)
         intro = [e for e in script if e["command"] == "EVENT_TEXT"]
         self.assertEqual([e["args"]["text"] for e in intro],
-                         [["No power at\nKiko's house!"], ["Dinner's cold..."]])
+                         [["No power at\nEmil's house!"], ["Dinner's cold..."]])
 
     def test_every_in_play_text_is_preceded_by_cutoff_and_followed_by_hud(self):
         checked = 0

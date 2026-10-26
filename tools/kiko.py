@@ -21,6 +21,7 @@ from __future__ import annotations
 import uuid as _uuid
 
 import climb
+import hazards as _hazards
 import rosa
 
 TILE = 8
@@ -73,7 +74,7 @@ DOOR_TRIGGER = (35, 9, 3, 1)
 # hazards.py; the falling debris column is retired.
 # ---------------------------------------------------------------------------
 
-GUST_LANES = [(MESA_ROW - 1, 15, 17)]
+GUST_LANES = [(MESA_ROW - 1, 16, 18)]   # mesa's right end: 3 standing tiles after the cable
 GUST_START_DELAYS = [40]
 GUST_WARNING_FRAMES = climb.GUST_WARNING_FRAMES
 GUST_ACTIVE_FRAMES = climb.GUST_ACTIVE_FRAMES
@@ -202,8 +203,8 @@ def _self_check() -> None:
         assert x1 - x0 == 2, "gust lanes match the 24px gust sprite"
     for row, x0, x1 in ARC_LANES:
         assert x1 - x0 == 1, "arc lanes match the 16px arc sprite"
-    # Standing gaps of three tiles between every hazard lane on the mesa.
-    columns = sorted([(x0, x1) for _, x0, x1 in hazard_lanes()])
+    # Standing gaps of three tiles between every hazard lane, hidden cables included.
+    columns = sorted([(x0, x1) for _, x0, x1 in [*hazard_lanes(), *_hazards.HIDDEN_CABLES["pine_hollow"]]])
     for (_, a1), (b0, _) in zip(columns, columns[1:]):
         assert b0 - a1 >= 4, "need a three-tile standing gap between hazards"
     # Walking off the mesa lands clear of every floor lane.

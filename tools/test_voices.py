@@ -57,6 +57,20 @@ class VoiceTests(unittest.TestCase):
                         self.assertEqual(events[after]["args"], intro.TEXT_SOUND, resource)
             self.assertGreaterEqual(boxes, 3, speaker)
 
+    def test_no_player_text_uses_a_code_key_name(self):
+        """Code keys keep the old names; every box on screen uses the new ones."""
+        old = {"Marta", "Tomás", "Tomas", "Rosa", "Kiko"}
+        for path in sorted((ROOT / "project/scenes").glob("**/*.gbsres")):
+            data = json.loads(path.read_text())
+            for script in ("script", "startScript", "updateScript", "leaveScript", "playerHit1Script"):
+                for events in sequences(data.get(script) or []):
+                    for entry in events:
+                        text = (entry.get("args") or {}).get("text")
+                        pages = text if isinstance(text, list) else [text or ""]
+                        for page in pages:
+                            hits = {n for n in old if n in page}
+                            self.assertFalse(hits, f"{path.relative_to(ROOT)}: {page!r}")
+
 
 if __name__ == "__main__":
     unittest.main()

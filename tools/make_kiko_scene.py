@@ -301,7 +301,7 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
         actor_state(pole_actor_id(), "Snapped", "init-pole-snapped"),
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-pine-hollow-music"),
         # Intro boxes after the music cue; say() lifts the cutoff a previous visit may have left.
-        *say(short_lines("No power at\nKiko's house!"), "intro"),
+        *say(short_lines(f"No power at\n{voices.name('kiko')}'s house!"), "intro"),
         *say(short_lines("Dinner's cold..."), "cold"),
     ]
 

@@ -1,4 +1,4 @@
-# Session handoff: Mister CFE (2026-10-26) — after the cart-feedback burst
+# Session handoff: Mister CFE (2026-10-26) — after the Pine Hollow gap fix
 
 Start a new session with: **"Read docs/HANDOFF.md and continue."**
 `PROJECT_PLAN.md` is the long-term record (progress log, newest first).
@@ -31,7 +31,8 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 
 ## Open, in suggested order
 
-0. **#2 + #3 built**, released as v0.10.0 (`f505db32…`). Natively checked: work-order card 1 → climb; climb board 1 breaks and respawns. Still to play: boards 2–3 and Wind Ridge's board (fairness of the 50-frame creak), both hidden cables, tickets 2–4, CLOSED boxes, the storm report → title. Pine Hollow's cable leaves only a 2-tile gap before the gust (contract asks 3); `climb_debris` sprite is now unused.
+0. **#2 + #3 built**, released as v0.10.0 (`f505db32…`, on the cart). Natively checked: work-order card 1 → climb; climb board 1 breaks and respawns; Pine Hollow's cable/gust gap (fixed, B-15). Still to play: boards 2–3 and Wind Ridge's board (fairness of the 50-frame creak), the climb's hidden cable, tickets 2–4, CLOSED boxes, the storm report → title. `climb_debris` sprite is now unused.
+   **Unflashed fixes since v0.10.0:** release `a3f5bba4…` = B-14 (Pine Hollow caption said "Kiko's house") + B-15 (gust moved to x16–18). Before flashing: bump VERSION to 0.10.1, regenerate the intro profile (title tag), rebuild, tag.
 
 1. **B-12: Abe reported "we are missing the dialogs from the intro".** Not reproduced:
    all nine story captions render on `634ecdb6…`. Ask Abe where he saw it (cart still on
