@@ -151,9 +151,9 @@ def pole_snapped(f: int) -> list[str]:
     # dangling wire from the crossarm end to near the ground
     wx = ARM_X1 + (BREAK_Y - 3) // 3
     wx = min(wx, 14)
-    for y in range(7, 26):
-        sway = WIRE_SWAY[f] if y > 14 else 0
-        _put(g, min(wx + (1 if y > 18 else 0) - sway, 15), y, "3")
+    for y in range(7, 16):
+        sway = WIRE_SWAY[f] if y > 11 else 0
+        _put(g, min(wx + (1 if y > 13 else 0) - sway, 15), y, "3")
     # sparks at the break
     for x, y in SPARKS[f]:
         _put(g, x, y, "1")
