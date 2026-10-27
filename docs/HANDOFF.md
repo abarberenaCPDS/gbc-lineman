@@ -49,10 +49,20 @@ while `emulator_debug` runs (it rechecks live sources), then restore.
 
 Native 2026-10-27 (`pine-feeder` `e29941fe…`, start = feeder pole (9,8)): feeder pickup on the mesa, walk right past the
 hidden cable (inactive at that moment), T1 reach trigger auto-plugs: var 24 = 1, var 25 = 1, var 26 = 1, "Power flows
-on…", stage-1 wire lit. Combined with the earlier house-line run, both Pine lines work in isolation.
+on…", stage-1 wire lit.
 
-1. **Native playtest, remaining:** Pine with both lines in one run, then the door (needs var 25 = 2); Signal Hill chain
-   in both orders; lab rooms (gallery hazards incl. whip, movement room). Recipe: `make_intro_scene.py --test-start
+Native 2026-10-27, later (same ROM, one run): feeder → arc hit respawns at the feeder checkpoint (14,8) → house pole →
+porch reach → "Both lines live" (var 25 = 2, var 26 = 2, both wires lit) → door: Emil "Stove's on! Soup is cooking!",
+var 13 = 1. **Pine Hollow passes end to end.**
+Signal Hill (`signal-chain2` `40743687…`): it had no reach triggers (wired now, commit `1826144`; T1's trigger is its
+pit). Feeder pickup, drop into the pit auto-plugs T1 ("Power flows on! Keep going.", var 21/22/23 = 1); B on T1 also
+works. **B-16 (open):** climbing from the T1 pit onto the storm-pole rock (4 tiles up, 2 wide) failed with short and
+full jumps; the house line and Signal Hill's door are not played yet.
+Lab gallery (`lab-gallery` `06a56f2c…`): "LAB: hazards" shows; board breaks and respawns; arc fires; hidden cable shows.
+Cosmetic: the gallery reuses Pine Hollow's background, so the drawn mesa does not match its flat collision.
+
+1. **Native playtest, remaining:** B-16 fix or Abe's feel call, then Signal Hill house line and door; gallery whip
+   (far end) and the movement room. Recipe: `make_intro_scene.py --test-start
    <folder> X Y right`, `rom_build` with `captureDebugArtifacts`, `emulator_run` source mode, keep the override while
    `emulator_debug` runs, restore with a plain `make_intro_scene.py`. Each scene opens with 2-3 dialogue boxes (A + ~80
    frames each). Build logs are ~15k tokens each: budget about 6 builds per session.
