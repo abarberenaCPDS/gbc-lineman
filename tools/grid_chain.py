@@ -393,13 +393,14 @@ class GridChain:
                           connect_sound_id: str, name: str | None = None) -> dict[str, Any]:
         """Walking up to a box with its cable plugs it in (no B press needed).
 
-        The trigger covers the three tiles before the box (``reach_rect``). Its
+        The trigger covers the three tiles before the box (``reach_rect``), or the
+        line's own ``reach`` rect when the tiles before the box are rock. Its
         enter script runs the box's own connect path, and only when the hero
         carries this line's cable and the line is still dead; any other visit
         does nothing, so the box's B press (``box_actor``) stays the only text.
         """
         key = f"reach:{line['box']}"
-        x, y, width, height = reach_rect(line["box_at"])
+        x, y, width, height = line.get("reach") or reach_rect(line["box_at"])
         script = [self.if_value(self.carrying_var, line["number"], f"{key}:has-cable", [
             self.if_value(line["live_var"], 0, f"{key}:dead", self.box_connect_events(
                 line, key, connect_sound_id)),

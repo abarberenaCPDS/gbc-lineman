@@ -591,6 +591,13 @@ def build_triggers(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
     # both the door (x35-37) and the exit (x38), so a door-first order made the
     # next job unreachable (Abe on the flashed cartridge, ROM 6bfec7b4).
     triggers = [hollow_exit_trigger(), door_trigger(audio_ids["connect"])]
+    # Box reach triggers come after the exit and the door (B-06: walking up with
+    # the right cable plugs it in).
+    triggers.extend(
+        CHAIN.box_reach_trigger(line, symbol=f"trigger_signal_{line['key']}_reach", index=0,
+                                connect_sound_id=audio_ids["connect"])
+        for line in LINES
+    )
     for index, trigger in enumerate(triggers):
         trigger["_index"] = index
     return triggers

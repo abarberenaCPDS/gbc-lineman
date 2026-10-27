@@ -567,7 +567,8 @@ class RosaTests(unittest.TestCase):
             self.assertEqual(texts(other["children"]["true"]), [["No cable yet.\nFind its pole."]])
             self.assertEqual(texts(other["children"]["false"]), [["Wrong cable\nfor this box."]])
         incs = [e for script in all_script_lists() for e in walk(script) if e["command"] == "EVENT_INC_VALUE"]
-        self.assertEqual(len(incs), rosa.LINE_COUNT, "nothing else changes the counter")
+        # Each line connects from its box (B) or its reach trigger (B-06); nothing else counts.
+        self.assertEqual(len(incs), 2 * rosa.LINE_COUNT, "nothing else changes the counter")
 
     def test_power_reaches_a_box_only_through_every_line_upstream(self):
         for line in LINES:
@@ -699,6 +700,21 @@ class RosaTests(unittest.TestCase):
                      scene.MUSIC_SIDECAR, scene.GUST_SPRITE):
             self.assertTrue((PROJECT_DIR / path).exists(), path)
         self.assertTrue((PROJECT_DIR / "assets/sprites/transformer.png.gbsres").exists())
+
+    def test_each_box_has_a_reach_trigger_on_open_air_for_its_own_cable(self):
+        # B-06: walking (or dropping) up to a box with its cable plugs it in. T1 sits
+        # in the pit between the step and the storm-pole rock, so its trigger is the pit.
+        grid = rosa.collision_grid()
+        for line in scene.LINES:
+            trigger = trigger_by_symbol(f"trigger_signal_{line['key']}_reach")
+            rect = (trigger["x"], trigger["y"], trigger["width"], trigger["height"])
+            self.assertEqual(rect, line.get("reach") or grid_chain.reach_rect(line["box_at"]))
+            x, y, w, h = rect
+            self.assertTrue(all(grid[r][c] == climb.COL_EMPTY for r in range(y, y + h) for c in range(x, x + w)),
+                            f"{line['key']} trigger in rock")
+            [gate] = trigger["script"]
+            self.assertTrue(is_var_if(gate, rosa.VAR_CARRYING_CABLE, line["number"]))
+        self.assertEqual(trigger_by_symbol("trigger_signal_feeder_reach")["x"], rosa.LINES[0]["box"][0])
 
     def test_hollow_exit_leads_to_pine_hollow_only_after_rosa_is_powered(self):
         trigger = trigger_by_symbol("trigger_signal_hollow_exit")

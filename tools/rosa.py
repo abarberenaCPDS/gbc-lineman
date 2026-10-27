@@ -102,8 +102,10 @@ DOOR_TRIGGER = (35, 9, 3, 1)
 # same tile); "box" is where that cable plugs in; "checkpoint" is the respawn
 # once the line is repaired.
 LINES = [
+    # T1 sits in the two-tile pit between the step and the storm-pole rock, so its
+    # reach trigger is the pit itself (the tiles before it are rock).
     {"key": "feeder", "pole": (7, 8), "box": (9, 14), "box_kind": "transformer",
-     "checkpoint": (14, 14), "live_var": VAR_FEEDER_LIVE},
+     "checkpoint": (14, 14), "live_var": VAR_FEEDER_LIVE, "reach": (9, 12, 2, 3)},
     {"key": "house", "pole": (12, 11), "box": (33, 11), "box_kind": "junction",
      "checkpoint": (32, 11), "live_var": VAR_LINE_LIVE},
 ]
@@ -288,6 +290,12 @@ def _self_check() -> None:
     # The chain runs left to right: the feeder pole on the upper step, T1 on the
     # floor, then the storm pole on its rock, then the lanes, then the porch box.
     grid_chain.check_chain_order(LINES)
+    # Each box's reach trigger (B-06) lies on open air the hero walks or drops through.
+    for line in LINES:
+        rx, ry, rw, rh = line.get("reach") or grid_chain.reach_rect(line["box"])
+        assert rx <= line["box"][0] <= rx + rw, "reach trigger reaches the box"
+        assert all(grid[y][x] == COL_EMPTY for y in range(ry, ry + rh) for x in range(rx, rx + rw)), \
+            f"{line['key']} reach trigger in rock"
     assert LINES[0]["pole"] == (upper[1] - 1, upper[2] - 1), "feeder pole stands on the upper step"
     assert LINES[1]["pole"] == (pole_rock[1], pole_rock[2] - 1), "storm pole stands on its rock"
     assert START[0] < LINES[0]["pole"][0] < LINES[0]["box"][0] < LINES[1]["pole"][0] < lanes[0][1]
