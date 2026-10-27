@@ -42,14 +42,15 @@ glasses, Emil's bowl, Hiroshi's hose, shorter pole wire; `climb_debris` retired.
 
 ## Next, in suggested order
 
-1. **Pine Hollow scanline budget** (`test_kiko.py` strict test is `expectedFailure`): porch 13, floor 11, mesa 12 OBJs
-   per row (limit 10). Proposed: move the mesa gust so both posts fit on the mesa; then remove the `expectedFailure`.
-2. **Native playtest** (MCP emulator, text-first per the skill) of the new work: both chains in both repair orders, HUD
-   counts, door gating, reach triggers (B-06 from x=243), carry pose on/off, lab rooms.
-3. **Whip in the hazard gallery** (skipped: its builder was mid-refactor; now reusable from `make_ridge_scene.py`).
-4. **Docs:** `AGENTS.md` should mention the `lab` profile, `scenes.py` and `make_release.py`.
-5. Look check on the cart: Priya's glasses, Emil's bowl, Hiroshi's hose, carry pose.
-6. **Merge to main only after Abe's OK**; then release (drop `-dev`), tag, move `stable` if he approves on the cart.
+Done 2026-10-27 (later): Pine Hollow fits 10 OBJs per line (mesa gust dropped, T1 on the mesa; strict test passes, porch
+measured 10 in OAM); gallery whip; `AGENTS.md` docs. Native: Pine house line pickup, Carry pose on/off, B-06 auto-plug
+from a porch jump, chain gating (house first stays dark). Source-debug note: keep the `--test-start` settings in place
+while `emulator_debug` runs (it rechecks live sources), then restore.
+
+1. **Native playtest, remaining:** Pine feeder on the mesa (T1 at (16,8)) and the door; Signal Hill chain in both orders;
+   lab rooms (gallery hazards incl. whip, movement room).
+2. Look check on the cart: Priya's glasses, Emil's bowl, Hiroshi's hose, carry pose.
+3. **Merge to main only after Abe's OK**; then release (drop `-dev`), tag, move `stable` if he approves on the cart.
    B-07 (one-shelf drop) is still not flashed; Abe should feel-test it on the cart.
 Not yet played natively: Wind Ridge lines 2-3 with power, the catwalk route, the door, every span live at once.
 Worktree note: the session guard rejects `cd` and `$PY` in compound commands; use small wrapper scripts with absolute paths.
