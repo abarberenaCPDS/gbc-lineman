@@ -80,7 +80,10 @@ SOLID_BLOCKS = [
     (11, 12, 12, 14),               # storm pole's rock (top surface row 12); keeps its sprite off the hero's rows
 ]
 PORCH_ROW = 11
-LEDGES: list[tuple[int, int, int]] = []
+# (row, x0, x1) one-way timber ledges. B-16: the T1 pit (x9-10) is exactly the
+# hero's width, so he cannot climb its 3-tile walls; this step on the pit's right
+# side splits the way out into a 2-tile tap (pit floor -> ledge) and a 1-tile hop (ledge -> rock).
+LEDGES: list[tuple[int, int, int]] = [(13, 10, 10)]
 
 START = (2, 14)            # entry from Hiroshi's porch, facing right
 ROSA = (34, 11)            # Priya waits outside, left of her door
@@ -294,8 +297,11 @@ def _self_check() -> None:
     for line in LINES:
         rx, ry, rw, rh = line.get("reach") or grid_chain.reach_rect(line["box"])
         assert rx <= line["box"][0] <= rx + rw, "reach trigger reaches the box"
-        assert all(grid[y][x] == COL_EMPTY for y in range(ry, ry + rh) for x in range(rx, rx + rw)), \
+        assert all(grid[y][x] in (COL_EMPTY, COL_TOP) for y in range(ry, ry + rh) for x in range(rx, rx + rw)), \
             f"{line['key']} reach trigger in rock"
+    # B-16: the pit ledge sits 2 tiles above the pit floor and 1 below the rock top.
+    pit_ledge_row, _, _ = LEDGES[0]
+    assert GROUND_ROW - pit_ledge_row == 2 and pit_ledge_row - pole_rock[2] == 1, "pit ledge: 2-tile then 1-tile rise"
     assert LINES[0]["pole"] == (upper[1] - 1, upper[2] - 1), "feeder pole stands on the upper step"
     assert LINES[1]["pole"] == (pole_rock[1], pole_rock[2] - 1), "storm pole stands on its rock"
     assert START[0] < LINES[0]["pole"][0] < LINES[0]["box"][0] < LINES[1]["pole"][0] < lanes[0][1]

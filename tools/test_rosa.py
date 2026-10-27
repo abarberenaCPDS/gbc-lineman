@@ -710,7 +710,8 @@ class RosaTests(unittest.TestCase):
             rect = (trigger["x"], trigger["y"], trigger["width"], trigger["height"])
             self.assertEqual(rect, line.get("reach") or grid_chain.reach_rect(line["box_at"]))
             x, y, w, h = rect
-            self.assertTrue(all(grid[r][c] == climb.COL_EMPTY for r in range(y, y + h) for c in range(x, x + w)),
+            self.assertTrue(all(grid[r][c] in (climb.COL_EMPTY, climb.COL_TOP)
+                                for r in range(y, y + h) for c in range(x, x + w)),
                             f"{line['key']} trigger in rock")
             [gate] = trigger["script"]
             self.assertTrue(is_var_if(gate, rosa.VAR_CARRYING_CABLE, line["number"]))
