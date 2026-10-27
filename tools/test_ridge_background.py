@@ -40,13 +40,13 @@ class RidgeBackgroundTests(unittest.TestCase):
         return art._gb_studio_native_index(gray)
 
     def test_size_and_sidecar_identity(self):
-        self.assertEqual(self.image_size, (320, 144))
+        self.assertEqual(self.image_size, (480, 144))
         self.assertEqual(self.sidecar["id"], ridge.BACKGROUND_ID)
         self.assertEqual(self.sidecar["name"], "wind_ridge")
-        self.assertEqual((self.sidecar["width"], self.sidecar["height"]), (40, 18))
-        self.assertEqual((self.sidecar["imageWidth"], self.sidecar["imageHeight"]), (320, 144))
+        self.assertEqual((self.sidecar["width"], self.sidecar["height"]), (60, 18))
+        self.assertEqual((self.sidecar["imageWidth"], self.sidecar["imageHeight"]), (480, 144))
         self.assertFalse(self.sidecar["autoColor"])
-        self.assertEqual(len(self.flat_slots), 40 * 18)
+        self.assertEqual(len(self.flat_slots), 60 * 18)
 
     def test_proxy_is_grayscale_native_indices(self):
         pixels = list(self.proxy.get_flattened_data())
@@ -107,37 +107,72 @@ class RidgeBackgroundTests(unittest.TestCase):
                 self.assertEqual(self.grid[ty][tx], climb.COL_EMPTY)
                 self.assertNotEqual(self.slot(tx, ty), art.TIMBER, f"BG stub at {tx},{ty}")
 
-    def test_only_cable_pixels_use_the_line_index_in_metal_slot(self):
-        route = art.cable_route_tiles()
-        line_cells = set()
+    def metal_pixels(self, index):
+        found = set()
         for ty in range(ridge.MAP_H):
             for tx in range(ridge.MAP_W):
                 if self.slot(tx, ty) != climb.LINE_BG_SLOT:
                     continue
                 for y in range(ridge.TILE):
                     for x in range(ridge.TILE):
-                        if self.native(tx, ty, x, y) == climb.LINE_COLOR_INDEX:
-                            line_cells.add((tx, ty))
-        claimed_route = {(tx, ty) for tx, ty in route
-                         if self.slot(tx, ty) == climb.LINE_BG_SLOT}
-        self.assertTrue(line_cells)
-        self.assertEqual(line_cells, claimed_route)
+                        if self.native(tx, ty, x, y) == index:
+                            found.add((tx * ridge.TILE + x, ty * ridge.TILE + y))
+        return found
 
-    def test_cable_links_pole_and_junction_box_and_house(self):
-        cells = {(tx, ty) for tx, ty in art.cable_route_tiles()
-                 if self.slot(tx, ty) == climb.LINE_BG_SLOT}
+    def test_line_indices_belong_to_their_routes_only(self):
+        ones = self.metal_pixels(ridge.LINE_COLOR_INDEX)
+        threes = self.metal_pixels(ridge.LINE2_COLOR_INDEX)
+        self.assertTrue(ones and threes)
+        self.assertLessEqual(ones, art.line1_pixels(), "index 1 off the feeder/span")
+        self.assertLessEqual(threes, art.line2_pixels(), "index 3 off line 2")
+        self.assertFalse(ones & threes)
+        # Every claimed route tile carries its line (nothing is occluded away).
+        for tx, ty in art.cable_route_tiles():
+            if self.grid[ty][tx] == climb.COL_EMPTY and (ty, tx) not in art.LANE_CELLS:
+                self.assertEqual(self.slot(tx, ty), climb.LINE_BG_SLOT, f"gap at {tx},{ty}")
 
-        def near(targets, reach=1):
+    def test_downed_wire_lies_on_the_floor_row_only(self):
+        x0, x1 = ridge.DOWNED_SPAN
+        row = ridge.GROUND_ROW - 1
+        wire = {(x, y) for x, y in art.line1_pixels()
+                if x0 * ridge.TILE <= x < (x1 + 1) * ridge.TILE and y >= row * ridge.TILE}
+        self.assertTrue(wire <= self.metal_pixels(ridge.LINE_COLOR_INDEX))
+        self.assertTrue(all(y // ridge.TILE == row for _, y in wire))
+        self.assertEqual({x // ridge.TILE for x, _ in wire}, set(range(x0, x1 + 1)))
+        for _, lx0, lx1 in ridge.hazard_lanes():
+            for tx in range(lx0, lx1 + 1):
+                self.assertNotIn((tx, ridge.GROUND_ROW - 2),
+                                 {(x // ridge.TILE, y // ridge.TILE) for x, y in wire})
+
+    def test_placards_and_bracket_use_only_indices_0_and_2(self):
+        cells = set(art.LANE_CELLS) | set(art.BRACKET_CELLS)
+        for row, tx in cells:
+            self.assertEqual(self.slot(tx, row), art.METAL)
+            self.assertEqual(self.grid[row][tx], climb.COL_EMPTY)
+            for y in range(ridge.TILE):
+                for x in range(ridge.TILE):
+                    self.assertIn(self.native(tx, row, x, y), (0, 2), f"{tx},{row}")
+        for _, x0, x1 in ridge.WHIP_LANES:
+            for tx in range(x0, x1 + 1):
+                self.assertIn((art.BRACKET_ROWS[1], tx), art.BRACKET_CELLS)
+
+    def test_cable_links_poles_boxes_and_house(self):
+        def cells(pixels):
+            return {(x // ridge.TILE, y // ridge.TILE) for x, y in pixels
+                    if self.slot(x // ridge.TILE, y // ridge.TILE) == climb.LINE_BG_SLOT}
+
+        def near(c, targets, reach=1):
             return any(max(abs(ax - bx), abs(ay - by)) <= reach
-                       for ax, ay in cells for bx, by in targets)
+                       for ax, ay in c for bx, by in targets)
 
-        pole = {(ridge.DAMAGED_POLE[0], ridge.DAMAGED_POLE[1] - 3)}
-        house_x0, house_x1, house_y0, house_y1 = ridge.HOUSE_RECT
-        house = {(x, y) for x in range(house_x0, house_x1 + 1)
-                 for y in range(house_y0, house_y1 + 1)}
-        self.assertTrue(near(pole), "cable must leave the pole")
-        self.assertTrue(near({ridge.JUNCTION_BOX}), "cable must reach the junction box")
-        self.assertTrue(near(house, reach=1), "cable must reach the house")
+        c1, c2 = cells(art.line1_pixels()), cells(art.line2_pixels())
+        self.assertTrue(near(c1, {(ridge.FEEDER_POLE[0], ridge.FEEDER_POLE[1] - 3)}))
+        self.assertTrue(near(c1, {ridge.FEEDER_BOX}, reach=2))
+        self.assertTrue(near(c2, {(ridge.DAMAGED_POLE[0], ridge.DAMAGED_POLE[1] - 3)}))
+        self.assertTrue(near(c2, {ridge.JUNCTION_BOX}))
+        hx0, hx1, hy0, hy1 = ridge.HOUSE_RECT
+        house = {(x, y) for x in range(hx0, hx1 + 1) for y in range(hy0, hy1 + 1)}
+        self.assertTrue(near(c2, house))
 
     def test_cable_cells_are_empty_collision(self):
         for tx, ty in art.cable_route_tiles():
@@ -165,8 +200,8 @@ class RidgeBackgroundTests(unittest.TestCase):
         # The doorway is dark timber, not a window.
         self.assertTrue(all(self.native(dx, dy, x, 2) == 0 for x in range(2, 6)))
 
-    def test_gust_lanes_are_open_air_metal_placards(self):
-        for row, x0, x1 in ridge.GUST_LANES:
+    def test_hazard_lanes_are_open_air_metal_placards(self):
+        for row, x0, x1 in ridge.hazard_lanes():
             for tx in range(x0, x1 + 1):
                 self.assertEqual(self.grid[row][tx], climb.COL_EMPTY)
                 self.assertEqual(self.slot(tx, row), art.METAL)

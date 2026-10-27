@@ -71,7 +71,7 @@ CABLE_ARC_FRAMES = 24       # arc: hits (group 1)
 # ---------------------------------------------------------------------------
 BOARDS = {
     "storm_climb": [(30, 5, 7), (27, 14, 16), (9, 8, 10)],
-    "wind_ridge": [(15, 21, 23)],
+    "wind_ridge": [(15, 23, 25)],   # floor, between J1 and rock B
     "pine_hollow": [],
 }
 HIDDEN_CABLES = {

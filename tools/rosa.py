@@ -118,7 +118,7 @@ HUD_TEXT = "LINE %D1$10$/1 HOME %D1$11$/1"
 # on his checkpoint (ridge var 9). The refusal shows text only; it never
 # nudges the hero, because a nudge plus leftover momentum re-enters the
 # trigger and loops (exact ROM 147c23be, summit exit).
-RIDGE_EXIT = (38, 9, 1, 3)
+RIDGE_EXIT = (ridge.MAP_W - 2, 9, 1, 3)   # right end of Hiroshi's porch
 RIDGE_EXIT_GATE_VAR = ridge.VAR_HOME_POWERED   # "9"
 
 # ---------------------------------------------------------------------------

@@ -6,7 +6,7 @@
   "prefabId": "",
   "name": "Hiroshi (Wind Ridge)",
   "coordinateType": "tiles",
-  "x": 34,
+  "x": 54,
   "y": 11,
   "frame": 0,
   "animate": true,
@@ -118,7 +118,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "LINE %D1$08$/1 HOME %D1$09$/1",
+              "text": "LINE %D1$18$/2 HOME %D1$09$/1",
               "x": 0,
               "y": 0,
               "location": "overlay"
@@ -134,11 +134,11 @@
                 "type": "eq",
                 "valueA": {
                   "type": "variable",
-                  "value": "8"
+                  "value": "18"
                 },
                 "valueB": {
                   "type": "number",
-                  "value": 1
+                  "value": 2
                 }
               }
             },
@@ -224,7 +224,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$08$/1 HOME %D1$09$/1",
+                    "text": "LINE %D1$18$/2 HOME %D1$09$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
@@ -312,7 +312,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$08$/1 HOME %D1$09$/1",
+                    "text": "LINE %D1$18$/2 HOME %D1$09$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"

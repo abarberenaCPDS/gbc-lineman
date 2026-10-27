@@ -6,7 +6,7 @@
   "prefabId": "",
   "name": "Dangling Cable End",
   "coordinateType": "tiles",
-  "x": 16,
+  "x": 30,
   "y": 11,
   "frame": 0,
   "animate": true,
@@ -63,7 +63,7 @@
                     "variable": "6",
                     "value": {
                       "type": "number",
-                      "value": 1
+                      "value": 2
                     }
                   },
                   "id": "0b0c9a3b-5691-5ddb-be8d-901fcd1c175a"
@@ -104,7 +104,7 @@
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Got the cable!\nTo the box ahead."
+                      "Got the cable!\nTo Hiroshi's box."
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -148,7 +148,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$08$/1 HOME %D1$09$/1",
+                    "text": "LINE %D1$18$/2 HOME %D1$09$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
@@ -160,7 +160,74 @@
             }
           }
         ],
-        "false": []
+        "false": [
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "a5f5984d-d96a-51a9-90db-6188e9bfe8e0"
+          },
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "Hands full!\nOne cable a trip."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 7,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 5,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "time",
+              "closeDelayTime": 0.5,
+              "closeDelayFrames": 30
+            },
+            "id": "0306099f-3246-5ba2-872d-5fe66d812a4e"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 16
+              }
+            },
+            "id": "3d9c66c4-61af-55a9-97ac-dfc329930964"
+          },
+          {
+            "command": "EVENT_OVERLAY_SHOW",
+            "args": {
+              "color": "black",
+              "x": 0,
+              "y": 0
+            },
+            "id": "31369851-a29f-5559-9ffe-deeed5057f3a"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "LINE %D1$18$/2 HOME %D1$09$/1",
+              "x": 0,
+              "y": 0,
+              "location": "overlay"
+            },
+            "id": "fe0afabe-9a54-5828-abef-f6aed81f1ada"
+          }
+        ]
       }
     }
   ],

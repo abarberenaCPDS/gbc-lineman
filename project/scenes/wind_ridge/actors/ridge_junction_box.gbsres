@@ -4,9 +4,9 @@
   "_index": 4,
   "symbol": "ridge_junction_box",
   "prefabId": "",
-  "name": "Junction Box (Ridge Floor)",
+  "name": "Junction Box (Ridge House)",
   "coordinateType": "tiles",
-  "x": 33,
+  "x": 53,
   "y": 11,
   "frame": 0,
   "animate": true,
@@ -98,7 +98,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "LINE %D1$08$/1 HOME %D1$09$/1",
+              "text": "LINE %D1$18$/2 HOME %D1$09$/1",
               "x": 0,
               "y": 0,
               "location": "overlay"
@@ -118,7 +118,7 @@
                 },
                 "valueB": {
                   "type": "number",
-                  "value": 1
+                  "value": 2
                 }
               }
             },
@@ -148,6 +148,13 @@
                   "id": "dd3038a8-2629-57d0-ad2e-c8bb9f275792"
                 },
                 {
+                  "command": "EVENT_INC_VALUE",
+                  "args": {
+                    "variable": "18"
+                  },
+                  "id": "7adda38c-16c0-527e-b915-b9133a635514"
+                },
+                {
                   "command": "EVENT_ACTOR_SET_STATE",
                   "args": {
                     "actorId": "$self$",
@@ -166,18 +173,129 @@
                   "id": "f8ca0e1f-4a9d-54c5-af00-60699008fad3"
                 },
                 {
-                  "command": "EVENT_PALETTE_SET_BACKGROUND",
+                  "command": "EVENT_IF",
                   "args": {
-                    "palette0": "keep",
-                    "palette1": "keep",
-                    "palette2": "keep",
-                    "palette3": "keep",
-                    "palette4": "keep",
-                    "palette5": "0cdd592b-0a2d-56bb-951c-67929aa856c7",
-                    "palette6": "keep",
-                    "palette7": "keep"
+                    "condition": {
+                      "type": "eq",
+                      "valueA": {
+                        "type": "variable",
+                        "value": "17"
+                      },
+                      "valueB": {
+                        "type": "number",
+                        "value": 1
+                      }
+                    }
                   },
-                  "id": "7ad9d181-caa1-5a04-acf6-5260a091f882"
+                  "id": "34d9941d-fab3-591b-9430-91663c38b9ca",
+                  "children": {
+                    "true": [
+                      {
+                        "command": "EVENT_IF",
+                        "args": {
+                          "condition": {
+                            "type": "eq",
+                            "valueA": {
+                              "type": "variable",
+                              "value": "8"
+                            },
+                            "valueB": {
+                              "type": "number",
+                              "value": 1
+                            }
+                          }
+                        },
+                        "id": "ffbc0061-d1e6-5ecd-ac86-2ea303b3b1c7",
+                        "children": {
+                          "true": [
+                            {
+                              "command": "EVENT_PALETTE_SET_BACKGROUND",
+                              "args": {
+                                "palette0": "keep",
+                                "palette1": "keep",
+                                "palette2": "keep",
+                                "palette3": "keep",
+                                "palette4": "keep",
+                                "palette5": "6cb22e14-214f-5eda-a333-52994d029a94",
+                                "palette6": "keep",
+                                "palette7": "keep"
+                              },
+                              "id": "90e93da2-ead1-5500-8434-c8c5305704fb"
+                            }
+                          ],
+                          "false": [
+                            {
+                              "command": "EVENT_PALETTE_SET_BACKGROUND",
+                              "args": {
+                                "palette0": "keep",
+                                "palette1": "keep",
+                                "palette2": "keep",
+                                "palette3": "keep",
+                                "palette4": "keep",
+                                "palette5": "f5e35fc6-5dac-59f7-8900-f55b522c52b3",
+                                "palette6": "keep",
+                                "palette7": "keep"
+                              },
+                              "id": "6f66219f-9e5a-504a-a6bb-85c00a122e1c"
+                            }
+                          ]
+                        }
+                      }
+                    ],
+                    "false": [
+                      {
+                        "command": "EVENT_IF",
+                        "args": {
+                          "condition": {
+                            "type": "eq",
+                            "valueA": {
+                              "type": "variable",
+                              "value": "8"
+                            },
+                            "valueB": {
+                              "type": "number",
+                              "value": 1
+                            }
+                          }
+                        },
+                        "id": "a001b3a6-fd45-55b6-aad7-364066282463",
+                        "children": {
+                          "true": [
+                            {
+                              "command": "EVENT_PALETTE_SET_BACKGROUND",
+                              "args": {
+                                "palette0": "keep",
+                                "palette1": "keep",
+                                "palette2": "keep",
+                                "palette3": "keep",
+                                "palette4": "keep",
+                                "palette5": "f5563be4-6c40-51ba-9cc9-c9086c2e9433",
+                                "palette6": "keep",
+                                "palette7": "keep"
+                              },
+                              "id": "0c3ceceb-ee50-51f5-8e74-7405b3096ef5"
+                            }
+                          ],
+                          "false": [
+                            {
+                              "command": "EVENT_PALETTE_SET_BACKGROUND",
+                              "args": {
+                                "palette0": "keep",
+                                "palette1": "keep",
+                                "palette2": "keep",
+                                "palette3": "keep",
+                                "palette4": "keep",
+                                "palette5": "38b182ed-be48-55d3-a5aa-849dae614e1a",
+                                "palette6": "keep",
+                                "palette7": "keep"
+                              },
+                              "id": "a24952a8-09c3-5dc1-b16e-1a371dd4e613"
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
                 },
                 {
                   "command": "EVENT_SOUND_PLAY_EFFECT",
@@ -194,138 +312,316 @@
                   "id": "cc909dca-e87e-5dcf-82e3-04a6bd22e603"
                 },
                 {
-                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "command": "EVENT_IF",
                   "args": {
-                    "units": "pixels",
-                    "y": {
-                      "type": "number",
-                      "value": 150
+                    "condition": {
+                      "type": "eq",
+                      "valueA": {
+                        "type": "variable",
+                        "value": "17"
+                      },
+                      "valueB": {
+                        "type": "number",
+                        "value": 1
+                      }
                     }
                   },
-                  "id": "a3912b6e-f44f-54b7-9466-42faddf5b903"
-                },
-                {
-                  "command": "EVENT_TEXT",
-                  "args": {
-                    "text": [
-                      "Line is live!\nGo see Hiroshi."
+                  "id": "0e274b2b-a9dc-5f1c-8298-cd2bfd4a70a6",
+                  "children": {
+                    "true": [
+                      {
+                        "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                        "args": {
+                          "units": "pixels",
+                          "y": {
+                            "type": "number",
+                            "value": 150
+                          }
+                        },
+                        "id": "a3912b6e-f44f-54b7-9466-42faddf5b903"
+                      },
+                      {
+                        "command": "EVENT_TEXT",
+                        "args": {
+                          "text": [
+                            "Both lines live!\nGo see Hiroshi."
+                          ],
+                          "avatarId": "",
+                          "minHeight": 4,
+                          "maxHeight": 7,
+                          "textX": 1,
+                          "textY": 1,
+                          "textHeight": 5,
+                          "position": "bottom",
+                          "clearPrevious": true,
+                          "showFrame": true,
+                          "speedIn": -1,
+                          "speedOut": -1,
+                          "closeWhen": "key",
+                          "closeButton": "a",
+                          "closeDelayUnits": "time",
+                          "closeDelayTime": 0.5,
+                          "closeDelayFrames": 30
+                        },
+                        "id": "eac7fee4-8575-5ece-8c60-12b94b332b2f"
+                      },
+                      {
+                        "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                        "args": {
+                          "units": "pixels",
+                          "y": {
+                            "type": "number",
+                            "value": 16
+                          }
+                        },
+                        "id": "09a4f60e-7660-5098-9c93-dab7f6e16fbe"
+                      },
+                      {
+                        "command": "EVENT_OVERLAY_SHOW",
+                        "args": {
+                          "color": "black",
+                          "x": 0,
+                          "y": 0
+                        },
+                        "id": "9b590392-ea9a-50af-b436-75ad02d23dfe"
+                      },
+                      {
+                        "command": "EVENT_TEXT_DRAW",
+                        "args": {
+                          "text": "LINE %D1$18$/2 HOME %D1$09$/1",
+                          "x": 0,
+                          "y": 0,
+                          "location": "overlay"
+                        },
+                        "id": "6d421a26-2e9a-5e85-a5df-84cf1a3ba558"
+                      }
                     ],
-                    "avatarId": "",
-                    "minHeight": 4,
-                    "maxHeight": 7,
-                    "textX": 1,
-                    "textY": 1,
-                    "textHeight": 5,
-                    "position": "bottom",
-                    "clearPrevious": true,
-                    "showFrame": true,
-                    "speedIn": -1,
-                    "speedOut": -1,
-                    "closeWhen": "key",
-                    "closeButton": "a",
-                    "closeDelayUnits": "time",
-                    "closeDelayTime": 0.5,
-                    "closeDelayFrames": 30
-                  },
-                  "id": "eac7fee4-8575-5ece-8c60-12b94b332b2f"
-                },
-                {
-                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
-                  "args": {
-                    "units": "pixels",
-                    "y": {
-                      "type": "number",
-                      "value": 16
-                    }
-                  },
-                  "id": "09a4f60e-7660-5098-9c93-dab7f6e16fbe"
-                },
-                {
-                  "command": "EVENT_OVERLAY_SHOW",
-                  "args": {
-                    "color": "black",
-                    "x": 0,
-                    "y": 0
-                  },
-                  "id": "9b590392-ea9a-50af-b436-75ad02d23dfe"
-                },
-                {
-                  "command": "EVENT_TEXT_DRAW",
-                  "args": {
-                    "text": "LINE %D1$08$/1 HOME %D1$09$/1",
-                    "x": 0,
-                    "y": 0,
-                    "location": "overlay"
-                  },
-                  "id": "6d421a26-2e9a-5e85-a5df-84cf1a3ba558"
+                    "false": [
+                      {
+                        "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                        "args": {
+                          "units": "pixels",
+                          "y": {
+                            "type": "number",
+                            "value": 150
+                          }
+                        },
+                        "id": "0b4216ae-947d-530a-9010-1be1ff0c3a3a"
+                      },
+                      {
+                        "command": "EVENT_TEXT",
+                        "args": {
+                          "text": [
+                            "House line live!\nNow the feeder."
+                          ],
+                          "avatarId": "",
+                          "minHeight": 4,
+                          "maxHeight": 7,
+                          "textX": 1,
+                          "textY": 1,
+                          "textHeight": 5,
+                          "position": "bottom",
+                          "clearPrevious": true,
+                          "showFrame": true,
+                          "speedIn": -1,
+                          "speedOut": -1,
+                          "closeWhen": "key",
+                          "closeButton": "a",
+                          "closeDelayUnits": "time",
+                          "closeDelayTime": 0.5,
+                          "closeDelayFrames": 30
+                        },
+                        "id": "6f8a5964-ea84-5648-8d72-fb946a46c7c4"
+                      },
+                      {
+                        "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                        "args": {
+                          "units": "pixels",
+                          "y": {
+                            "type": "number",
+                            "value": 16
+                          }
+                        },
+                        "id": "694921ae-b219-536f-b22f-912fe465661c"
+                      },
+                      {
+                        "command": "EVENT_OVERLAY_SHOW",
+                        "args": {
+                          "color": "black",
+                          "x": 0,
+                          "y": 0
+                        },
+                        "id": "9ac5bce5-9d9d-5402-9ed8-fd6cd8b3d061"
+                      },
+                      {
+                        "command": "EVENT_TEXT_DRAW",
+                        "args": {
+                          "text": "LINE %D1$18$/2 HOME %D1$09$/1",
+                          "x": 0,
+                          "y": 0,
+                          "location": "overlay"
+                        },
+                        "id": "aa450d9f-7dd1-5c57-8477-7aae29d6e602"
+                      }
+                    ]
+                  }
                 }
               ],
               "false": [
                 {
-                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "command": "EVENT_IF",
                   "args": {
-                    "units": "pixels",
-                    "y": {
-                      "type": "number",
-                      "value": 150
+                    "condition": {
+                      "type": "eq",
+                      "valueA": {
+                        "type": "variable",
+                        "value": "6"
+                      },
+                      "valueB": {
+                        "type": "number",
+                        "value": 1
+                      }
                     }
                   },
-                  "id": "6b4ffe83-d8a0-5869-8521-fa13d17c115c"
-                },
-                {
-                  "command": "EVENT_TEXT",
-                  "args": {
-                    "text": [
-                      "No cable yet.\nCheck the pole."
+                  "id": "6cb5cc2c-5e8c-588b-b19c-c7d0d14752e5",
+                  "children": {
+                    "true": [
+                      {
+                        "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                        "args": {
+                          "units": "pixels",
+                          "y": {
+                            "type": "number",
+                            "value": 150
+                          }
+                        },
+                        "id": "0971ca00-61f4-5542-90ec-bb2b55213edc"
+                      },
+                      {
+                        "command": "EVENT_TEXT",
+                        "args": {
+                          "text": [
+                            "Wrong cable.\nIt's the feeder."
+                          ],
+                          "avatarId": "",
+                          "minHeight": 4,
+                          "maxHeight": 7,
+                          "textX": 1,
+                          "textY": 1,
+                          "textHeight": 5,
+                          "position": "bottom",
+                          "clearPrevious": true,
+                          "showFrame": true,
+                          "speedIn": -1,
+                          "speedOut": -1,
+                          "closeWhen": "key",
+                          "closeButton": "a",
+                          "closeDelayUnits": "time",
+                          "closeDelayTime": 0.5,
+                          "closeDelayFrames": 30
+                        },
+                        "id": "0b2fa6d0-ea59-55dc-9244-bbcf086c3e9d"
+                      },
+                      {
+                        "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                        "args": {
+                          "units": "pixels",
+                          "y": {
+                            "type": "number",
+                            "value": 16
+                          }
+                        },
+                        "id": "9fbebf26-1131-583d-985c-bf33aa5a0ddb"
+                      },
+                      {
+                        "command": "EVENT_OVERLAY_SHOW",
+                        "args": {
+                          "color": "black",
+                          "x": 0,
+                          "y": 0
+                        },
+                        "id": "05512ef2-ff46-5986-b838-8d4800a9ab46"
+                      },
+                      {
+                        "command": "EVENT_TEXT_DRAW",
+                        "args": {
+                          "text": "LINE %D1$18$/2 HOME %D1$09$/1",
+                          "x": 0,
+                          "y": 0,
+                          "location": "overlay"
+                        },
+                        "id": "a15e286d-fad1-5fc4-a693-2b57e00abaab"
+                      }
                     ],
-                    "avatarId": "",
-                    "minHeight": 4,
-                    "maxHeight": 7,
-                    "textX": 1,
-                    "textY": 1,
-                    "textHeight": 5,
-                    "position": "bottom",
-                    "clearPrevious": true,
-                    "showFrame": true,
-                    "speedIn": -1,
-                    "speedOut": -1,
-                    "closeWhen": "key",
-                    "closeButton": "a",
-                    "closeDelayUnits": "time",
-                    "closeDelayTime": 0.5,
-                    "closeDelayFrames": 30
-                  },
-                  "id": "8102c9f6-8039-505a-b74b-c98d0d9e508f"
-                },
-                {
-                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
-                  "args": {
-                    "units": "pixels",
-                    "y": {
-                      "type": "number",
-                      "value": 16
-                    }
-                  },
-                  "id": "23fae16e-bc69-5939-92e5-36c8cd617d1a"
-                },
-                {
-                  "command": "EVENT_OVERLAY_SHOW",
-                  "args": {
-                    "color": "black",
-                    "x": 0,
-                    "y": 0
-                  },
-                  "id": "39d1f9ae-d59d-5bc9-a872-c2f73fb7feda"
-                },
-                {
-                  "command": "EVENT_TEXT_DRAW",
-                  "args": {
-                    "text": "LINE %D1$08$/1 HOME %D1$09$/1",
-                    "x": 0,
-                    "y": 0,
-                    "location": "overlay"
-                  },
-                  "id": "cd8b3054-a11e-51b9-8291-33a1f1a6cb27"
+                    "false": [
+                      {
+                        "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                        "args": {
+                          "units": "pixels",
+                          "y": {
+                            "type": "number",
+                            "value": 150
+                          }
+                        },
+                        "id": "6b4ffe83-d8a0-5869-8521-fa13d17c115c"
+                      },
+                      {
+                        "command": "EVENT_TEXT",
+                        "args": {
+                          "text": [
+                            "No cable yet.\nFind its pole."
+                          ],
+                          "avatarId": "",
+                          "minHeight": 4,
+                          "maxHeight": 7,
+                          "textX": 1,
+                          "textY": 1,
+                          "textHeight": 5,
+                          "position": "bottom",
+                          "clearPrevious": true,
+                          "showFrame": true,
+                          "speedIn": -1,
+                          "speedOut": -1,
+                          "closeWhen": "key",
+                          "closeButton": "a",
+                          "closeDelayUnits": "time",
+                          "closeDelayTime": 0.5,
+                          "closeDelayFrames": 30
+                        },
+                        "id": "8102c9f6-8039-505a-b74b-c98d0d9e508f"
+                      },
+                      {
+                        "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                        "args": {
+                          "units": "pixels",
+                          "y": {
+                            "type": "number",
+                            "value": 16
+                          }
+                        },
+                        "id": "23fae16e-bc69-5939-92e5-36c8cd617d1a"
+                      },
+                      {
+                        "command": "EVENT_OVERLAY_SHOW",
+                        "args": {
+                          "color": "black",
+                          "x": 0,
+                          "y": 0
+                        },
+                        "id": "39d1f9ae-d59d-5bc9-a872-c2f73fb7feda"
+                      },
+                      {
+                        "command": "EVENT_TEXT_DRAW",
+                        "args": {
+                          "text": "LINE %D1$18$/2 HOME %D1$09$/1",
+                          "x": 0,
+                          "y": 0,
+                          "location": "overlay"
+                        },
+                        "id": "cd8b3054-a11e-51b9-8291-33a1f1a6cb27"
+                      }
+                    ]
+                  }
                 }
               ]
             }
