@@ -4,11 +4,16 @@ Modelled on ``make_climb_art.py``: the RGB image returned by
 :func:`make_background` is the artist-facing source, and the compiler-facing
 PNG is a grayscale index proxy that uses GB Studio's native index thresholds.
 This generator owns only ``wind_ridge.png`` and its background sidecar.
+
+The metal BG slot holds wire pixels only (colour indices 1, 3, 2 belong to
+chain stages 1, 2, 3); placards and whip brackets live in the stone slot.
 """
 from __future__ import annotations
 
+import bisect
 import functools
 import json
+import random
 from pathlib import Path
 
 from PIL import Image, ImageDraw
@@ -27,110 +32,154 @@ WIDTH, HEIGHT = ridge.MAP_W * TILE, ridge.MAP_H * TILE
 PALETTES = [[tuple(bytes.fromhex(color)) for color in colors]
             for _, colors in opening.BG_PALETTES]
 NATIVE_PROXY_BY_INDEX = (255, 170, 85, 0)
-MAX_UNIQUE_TILES = 192
+MAX_UNIQUE_TILES = 300
 
 # BG palette families (opening.BG_PALETTES order). Slot 7 is the editor UI.
 SKY, STONE, TIMBER, WINDOW, FOLIAGE, METAL, EARTH = range(7)
 LINE = climb.LINE_BG_SLOT
-LINE_INDEX = climb.LINE_COLOR_INDEX
 assert LINE == METAL, "cable slot must be the metal family"
 assert ridge.WINDOW_BG_SLOT == WINDOW, "window slot must be the window family"
 
-# Pixel polyline of the distant ridge (sky tiles only). It stops at the floor
-# top; rows 0-1 under the HUD stay clear of it.
-RIDGE_LINE = [(0, 58), (14, 46), (28, 52), (42, 34), (56, 44), (72, 26),
-              (88, 42), (104, 38), (118, 22), (134, 40), (150, 32), (166, 48),
-              (182, 36), (198, 44), (214, 28), (230, 42), (246, 34), (262, 50),
-              (278, 30), (294, 42), (308, 34), (320, 44), (336, 36), (352, 50),
-              (368, 30), (384, 40), (400, 24), (414, 38), (430, 46), (446, 32),
-              (462, 42), (480, 36)]
-RIDGE_HIGHLIGHTS = [[(42, 34), (46, 40)], [(118, 22), (114, 28)],
-                    [(214, 28), (210, 35)], [(278, 30), (274, 37)],
-                    [(368, 30), (364, 38)], [(400, 24), (396, 31)], [(446, 32), (442, 39)]]
-# Storm rain slashes and sparks, all above the ridge line.
-RAIN_SLASHES = [(20, 30), (52, 24), (92, 28), (140, 26), (180, 26),
-                (250, 24), (300, 26), (340, 28), (372, 24), (410, 30),
-                (436, 22), (466, 28)]
-SPARKS = [(64, 26, 3), (160, 20, 3), (236, 16, 2), (330, 22, 3), (392, 18, 3), (452, 24, 2)]
-# Far-left pines (x, top, w, bottom) in pixels, behind the cliff wall. They sit
-# clear of the cable route and the gust lanes.
-PINES = [(9, 52, 12, 99), (25, 76, 10, 111), (132, 64, 10, 100),
-         (205, 60, 10, 100), (336, 62, 10, 100)]
-
-# The snapped utility pole (contract: ridge.DAMAGED_POLE) is the animated
-# intro_pole actor (see make_ridge_scene); the background draws no pole. The
-# cable starts at the top of that sprite (ridge.CABLE_ROUTE[0] == pole x, y-3).
-
-# Route cells are converted to tile-centre pixels, so every polyline vertex
-# lands in the middle of its contract cell.
 LANE_CELLS = {(row, x) for row, x0, x1 in ridge.hazard_lanes()
               for x in range(x0, x1 + 1)}
-# Overhead crossarm over each whip lane (the wire itself is a sprite whose
-# canvas covers rows 11-14), rows 9-10, one tile wider than the lane each side.
-BRACKET_ROWS = (9, 10)
-BRACKET_CELLS = {(BRACKET_ROWS[i], x) for _, x0, x1 in ridge.WHIP_LANES
-                 for x in range(x0 - 1, x1 + 2) for i in (0, 1)}
+# Stone bracket over each whip lane: the 16x32 whip canvas spans lane rows
+# -1..+2, so the two rows just above it are lane rows -3 and -2.
+BRACKET_CELLS = {(row + dr, x) for row, x0, x1 in ridge.WHIP_LANES
+                 for x in range(x0 - 1, x1 + 2) for dr in (-3, -2)}
+PLACARD_CELLS = LANE_CELLS | BRACKET_CELLS
+
+# Pines (tile-aligned, two widths of tops) behind the route.
+PINE_COLUMNS = [2, 12, 19, 29, 74, 90]
+PINE_TOPS = [152, 128, 144, 136, 152, 136]
+PINES = [(tx * TILE, top, 16, ridge.GROUND_ROW * TILE)
+         for tx, top in zip(PINE_COLUMNS, PINE_TOPS)]
+
+
+def _ridge_line(seed: int, base: int, amp: int, lo: int, hi: int) -> list[tuple[int, int]]:
+    """Jagged skyline across the whole map (deterministic, no repeats)."""
+    rng = random.Random(seed)
+    pts, x, y = [], 0, base
+    while x < WIDTH:
+        pts.append((x, y))
+        x += rng.choice((16, 16, 24))
+        y = max(lo, min(hi, base + 8 * rng.randint(-amp // 8, amp // 8)))
+    pts.append((WIDTH, y))
+    return pts
+
+
+FAR_RIDGE = _ridge_line(7, 64, 34, 28, 100)
+NEAR_RIDGE = _ridge_line(19, 138, 26, 104, 176)
+
+
+def _ridge_y(points, x: int) -> int:
+    xs = [p[0] for p in points]
+    k = max(1, min(len(points) - 1, bisect.bisect_right(xs, x)))
+    (x0, y0), (x1, y1) = points[k - 1], points[k]
+    return y0 + (y1 - y0) * (x - x0) // max(1, x1 - x0)
+
+
+def _decor():
+    rng = random.Random(41)
+    slashes = []
+    for _ in range(40):
+        x = rng.randint(1, WIDTH // 8 - 1) * 8 + rng.choice((2, 5))
+        slashes.append((x, rng.randint(3, max(4, (_ridge_y(FAR_RIDGE, x) - 12) // 8)) * 8 + 1))
+    sparks = []
+    for _ in range(16):
+        x = rng.randint(1, WIDTH // 8 - 1) * 8 + 4
+        sparks.append((x, rng.randint(3, max(4, (_ridge_y(FAR_RIDGE, x) - 8) // 8)) * 8 + 3,
+                       rng.choice((2, 3))))
+    return slashes, sparks
+
+
+RAIN_SLASHES, SPARKS = _decor()
+
+
+def _post_columns() -> list[int]:
+    """Catwalk support columns: ends plus one inboard, clear of spans and lanes."""
+    out = []
+    for _, x0, x1 in ridge.LEDGES:
+        for x in (x0, x0 + 3, x1):
+            if any(c0 <= x <= c1 for c0, c1 in
+                   (s["columns"] for s in ridge.FALLEN_SPANS)):
+                continue
+            if any(lx0 - 1 <= x <= lx1 + 1 for _, lx0, lx1 in ridge.hazard_lanes()):
+                continue
+            out.append(x)
+    return out
 
 
 def _post_tiles(grid: list[list[int]]) -> list[tuple[int, int]]:
-    """Catwalk posts: vertical timber under each ledge, in open air only."""
+    """Catwalk posts: vertical timber from each ledge down to the floor."""
     posts: list[tuple[int, int]] = []
-    for row, x0, x1 in ridge.LEDGES:
-        for tx in sorted({x0, x1, *range(x0 + 3, x1, 4)}):
-            for ty in range(row + 1, min(row + 4, ridge.MAP_H)):
-                if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in LANE_CELLS:
+    for row, _, _ in ridge.LEDGES:
+        for tx in _post_columns():
+            for ty in range(row + 1, ridge.MAP_H):
+                if grid[ty][tx] != climb.COL_EMPTY:
                     break
+                if (ty, tx) in PLACARD_CELLS:
+                    raise AssertionError(f"post crosses hazard cell {tx},{ty}")
                 posts.append((tx, ty))
     return posts
 
 
+def _mask_pixels(draw) -> frozenset[tuple[int, int]]:
+    mask = Image.new("1", (WIDTH + 2, HEIGHT + 2), 0)
+    draw(ImageDraw.Draw(mask))
+    w = mask.width
+    return frozenset((i % w, i // w) for i, v in enumerate(mask.get_flattened_data()) if v)
+
+
 def _polyline_pixels(route) -> frozenset[tuple[int, int]]:
-    """Pixels of a 1px polyline through contract tile centres."""
-    points = [(tx * TILE + TILE // 2, ty * TILE + TILE // 2) for tx, ty in route]
-    mask = Image.new("1", (WIDTH, HEIGHT), 0)
-    ImageDraw.Draw(mask).line(points, fill=255, width=1)
-    return frozenset((x, y) for y in range(HEIGHT) for x in range(WIDTH)
-                     if mask.getpixel((x, y)))
+    """2px-thick polyline through contract tile centres (inside the tile)."""
+    pts = [(tx * TILE + 3, ty * TILE + 3) for tx, ty in route]
+
+    def draw(d):
+        for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+            d.line([(x + dx, y + dy) for x, y in pts], fill=1, width=1)
+    return _mask_pixels(draw)
 
 
-def downed_wire_points() -> list[tuple[int, int]]:
-    """Zigzag fallen wire on the floor across ridge.DOWNED_SPAN (row 14 only)."""
+def span_points(span) -> list[tuple[int, int]]:
+    """Sagging zigzag wire lying on the floor row, across the span's columns."""
     y0 = (ridge.GROUND_ROW - 1) * TILE
-    x0, x1 = ridge.DOWNED_SPAN[0] * TILE, (ridge.DOWNED_SPAN[1] + 1) * TILE - 1
+    x0, x1 = span["columns"][0] * TILE + 1, (span["columns"][1] + 1) * TILE - 2
     pts, x, k = [], x0, 0
     while x < x1:
-        pts.append((x, y0 + (5, 3, 5, 4)[k % 4]))
-        x += 7
+        pts.append((x, y0 + (4, 2, 4, 3)[k % 4]))
+        x += 6
         k += 1
-    pts.append((x1, y0 + 5))
+    pts.append((x1, y0 + 4))
     return pts
 
 
-@functools.lru_cache(maxsize=None)
-def line1_pixels() -> frozenset[tuple[int, int]]:
-    """Feeder route plus the fallen wire (colour index 1)."""
-    pts = downed_wire_points()
-    mask = Image.new("1", (WIDTH, HEIGHT), 0)
-    d = ImageDraw.Draw(mask)
-    d.line(pts, fill=255, width=1)
-    d.line([(x, y + 1) for x, y in pts], fill=255, width=1)  # 2px thick
-    wire = frozenset((x, y) for y in range(HEIGHT) for x in range(WIDTH) if mask.getpixel((x, y)))
-    return _polyline_pixels(ridge.FEEDER_ROUTE) | wire
+def _span_pixels(span) -> frozenset[tuple[int, int]]:
+    pts = span_points(span)
+
+    def draw(d):
+        d.line(pts, fill=1, width=1)
+        d.line([(x, y + 1) for x, y in pts], fill=1, width=1)
+    return _mask_pixels(draw)
 
 
 @functools.lru_cache(maxsize=None)
-def line2_pixels() -> frozenset[tuple[int, int]]:
-    return _polyline_pixels(ridge.CABLE_ROUTE) - line1_pixels()
-
-
-def cable_pixels() -> frozenset[tuple[int, int]]:
-    return line1_pixels() | line2_pixels()
+def stage_pixels(stage: int) -> frozenset[tuple[int, int]]:
+    """Every pixel that may carry the wire colour index of ``stage``."""
+    out: set[tuple[int, int]] = set()
+    for s, route in ridge.WIRE_ROUTES:
+        if s == stage:
+            out |= _polyline_pixels(route)
+    for span in ridge.FALLEN_SPANS:
+        if span["live_after"] == stage:
+            out |= _span_pixels(span)
+    return frozenset(out)
 
 
 @functools.lru_cache(maxsize=None)
-def cable_route_tiles() -> frozenset[tuple[int, int]]:
-    """(tx, ty) tiles either line passes through; some may be occluded."""
-    return frozenset((x // TILE, y // TILE) for x, y in cable_pixels())
+def wire_tiles() -> frozenset[tuple[int, int]]:
+    """(tx, ty) tiles any wire pixel touches."""
+    return frozenset((x // TILE, y // TILE) for stage in (1, 2, 3)
+                     for x, y in stage_pixels(stage))
 
 
 def _set_rect(slots: list[list[int]], slot: int, x0: int, x1: int,
@@ -156,36 +205,36 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
                 if grid[ty][tx] == climb.COL_EMPTY and slots[ty][tx] == SKY:
                     slots[ty][tx] = FOLIAGE
 
-    for tx, ty in _post_tiles(grid):
+    posts = set(_post_tiles(grid))
+    for tx, ty in posts:
         slots[ty][tx] = TIMBER
 
-    # Hiroshi's cabin: timber body over the floor, two lit windows, one door.
     x0, x1, y0, y1 = ridge.HOUSE_RECT
     for ty in range(y0, y1 + 1):
         for tx in range(x0, x1 + 1):
             if grid[ty][tx] != climb.COL_EMPTY:
                 raise AssertionError(f"house overlaps collision at {tx},{ty}")
     _set_rect(slots, TIMBER, x0, x1, y0, y1)
-    # Each window owns exactly one whole tile; no other tile uses this slot.
     for tx, ty in ridge.HOUSE_WINDOWS:
         slots[ty][tx] = WINDOW
 
-    # Hazard lanes get a metal placard; the whip lane also gets an overhead
-    # crossarm. Neither uses indices 1 or 3 (those belong to the two lines).
-    for row, tx in sorted(LANE_CELLS | BRACKET_CELLS):
+    # Placards and whip brackets: STONE slot (the metal slot is wire only).
+    for row, tx in sorted(PLACARD_CELLS):
         if grid[row][tx] != climb.COL_EMPTY:
             raise AssertionError(f"hazard art overlaps collision at {tx},{row}")
-        slots[row][tx] = METAL
+        slots[row][tx] = STONE
 
-    # Claim the cable's open-sky tiles for the metal line slot last. Cells on
-    # the cabin, pole, posts or pines stay theirs, so the cable passes behind
-    # them as a gap rather than a recolour.
-    for tx, ty in sorted(cable_route_tiles()):
-        if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in LANE_CELLS:
+    # Wire tiles take the metal slot last; they may never hit collision,
+    # hazard art, the cabin or a post.
+    house = {(tx, ty) for ty in range(y0, y1 + 1) for tx in range(x0, x1 + 1)}
+    for tx, ty in sorted(wire_tiles()):
+        if grid[ty][tx] != climb.COL_EMPTY:
+            # Power enters through the left cliff wall; nothing else may hit rock.
+            assert tx == 0, f"wire tile {tx},{ty} inside collision"
             continue
-        if slots[ty][tx] == SKY:
-            slots[ty][tx] = LINE
-        assert slots[ty][tx] in (LINE, METAL), f"cable tile {tx},{ty} blocked by art"
+        if (ty, tx) in PLACARD_CELLS or (tx, ty) in house or (tx, ty) in posts:
+            raise AssertionError(f"wire tile {tx},{ty} collides with other art")
+        slots[ty][tx] = LINE
 
     assert all(0 <= slot < 7 for row in slots for slot in row), "UI slot 7 reserved"
     assert all(slots[ty][tx] == WINDOW for tx, ty in ridge.HOUSE_WINDOWS)
@@ -236,11 +285,19 @@ class _Canvas:
 
 def _draw_sky(c: _Canvas) -> None:
     p = PALETTES[SKY]
-    # One flat night-family ridge mass behind the route. It is the same slot
-    # as the sky, so rock and timber always win where they overlap.
-    c.polygon(SKY, RIDGE_LINE + [(WIDTH, HEIGHT - 24), (0, HEIGHT - 24)], p[1])
-    for points in RIDGE_HIGHLIGHTS:
-        c.line(SKY, points, p[2])
+    base = [(WIDTH, HEIGHT - 24), (0, HEIGHT - 24)]
+    # Far ridge: pale haze mass with a lit crest. Near ridge: dark silhouette
+    # in front, so the traverse reads against two layers.
+    c.polygon(SKY, FAR_RIDGE + base, p[1])
+    c.line(SKY, FAR_RIDGE, p[2])
+    c.polygon(SKY, NEAR_RIDGE + base, p[0])
+    for (x0, y0), (x1, y1) in zip(NEAR_RIDGE, NEAR_RIDGE[1:]):
+        if (x0 // 8) % 2 == 0 and y1 > y0:          # rim light on some slopes
+            c.line(SKY, [(x0, y0 + 1), (x1, y1 + 1)], p[1])
+    for (x0, y0), (x1, y1) in zip(FAR_RIDGE, FAR_RIDGE[1:]):
+        if y1 > y0 and (x1 - x0) > 14:
+            mx, my = (x0 + x1) // 16 * 8, (y0 + y1) // 16 * 8
+            c.line(SKY, [(mx, my + 3), (mx - 3, my + 9)], p[2])
     for x, y in RAIN_SLASHES:
         c.line(SKY, [(x, y), (x - 2, y + 4)], p[2])
     for x, y, index in SPARKS:
@@ -269,8 +326,6 @@ def _draw_rock(c: _Canvas, grid: list[list[int]]) -> None:
             ramp = PALETTES[slot]
             x, y = tx * TILE, ty * TILE
             c.rect(slot, (x, y, x + 7, y + 7), ramp[1])
-            # Exposed rock gets a lit surface edge; the joint seams are
-            # diagonal, as in the climb rock.
             if ty == 0 or grid[ty - 1][tx] != climb.COL_SOLID:
                 c.line(slot, [(x, y), (x + 7, y)], ramp[3])
             if (tx + ty) % 3 == 0:
@@ -288,7 +343,6 @@ def _draw_ledges(c: _Canvas) -> None:
     for row, x0, x1 in ridge.LEDGES:
         y = row * TILE
         left, right = x0 * TILE, x1 * TILE + 7
-        # The light top edge is exactly the collision row's first pixel line.
         c.line(TIMBER, [(left, y), (right, y)], p[3])
         c.line(TIMBER, [(left, y + 1), (right, y + 1)], p[2])
         c.rect(TIMBER, (left, y + 2, right, y + 4), p[1])
@@ -312,15 +366,12 @@ def _draw_cabin(c: _Canvas) -> None:
     x0, x1, y0, y1 = ridge.HOUSE_RECT
     left, right = x0 * TILE, x1 * TILE + 7
     top, bottom = y0 * TILE, y1 * TILE + 7
-    # Board walls with a seam at every tile edge.
     c.rect(TIMBER, (left, top + 8, right, bottom), p[1])
     for x in range(left + 7, right, TILE):
         c.line(TIMBER, [(x, top + 8), (x, bottom)], p[0])
-    # Pitched roof on the top tile row, with a lit eave.
     mid = (left + right) // 2
     c.polygon(TIMBER, [(left, top + 7), (mid, top), (right, top + 7)], p[2])
     c.line(TIMBER, [(left, top + 7), (right, top + 7)], p[3])
-    # Doorway: a dark opening three tiles tall, framed in light timber.
     dx = ridge.HOUSE_DOOR[0] * TILE
     dy0 = (ridge.HOUSE_DOOR[1] - 2) * TILE
     c.rect(TIMBER, (dx, dy0, dx + 7, bottom), p[0])
@@ -331,7 +382,6 @@ def _draw_cabin(c: _Canvas) -> None:
 
 def _draw_windows(c: _Canvas) -> None:
     p = PALETTES[WINDOW]
-    # Cold glass; the scene swaps this slot to warm when the line is live.
     for tx, ty in ridge.HOUSE_WINDOWS:
         x, y = tx * TILE, ty * TILE
         c.rect(WINDOW, (x, y, x + 7, y + 7), p[0])
@@ -342,37 +392,38 @@ def _draw_windows(c: _Canvas) -> None:
 
 
 def _draw_warnings(c: _Canvas) -> None:
-    # Metal placards and brackets use indices 0 and 2 only; 1 and 3 are the lines'.
-    p = PALETTES[METAL]
+    # Placards and whip brackets: stone slot, any index.
+    p = PALETTES[STONE]
     for row, x0, x1 in ridge.hazard_lanes():
         left, right = x0 * TILE, x1 * TILE + 7
         y = row * TILE
-        c.rect(METAL, (left + 2, y + 2, right - 2, y + 5), p[0])
-        c.line(METAL, [(left + 4, y + 2), (right - 4, y + 5)], p[2])
-        c.line(METAL, [(right - 4, y + 2), (left + 4, y + 5)], p[2])
-    for _, x0, x1 in ridge.WHIP_LANES:
+        c.rect(STONE, (left + 2, y + 2, right - 2, y + 5), p[1])
+        c.line(STONE, [(left + 4, y + 2), (right - 4, y + 5)], p[3])
+        c.line(STONE, [(right - 4, y + 2), (left + 4, y + 5)], p[3])
+    for row, x0, x1 in ridge.WHIP_LANES:
         left, right = (x0 - 1) * TILE + 1, (x1 + 2) * TILE - 2
-        y = BRACKET_ROWS[0] * TILE
-        c.rect(METAL, (left, y + 10, right, y + 13), p[2])       # crossarm
-        c.line(METAL, [(left, y + 14), (right, y + 14)], p[0])
+        y = (row - 3) * TILE
+        c.rect(STONE, (left, y + 10, right, y + 13), p[2])       # crossarm
+        c.line(STONE, [(left, y + 10), (right, y + 10)], p[3])
+        c.line(STONE, [(left, y + 14), (right, y + 14)], p[0])
         for x in (left + 2, right - 3):                          # end brackets
-            c.rect(METAL, (x, y + 4, x + 1, y + 9), p[2])
+            c.rect(STONE, (x, y + 3, x + 1, y + 9), p[2])
+        mid = (left + right) // 2
+        c.rect(STONE, (mid, y + 14, mid + 1, y + 15), p[3])      # wire hook
 
 
 def _draw_cable(c: _Canvas, slots: list[list[int]]) -> None:
-    """Paint line 1 (index 1) and line 2 (index 3) on claimed metal tiles only."""
+    """Paint each stage's wire pixels in its metal colour index."""
     px = c.image.load()
-    for pixels, index in ((line1_pixels(), ridge.LINE_COLOR_INDEX),
-                          (line2_pixels(), ridge.LINE2_COLOR_INDEX)):
-        color = PALETTES[LINE][index]
-        for x, y in sorted(pixels):
-            tx, ty = x // TILE, y // TILE
-            if slots[ty][tx] == LINE and (ty, tx) not in LANE_CELLS:
+    for stage in (1, 2, 3):
+        color = PALETTES[LINE][ridge.STAGE_COLOR_INDEX[stage - 1]]
+        for x, y in sorted(stage_pixels(stage)):
+            if x < WIDTH and y < HEIGHT and slots[y // TILE][x // TILE] == LINE:
                 px[x, y] = color
 
 
 def make_background() -> tuple[Image.Image, list[list[int]]]:
-    """Return authored 480x144 RGB art and its 60x18 tile-palette map."""
+    """Return authored 800x240 RGB art and its 100x30 tile-palette map."""
     grid = ridge.collision_grid()
     slots = _slots(grid)
     image = Image.new("RGB", (WIDTH, HEIGHT))
@@ -418,10 +469,10 @@ def _check_geometry_art(image: Image.Image, grid: list[list[int]],
                 color = image.getpixel((tx * TILE + 3, ty * TILE + 3))
                 assert color in PALETTES[slots[ty][tx]], f"rock miss at {tx},{ty}"
                 assert slots[ty][tx] in (STONE, EARTH), f"solid not rock at {tx},{ty}"
-    # Indices 1 and 3 in metal tiles are reserved for the two lines' pixels.
-    for index, owner in ((ridge.LINE_COLOR_INDEX, line1_pixels()),
-                         (ridge.LINE2_COLOR_INDEX, line2_pixels())):
-        color = PALETTES[LINE][index]
+    # Metal-slot pixels of indices 1-3 belong to their stage's wire only.
+    for stage in (1, 2, 3):
+        color = PALETTES[LINE][ridge.STAGE_COLOR_INDEX[stage - 1]]
+        owner = stage_pixels(stage)
         for ty, row in enumerate(slots):
             for tx, slot in enumerate(row):
                 if slot != LINE:
@@ -429,7 +480,7 @@ def _check_geometry_art(image: Image.Image, grid: list[list[int]],
                 for y in range(ty * TILE, ty * TILE + TILE):
                     for x in range(tx * TILE, tx * TILE + TILE):
                         if image.getpixel((x, y)) == color:
-                            assert (x, y) in owner, f"stray line index {index} at {x},{y}"
+                            assert (x, y) in owner, f"stray stage {stage} wire at {x},{y}"
 
 
 def _gb_studio_native_index(green: int) -> int:

@@ -3,8 +3,8 @@
   "id": "3bdecc5f-18b0-5bef-8b23-ab0e8f5a6155",
   "name": "Hiroshi Door Checkpoint",
   "prefabId": "",
-  "x": 55,
-  "y": 9,
+  "x": 95,
+  "y": 21,
   "symbol": "trigger_ridge_tomas_door",
   "prefabScriptOverrides": {},
   "width": 3,
@@ -21,7 +21,7 @@
           },
           "valueB": {
             "type": "number",
-            "value": 2
+            "value": 3
           }
         }
       },
@@ -182,7 +182,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$18$/2 HOME %D1$09$/1",
+                    "text": "LINE %D1$18$/3 HOME %D1$09$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
@@ -248,7 +248,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$18$/2 HOME %D1$09$/1",
+                    "text": "LINE %D1$18$/3 HOME %D1$09$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
@@ -276,7 +276,7 @@
             "command": "EVENT_TEXT",
             "args": {
               "text": [
-                "Still no power.\nFix both lines!"
+                "Still no power.\nFix every line!"
               ],
               "avatarId": "",
               "minHeight": 4,
@@ -320,7 +320,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "LINE %D1$18$/2 HOME %D1$09$/1",
+              "text": "LINE %D1$18$/3 HOME %D1$09$/1",
               "x": 0,
               "y": 0,
               "location": "overlay"

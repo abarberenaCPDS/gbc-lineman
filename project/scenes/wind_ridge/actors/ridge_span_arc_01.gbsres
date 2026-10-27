@@ -1,13 +1,13 @@
 {
   "_resourceType": "actor",
   "id": "d3415de6-f49a-5c96-a13d-0f0dc80acefe",
-  "_index": 9,
+  "_index": 13,
   "symbol": "ridge_span_arc_01",
   "prefabId": "",
   "name": "Downed Span Arc 1",
   "coordinateType": "tiles",
-  "x": 41,
-  "y": 13,
+  "x": 51,
+  "y": 25,
   "frame": 0,
   "animate": true,
   "spriteSheetId": "cbcda85c-3b91-52e5-9bfd-2d979f5b6ad5",
@@ -42,10 +42,10 @@
       "command": "EVENT_IF",
       "args": {
         "condition": {
-          "type": "eq",
+          "type": "gte",
           "valueA": {
             "type": "variable",
-            "value": "17"
+            "value": "20"
           },
           "valueB": {
             "type": "number",
@@ -53,7 +53,7 @@
           }
         }
       },
-      "id": "13ad0240-b76a-5195-b49d-bcd06467300a",
+      "id": "277b199f-e9fa-5470-ae5a-78ee0396e318",
       "children": {
         "true": [
           {

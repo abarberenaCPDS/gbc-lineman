@@ -1,13 +1,13 @@
 {
   "_resourceType": "actor",
   "id": "ff461a7d-8f21-54d1-8cce-0bdd436d1b8c",
-  "_index": 6,
+  "_index": 3,
   "symbol": "ridge_feeder_cable_end",
   "prefabId": "",
-  "name": "Feeder Cable End",
+  "name": "Cable End (feeder)",
   "coordinateType": "tiles",
   "x": 8,
-  "y": 11,
+  "y": 23,
   "frame": 0,
   "animate": true,
   "spriteSheetId": "f4c23ff5-b7d9-57dc-900e-89453394efa2",
@@ -104,7 +104,7 @@
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Got the feeder!\nTo the box ahead."
+                      "Got the cable!\nFind its box."
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -148,7 +148,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$18$/2 HOME %D1$09$/1",
+                    "text": "LINE %D1$18$/3 HOME %D1$09$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
@@ -220,7 +220,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "LINE %D1$18$/2 HOME %D1$09$/1",
+              "text": "LINE %D1$18$/3 HOME %D1$09$/1",
               "x": 0,
               "y": 0,
               "location": "overlay"
