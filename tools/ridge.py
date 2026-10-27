@@ -55,8 +55,8 @@ GROUND_ROW = 15
 SOLID_BLOCKS = [
     (0, 0, 2, 14),                  # left cliff wall
     (MAP_W - 1, MAP_W - 1, 2, 14),  # right cliff wall behind the house
-    (8, 12, 12, 14),                # rock A (top surface row 12): pole 1
-    (27, 32, 12, 14),               # rock B (top surface row 12): pole 2
+    (6, 9, 12, 14),                 # rock A (top surface row 12): pole 1
+    (28, 31, 12, 14),               # rock B (top surface row 12): pole 2
     (52, 58, 12, 14),               # Hiroshi's porch step (top surface row 12)
 ]
 ROCK_A, ROCK_B, PORCH = SOLID_BLOCKS[2], SOLID_BLOCKS[3], SOLID_BLOCKS[4]
@@ -68,9 +68,9 @@ LEDGES: list[tuple[int, int, int]] = []
 
 START = (2, 14)            # entry from Amara's summit, facing right
 # Line 1: the feeder.
-FEEDER_POLE = (10, 11)     # cable-end pickup on rock A
-FEEDER_BOX = (20, 14)      # J1 on the floor
-FEEDER_CHECKPOINT = (21, 14)
+FEEDER_POLE = (8, 11)      # cable-end pickup on rock A
+FEEDER_BOX = (21, 14)      # J1 on the floor
+FEEDER_CHECKPOINT = (22, 14)
 # Line 2: the house line (the original job's pole -> box line; var 8).
 DAMAGED_POLE = (30, 11)    # cable-end pickup on rock B
 JUNCTION_BOX = (53, 11)    # J2, plug-in point at the top of the porch step
@@ -86,7 +86,7 @@ DOOR_TRIGGER = (55, 9, 3, 1)
 # ---------------------------------------------------------------------------
 # Hazards: lanes are (row, x0, x1) inclusive on the walking hero's chest row 13.
 # ---------------------------------------------------------------------------
-GUST_LANES = [(13, 14, 16)]          # three wide (climb_gust); between rock A and J1
+GUST_LANES = [(13, 15, 17)]          # three wide (climb_gust); between rock A and J1
 GUST_START_DELAYS = [0]
 GUST_WARNING_FRAMES = climb.GUST_WARNING_FRAMES
 GUST_ACTIVE_FRAMES = climb.GUST_ACTIVE_FRAMES
@@ -95,14 +95,14 @@ GUST_REST_FRAMES = climb.GUST_REST_FRAMES
 # The downed span: live_arc lanes (two wide, rosa.ARC_* timings) that stay
 # dark and safe until line 1 is live. The art lays the fallen wire along the
 # floor here in the line-1 colour, so it visibly lights with the feeder.
-DOWNED_SPAN = (38, 48)               # floor columns of the fallen wire
-SPAN_ARC_LANES = [(13, 40, 41), (13, 45, 46)]
+DOWNED_SPAN = (39, 49)               # floor columns of the fallen wire
+SPAN_ARC_LANES = [(13, 41, 42), (13, 46, 47)]
 SPAN_ARC_START_DELAYS = [0, 64]
 
 # Whipping live wire (Abe: "broken cables moved by the wind with sparks"): a
 # snapped line hangs from an overhead stub and sparks at its tip; on a wind
 # cycle it sways (warning, safe) then whips across the chest row (hits).
-WHIP_LANES = [(13, 35, 36)]          # two wide: the swing's reach on the chest row
+WHIP_LANES = [(13, 36, 37)]          # two wide: the swing's reach on the chest row
 WHIP_START_DELAYS = [30]
 WHIP_SWAY_FRAMES = climb.GUST_WARNING_FRAMES
 WHIP_SWING_FRAMES = climb.GUST_ACTIVE_FRAMES
@@ -125,7 +125,7 @@ LINE_COLOR_INDEX = climb.LINE_COLOR_INDEX
 LINE2_COLOR_INDEX = 3
 METAL_DEAD = climb.METAL_DEAD
 METAL_LIVE = climb.METAL_LIVE
-FEEDER_ROUTE = [(10, 8), (10, 6), (20, 6), (20, 12)]     # pole 1 top -> J1
+FEEDER_ROUTE = [(8, 8), (8, 6), (21, 6), (21, 12)]       # pole 1 top -> J1
 CABLE_ROUTE = [(30, 8), (30, 4), (53, 4), (53, 10), (53, 4), (55, 4)]  # pole 2 -> J2 -> house
 
 
@@ -255,9 +255,10 @@ def _self_check() -> None:
     # Rocks and porch are one tap high (three tiles) from the floor.
     for x0, x1, row0, row1 in SOLID_BLOCKS[2:]:
         assert row1 == GROUND_ROW - 1 and GROUND_ROW - row0 == 3, "steps are 3 tiles high"
-    # Walking off a rock lands clear of the next hazard (exact ROMs: ~5 tiles of carry).
+    # Jumping or walking off a rock carries the hero ~5 tiles (exact ROMs 3dd78a6e,
+    # c2aeecad, and e1dd26e3 here, where a 2-tile gap landed in the gust).
     for rock in (ROCK_A, ROCK_B):
-        assert all(x0 - rock[1] >= 2 for _, x0, _ in hazard_lanes() if x0 > rock[1]), (
+        assert all(x0 - rock[1] >= 5 for _, x0, _ in hazard_lanes() if x0 > rock[1]), (
             "rock landing in a hazard")
     # Route order: the house cable crosses the downed span and the whip; the feeder's does not.
     assert START[0] < FEEDER_POLE[0] < GUST_LANES[0][1] < FEEDER_BOX[0] < DAMAGED_POLE[0]
