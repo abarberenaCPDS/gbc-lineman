@@ -7,13 +7,12 @@ leaves out.
 
 Layouts are tile data below, 40x18 PLATFORM rooms. Solid floor starts at row
 15, so the hero stands on row 14. Cracked boards and hidden cables are placed by
-hazards.py; the live arc and timed gust reuse rosa's and climb's timings. Event
-and actor IDs come from make_climb_scene's helpers under ``lab:`` keys, so they
-never collide with storm_climb's. The background is Pine Hollow's existing 40x18
-art (no new art), so both rooms are exactly that wide.
-
-Wind Ridge's whipping wire is not built here: its builder lives in
-make_ridge_scene.py, which the ridge profile owns.
+hazards.py; the live arc and timed gust reuse rosa's and climb's timings. The
+whipping live wire uses hazards.py's whip scripts (the same ones Wind Ridge
+runs), under its own lab palette. Event and actor IDs come from make_climb_scene's
+helpers under ``lab_*`` keys, so they never collide with storm_climb's or Wind
+Ridge's. The background is Pine Hollow's existing 40x18 art (no new art), so both
+rooms are exactly that wide.
 """
 
 from __future__ import annotations
@@ -28,6 +27,12 @@ SCENES_DIR = PROJECT_DIR / "project" / "scenes"
 CLIMB_SCENE = SCENES_DIR / "storm_climb" / "scene.gbsres"
 DEATH_SOUND = "assets/sounds/death.wav.gbsres"
 GUST_SPRITE = "assets/sprites/climb_gust.png.gbsres"
+WHIP_SPRITE = "assets/sprites/whip_wire.png.gbsres"
+WHIP_PALETTE_PATH = "project/palettes/lab_sprite_whip.gbsres"
+# Same hardware colours and OBJ slot as Wind Ridge's whip (ridge.py contract).
+WHIP_SPRITE_HARDWARE = ["000000", "FFF4A8", "8A97A6", "1B2028"]  # spark, sheath, dark
+WHIP_SPRITE_PALETTE_SLOT = 6
+WHIP_CANVAS_TILES = (2, 4)           # 16x32 px: two tiles wide, four tall
 
 WIDTH, HEIGHT = 40, 18
 GROUND_ROW = 15          # first solid floor row; the hero stands on row 14
@@ -54,6 +59,10 @@ except ModuleNotFoundError as error:
 COL_EMPTY = climb.COL_EMPTY
 COL_TOP = climb.COL_TOP      # one-way: land from above, drop through with Down+A
 COL_SOLID = climb.COL_SOLID
+# Wind Ridge's whip timings: the climb gust's warning, burst and rest.
+WHIP_SWAY_FRAMES = climb.GUST_WARNING_FRAMES
+WHIP_SWING_FRAMES = climb.GUST_ACTIVE_FRAMES
+WHIP_HANG_FRAMES = climb.GUST_REST_FRAMES
 
 # ---------------------------------------------------------------------------
 # Layouts
@@ -70,6 +79,8 @@ ROOMS: dict[str, dict[str, Any]] = {
         "pits": [],
         "arc_lane": (13, 21, 22),                       # live arc, chest row 13 on the floor
         "gust_lane": (13, 28, 30),                      # timed gust, chest row 13 on the floor
+        "whip_lane": (13, 35, 36),                      # whipping wire, 7 tiles past the gust
+        "whip_delay": 60,                               # frames before its first sway
     },
     ROOM: {
         "entry": "LAB: movement",
@@ -82,6 +93,8 @@ ROOMS: dict[str, dict[str, Any]] = {
         "pits": [(22, 22), (25, 26), (29, 31), (34, 37)],
         "arc_lane": None,
         "gust_lane": None,
+        "whip_lane": None,
+        "whip_delay": 0,
     },
 }
 
@@ -108,7 +121,7 @@ def collision_grid(folder: str) -> list[list[int]]:
 
 def hazard_lanes(folder: str) -> list[tuple[int, int, int]]:
     room = ROOMS[folder]
-    lanes = [lane for lane in (room["arc_lane"], room["gust_lane"]) if lane is not None]
+    lanes = [lane for lane in (room["arc_lane"], room["gust_lane"], room["whip_lane"]) if lane is not None]
     return lanes + [(row, x0, x1) for row, x0, x1 in hazards.HIDDEN_CABLES[folder]]
 
 
@@ -171,8 +184,38 @@ def live_arc_actor(folder: str, index: int, lane: tuple[int, int, int], sprite_i
     return actor
 
 
-def hazard_actors(folder: str, gust_sprite_id: str) -> list[dict[str, Any]]:
-    """Boards and hidden cables (shared, scene-keyed), then the arc and the gust."""
+def whip_actor(folder: str, index: int, lane: tuple[int, int, int], start_delay: int,
+               sprite_id: str) -> dict[str, Any]:
+    """Whipping live wire: hangs sparking, sways (safe warning), whips (group-1 hits), hangs.
+
+    Always visible. Placed with its 16x32 canvas bottom on the row above the
+    lane's surface, exactly as Wind Ridge places its whips.
+    """
+    row, x0, x1 = lane
+    if x1 - x0 + 1 != WHIP_CANVAS_TILES[0]:
+        raise ValueError("the whip lane is the sprite's width")
+    key = f"{folder}:whip"
+    actor = shared.actor_resource(
+        index=index,
+        symbol=f"{folder}_whip_{index:02d}",
+        name="Whipping Live Wire (Lab)",
+        x=x0,
+        y=row + 1,
+        sprite_id=sprite_id,
+        key=key,
+        start_script=hazards.whip_start_script(key, shared.event),
+    )
+    actor["collisionGroup"] = "1"
+    actor["animate"] = True
+    actor["animSpeed"] = 8
+    actor["updateScript"] = hazards.whip_update_script(
+        key, start_delay, WHIP_SWAY_FRAMES, WHIP_SWING_FRAMES, WHIP_HANG_FRAMES,
+        shared.event, shared.wait_event, shared.branch_event)
+    return actor
+
+
+def hazard_actors(folder: str, gust_sprite_id: str, whip_sprite_id: str) -> list[dict[str, Any]]:
+    """Boards and hidden cables (shared, scene-keyed), then the arc, the gust and the whip."""
     actors = shared.hazard_actors(0, folder)
     room = ROOMS[folder]
     if room["arc_lane"] is not None:
@@ -181,7 +224,23 @@ def hazard_actors(folder: str, gust_sprite_id: str) -> list[dict[str, Any]]:
         actors.append(shared.timed_gust_actor(
             len(actors), room["gust_lane"], gust_sprite_id,
             key_prefix=f"{folder}:", symbol_prefix=f"{folder}_"))
+    if room["whip_lane"] is not None:
+        actors.append(whip_actor(folder, len(actors), room["whip_lane"], room["whip_delay"], whip_sprite_id))
     return actors
+
+
+def whip_palette() -> dict[str, Any]:
+    """The lab's own whip palette (hazards namespace, lab-only file)."""
+    colors = shared.editor_sprite_colors(WHIP_SPRITE_HARDWARE)
+    title = "Lab sprite whip"
+    return {
+        "_resourceType": "palette",
+        "id": hazards.resource_id("palette:sprite:whip"),
+        "name": title,
+        "colors": colors,
+        "defaultName": title,
+        "defaultColors": colors,
+    }
 
 
 def scene_script(folder: str) -> list[dict[str, Any]]:
@@ -231,6 +290,8 @@ def build_scene(folder: str, death_sound_id: str) -> dict[str, Any]:
         sprite_palette_ids[hazards.BOARD_SPRITE_PALETTE_SLOT] = hazards.BOARD_PALETTE_ID
     if hazards.HIDDEN_CABLES[folder] or ROOMS[folder]["arc_lane"] is not None:
         sprite_palette_ids[rosa.ARC_SPRITE_PALETTE_SLOT] = rosa.resource_id("palette:sprite:arc")
+    if ROOMS[folder]["whip_lane"] is not None:
+        sprite_palette_ids[WHIP_SPRITE_PALETTE_SLOT] = whip_palette()["id"]
     editor_x, editor_y = scenes.editor_position(folder)
     scene = dict(template)
     scene.update({
@@ -285,6 +346,7 @@ def main() -> None:
     assert set(ROOMS) == set(scenes.by_tag(scenes.LAB)), "lab rooms must match the lab registry tag"
     death_sound_id = shared.sidecar_id(DEATH_SOUND, "sound")
     gust_sprite_id = shared.sidecar_id(GUST_SPRITE, "sprite")
+    whip_sprite_id = shared.sidecar_id(WHIP_SPRITE, "sprite")
     warn_if_missing_asset(kiko.BACKGROUND_ID, "backgrounds", "pine_hollow background (lab rooms)")
     warn_if_missing_asset(hazards.BOARD_SPRITE_ID, "sprites", "cracked board sprite")
     warn_if_missing_asset(rosa.ARC_SPRITE_ID, "sprites", "live arc sprite")
@@ -292,11 +354,11 @@ def main() -> None:
         check_layout(folder)
 
     shared.write_variables()
-    for relative_path, palette in shared.hazard_palettes():
+    for relative_path, palette in [*shared.hazard_palettes(), (WHIP_PALETTE_PATH, whip_palette())]:
         shared.write_json(PROJECT_DIR / relative_path, palette)
     for folder in ROOMS:
         scene_dir = SCENES_DIR / folder
-        actors = hazard_actors(folder, gust_sprite_id)
+        actors = hazard_actors(folder, gust_sprite_id, whip_sprite_id)
         triggers = build_triggers(folder)
         if len(actors) > 20:
             raise ValueError(f"{folder}: {len(actors)} actors exceeds the 20-actor limit")

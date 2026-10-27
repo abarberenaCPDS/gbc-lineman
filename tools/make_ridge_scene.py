@@ -516,35 +516,14 @@ def whip_actor(number: int, lane: tuple[int, int, int], start_delay: int) -> dic
     if x1 - x0 + 1 != ridge.WHIP_CANVAS[0] // 8:
         raise ValueError("the whip lane is the sprite's width")
     key = f"whip:{number}"
-
-    def own(command: str, suffix: str, **args: Any) -> dict[str, Any]:
-        return event(command, {"actorId": "$self$", **args}, f"{key}:{suffix}")
-
-    first_cycle_true = [
-        own("EVENT_ACTOR_SET_DIRECTION", "started", direction={"type": "direction", "value": "up"}),
-    ]
-    if start_delay > 0:
-        first_cycle_true.append(wait_event(start_delay, f"{key}:start-delay"))
-    update = [
-        branch_event("EVENT_IF_ACTOR_DIRECTION",
-                     {"actorId": "$self$", "direction": {"type": "direction", "value": "down"}},
-                     f"{key}:first-cycle", first_cycle_true),
-        own("EVENT_ACTOR_COLLISIONS_DISABLE", "sway-safe"),
-        own("EVENT_ACTOR_SET_STATE", "sway-state", spriteStateId="Sway", loopAnim=True),
-        wait_event(ridge.WHIP_SWAY_FRAMES, f"{key}:sway-time"),
-        own("EVENT_ACTOR_SET_STATE", "swing-state", spriteStateId="Swing", loopAnim=True),
-        own("EVENT_ACTOR_COLLISIONS_ENABLE", "swing-active"),
-        wait_event(ridge.WHIP_SWING_FRAMES, f"{key}:swing-time"),
-        own("EVENT_ACTOR_COLLISIONS_DISABLE", "hang-safe"),
-        own("EVENT_ACTOR_SET_STATE", "hang-state", spriteStateId="Hang", loopAnim=True),
-        wait_event(ridge.WHIP_HANG_FRAMES, f"{key}:hang-time"),
-    ]
     return actor_resource(
         index=0, symbol=f"ridge_whip_{number:02d}", name=f"Whipping Live Wire {number}",
         x=x0, y=row + 1, sprite_id=ridge.WHIP_SPRITE_ID, key=key, anim_speed=8,
-        start_script=[own("EVENT_ACTOR_COLLISIONS_DISABLE", "initial-safe"),
-                      own("EVENT_ACTOR_SET_STATE", "initial-hang", spriteStateId="Hang", loopAnim=True)],
-        update_script=update, collision_group="1",
+        start_script=hazards.whip_start_script(key, event),
+        update_script=hazards.whip_update_script(
+            key, start_delay, ridge.WHIP_SWAY_FRAMES, ridge.WHIP_SWING_FRAMES, ridge.WHIP_HANG_FRAMES,
+            event, wait_event, branch_event),
+        collision_group="1",
     )
 
 

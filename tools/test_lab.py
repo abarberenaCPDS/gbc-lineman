@@ -79,10 +79,20 @@ def hazard_actors(folder: str) -> list[dict]:
 
 def hazard_kind(actor: dict) -> str:
     symbol = actor["symbol"]
-    for kind in ("board", "hidden_cable", "live_arc", "gust"):
+    for kind in ("board", "hidden_cable", "live_arc", "gust", "whip"):
         if f"_{kind}_" in symbol:
             return kind
     return "other"
+
+
+def sprite_tiles(actor: dict) -> tuple[int, int]:
+    """(width, height) in tiles: 24x16 boards and gusts, 16x32 whips, 16x16 cables and arcs."""
+    kind = hazard_kind(actor)
+    if kind in {"board", "gust"}:
+        return 3, 2
+    if kind == "whip":
+        return lab.WHIP_CANVAS_TILES
+    return 2, 2
 
 
 class RegistryTests(unittest.TestCase):
@@ -136,7 +146,7 @@ class ContentTests(unittest.TestCase):
 
     def test_gallery_has_every_hazard_kind(self):
         kinds = {hazard_kind(actor) for actor in hazard_actors(lab.GALLERY)}
-        self.assertEqual(kinds, {"board", "hidden_cable", "live_arc", "gust"})
+        self.assertEqual(kinds, {"board", "hidden_cable", "live_arc", "gust", "whip"})
 
     def test_gallery_hazards_are_at_least_six_tiles_apart(self):
         xs = sorted(actor["x"] for actor in hazard_actors(lab.GALLERY))
@@ -243,11 +253,13 @@ class ScanlineTests(unittest.TestCase):
         """OBJs per row for the hazards visible in the camera window starting at ``left``."""
         load: dict[int, int] = {}
         for actor in actors:
-            width = 3 if hazard_kind(actor) in {"board", "gust"} else 2
+            width, height = sprite_tiles(actor)
             x, y = actor["x"], actor["y"]
             if x + width <= left or x >= left + CAMERA_TILES:
                 continue
-            for row in (y - 1, y):   # 16px sprites: two tile rows, the actor's row at the bottom
+            # Sprites hang up from the actor's row at the bottom: each 8x16 OBJ column
+            # covers two tile rows, so a 32px whip adds its width on four rows.
+            for row in range(y - height + 1, y + 1):
                 load[row] = load.get(row, 0) + width
         return load
 

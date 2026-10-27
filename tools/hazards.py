@@ -198,6 +198,48 @@ def cable_start_script(key: str, event: Event) -> list[dict[str, Any]]:
     ]
 
 
+def whip_start_script(key: str, event: Event) -> list[dict[str, Any]]:
+    """The whip starts safe, hanging (its Hang state, always visible)."""
+    return [
+        event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": "$self$"}, f"{key}:initial-safe"),
+        event("EVENT_ACTOR_SET_STATE", {"actorId": "$self$", "spriteStateId": "Hang", "loopAnim": True},
+              f"{key}:initial-hang"),
+    ]
+
+
+def whip_update_script(key: str, start_delay: int, sway_frames: int, swing_frames: int, hang_frames: int,
+                       event: Event, wait: Callable[[int, str], dict[str, Any]],
+                       branch: Callable[..., dict[str, Any]]) -> list[dict[str, Any]]:
+    """Whipping live wire: hangs sparking, sways (safe warning), whips (group 1), hangs.
+
+    Same first-cycle trick as the cables: the actor starts facing down; the first
+    pass optionally waits ``start_delay`` and turns it up, so later cycles skip it.
+    """
+
+    def own(command: str, suffix: str, **args: Any) -> dict[str, Any]:
+        return event(command, {"actorId": "$self$", **args}, f"{key}:{suffix}")
+
+    first_cycle_true = [
+        own("EVENT_ACTOR_SET_DIRECTION", "started", direction={"type": "direction", "value": "up"}),
+    ]
+    if start_delay > 0:
+        first_cycle_true.append(wait(start_delay, f"{key}:start-delay"))
+    return [
+        branch("EVENT_IF_ACTOR_DIRECTION",
+               {"actorId": "$self$", "direction": {"type": "direction", "value": "down"}},
+               f"{key}:first-cycle", first_cycle_true),
+        own("EVENT_ACTOR_COLLISIONS_DISABLE", "sway-safe"),
+        own("EVENT_ACTOR_SET_STATE", "sway-state", spriteStateId="Sway", loopAnim=True),
+        wait(sway_frames, f"{key}:sway-time"),
+        own("EVENT_ACTOR_SET_STATE", "swing-state", spriteStateId="Swing", loopAnim=True),
+        own("EVENT_ACTOR_COLLISIONS_ENABLE", "swing-active"),
+        wait(swing_frames, f"{key}:swing-time"),
+        own("EVENT_ACTOR_COLLISIONS_DISABLE", "hang-safe"),
+        own("EVENT_ACTOR_SET_STATE", "hang-state", spriteStateId="Hang", loopAnim=True),
+        wait(hang_frames, f"{key}:hang-time"),
+    ]
+
+
 def check() -> None:
     assert set(BOARDS) == set(HIDDEN_CABLES)
     assert CABLE_WARNING_FRAMES < CREAK_FRAMES, "cable reveal is brief; the board warns longer"
