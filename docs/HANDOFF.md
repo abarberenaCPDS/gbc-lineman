@@ -1,4 +1,4 @@
-# Session handoff: Mister CFE (2026-10-26) — v0.10.2 on the cart (attract loop)
+# Session handoff: Mister CFE (2026-10-26) — v0.10.3 stable (stream), v0.10.2 on the cart
 
 Start a new session with: **"Read docs/HANDOFF.md and continue."**
 `PROJECT_PLAN.md` is the long-term record (progress log, newest first).
@@ -8,7 +8,7 @@ Start a new session with: **"Read docs/HANDOFF.md and continue."**
 `AGENTS.md`, `CLAUDE.md`, the top of `docs/PROJECT_PLAN.md` and its progress log,
 `docs/MCP_TOOLKIT.md` §5 (engine facts, including the new OBJ palette slot map and the
 stale MCP index) and §8 (budget, worker rules). Load the `chromatic-budget-playtest` skill
-before emulator work or spawning workers. VERSION `0.10.0` (tag `v0.10.0`). Local-only repo; one-line
+before emulator work or spawning workers. VERSION `0.10.3` (tags `v0.10.3`, `stable`). Local-only repo; one-line
 Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 
 ## State
@@ -37,7 +37,7 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 3. Look items for Abe's pass: Emil's raised bowl is thin; Priya lost her glasses, so her
    only props now are long hair and a phone; Hiroshi's tube doubles as his cane. The
    storm pole's dangling wire overlaps the cable-end sprite on the same tile.
-4. Known minor: B-06 junction reach. B-07 fixed (one shelf per Down+A, engine overlay), not yet flashed; Abe should feel-test the drop on the cart.
+4. Known minor: B-06 junction reach. B-07 fixed in v0.10.3 (one shelf per Down+A, engine overlay); approved on stream ("v0.10.3 looks good"), not flashed, so the cart still runs v0.10.2.
 
 Use parallel workers per the skill (art: Sonnet; plumbing: Haiku). Main selects the
 project **before** spawning workers, gives plumbing workers the OBJ slot map, and
