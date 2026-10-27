@@ -64,6 +64,9 @@ def _worker_frame(
     image = Image.new("RGB", (16, 32 if body_height == 24 else 16), TRANSPARENT)
     draw = ImageDraw.Draw(image)
     top = 8 if body_height == 24 else 0
+    carry = pose.startswith("carry_")
+    if carry:
+        pose = pose[len("carry_"):]
 
     def rect(box: tuple[int, int, int, int], shade: int) -> None:
         _rect(draw, (box[0], box[1] + top, box[2], box[3] + top), shade)
@@ -104,14 +107,16 @@ def _worker_frame(
             front_x = (11, 12, 11, 10)[phase]
             rect((rear_x, 10, rear_x + 1, 14), 3)
             rect((rear_x, 11, rear_x, 13), 2)
-            rect((front_x, 10, front_x + 1, 13), 3)
-            rect((front_x, 11, front_x, 12), 2)
-            point(front_x + 1, 14, 1)
+            if not carry:
+                rect((front_x, 10, front_x + 1, 13), 3)
+                rect((front_x, 11, front_x, 12), 2)
+                point(front_x + 1, 14, 1)
         elif pose == "jump":
             poly([(4, 10), (5, 8), (6, 9), (5, 13), (4, 14), (3, 13)], 3)
             point(4, 11, 2)
-            poly([(10, 9), (11, 8), (13, 10), (13, 12), (12, 13), (10, 11)], 3)
-            point(12, 10, 2)
+            if not carry:
+                poly([(10, 9), (11, 8), (13, 10), (13, 12), (12, 13), (10, 11)], 3)
+                point(12, 10, 2)
         elif pose == "repair":
             rect((3, 10, 4, 14), 3)
             rect((3, 11, 3, 13), 2)
@@ -132,12 +137,32 @@ def _worker_frame(
         else:
             rect((3, 10, 4, 14), 3)
             rect((3, 11, 3, 13), 2)
-            rect((11, 10, 12, 13), 3)
-            point(11, 11, 2)
-            point(12, 14, 1)  # glove
+            if not carry:
+                rect((11, 10, 12, 13), 3)
+                point(11, 11, 2)
+                point(12, 14, 1)  # glove
             if pose == "idle" and phase:
                 # One-pixel vest glint is a quiet breathing beat; feet stay put.
                 point(8, 13, 1)
+
+        if carry:
+            # Forward arm held steady at chest height gripping a cable end:
+            # chunky pale plug head over the glove, dark cable drooping in
+            # front, and a slack tail trailing behind the hips.
+            dy = -1 if pose == "jump" else 0
+            # Arm reaches out past the jacket at waist height; the plug sits
+            # outside the silhouette and the cable runs down the open air
+            # in front of the legs and lies along the ground.
+            rect((9, 12 + dy, 11, 13 + dy), 3)
+            rect((10, 12 + dy, 10, 12 + dy), 2)
+            rect((12, 11 + dy, 14, 11 + dy), 3)    # plug top edge
+            rect((11, 12 + dy, 11, 14 + dy), 3)    # plug back edge / wrist
+            rect((12, 12 + dy, 14, 14 + dy), 1)    # 3x3 plug head
+            rect((12, 15 + dy, 14, 15 + dy), 3)    # plug bottom edge
+            point(15, 12 + dy, 3)                  # prongs
+            point(15, 14 + dy, 3)
+            rect((14, 16 + dy, 14, 21), 3)         # cable drops outside body
+            rect((14, 22, 15, 22), 3)              # and lies along the ground
 
         # Legs and sturdy boots.  Four walk poses move through a full stride
         # without alternating between two exaggerated stamping poses.
@@ -195,7 +220,7 @@ def _worker_frame(
                 ((4, 8, 5, 10), (11, 7, 12, 10)),
                 ((3, 7, 5, 9), (10, 8, 12, 10)),
             )[phase]
-            for arm in arm_boxes:
+            for arm in arm_boxes[:1 if carry else 2]:
                 rect(arm, 3)
             legs = (
                 ((5, 12, 7, 14), (9, 12, 11, 13), (2, 14, 6, 15), (10, 14, 13, 15)),
@@ -209,7 +234,8 @@ def _worker_frame(
             point(10 + phase % 2, 15, 1)
         elif pose == "jump":
             poly([(4, 7), (5, 5), (6, 6), (5, 9), (4, 10), (3, 9)], 3)
-            poly([(10, 6), (11, 5), (13, 7), (12, 9), (10, 8)], 3)
+            if not carry:
+                poly([(10, 6), (11, 5), (13, 7), (12, 9), (10, 8)], 3)
             poly([(5, 12), (7, 12), (8, 13), (7, 14), (4, 13)], 3)
             poly([(9, 12), (11, 12), (12, 13), (11, 14), (8, 13)], 3)
             rect((3, 14, 6, 14), 3)
@@ -241,14 +267,29 @@ def _worker_frame(
         else:
             rect((3, 8, 4, 10), 3)
             rect((3, 9, 3, 9), 2)
-            rect((11, 8, 12, 10), 3)
-            point(12, 11, 1)
+            if not carry:
+                rect((11, 8, 12, 10), 3)
+                point(12, 11, 1)
             rect((5, 12, 7, 14), 3)
             rect((9, 12, 11, 14), 3)
             rect((3, 14, 7, 15), 3)
             rect((9, 14, 13, 15), 3)
             point(5, 15, 1)
             point(11, 15, 1)
+
+        if carry:
+            dy = -1 if pose == "jump" else 0
+            # Arm reaches out past the jacket; plug sits outside the silhouette.
+            rect((9, 8 + dy, 11, 9 + dy), 3)
+            rect((10, 8 + dy, 10, 8 + dy), 2)
+            rect((12, 7 + dy, 14, 7 + dy), 3)    # plug top edge
+            rect((11, 8 + dy, 11, 10 + dy), 3)   # plug back edge / wrist
+            rect((12, 8 + dy, 14, 10 + dy), 1)   # 3x3 plug head
+            rect((12, 11 + dy, 14, 11 + dy), 3)  # plug bottom edge
+            point(15, 8 + dy, 3)                 # prongs
+            point(15, 10 + dy, 3)
+            rect((14, 12 + dy, 14, 14 + dy), 3)  # cable drops outside body
+            rect((14, 15, 15, 15), 3)            # and lies along the ground
 
         if pose == "idle" and phase:
             # One-pixel reflective glint is the quiet breathing beat; feet,
@@ -509,6 +550,20 @@ def _worker_asset(name: str, body_height: int) -> tuple[str, Image.Image, dict]:
     walk_left = [add("walk", "left", phase) for phase in range(4)]
     climb_placeholder = [idle_right[0]]  # Native climbing slot; no fall slot exists.
     repair = [add("repair", "right", phase) for phase in range(2)]
+    c_idle_right = [add("carry_idle", "right", p) for p in range(2)]
+    c_idle_left = [add("carry_idle", "left", p) for p in range(2)]
+    c_jump_right = [add("carry_jump", "right")]
+    c_jump_left = [add("carry_jump", "left")]
+    c_walk_right = [add("carry_walk", "right", p) for p in range(4)]
+    c_walk_left = [add("carry_walk", "left", p) for p in range(4)]
+    carry_state = {
+        "name": "Carry",
+        "animationType": "platform_player",
+        "animations": [
+            c_idle_right, c_idle_left, c_jump_right, c_jump_left,
+            c_walk_right, c_walk_left, [c_idle_right[0]], [],
+        ],
+    }
     default = {
         "name": "Default",
         "animationType": "platform_player",
@@ -526,7 +581,7 @@ def _worker_asset(name: str, body_height: int) -> tuple[str, Image.Image, dict]:
     bounds = (2, -8, 12, 16) if body_height == 16 else (2, -16, 12, 24)
     meta = _sidecar(
         name, sheet, 16, frame_height, bounds, PALETTE_INDEX["worker"],
-        [default, repair_state], anim_speed=10,
+        [default, repair_state, carry_state], anim_speed=10,
     )
 
     # Validate rendered source pixels, not merely different metadata IDs.
@@ -542,6 +597,14 @@ def _worker_asset(name: str, body_height: int) -> tuple[str, Image.Image, dict]:
     require_distinct("idle left", idle_left)
     require_distinct("walk right", walk_right)
     require_distinct("walk left", walk_left)
+    require_distinct("carry idle right", c_idle_right)
+    require_distinct("carry idle left", c_idle_left)
+    require_distinct("carry walk right", c_walk_right)
+    require_distinct("carry walk left", c_walk_left)
+    for d, c in zip(idle_right + jump_right + walk_right + idle_left + jump_left + walk_left,
+                    c_idle_right + c_jump_right + c_walk_right + c_idle_left + c_jump_left + c_walk_left):
+        if source_frame_bytes(d) == source_frame_bytes(c):
+            raise AssertionError(f"{name}: Carry frame identical to Default")
     if source_frame_bytes(repair[0]) == source_frame_bytes(repair[1]):
         raise AssertionError(f"{name}: Repair phases render identical pixels")
     return name, sheet, meta
@@ -596,8 +659,8 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
             colors = set(image.crop((x, y, x + 8, y + 8)).get_flattened_data())
             if len(colors) > 4:
                 raise AssertionError(f"{name}: tile ({x // 8},{y // 8}) exceeds 4 colors")
-    if len(meta["states"]) != 2 or any(len(state["animations"]) != 8 for state in meta["states"]):
-        raise AssertionError(f"{name}: expected two states with eight native animation slots")
+    if len(meta["states"]) != (3 if name.startswith("opening_worker") else 2) or any(len(state["animations"]) != 8 for state in meta["states"]):
+        raise AssertionError(f"{name}: expected three states with eight native animation slots")
     if meta["_resourceType"] != "sprite" or meta["spriteMode"] != "8x16":
         raise AssertionError(f"{name}: not a native 8x16 sprite sidecar")
     if meta["id"] != opening.resource_id(f"sprite:{name}"):
@@ -650,7 +713,11 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
             if not points:
                 raise AssertionError(f"{name}: empty source pose {frame_index}")
             xs, ys = zip(*points)
-            if min(xs) < 2 or max(xs) > 13:
+            # The last 14 frames are Carry; the held plug/cable may extend
+            # past the 12px body (art only; collision bounds are unchanged).
+            is_carry = frame_index >= frame_count - 14
+            max_x = 15 if is_carry else 13
+            if min(xs) < (0 if is_carry else 2) or max(xs) > max_x:
                 raise AssertionError(f"{name}: artwork escaped its 12-pixel body width")
             if min(ys) < body_top or max(ys) > body_bottom:
                 raise AssertionError(f"{name}: artwork escaped the body region/feet anchor")
