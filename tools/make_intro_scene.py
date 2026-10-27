@@ -11,7 +11,8 @@ Background and sprite art come from ``make_intro_art.py`` and
 when those sidecars are not on disk yet.
 
 Test ROMs use ``--test-start SCENE_ID X Y DIRECTION`` to point the start at another
-scene. That writes a temporary override to ``settings.gbsres``: never commit it,
+scene; SCENE_ID may be a registry folder name (``--test-start lab_movement_room 2 14
+right``). That writes a temporary override to ``settings.gbsres``: never commit it,
 and regenerate without the flag before committing.
 """
 
@@ -35,8 +36,9 @@ sys.path.insert(0, str(TOOLS_DIR))
 try:
     import intro  # noqa: E402  (sole source of truth for this scene set)
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
+    import scenes  # noqa: E402  (registry: folder name -> scene id for --test-start)
 except ModuleNotFoundError as error:
-    if error.name in {"intro", "make_climb_scene", "climb", "opening", "ridge"}:
+    if error.name in {"intro", "make_climb_scene", "climb", "opening", "ridge", "scenes"}:
         raise SystemExit(
             f"cannot generate the intro scenes: tools/{error.name}.py is missing"
         ) from error
@@ -618,13 +620,20 @@ def write_settings(test_start: tuple[str, int, int, str] | None) -> None:
         print("unchanged project/settings.gbsres")
 
 
+def resolve_scene_id(value: str) -> str:
+    """A registry folder name (e.g. lab_movement_room) or a raw scene id."""
+    if value in scenes.REGISTRY:
+        return scenes.REGISTRY[value]["id"]
+    return value
+
+
 def parse_test_start(values: list[str] | None) -> tuple[str, int, int, str] | None:
     if values is None:
         return None
     scene, x, y, direction = values
     if direction not in DIRECTIONS:
         raise SystemExit(f"--test-start direction must be one of {DIRECTIONS}")
-    return scene, int(x), int(y), direction
+    return resolve_scene_id(scene), int(x), int(y), direction
 
 
 def write_variables() -> None:
@@ -644,8 +653,9 @@ def write_variables() -> None:
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
-        "--test-start", nargs=4, metavar=("SCENE_ID", "X", "Y", "DIRECTION"),
-        help="temporary test-ROM start override (never commit the settings file)",
+        "--test-start", nargs=4, metavar=("SCENE_ID_OR_FOLDER", "X", "Y", "DIRECTION"),
+        help="temporary test-ROM start override; SCENE_ID_OR_FOLDER may be a registry folder "
+             "name such as lab_movement_room (never commit the settings file)",
     )
     args = parser.parse_args(argv)
     test_start = parse_test_start(args.test_start)

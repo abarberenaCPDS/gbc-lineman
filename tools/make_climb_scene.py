@@ -436,12 +436,22 @@ def hazard_palettes() -> list[tuple[str, dict[str, Any]]]:
     return [(HAZARD_PALETTE_PATH, board_palette_resource())]
 
 
-def board_actor(number: int, board: tuple[int, int, int], index: int) -> dict[str, Any]:
-    key = f"board:{number}"
+def hazard_key_prefix(scene: str) -> str:
+    """Event/actor key namespace; storm_climb keeps its original (empty) prefix so its IDs never move."""
+    return "" if scene == "storm_climb" else f"{scene}:"
+
+
+def hazard_symbol_prefix(scene: str) -> str:
+    return "" if scene == "storm_climb" else f"{scene}_"
+
+
+def board_actor(number: int, board: tuple[int, int, int], index: int,
+                key_prefix: str = "", symbol_prefix: str = "") -> dict[str, Any]:
+    key = f"{key_prefix}board:{number}"
     x, y = hazards.board_actor_position(board)
     actor = actor_resource(
         index=index,
-        symbol=f"board_{number:02d}",
+        symbol=f"{symbol_prefix}board_{number:02d}",
         name=f"Cracked Board {number}",
         x=x,
         y=y,
@@ -457,14 +467,14 @@ def board_actor(number: int, board: tuple[int, int, int], index: int) -> dict[st
 
 
 def hidden_cable_actor(number: int, lane: tuple[int, int, int], start_delay: int,
-                       index: int) -> dict[str, Any]:
+                       index: int, key_prefix: str = "", symbol_prefix: str = "") -> dict[str, Any]:
     row, x0, x1 = lane
     if x1 - x0 + 1 != 2:
         raise ValueError("the live arc sprite is exactly two tiles wide")
-    key = f"hidden-cable:{number}"
+    key = f"{key_prefix}hidden-cable:{number}"
     actor = actor_resource(
         index=index,
-        symbol=f"hidden_cable_{number:02d}",
+        symbol=f"{symbol_prefix}hidden_cable_{number:02d}",
         name=f"Hidden Cable {number}",
         x=x0,
         y=row,
@@ -480,20 +490,24 @@ def hidden_cable_actor(number: int, lane: tuple[int, int, int], start_delay: int
     return actor
 
 
-def hazard_actors(first_index: int) -> list[dict[str, Any]]:
-    boards = hazards.BOARDS["storm_climb"]
-    cables = hazards.HIDDEN_CABLES["storm_climb"]
-    delays = hazards.CABLE_START_DELAYS["storm_climb"]
+def hazard_actors(first_index: int, scene: str = "storm_climb") -> list[dict[str, Any]]:
+    """Cracked boards then hidden cables for ``scene``'s row in hazards.py."""
+    boards = hazards.BOARDS[scene]
+    cables = hazards.HIDDEN_CABLES[scene]
+    delays = hazards.CABLE_START_DELAYS[scene]
+    key_prefix, symbol_prefix = hazard_key_prefix(scene), hazard_symbol_prefix(scene)
     actors: list[dict[str, Any]] = []
     for number, board in enumerate(boards, start=1):
-        actors.append(board_actor(number, board, first_index + len(actors)))
+        actors.append(board_actor(number, board, first_index + len(actors), key_prefix, symbol_prefix))
     for number, (lane, delay) in enumerate(zip(cables, delays), start=1):
-        actors.append(hidden_cable_actor(number, lane, delay, first_index + len(actors)))
+        actors.append(hidden_cable_actor(number, lane, delay, first_index + len(actors),
+                                         key_prefix, symbol_prefix))
     return actors
 
 
-def board_trigger(number: int, board: tuple[int, int, int], index: int) -> dict[str, Any]:
-    key = f"board:{number}"
+def board_trigger(number: int, board: tuple[int, int, int], index: int,
+                  key_prefix: str = "", symbol_prefix: str = "") -> dict[str, Any]:
+    key = f"{key_prefix}board:{number}"
     x, y, width, height = hazards.board_trigger_rect(board)
     on_script, leave_script = hazards.board_trigger_scripts(number, f"{key}:trigger", set_value)
     return {
@@ -503,7 +517,7 @@ def board_trigger(number: int, board: tuple[int, int, int], index: int) -> dict[
         "prefabId": "",
         "x": x,
         "y": y,
-        "symbol": f"trigger_cracked_board_{number:02d}",
+        "symbol": f"{symbol_prefix}trigger_cracked_board_{number:02d}",
         "prefabScriptOverrides": {},
         "width": width,
         "height": height,
@@ -513,10 +527,11 @@ def board_trigger(number: int, board: tuple[int, int, int], index: int) -> dict[
     }
 
 
-def hazard_triggers() -> list[dict[str, Any]]:
+def hazard_triggers(scene: str = "storm_climb") -> list[dict[str, Any]]:
+    key_prefix, symbol_prefix = hazard_key_prefix(scene), hazard_symbol_prefix(scene)
     return [
-        board_trigger(number, board, BOARD_TRIGGER_BASE_INDEX + number - 1)
-        for number, board in enumerate(hazards.BOARDS["storm_climb"], start=1)
+        board_trigger(number, board, BOARD_TRIGGER_BASE_INDEX + number - 1, key_prefix, symbol_prefix)
+        for number, board in enumerate(hazards.BOARDS[scene], start=1)
     ]
 
 
@@ -877,19 +892,20 @@ def summit_exit_trigger() -> dict[str, Any]:
     }
 
 
-def timed_gust_actor(index: int, lane: tuple[int, int, int], sprite_id: str) -> dict[str, Any]:
+def timed_gust_actor(index: int, lane: tuple[int, int, int], sprite_id: str,
+                     key_prefix: str = "", symbol_prefix: str = "") -> dict[str, Any]:
     """Warning has no collision; burst hits through the shared group-1 reset."""
     row, x0, x1 = lane
     if x1 - x0 + 1 != 3:
         raise ValueError("the authored gust sprite is exactly three tiles wide")
-    key = f"timed-gust:{index}"
+    key = f"{key_prefix}timed-gust:{index}"
 
     def own(command: str, suffix: str, **args: Any) -> dict[str, Any]:
         return event(command, {"actorId": "$self$", **args}, f"{key}:{suffix}")
 
     actor = actor_resource(
         index=index,
-        symbol=f"gust_{index:02d}",
+        symbol=f"{symbol_prefix}gust_{index:02d}",
         name=f"Telegraphed Gust {index}",
         x=x0, y=row, sprite_id=sprite_id, key=key,
         start_script=[own("EVENT_ACTOR_COLLISIONS_DISABLE", "initial-safe")],

@@ -73,13 +73,23 @@ BOARDS = {
     "storm_climb": [(30, 5, 7), (27, 14, 16), (9, 8, 10)],
     "wind_ridge": [(27, 26, 28)],   # floor, between T1 and the step to plateau B
     "pine_hollow": [],
+    # LAB_Hazard Gallery (make_lab_scene.py): one board on a one-tile shelf.
+    "lab_hazard_gallery": [(12, 6, 8)],
+    "lab_movement_room": [],
 }
 HIDDEN_CABLES = {
     "storm_climb": [(16, 11, 12)],
     "wind_ridge": [],
     "pine_hollow": [(7, 11, 12)],
+    "lab_hazard_gallery": [(13, 14, 15)],
+    "lab_movement_room": [],
 }
-CABLE_START_DELAYS = {"storm_climb": [40], "pine_hollow": [90]}
+CABLE_START_DELAYS = {
+    "storm_climb": [40],
+    "pine_hollow": [90],
+    "lab_hazard_gallery": [40],
+    "lab_movement_room": [],
+}
 
 
 def board_trigger_rect(board: tuple[int, int, int]) -> tuple[int, int, int, int]:

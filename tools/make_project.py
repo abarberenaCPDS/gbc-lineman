@@ -7,6 +7,7 @@ Use the managed Python (Pillow). Examples:
   python tools/make_project.py rosa --verify
   python tools/make_project.py kiko --verify
   python tools/make_project.py intro --verify
+  python tools/make_project.py lab --verify
 
 Never invokes the out-of-sync legacy Storm Night generators or touches the user's live browser/emulator state.
 """
@@ -26,6 +27,8 @@ PROFILES = {
     "intro": ("make_intro_art.py", "make_intro_sprites.py", "make_intro_scene.py"),
     "opening": ("make_opening_art.py", "make_opening_characters.py", "make_grid_sprites.py", "make_opening_scene.py"),
     "tickets": ("make_ticket_art.py", "make_ticket_scene.py"),
+    # Developer lab rooms: reuse the storm_climb template and existing art only.
+    "lab": ("make_lab_scene.py",),
 }
 
 
@@ -50,7 +53,7 @@ def main() -> None:
     if args.render_music:
         run("tools/compose_intro.py" if args.profile == "intro" else "tools/compose_climb.py",
             "--render")
-    elif not (ROOT / "assets/music/cfe_storm_climb.uge.gbsres").exists():
+    elif args.profile != "lab" and not (ROOT / "assets/music/cfe_storm_climb.uge.gbsres").exists():
         parser.error("native music is missing; use --render-music with the installed uge-builder image")
     for script in PROFILES[args.profile]:
         run("tools/" + script)
@@ -63,7 +66,8 @@ def main() -> None:
                     "rosa": ["test_rosa*.py", "test_ridge.py", "test_scenes.py"],
                     "kiko": ["test_kiko*.py", "test_rosa.py", "test_scenes.py"],
                     "intro": ["test_intro*.py", "test_opening.py", "test_scenes.py"],
-                    "tickets": ["test_tickets.py", "test_scenes.py"]}
+                    "tickets": ["test_tickets.py", "test_scenes.py"],
+                    "lab": ["test_lab*.py", "test_scenes.py"]}
         for pattern in patterns[args.profile]:
             run("-m", "unittest", "discover", "-s", "tools", "-p", pattern)
     print("Regeneration complete. Refresh, build and playtest through MCP; only the intro profile writes the launch scene.")
