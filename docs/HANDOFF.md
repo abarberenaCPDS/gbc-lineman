@@ -1,4 +1,4 @@
-# Session handoff: Mister CFE (2026-10-26) — v0.10.2 on the cart (attract loop)
+# Session handoff: Mister CFE (2026-10-27) — 0.13.0-dev on `feat/wind-ridge-lines`
 
 Start a new session with: **"Read docs/HANDOFF.md and continue."**
 `PROJECT_PLAN.md` is the long-term record (progress log, newest first).
@@ -29,32 +29,30 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 4. The intro pole sprite is each job's broken pole: Snapped → Standing when the line goes live (OBJ slot 7).
 5. Bigger characters: three adults 24px, Emil 20px (a kid; easy to make 24 if Abe prefers).
 
-## Wind Ridge three-line grid chain (approved on stream, not merged)
+## Branch `feat/wind-ridge-lines` (VERSION `0.13.0-dev`, not merged)
 
-Branch `feat/wind-ridge-lines` in worktree `../gb-mr-cfe-wind-ridge`, VERSION `0.11.0-dev` (main still v0.10.3 = `stable`).
-`project_select` that worktree's `mr-cfe.gbsproj` before MCP work there. Abe on the stream: "yay! I love that concept of
-connecting the lines. this is a good version." Dev builds show the version on the HUD's second row.
+Worktree `../gb-mr-cfe-wind-ridge`; main is still v0.10.3 = `stable`. `project_select` the worktree's `mr-cfe.gbsproj`
+before MCP work (`.mcp.json` is copied in, gitignored). Abe on the 0.12.0-dev stream (`54e5d273…`): "good".
 
-Next, in order:
-1. Stream `build/rom/ridge-chain-preview.gbc` (`4c8515a1…`, start = Wind Ridge, dev label) if Abe wants to see the label.
-2. Step 2, the lab (Abe chose): one registry tags every scene `game` / `lab` / `legacy`; lab scenes get a `LAB_` prefix and
-   their own editor area; a test proves no game scene leads into a lab scene; release ROMs build from a copy of the project
-   without lab/legacy scenes. Contents: hazard gallery + movement room (replacing ad-hoc `--test-start` runs). Storm Night
-   and the topdown village become `legacy`.
-3. Roll the grid-chain idea to Signal Hill and Pine Hollow (actor cap 20 per scene; keep the 10-per-line scanline test).
-4. Merge to main only after Abe's OK; then release (drop `-dev`), tag, and move `stable` if he approves on the cart.
-Not yet played natively: lines 2-3 with power flowing, the catwalk route, the door, every span live at once.
+Done on the branch (2026-10-27, see the progress log): scene registry `tools/scenes.py` (game/lab/legacy) +
+`make_release.py` (release copy without lab/legacy scenes); lab scenes `LAB_Hazard Gallery` and `LAB_Movement Room`
+(`lab` profile, `--test-start <folder>`); `tools/grid_chain.py`; two-line chains on Signal Hill (vars 21-23) and Pine
+Hollow (vars 24-26); B-06 box reach triggers (auto-plug on entry with the right cable); hero `Carry` pose; Priya's
+glasses, Emil's bowl, Hiroshi's hose, shorter pole wire; `climb_debris` retired.
+
+## Next, in suggested order
+
+1. **Pine Hollow scanline budget** (`test_kiko.py` strict test is `expectedFailure`): porch 13, floor 11, mesa 12 OBJs
+   per row (limit 10). Proposed: move the mesa gust so both posts fit on the mesa; then remove the `expectedFailure`.
+2. **Native playtest** (MCP emulator, text-first per the skill) of the new work: both chains in both repair orders, HUD
+   counts, door gating, reach triggers (B-06 from x=243), carry pose on/off, lab rooms.
+3. **Whip in the hazard gallery** (skipped: its builder was mid-refactor; now reusable from `make_ridge_scene.py`).
+4. **Docs:** `AGENTS.md` should mention the `lab` profile, `scenes.py` and `make_release.py`.
+5. Look check on the cart: Priya's glasses, Emil's bowl, Hiroshi's hose, carry pose.
+6. **Merge to main only after Abe's OK**; then release (drop `-dev`), tag, move `stable` if he approves on the cart.
+   B-07 (one-shelf drop) is still not flashed; Abe should feel-test it on the cart.
+Not yet played natively: Wind Ridge lines 2-3 with power, the catwalk route, the door, every span live at once.
 Worktree note: the session guard rejects `cd` and `$PY` in compound commands; use small wrapper scripts with absolute paths.
-
-## Open, in suggested order
-
-0. **Cart verdict on v0.10.2:** Abe: "all looks fantastic" (overall; no per-item notes). If he reports specifics later, the open questions were board creak fairness (50 frames), hidden cables, work orders 1–4, CLOSED boxes, storm report → title. `climb_debris` sprite is unused and can be retired.
-1. **Attract loop** shipped in v0.10.2 and covered by that verdict.
-2. Names, sizes and poles: covered only by the overall verdict above.
-3. Look items for Abe's pass: Emil's raised bowl is thin; Priya lost her glasses, so her
-   only props now are long hair and a phone; Hiroshi's tube doubles as his cane. The
-   storm pole's dangling wire overlaps the cable-end sprite on the same tile.
-4. Known minor: B-06 junction reach. B-07 fixed (one shelf per Down+A, engine overlay), not yet flashed; Abe should feel-test the drop on the cart.
 
 Use parallel workers per the skill (art: Sonnet; plumbing: Haiku). Main selects the
 project **before** spawning workers, gives plumbing workers the OBJ slot map, and
