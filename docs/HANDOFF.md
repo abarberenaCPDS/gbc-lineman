@@ -29,6 +29,14 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 4. The intro pole sprite is each job's broken pole: Snapped → Standing when the line goes live (OBJ slot 7).
 5. Bigger characters: three adults 24px, Emil 20px (a kid; easy to make 24 if Abe prefers).
 
+## Wind Ridge two-line prototype (in progress)
+
+Branch `feat/wind-ridge-lines` in worktree `../gb-mr-cfe-wind-ridge` (main untouched). `project_select` that worktree's
+`mr-cfe.gbsproj` before MCP work there. Design and native evidence: PROJECT_PLAN progress log, 2026-10-27. Next: Abe's
+verdict on the stream/preview (whip look, puzzle order, length), then play the house plug + door natively, then decide
+whether to roll the idea out to Signal Hill (2 lines + breaker?) and Pine Hollow (3 lines). Merge to main only after Abe's OK.
+Worktree note: the session guard rejects `cd` and `$PY` in compound commands; use small wrapper scripts with absolute paths.
+
 ## Open, in suggested order
 
 0. **Cart verdict on v0.10.2:** Abe: "all looks fantastic" (overall; no per-item notes). If he reports specifics later, the open questions were board creak fairness (50 frames), hidden cables, work orders 1–4, CLOSED boxes, storm report → title. `climb_debris` sprite is unused and can be retired.
