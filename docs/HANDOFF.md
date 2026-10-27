@@ -47,8 +47,15 @@ measured 10 in OAM); gallery whip; `AGENTS.md` docs. Native: Pine house line pic
 from a porch jump, chain gating (house first stays dark). Source-debug note: keep the `--test-start` settings in place
 while `emulator_debug` runs (it rechecks live sources), then restore.
 
-1. **Native playtest, remaining:** Pine feeder on the mesa (T1 at (16,8)) and the door; Signal Hill chain in both orders;
-   lab rooms (gallery hazards incl. whip, movement room).
+Native 2026-10-27 (`pine-feeder` `e29941fe…`, start = feeder pole (9,8)): feeder pickup on the mesa, walk right past the
+hidden cable (inactive at that moment), T1 reach trigger auto-plugs: var 24 = 1, var 25 = 1, var 26 = 1, "Power flows
+on…", stage-1 wire lit. Combined with the earlier house-line run, both Pine lines work in isolation.
+
+1. **Native playtest, remaining:** Pine with both lines in one run, then the door (needs var 25 = 2); Signal Hill chain
+   in both orders; lab rooms (gallery hazards incl. whip, movement room). Recipe: `make_intro_scene.py --test-start
+   <folder> X Y right`, `rom_build` with `captureDebugArtifacts`, `emulator_run` source mode, keep the override while
+   `emulator_debug` runs, restore with a plain `make_intro_scene.py`. Each scene opens with 2-3 dialogue boxes (A + ~80
+   frames each). Build logs are ~15k tokens each: budget about 6 builds per session.
 2. Look check on the cart: Priya's glasses, Emil's bowl, Hiroshi's hose, carry pose.
 3. **Merge to main only after Abe's OK**; then release (drop `-dev`), tag, move `stable` if he approves on the cart.
    B-07 (one-shelf drop) is still not flashed; Abe should feel-test it on the cart.
