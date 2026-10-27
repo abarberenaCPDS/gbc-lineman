@@ -1,13 +1,13 @@
 {
   "_resourceType": "actor",
   "id": "d8059454-594f-5760-b614-3ae1686db2da",
-  "_index": 3,
+  "_index": 6,
   "symbol": "signal_cable_end",
   "prefabId": "",
   "name": "Dangling Cable End",
   "coordinateType": "tiles",
-  "x": 7,
-  "y": 8,
+  "x": 12,
+  "y": 11,
   "frame": 0,
   "animate": true,
   "spriteSheetId": "f4c23ff5-b7d9-57dc-900e-89453394efa2",
@@ -63,7 +63,7 @@
                     "variable": "6",
                     "value": {
                       "type": "number",
-                      "value": 1
+                      "value": 2
                     }
                   },
                   "id": "0e4ae722-c690-5111-9f0f-4a41a45ea5e8"
@@ -104,7 +104,7 @@
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Got the cable!\nTo the box ahead."
+                      "Got the cable!\nFind its box."
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -148,7 +148,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$10$/1 HOME %D1$11$/1",
+                    "text": "LINES %D1$22$/2 HOME %D1$11$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
@@ -170,7 +170,84 @@
             }
           }
         ],
-        "false": []
+        "false": [
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "a5e6de72-e001-5fd9-8886-dd87c5c89ddf"
+          },
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "Hands full!\nOne cable a trip."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 7,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 5,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "time",
+              "closeDelayTime": 0.5,
+              "closeDelayFrames": 30
+            },
+            "id": "ee1a16de-9322-5758-9c25-3e15802d4b9b"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 16
+              }
+            },
+            "id": "81352fef-0eed-5821-9777-d76ed3692640"
+          },
+          {
+            "command": "EVENT_OVERLAY_SHOW",
+            "args": {
+              "color": "black",
+              "x": 0,
+              "y": 0
+            },
+            "id": "598a87b8-27b2-511d-a713-227f8688bb4d"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "LINES %D1$22$/2 HOME %D1$11$/1",
+              "x": 0,
+              "y": 0,
+              "location": "overlay"
+            },
+            "id": "8c3c2555-ea55-5a32-a355-50aef5bf0ad8"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "v0.11.0-dev",
+              "x": 9,
+              "y": 1,
+              "location": "overlay"
+            },
+            "id": "a964a4ed-40ee-53a8-beaf-8ab76b22052c"
+          }
+        ]
       }
     }
   ],

@@ -35,6 +35,12 @@ class KikoBackgroundTests(unittest.TestCase):
     def slot(self, tx: int, ty: int) -> int:
         return self.slots[ty][tx]
 
+    @staticmethod
+    def stone_air() -> set[tuple[int, int]]:
+        """Open-air tiles that carry stone art: gust placards and downed-wire posts."""
+        placards = {(x, row) for row, x0, x1 in kiko.GUST_LANES for x in range(x0, x1 + 1)}
+        return placards | set(art.ARC_POST_TILES)
+
     def native(self, tx: int, ty: int, x: int, y: int) -> int:
         gray = self.proxy.getpixel((tx * kiko.TILE + x, ty * kiko.TILE + y))[0]
         return art._gb_studio_native_index(gray)
@@ -74,6 +80,8 @@ class KikoBackgroundTests(unittest.TestCase):
                 if cell == climb.COL_SOLID:
                     self.assertIn(slot, (art.STONE, art.EARTH), f"solid tile {tx},{ty} not rock")
                 elif cell == climb.COL_EMPTY:
+                    if (tx, ty) in self.stone_air():
+                        continue  # hazard placards and downed-wire posts are stone
                     self.assertNotIn(slot, (art.STONE, art.EARTH),
                                      f"open air at {tx},{ty} drawn as rock")
                 else:
@@ -113,7 +121,7 @@ class KikoBackgroundTests(unittest.TestCase):
         px, py = kiko.DAMAGED_POLE
         self.assertEqual(self.grid[py][px], climb.COL_EMPTY)
         self.assertEqual(self.grid[py + 1][px], climb.COL_SOLID, "pole must stand on the mesa")
-        self.assertEqual(kiko.CABLE_ROUTE[0], (px, py - 3), "cable leaves the pole top")
+        self.assertEqual(kiko.WIRE_ROUTES[0][1][-1], (px, py - 3), "the feeder wire leaves the pole top")
         self.assertFalse(hasattr(art, "POLE_TILES"))
         for ty in range(py - 3, py + 1):
             for tx in (px, px + 1):
@@ -126,10 +134,10 @@ class KikoBackgroundTests(unittest.TestCase):
                 self.assertIn((tx, row), art.ARC_POST_TOPS, f"no post at {tx},{row}")
         for tx, ty in art.ARC_POST_TILES:
             self.assertEqual(self.grid[ty][tx], climb.COL_EMPTY, f"post on collision {tx},{ty}")
-            self.assertEqual(self.slot(tx, ty), art.METAL, f"post not metal at {tx},{ty}")
+            self.assertEqual(self.slot(tx, ty), art.STONE, f"post not stone at {tx},{ty}")
             natives = self.natives(tx, ty)
             self.assertNotIn(climb.LINE_COLOR_INDEX, natives, f"post uses cable index {tx},{ty}")
-            self.assertTrue(any(n in (2, 3) for n in natives), f"post has no metal {tx},{ty}")
+            self.assertTrue(any(n in (2, 3) for n in natives), f"post has no shading {tx},{ty}")
 
     def test_arc_lanes_are_not_cable_coloured(self):
         for row, x0, x1 in kiko.ARC_LANES:
@@ -138,40 +146,37 @@ class KikoBackgroundTests(unittest.TestCase):
                 self.assertNotEqual(self.slot(tx, row), climb.LINE_BG_SLOT,
                                     f"arc lane {tx},{row} drawn as cable")
 
-    def test_only_cable_pixels_use_the_line_index_in_metal_slot(self):
-        route = art.cable_route_tiles()
-        line_cells = set()
-        for ty in range(kiko.MAP_H):
-            for tx in range(kiko.MAP_W):
-                if self.slot(tx, ty) != climb.LINE_BG_SLOT:
-                    continue
-                if climb.LINE_COLOR_INDEX in self.natives(tx, ty):
-                    line_cells.add((tx, ty))
-        claimed_route = {(tx, ty) for tx, ty in route
-                         if self.slot(tx, ty) == climb.LINE_BG_SLOT}
-        self.assertTrue(line_cells)
-        self.assertEqual(line_cells, claimed_route)
+    def test_only_wire_pixels_use_the_stage_indices_in_metal_slot(self):
+        self.assertEqual(kiko.STAGE_COLOR_INDEX, [1, 3])
+        for stage in range(1, kiko.STAGE_COUNT + 1):
+            index = kiko.STAGE_COLOR_INDEX[stage - 1]
+            stage_tiles = {(x // kiko.TILE, y // kiko.TILE) for x, y in art.stage_pixels(stage)}
+            cells = {(tx, ty) for ty in range(kiko.MAP_H) for tx in range(kiko.MAP_W)
+                     if self.slot(tx, ty) == climb.LINE_BG_SLOT and index in self.natives(tx, ty)}
+            self.assertTrue(cells, f"stage {stage} wire is drawn")
+            self.assertTrue(cells <= stage_tiles, f"stage {stage} index outside its wire: {cells - stage_tiles}")
 
-    def test_cable_links_pole_and_junction_box_and_house(self):
-        cells = {(tx, ty) for tx, ty in art.cable_route_tiles()
-                 if self.slot(tx, ty) == climb.LINE_BG_SLOT}
+    def test_wire_links_feeder_pole_transformer_house_pole_junction_and_house(self):
+        cells = {(tx, ty) for tx, ty in art.wire_tiles() if self.slot(tx, ty) == climb.LINE_BG_SLOT}
 
         def near(targets, reach=1):
             return any(max(abs(ax - bx), abs(ay - by)) <= reach
                        for ax, ay in cells for bx, by in targets)
 
-        pole = {(kiko.DAMAGED_POLE[0], kiko.DAMAGED_POLE[1] - 3)}
+        feeder, house = kiko.LINES
+        self.assertTrue(near({(feeder["pole"][0], feeder["pole"][1] - 3)}), "wire must leave the feeder pole")
+        self.assertTrue(near({(feeder["box"][0], feeder["box"][1] - 3)}), "feeder wire must reach T1")
+        self.assertTrue(near({(house["pole"][0], house["pole"][1] - 3)}), "wire must leave the house pole")
+        self.assertTrue(near({(kiko.JUNCTION_BOX[0], kiko.JUNCTION_BOX[1] - 1)}), "wire must reach the junction")
         house_x0, house_x1, house_y0, house_y1 = kiko.HOUSE_RECT
-        house = {(x, y) for x in range(house_x0, house_x1 + 1)
-                 for y in range(house_y0, house_y1 + 1)}
-        self.assertTrue(near(pole), "cable must leave the pole")
-        self.assertTrue(near({kiko.JUNCTION_BOX}), "cable must reach the junction box")
-        self.assertTrue(near(house, reach=1), "cable must reach the house")
+        house_cells = {(x, y) for x in range(house_x0, house_x1 + 1)
+                       for y in range(house_y0, house_y1 + 1)}
+        self.assertTrue(near(house_cells, reach=1), "the chain must reach the house")
 
-    def test_cable_cells_are_empty_collision(self):
-        for tx, ty in art.cable_route_tiles():
+    def test_wire_cells_are_empty_collision(self):
+        for tx, ty in art.wire_tiles():
             if self.slot(tx, ty) == climb.LINE_BG_SLOT:
-                self.assertEqual(self.grid[ty][tx], climb.COL_EMPTY, f"cable on collision {tx},{ty}")
+                self.assertEqual(self.grid[ty][tx], climb.COL_EMPTY, f"wire on collision {tx},{ty}")
                 self.assertNotIn((ty, tx), art.LANE_CELLS)
 
     def test_window_slot_belongs_to_house_windows_alone(self):
@@ -202,10 +207,10 @@ class KikoBackgroundTests(unittest.TestCase):
             for tx in range(x0, x1 + 1):
                 self.assertEqual(self.grid[row][tx], climb.COL_EMPTY)
                 self.assertEqual(self.grid[row + 2][tx], climb.COL_SOLID, "placard floor is mesa")
-                self.assertEqual(self.slot(tx, row), art.METAL)
+                self.assertEqual(self.slot(tx, row), art.STONE, "placard is stone: the metal slot is wire only")
                 natives = self.natives(tx, row)
                 self.assertNotIn(climb.LINE_COLOR_INDEX, natives, "placard uses cable index")
-                self.assertTrue(any(n in (2, 3) for n in natives), "placard has no metal")
+                self.assertTrue(any(n in (2, 3) for n in natives), "placard has no shading")
 
     def test_hud_rows_are_plain_sky(self):
         for ty in range(kiko.HUD_ROWS):

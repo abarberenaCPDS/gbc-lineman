@@ -17,15 +17,15 @@
           "type": "eq",
           "valueA": {
             "type": "variable",
-            "value": "12"
+            "value": "25"
           },
           "valueB": {
             "type": "number",
-            "value": 1
+            "value": 2
           }
         }
       },
-      "id": "447074df-e3a4-5323-b9a2-55cb9214722e",
+      "id": "81c6c3d6-26a7-5d5f-bd5d-e2e46c49f46d",
       "children": {
         "true": [
           {
@@ -182,7 +182,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$12$/1 HOME %D1$13$/1",
+                    "text": "LINES %D1$25$/2 HOME %D1$13$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
@@ -258,7 +258,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$12$/1 HOME %D1$13$/1",
+                    "text": "LINES %D1$25$/2 HOME %D1$13$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
@@ -296,7 +296,7 @@
             "command": "EVENT_TEXT",
             "args": {
               "text": [
-                "Still no power.\nFix the line!"
+                "Still no power.\nFix both lines!"
               ],
               "avatarId": "",
               "minHeight": 4,
@@ -340,7 +340,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "LINE %D1$12$/1 HOME %D1$13$/1",
+              "text": "LINES %D1$25$/2 HOME %D1$13$/1",
               "x": 0,
               "y": 0,
               "location": "overlay"

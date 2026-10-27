@@ -17,6 +17,17 @@ ROOT = Path(__file__).resolve().parent.parent
 BACKGROUND = ROOT / "assets/backgrounds/signal_hill.png"
 SIDECAR = Path(str(BACKGROUND) + ".gbsres")
 GRAYS = {255, 170, 85, 0}
+LINES = rosa.LINES
+PLACARDS = {(row, tx) for row, x0, x1 in rosa.GUST_LANES for tx in range(x0, x1 + 1)}
+
+
+def stage_tiles(stage: int) -> set[tuple[int, int]]:
+    """Tiles any pixel of ``stage``'s wire route touches."""
+    return {(x // rosa.TILE, y // rosa.TILE) for x, y in art.stage_pixels(stage)}
+
+
+def _top(cell):
+    return (cell[0], cell[1] - 3)
 
 
 class RosaBackgroundTests(unittest.TestCase):
@@ -69,8 +80,12 @@ class RosaBackgroundTests(unittest.TestCase):
                 if cell == climb.COL_SOLID:
                     self.assertIn(slot, (art.STONE, art.EARTH), f"solid tile {tx},{ty} not rock")
                 elif cell == climb.COL_EMPTY:
-                    self.assertNotIn(slot, (art.STONE, art.EARTH),
-                                     f"open air at {tx},{ty} drawn as rock")
+                    # Open air is sky, wire, or a stone post or placard standing in it.
+                    if (tx, ty) in art.ARC_POST_TILES or (ty, tx) in PLACARDS:
+                        self.assertEqual(slot, art.STONE, f"post or placard at {tx},{ty} not stone")
+                    else:
+                        self.assertNotIn(slot, (art.STONE, art.EARTH),
+                                         f"open air at {tx},{ty} drawn as rock")
                 else:
                     self.assertEqual(slot, art.TIMBER, f"one-way tile {tx},{ty} not timber")
 
@@ -90,17 +105,18 @@ class RosaBackgroundTests(unittest.TestCase):
                 for tx in range(x0, x1 + 1):
                     self.assertEqual(self.slot(tx, ty), art.STONE, f"step {tx},{ty} not stone")
 
-    def test_pole_stands_on_step_and_background_draws_no_stub(self):
-        # The pole is the intro_pole actor: its footprint (rows py-3..py, two
-        # tiles wide) keeps no BG timber stub, and the cable starts on its top row.
-        px, py = rosa.DAMAGED_POLE
-        self.assertEqual(self.grid[py][px], climb.COL_EMPTY)
-        self.assertEqual(self.grid[py + 1][px], climb.COL_SOLID, "pole must stand on the upper rock step")
-        self.assertEqual(rosa.CABLE_ROUTE[0], (px, py - 3), "cable leaves the pole top")
-        self.assertFalse(hasattr(art, "POLE_TILES"))
-        for ty in range(py - 3, py + 1):
-            for tx in (px, px + 1):
-                self.assertNotEqual(self.slot(tx, ty), art.TIMBER, f"BG stub at {tx},{ty}")
+    def test_every_pole_stands_on_support_and_its_wire_starts_at_its_top(self):
+        for line in LINES:
+            px, py = line["pole"]
+            self.assertEqual(self.grid[py][px], climb.COL_EMPTY)
+            self.assertEqual(self.grid[py + 1][px], climb.COL_SOLID,
+                             f"{line['key']} pole must stand on support")
+            self.assertIn((px, py - 3), stage_tiles(1) | stage_tiles(2),
+                          f"no wire leaves the {line['key']} pole top")
+            # No BG timber stub under the pole sprite (rows py-3..py, two tiles wide).
+            for ty in range(py - 3, py + 1):
+                for tx in (px, px + 1):
+                    self.assertNotEqual(self.slot(tx, ty), art.TIMBER, f"BG stub at {tx},{ty}")
 
     def test_arc_lanes_have_posts_at_both_ends(self):
         self.assertTrue(art.ARC_POST_TOPS)
@@ -109,55 +125,68 @@ class RosaBackgroundTests(unittest.TestCase):
                 self.assertIn((tx, row), art.ARC_POST_TOPS, f"no post at {tx},{row}")
         for tx, ty in art.ARC_POST_TILES:
             self.assertEqual(self.grid[ty][tx], climb.COL_EMPTY, f"post on collision {tx},{ty}")
-            self.assertEqual(self.slot(tx, ty), art.METAL, f"post not metal at {tx},{ty}")
+            self.assertEqual(self.slot(tx, ty), art.STONE, f"post not stone at {tx},{ty}")
             natives = [self.native(tx, ty, x, y) for y in range(rosa.TILE)
                        for x in range(rosa.TILE)]
-            self.assertNotIn(climb.LINE_COLOR_INDEX, natives, f"post uses cable index {tx},{ty}")
-            self.assertTrue(any(n in (2, 3) for n in natives), f"post has no metal {tx},{ty}")
+            self.assertTrue(any(n in (2, 3) for n in natives), f"post has no light {tx},{ty}")
 
-    def test_arc_lanes_are_not_cable_coloured(self):
+    def test_arc_lanes_are_not_wire_coloured(self):
         for row, x0, x1 in rosa.ARC_LANES:
             for tx in range(x0, x1 + 1):
                 self.assertEqual(self.grid[row][tx], climb.COL_EMPTY)
                 self.assertNotEqual(self.slot(tx, row), climb.LINE_BG_SLOT,
-                                    f"arc lane {tx},{row} drawn as cable")
+                                    f"arc lane {tx},{row} drawn as wire")
 
-    def test_only_cable_pixels_use_the_line_index_in_metal_slot(self):
-        route = art.cable_route_tiles()
+    def test_metal_slot_holds_only_wire_and_only_stage_indices_appear_there(self):
+        wire = art.wire_tiles()
         line_cells = set()
         for ty in range(rosa.MAP_H):
             for tx in range(rosa.MAP_W):
                 if self.slot(tx, ty) != climb.LINE_BG_SLOT:
                     continue
-                for y in range(rosa.TILE):
-                    for x in range(rosa.TILE):
-                        if self.native(tx, ty, x, y) == climb.LINE_COLOR_INDEX:
-                            line_cells.add((tx, ty))
-        claimed_route = {(tx, ty) for tx, ty in route
-                         if self.slot(tx, ty) == climb.LINE_BG_SLOT}
+                if any(self.native(tx, ty, x, y) in rosa.STAGE_COLOR_INDEX
+                       for y in range(rosa.TILE) for x in range(rosa.TILE)):
+                    line_cells.add((tx, ty))
+        claimed_wire = {(tx, ty) for tx, ty in wire if self.slot(tx, ty) == climb.LINE_BG_SLOT}
         self.assertTrue(line_cells)
-        self.assertEqual(line_cells, claimed_route)
-
-    def test_cable_links_pole_and_junction_box_and_house(self):
-        cells = {(tx, ty) for tx, ty in art.cable_route_tiles()
+        self.assertEqual(line_cells, claimed_wire)
+        # Nothing else claims the metal slot: every metal tile is a wire tile.
+        metal = {(tx, ty) for ty in range(rosa.MAP_H) for tx in range(rosa.MAP_W)
                  if self.slot(tx, ty) == climb.LINE_BG_SLOT}
+        self.assertEqual(metal, claimed_wire)
+
+    def test_each_stage_wire_only_uses_its_own_index(self):
+        # A junction tile shared by two stages may show both colours; every other
+        # wire tile carries only its own stage's index.
+        for stage, index in enumerate(rosa.STAGE_COLOR_INDEX, start=1):
+            others_tiles = set().union(*(stage_tiles(s) for s in range(1, rosa.LINE_COUNT + 1) if s != stage))
+            for tx, ty in stage_tiles(stage) - others_tiles:
+                if self.slot(tx, ty) != climb.LINE_BG_SLOT:
+                    continue
+                natives = {self.native(tx, ty, x, y) for y in range(rosa.TILE) for x in range(rosa.TILE)}
+                others = {i for i in rosa.STAGE_COLOR_INDEX if i != index}
+                self.assertFalse(natives & others, f"stage {stage} wire tile {tx},{ty} uses another stage")
+
+    def test_wires_link_the_whole_chain(self):
+        feeder, house = LINES
+        cells = {(tx, ty) for tx, ty in art.wire_tiles() if self.slot(tx, ty) == climb.LINE_BG_SLOT}
 
         def near(targets, reach=1):
             return any(max(abs(ax - bx), abs(ay - by)) <= reach
                        for ax, ay in cells for bx, by in targets)
 
-        pole = {(rosa.DAMAGED_POLE[0], rosa.DAMAGED_POLE[1] - 3)}
+        self.assertTrue(near({_top(feeder["pole"])}), "wire leaves the feeder pole")
+        self.assertTrue(near({_top(feeder["box"])}), "line 1 reaches the transformer")
+        self.assertTrue(near({_top(house["pole"])}), "transformer feeds the storm pole")
+        self.assertTrue(near({house["box"]}), "line 2 reaches the porch junction box")
         house_x0, house_x1, house_y0, house_y1 = rosa.HOUSE_RECT
-        house = {(x, y) for x in range(house_x0, house_x1 + 1)
-                 for y in range(house_y0, house_y1 + 1)}
-        self.assertTrue(near(pole), "cable must leave the pole")
-        self.assertTrue(near({rosa.JUNCTION_BOX}), "cable must reach the junction box")
-        self.assertTrue(near(house, reach=1), "cable must reach the house")
+        house_cells = {(x, y) for x in range(house_x0, house_x1 + 1) for y in range(house_y0, house_y1 + 1)}
+        self.assertTrue(near(house_cells, reach=1), "the chain reaches the house")
 
-    def test_cable_cells_are_empty_collision(self):
-        for tx, ty in art.cable_route_tiles():
+    def test_wire_cells_are_empty_collision(self):
+        for tx, ty in art.wire_tiles():
             if self.slot(tx, ty) == climb.LINE_BG_SLOT:
-                self.assertEqual(self.grid[ty][tx], climb.COL_EMPTY, f"cable on collision {tx},{ty}")
+                self.assertEqual(self.grid[ty][tx], climb.COL_EMPTY, f"wire on collision {tx},{ty}")
                 self.assertNotIn((ty, tx), art.LANE_CELLS)
 
     def test_window_slot_belongs_to_house_windows_alone(self):
@@ -180,11 +209,11 @@ class RosaBackgroundTests(unittest.TestCase):
         # The doorway is dark timber, not a window.
         self.assertTrue(all(self.native(dx, dy, x, 2) == 0 for x in range(2, 6)))
 
-    def test_gust_lanes_are_open_air_metal_placards(self):
+    def test_gust_lanes_are_open_air_stone_placards(self):
         for row, x0, x1 in rosa.GUST_LANES:
             for tx in range(x0, x1 + 1):
                 self.assertEqual(self.grid[row][tx], climb.COL_EMPTY)
-                self.assertEqual(self.slot(tx, row), art.METAL)
+                self.assertEqual(self.slot(tx, row), art.STONE)
 
     def test_hud_rows_are_plain_sky(self):
         for ty in range(rosa.HUD_ROWS):

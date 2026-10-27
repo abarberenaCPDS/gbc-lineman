@@ -32,7 +32,6 @@ MAX_UNIQUE_TILES = 192
 # BG palette families (opening.BG_PALETTES order). Slot 7 is the editor UI.
 SKY, STONE, TIMBER, WINDOW, FOLIAGE, METAL, EARTH = range(7)
 LINE = climb.LINE_BG_SLOT
-LINE_INDEX = climb.LINE_COLOR_INDEX
 assert LINE == METAL, "cable slot must be the metal family"
 assert kiko.WINDOW_BG_SLOT == WINDOW, "window slot must be the window family"
 
@@ -52,12 +51,13 @@ PINES = [(14, 40, 14, 79), (30, 52, 10, 79), (46, 40, 16, 79),
          (102, 48, 12, 79), (196, 40, 14, 79), (214, 52, 10, 79),
          (240, 44, 14, 79)]
 
-# The snapped utility pole (contract: kiko.DAMAGED_POLE) is the animated
-# intro_pole actor (see make_kiko_scene); the background draws no pole. The
-# cable starts at the top of that sprite (kiko.CABLE_ROUTE[0] == pole x, y-3).
+# The snapped utility pole (contract: kiko.DAMAGED_POLE, kiko.HOUSE_POLE) is the
+# animated intro_pole actor (see make_kiko_scene); the background draws no pole.
+# Each wire leaves a pole's top tile (kiko.WIRE_ROUTES).
 
 # Downed-wire posts: one at each end of every arc lane, standing on the floor.
-# Each entry is the post's top tile; the post is two tiles tall.
+# Each entry is the post's top tile; the post is two tiles tall. Posts use the
+# stone slot: the metal slot holds nothing but wire.
 ARC_POST_TOPS = [(tx, row) for row, x0, x1 in kiko.ARC_LANES
                  for tx in (x0 - 1, x1 + 1)]
 ARC_POST_TILES = [(tx, ty) for tx, top in ARC_POST_TOPS for ty in (top, top + 1)]
@@ -67,26 +67,38 @@ LANE_CELLS = {(row, x) for row, x0, x1 in kiko.hazard_lanes()
               for x in range(x0, x1 + 1)}
 
 
-@functools.lru_cache(maxsize=None)
-def cable_waypoints() -> tuple[tuple[int, int], ...]:
-    """Pixel polyline through the contract's CABLE_ROUTE tile centres."""
-    return tuple((tx * TILE + TILE // 2, ty * TILE + TILE // 2)
-                 for tx, ty in kiko.CABLE_ROUTE)
+def _mask_pixels(draw) -> frozenset[tuple[int, int]]:
+    mask = Image.new("1", (WIDTH + 2, HEIGHT + 2), 0)
+    draw(ImageDraw.Draw(mask))
+    w = mask.width
+    return frozenset((i % w, i // w) for i, v in enumerate(mask.get_flattened_data()) if v)
+
+
+def _polyline_pixels(route) -> frozenset[tuple[int, int]]:
+    """2px-thick polyline through contract tile centres (inside the tile)."""
+    pts = [(tx * TILE + 3, ty * TILE + 3) for tx, ty in route]
+
+    def draw(d):
+        for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+            d.line([(x + dx, y + dy) for x, y in pts], fill=1, width=1)
+    return _mask_pixels(draw)
 
 
 @functools.lru_cache(maxsize=None)
-def cable_pixels() -> frozenset[tuple[int, int]]:
-    """Every (x, y) pixel the 1px cable occupies before tile occlusion."""
-    mask = Image.new("1", (WIDTH, HEIGHT), 0)
-    ImageDraw.Draw(mask).line(list(cable_waypoints()), fill=255, width=1)
-    return frozenset((x, y) for y in range(HEIGHT) for x in range(WIDTH)
-                     if mask.getpixel((x, y)))
+def stage_pixels(stage: int) -> frozenset[tuple[int, int]]:
+    """Every pixel that may carry the wire colour index of ``stage``."""
+    out: set[tuple[int, int]] = set()
+    for s, route in kiko.WIRE_ROUTES:
+        if s == stage:
+            out |= _polyline_pixels(route)
+    return frozenset(out)
 
 
 @functools.lru_cache(maxsize=None)
-def cable_route_tiles() -> frozenset[tuple[int, int]]:
-    """(tx, ty) tiles the cable passes through; some may be occluded."""
-    return frozenset((x // TILE, y // TILE) for x, y in cable_pixels())
+def wire_tiles() -> frozenset[tuple[int, int]]:
+    """(tx, ty) tiles any wire pixel touches."""
+    return frozenset((x // TILE, y // TILE) for stage in range(1, kiko.STAGE_COUNT + 1)
+                     for x, y in stage_pixels(stage))
 
 
 def _set_rect(slots: list[list[int]], slot: int, x0: int, x1: int,
@@ -124,31 +136,36 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     for tx, ty in kiko.HOUSE_WINDOWS:
         slots[ty][tx] = WINDOW
 
-    # Downed-wire posts: metal family, open air, never on a lane.
+    # Downed-wire posts: stone family, open air, never on a lane.
     for tx, ty in ARC_POST_TILES:
         if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in LANE_CELLS:
             raise AssertionError(f"arc post overlaps collision or lane at {tx},{ty}")
-        slots[ty][tx] = METAL
+        slots[ty][tx] = STONE
 
-    # Gust lanes on the mesa get a metal hazard placard; it never uses the
-    # cable index.
+    # Gust lanes on the mesa get a stone hazard placard (the metal slot is wire only).
     for row, x0, x1 in kiko.GUST_LANES:
         for tx in range(x0, x1 + 1):
             if grid[row][tx] != climb.COL_EMPTY:
                 raise AssertionError(f"gust placard overlaps collision at {tx},{row}")
-            slots[row][tx] = METAL
+            slots[row][tx] = STONE
 
-    # Claim the cable's open-sky tiles for the metal line slot last. Cells on
-    # the cabin, pole or posts stay theirs, so the cable passes behind them as
-    # a gap rather than a recolour.
-    for tx, ty in sorted(cable_route_tiles()):
-        if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in LANE_CELLS:
+    # Wire tiles take the metal slot last. They may never hit collision (power
+    # enters through the left cliff wall), a lane, the cabin, a post or a placard.
+    hx0, hx1, hy0, hy1 = kiko.HOUSE_RECT
+    house = {(tx, ty) for ty in range(hy0, hy1 + 1) for tx in range(hx0, hx1 + 1)}
+    posts = set(ARC_POST_TILES)
+    for tx, ty in sorted(wire_tiles()):
+        if grid[ty][tx] != climb.COL_EMPTY:
+            assert tx == 0, f"wire tile {tx},{ty} inside collision"
             continue
-        if slots[ty][tx] == SKY:
-            slots[ty][tx] = LINE
+        if (ty, tx) in LANE_CELLS or (tx, ty) in house or (tx, ty) in posts:
+            raise AssertionError(f"wire tile {tx},{ty} collides with other art")
+        if slots[ty][tx] != SKY:
+            raise AssertionError(f"wire tile {tx},{ty} is not open sky")
+        slots[ty][tx] = LINE
 
     assert all(0 <= slot < 7 for row in slots for slot in row), "UI slot 7 reserved"
-    assert all(slots[ty][tx] == METAL for tx, ty in ARC_POST_TILES)
+    assert all(slots[ty][tx] == STONE for tx, ty in ARC_POST_TILES)
     assert all(slots[ty][tx] == WINDOW for tx, ty in kiko.HOUSE_WINDOWS)
     return slots
 
@@ -279,38 +296,38 @@ def _draw_windows(c: _Canvas) -> None:
 
 
 def _draw_arc_posts(c: _Canvas) -> None:
-    # Metal posts use indices 0, 2 and 3 only; index 1 is the cable's.
-    p = PALETTES[METAL]
+    # Stone-family posts (the metal slot is wire only).
+    p = PALETTES[STONE]
     for tx, top in ARC_POST_TOPS:
         x = tx * TILE + 3
         y0, y1 = top * TILE + 2, (top + 2) * TILE - 1
-        c.rect(METAL, (x, y0, x + 1, y1), p[0])
-        c.line(METAL, [(x + 2, y0), (x + 2, y1)], p[2])
-        c.rect(METAL, (x - 1, y0, x + 3, y0 + 1), p[3])
+        c.rect(STONE, (x, y0, x + 1, y1), p[0])
+        c.line(STONE, [(x + 2, y0), (x + 2, y1)], p[2])
+        c.rect(STONE, (x - 1, y0, x + 3, y0 + 1), p[3])
 
 
 def _draw_warnings(c: _Canvas) -> None:
-    # Metal placards use indices 0, 2 and 3 only; index 1 is the cable's.
-    p = PALETTES[METAL]
+    # Stone-family placards on the mesa (the metal slot is wire only).
+    p = PALETTES[STONE]
     for row, x0, x1 in kiko.GUST_LANES:
         left, right = x0 * TILE, x1 * TILE + 7
         y = row * TILE
-        c.rect(METAL, (left + 2, y + 2, right - 2, y + 5), p[0])
-        c.line(METAL, [(left + 4, y + 2), (right - 4, y + 5)], p[2])
-        c.line(METAL, [(right - 4, y + 2), (left + 4, y + 5)], p[2])
+        c.rect(STONE, (left + 2, y + 2, right - 2, y + 5), p[0])
+        c.line(STONE, [(left + 4, y + 2), (right - 4, y + 5)], p[2])
+        c.line(STONE, [(right - 4, y + 2), (left + 4, y + 5)], p[2])
         center = (left + right) // 2
-        c.line(METAL, [(center - 2, y + 3), (center + 2, y + 3)], p[3])
-        c.line(METAL, [(center, y + 1), (center, y + 6)], p[3])
+        c.line(STONE, [(center - 2, y + 3), (center + 2, y + 3)], p[3])
+        c.line(STONE, [(center, y + 1), (center, y + 6)], p[3])
 
 
 def _draw_cable(c: _Canvas, slots: list[list[int]]) -> None:
-    """Paint the cable in LINE_INDEX on claimed metal route tiles only."""
-    color = PALETTES[LINE][LINE_INDEX]
+    """Paint each stage's wire pixels in its metal colour index, on claimed wire tiles only."""
     px = c.image.load()
-    for x, y in sorted(cable_pixels()):
-        tx, ty = x // TILE, y // TILE
-        if slots[ty][tx] == LINE and (ty, tx) not in LANE_CELLS:
-            px[x, y] = color
+    for stage in range(1, kiko.STAGE_COUNT + 1):
+        color = PALETTES[LINE][kiko.STAGE_COLOR_INDEX[stage - 1]]
+        for x, y in sorted(stage_pixels(stage)):
+            if x < WIDTH and y < HEIGHT and slots[y // TILE][x // TILE] == LINE:
+                px[x, y] = color
 
 
 def make_background() -> tuple[Image.Image, list[list[int]]]:
@@ -354,17 +371,18 @@ def _check_geometry_art(image: Image.Image, grid: list[list[int]],
                 color = image.getpixel((tx * TILE + 3, ty * TILE + 3))
                 assert color in PALETTES[slots[ty][tx]], f"rock miss at {tx},{ty}"
                 assert slots[ty][tx] in (STONE, EARTH), f"solid not rock at {tx},{ty}"
-    # The cable index is reserved for cable pixels in metal-family tiles.
-    line_color = PALETTES[LINE][LINE_INDEX]
-    cable = cable_pixels()
-    for ty, row in enumerate(slots):
-        for tx, slot in enumerate(row):
-            if slot != LINE:
-                continue
-            for y in range(ty * TILE, ty * TILE + TILE):
-                for x in range(tx * TILE, tx * TILE + TILE):
-                    if image.getpixel((x, y)) == line_color:
-                        assert (x, y) in cable, f"stray cable index at {x},{y}"
+    # Metal-slot pixels of each stage's index belong to that stage's wire only.
+    for stage in range(1, kiko.STAGE_COUNT + 1):
+        color = PALETTES[LINE][kiko.STAGE_COLOR_INDEX[stage - 1]]
+        owner = stage_pixels(stage)
+        for ty, row in enumerate(slots):
+            for tx, slot in enumerate(row):
+                if slot != LINE:
+                    continue
+                for y in range(ty * TILE, ty * TILE + TILE):
+                    for x in range(tx * TILE, tx * TILE + TILE):
+                        if image.getpixel((x, y)) == color:
+                            assert (x, y) in owner, f"stray stage {stage} wire at {x},{y}"
 
 
 def _gb_studio_native_index(green: int) -> int:

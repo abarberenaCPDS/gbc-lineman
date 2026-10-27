@@ -651,6 +651,12 @@ def build_triggers(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
         board_trigger(number, board, BOARD_TRIGGER_BASE_INDEX + number - 1)
         for number, board in enumerate(hazards.BOARDS["wind_ridge"], start=1)
     )
+    # Box reach triggers come last: they sit clear of the exit, door and boards.
+    triggers.extend(
+        CHAIN.box_reach_trigger(line, symbol=f"trigger_ridge_{line['key']}_reach", index=0,
+                                connect_sound_id=audio_ids["connect"])
+        for line in LINES
+    )
     for index, trigger in enumerate(triggers):
         trigger["_index"] = index
     return triggers

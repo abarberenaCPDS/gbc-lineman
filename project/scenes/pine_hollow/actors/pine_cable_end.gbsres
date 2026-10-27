@@ -46,7 +46,7 @@
                 "type": "eq",
                 "valueA": {
                   "type": "variable",
-                  "value": "12"
+                  "value": "24"
                 },
                 "valueB": {
                   "type": "number",
@@ -148,7 +148,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$12$/1 HOME %D1$13$/1",
+                    "text": "LINES %D1$25$/2 HOME %D1$13$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
@@ -170,7 +170,84 @@
             }
           }
         ],
-        "false": []
+        "false": [
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "f326bff2-25ec-54c2-ad9f-e8291dc52ea6"
+          },
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "Hands full!\nOne cable a trip."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 7,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 5,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "time",
+              "closeDelayTime": 0.5,
+              "closeDelayFrames": 30
+            },
+            "id": "f21421ba-7488-5d94-ae6e-c9bf557b6c4c"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 16
+              }
+            },
+            "id": "739da748-41ca-58b4-94d9-31ac95e6814f"
+          },
+          {
+            "command": "EVENT_OVERLAY_SHOW",
+            "args": {
+              "color": "black",
+              "x": 0,
+              "y": 0
+            },
+            "id": "5b00fe87-e3d4-54bf-859c-744d61081e15"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "LINES %D1$25$/2 HOME %D1$13$/1",
+              "x": 0,
+              "y": 0,
+              "location": "overlay"
+            },
+            "id": "965d58f2-dd2a-55d0-8521-4e31c7f59ea2"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "v0.11.0-dev",
+              "x": 9,
+              "y": 1,
+              "location": "overlay"
+            },
+            "id": "ae63972b-07d3-51de-8b9f-6363f780882b"
+          }
+        ]
       }
     }
   ],

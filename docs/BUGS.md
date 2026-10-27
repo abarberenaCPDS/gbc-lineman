@@ -10,12 +10,12 @@ that showed it, and the regression test that guards it. Feature requests live in
 |---|---|---|---|---|
 | B-11 | 2026-10-26, Abe on cart | Climb, Wind Ridge, Pine Hollow | Falling rocks don't fit a line crew's job. | **Built, awaiting Abe's play:** cracked boards + hidden cables replace every rock (`tools/hazards.py`, release `2625c15d…`). |
 | B-08 | 2026-10-26 | Pine Hollow | Dead end after Kiko's house is powered. | **Built, awaiting play:** Emil's porch exit → storm report → title (`tools/tickets.py`, release `2625c15d…`). |
-| B-06 | 2026-10-26 | Pine Hollow | Junction box needs the hero right next to it (B at x243 does nothing, x≈253 works). | Minor; widen the interaction or add a hint. |
 
 ## Fixed
 
 | # | Found | Bug | Cause | Fix and guard |
 |---|---|---|---|---|
+| B-06 | 2026-10-26 | Pine Hollow: junction box needs the hero right next to it (B at x243 does nothing, x≈253 works). | The box only answered a B press from inside its own bounds, so the cable could not be plugged from a few tiles away. | Fixed: walking into the three tiles before a box with its cable plugs it in (`grid_chain.GridChain.box_reach_trigger`, used by Pine Hollow and Wind Ridge); guard `test_house_reach_trigger_fires_for_a_hero_at_x243_with_the_house_cable`. |
 | B-07 | 2026-10-25 (known) | Holding Down+A dropped through every one-way shelf below; even a single press dropped two climb shelves. | Input mode `DOWN_JUMP_HOLD` re-armed the engine's drop timer every falling frame; and the timer (`DROP_FRAMES_MAX` 15 frames, ~52 px at default gravity) outlasts the 24 px between climb shelves. | Tap mode (`make_engine_fields.py`) plus a generated engine overlay with `DROP_FRAMES_MAX` 7 (~12 px; `make_engine_patch.py`, Abe's choice over slower falling). `test_engine_fields`, `test_engine_patch` (overlay = vendor file + one line; drop distance between 8 px and the smallest shelf gap). Test ROM `00e8d8f3…`: Down+A held 90 frames from shelf 18 lands on 21 and stays; a second press lands on 24; A still jumps. Not flashed. |
 | B-12 | 2026-10-26, Abe | "We are missing the dialogs from the intro too." | Never reproduced natively; the cart likely still ran an older ROM. | Abe on the v0.10.1 cart (`31110ef7…`): **"dialogs are back, good job!"** Closed. |
 | B-14 | 2026-10-26, native (`454403…`) | Pine Hollow's entry box said "No power at Kiko's house!": the rename missed one caption. | The line was a literal in `make_kiko_scene.py`, not `voices.name()`. | Caption uses `voices.name("kiko")`; `test_voices.test_no_player_text_uses_a_code_key_name` scans every scene script for Marta/Tomás/Rosa/Kiko. Release `a3f5bba4…`. |

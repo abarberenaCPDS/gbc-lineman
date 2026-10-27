@@ -118,7 +118,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "LINE %D1$10$/1 HOME %D1$11$/1",
+              "text": "LINES %D1$22$/2 HOME %D1$11$/1",
               "x": 0,
               "y": 0,
               "location": "overlay"
@@ -144,15 +144,15 @@
                 "type": "eq",
                 "valueA": {
                   "type": "variable",
-                  "value": "10"
+                  "value": "22"
                 },
                 "valueB": {
                   "type": "number",
-                  "value": 1
+                  "value": 2
                 }
               }
             },
-            "id": "4a4b5793-c7b8-579b-a05d-4d4f8eb228f6",
+            "id": "d7a1093f-5145-5290-a449-ac2aec132dd5",
             "children": {
               "true": [
                 {
@@ -180,7 +180,7 @@
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Priya:\nLine's live!\nTry my door."
+                      "Priya:\nLines are live!\nTry my door."
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -234,7 +234,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$10$/1 HOME %D1$11$/1",
+                    "text": "LINES %D1$22$/2 HOME %D1$11$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
@@ -332,7 +332,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$10$/1 HOME %D1$11$/1",
+                    "text": "LINES %D1$22$/2 HOME %D1$11$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"

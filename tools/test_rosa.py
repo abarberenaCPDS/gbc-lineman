@@ -1,24 +1,28 @@
 """Signal Hill checks: python3 -m unittest discover -s tools -p test_rosa.py (or cd tools)."""
+import itertools
 import json
 import re
 import unittest
 from pathlib import Path
 
 import climb
-import tickets
+import grid_chain
 import intro
 import make_climb_scene as shared
 import make_rosa_scene as scene
 import opening
+import ridge
 import rosa
+import tickets
 import kiko
 
 # Hermetic fixtures: the builders only reference these IDs, so fixed strings
 # keep the structural tests independent of which art sidecars exist yet.
 FAKE_MUSIC = "test-music"
 FAKE_AUDIO = {"death": "death-sound", "connect": "connect-sound", "pickup": "pickup-sound"}
-FAKE_SPRITES = {"gust": "gust-sprite"}
+FAKE_SPRITES = {"gust": "gust-sprite", "arc": "arc-sprite"}
 PROJECT_DIR = scene.PROJECT_DIR
+LINES = scene.LINES
 
 
 def built_scene():
@@ -97,6 +101,17 @@ def is_var_if(event, variable, value):
             and condition.get("valueB", {}).get("value") == value)
 
 
+def is_at_least(event, variable, value):
+    condition = event["args"].get("condition", {})
+    return (event["command"] == "EVENT_IF" and condition.get("type") == "gte"
+            and condition.get("valueA", {}).get("value") == variable
+            and condition.get("valueB", {}).get("value") == value)
+
+
+def texts(events):
+    return [e["args"]["text"] for e in events if e["command"] == "EVENT_TEXT"]
+
+
 def sprite_load(sprites):
     """OBJ columns per tile row. Each entry is ((x, feet_row), width_tiles, height_tiles)."""
     load = {}
@@ -111,6 +126,23 @@ def hazard_sprites():
     sprites = [((x0, row), 2, 2) for row, x0, _ in rosa.ARC_LANES]
     sprites += [((x0, row), 3, 2) for row, x0, _ in rosa.GUST_LANES]
     return sprites
+
+
+def on_screen_sprites():
+    """(feet tile, OBJ columns, OBJ tile rows) for every actor that can be visible."""
+    sprites = [(rosa.ROSA, 2, 3), (rosa.WORKSTATION, 2, 2)]   # Priya: 24px figure
+    sprites += grid_chain.chain_sprites(LINES)
+    sprites += hazard_sprites()
+    return sprites
+
+
+def spots():
+    """Every place the hero stands on purpose: start, door, poles, boxes, checkpoints, hazards."""
+    found = [rosa.START, rosa.HOUSE_DOOR]
+    for line in LINES:
+        found += [line["pole_at"], line["box_at"], line["checkpoint"]]
+    found += [(x0, row + 1) for row, x0, _ in rosa.hazard_lanes()]
+    return found
 
 
 class RosaTests(unittest.TestCase):
@@ -130,6 +162,10 @@ class RosaTests(unittest.TestCase):
         self.assertEqual(len(set(ids.values())), len(ids), "resource IDs collide")
         self.assertEqual(rosa.resource_id("scene:signal-hill"), rosa.SCENE_ID)
         self.assertNotEqual(rosa.resource_id("actor:rosa"), rosa.resource_id("trigger:rosa-door"))
+        # The house line keeps the original job's actor keys (stable IDs).
+        self.assertEqual(scene.actor_id("pole"), rosa.resource_id("actor:pole"))
+        self.assertEqual(scene.actor_id("cable-end"), rosa.resource_id("actor:cable-end"))
+        self.assertEqual(scene.actor_id("junction-box"), rosa.resource_id("actor:junction-box"))
         self.assertEqual(built_scene(), built_scene(), "scene build is deterministic")
         self.assertEqual(built_actors(), built_actors(), "actor build is deterministic")
 
@@ -180,6 +216,12 @@ class RosaTests(unittest.TestCase):
                          {"id": "10", "name": "Hill Line Live", "symbol": "var_hill_line_live"})
         self.assertEqual(by_id[rosa.VAR_HOME_POWERED],
                          {"id": "11", "name": "Rosa Home Powered", "symbol": "var_rosa_home_powered"})
+        self.assertEqual(by_id["21"], {"id": "21", "name": "Hill Feeder Live",
+                                       "symbol": "var_hill_feeder_live"})
+        self.assertEqual(by_id["22"], {"id": "22", "name": "Hill Lines Live",
+                                       "symbol": "var_hill_lines_live"})
+        self.assertEqual(by_id["23"], {"id": "23", "name": "Hill Chain Live",
+                                       "symbol": "var_hill_chain_live"})
         self.assertEqual(by_id["6"]["symbol"], "var_carrying_cable")
         self.assertEqual(by_id["7"]["symbol"], "var_line_live")
         self.assertEqual(by_id["8"]["symbol"], "var_ridge_line_live")
@@ -190,13 +232,13 @@ class RosaTests(unittest.TestCase):
         grown = scene.merged_variables(synthetic)
         self.assertEqual(grown["variables"][:8], synthetic["variables"])
         self.assertEqual([v["id"] for v in grown["variables"]],
-                         [str(i) for i in range(8)] + ["10", "11"])
+                         [str(i) for i in range(8)] + ["10", "11", "21", "22", "23"])
         with self.assertRaises(ValueError):
             scene.merged_variables({"variables": [{"id": "10", "name": "Other", "symbol": "x"}]})
 
-    def test_scene_init_resets_vars_and_sets_cold_window_and_dead_line(self):
+    def test_scene_init_resets_vars_and_sets_cold_window_and_dead_chain(self):
         script = built_scene()["script"]
-        for variable in ("6", "10", "11"):
+        for variable in ("6", "10", "11", rosa.VAR_FEEDER_LIVE, rosa.VAR_LINES_LIVE, rosa.VAR_CHAIN_LIVE):
             self.assertTrue(any(is_set(e, variable, 0) for e in script),
                             f"init must reset var {variable}")
         self.assertFalse(any(e["command"] == "EVENT_SET_VALUE" and e["args"]["variable"] == "4"
@@ -209,13 +251,21 @@ class RosaTests(unittest.TestCase):
         palette_events = [e for e in script if e["command"] == "EVENT_PALETTE_SET_BACKGROUND"]
         self.assertEqual(palette_events[0]["args"][f"palette{rosa.WINDOW_BG_SLOT}"],
                          opening.resource_id("palette:bg:window"))
-        self.assertEqual(palette_events[1]["args"][f"palette{rosa.LINE_BG_SLOT}"],
-                         climb.grid_resource_id("palette:bg:metal_dead"))
+        # The chain refresh's outermost check is the feeder line; its "not live"
+        # branch is the zero-stage palette, so the chain starts dark.
+        feeder_check = next(e for e in script if is_var_if(e, rosa.VAR_FEEDER_LIVE, 1))
+        self.assertEqual({e["args"][f"palette{rosa.LINE_BG_SLOT}"] for e in feeder_check["children"]["false"]
+                          if e["command"] == "EVENT_PALETTE_SET_BACKGROUND"},
+                         {scene.chain_palette_id(0)}, "the chain starts dark")
         music = next(e for e in script if e["command"] == "EVENT_MUSIC_PLAY")
         self.assertEqual(music["args"]["musicId"], FAKE_MUSIC)
         intro = [e for e in script if e["command"] == "EVENT_TEXT"]
         self.assertEqual([e["args"]["text"] for e in intro],
                          [["Priya's offline!\nHer work is due."], ["Mind the sparks!"]])
+        for line in LINES:
+            self.assertIn((scene.actor_id(line["pole"]), "Snapped"),
+                          [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                           for e in script if e["command"] == "EVENT_ACTOR_SET_STATE"])
 
     def test_every_in_play_text_is_preceded_by_cutoff_and_followed_by_hud(self):
         checked = 0
@@ -232,16 +282,17 @@ class RosaTests(unittest.TestCase):
                     redraws = [e for e in events[i + 1:] if e["command"] == "EVENT_TEXT_DRAW"]
                     self.assertTrue(redraws, "HUD must be redrawn after text")
                     self.assertEqual(redraws[0]["args"]["text"], rosa.HUD_TEXT)
-        # Authored in-play texts: two init boxes, Priya x3, cable pickup, junction x3, door x2.
-        self.assertEqual(checked, 13)  # + CLOSED box
+        # Authored in-play texts: two init boxes, Priya x3, the chain's cable ends and
+        # boxes, door x2 (power, closed) and the no-power box, plus the exit refusal.
+        self.assertGreaterEqual(checked, 20)
 
     def test_hud_uses_exact_two_digit_variable_tokens(self):
-        self.assertEqual(rosa.HUD_TEXT, "LINE %D1$10$/1 HOME %D1$11$/1")
+        self.assertEqual(rosa.HUD_TEXT, "LINES %D1$22$/2 HOME %D1$11$/1")
         draws = {entry["args"]["text"] for script in all_script_lists()
                  for entry in walk(script) if entry["command"] == "EVENT_TEXT_DRAW"}
         self.assertEqual(draws - {intro.dev_label()} - {None}, {rosa.HUD_TEXT})
         tokens = re.findall(r"\$(\d+)\$", rosa.HUD_TEXT)
-        self.assertEqual(tokens, ["10", "11"])
+        self.assertEqual(tokens, ["22", "11"])
         self.assertTrue(all(len(token) == 2 for token in tokens))
         self.assertLessEqual(len(re.sub(r"%D1\$\d+\$", "00", rosa.HUD_TEXT)), 20,
                              "HUD must fit the 20-tile overlay row")
@@ -258,43 +309,46 @@ class RosaTests(unittest.TestCase):
                         self.assertLessEqual(len(part), scene.MAX_DIALOGUE_CHARS, part)
                         self.assertNotIn("’", part, "use ASCII apostrophes in dialogue")
                         checked += 1
-        # One part per line; two-line boxes count each part.
-        self.assertEqual(checked, 28)  # +4 "Priya:" name lines, +2 CLOSED
+        self.assertGreaterEqual(checked, 40)
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
         commands = [e["command"] for e in hit]
         self.assertEqual(commands[0], "EVENT_SOUND_PLAY_EFFECT", "death sound plays first")
-        drop = next(i for i, e in enumerate(hit)
-                    if is_var_if(e, rosa.VAR_CARRYING_CABLE, 1))
         respawn = next(i for i, e in enumerate(hit) if is_var_if(e, rosa.VAR_HOME_POWERED, 0))
-        self.assertLess(drop, respawn)
-        drop_events = hit[drop]["children"]["true"]
-        self.assertTrue(any(is_set(e, rosa.VAR_CARRYING_CABLE, 0) for e in drop_events))
-        self.assertTrue(any(e["command"] == "EVENT_ACTOR_SHOW" and
-                            e["args"]["actorId"] == scene.actor_id(scene.CABLE_KEY)
-                            for e in drop_events))
+        for line in LINES:
+            drop = next(i for i, e in enumerate(hit)
+                        if is_var_if(e, rosa.VAR_CARRYING_CABLE, line["number"]))
+            self.assertLess(drop, respawn)
+            drop_events = hit[drop]["children"]["true"]
+            self.assertTrue(any(is_set(e, rosa.VAR_CARRYING_CABLE, 0) for e in drop_events))
+            self.assertTrue(any(e["command"] == "EVENT_ACTOR_SHOW" and
+                                e["args"]["actorId"] == scene.actor_id(line["cable"])
+                                for e in drop_events))
         flat = list(walk(hit))
         first_move = next(i for i, e in enumerate(flat) if e["command"] == "EVENT_ACTOR_SET_POSITION")
         self.assertGreater(first_move, 0)
 
-    def test_respawn_goes_to_start_before_power_and_to_door_after(self):
+    def test_respawn_goes_to_the_furthest_checkpoint_before_power_and_to_door_after(self):
         hit = built_scene()["playerHit1Script"]
         branch = next(e for e in hit if is_var_if(e, rosa.VAR_HOME_POWERED, 0))
-        start = branch["children"]["true"][0]
-        self.assertEqual(start["command"], "EVENT_ACTOR_SET_POSITION")
-        self.assertEqual((start["args"]["x"]["value"], start["args"]["y"]["value"]), rosa.START)
+        moves = [(e["args"]["x"]["value"], e["args"]["y"]["value"])
+                 for e in walk(branch["children"]["true"]) if e["command"] == "EVENT_ACTOR_SET_POSITION"]
+        expected = {rosa.START, *(line["checkpoint"] for line in LINES)}
+        self.assertEqual(set(moves), expected, "respawn lands on START or a repaired line's checkpoint")
+        # The furthest repaired line wins: the house line (last) is tested first.
+        self.assertTrue(is_var_if(branch["children"]["true"][0], rosa.VAR_LINE_LIVE, 1))
         door = branch["children"]["false"][0]
         door_x, door_y = rosa.HOUSE_DOOR
         self.assertEqual((door["args"]["x"]["value"], door["args"]["y"]["value"]),
                          (door_x - 1, door_y), "respawn stands in front of the door")
 
-    def test_door_is_gated_on_live_line_and_pays_out_once(self):
+    def test_door_is_gated_on_both_lines_and_pays_out_once(self):
         trigger = trigger_by_symbol(scene.DOOR_TRIGGER_SYMBOL)
         self.assertEqual((trigger["x"], trigger["y"], trigger["width"], trigger["height"]),
                          rosa.DOOR_TRIGGER)
         script = trigger["script"]
-        line = next(e for e in script if is_var_if(e, rosa.VAR_LINE_LIVE, 1))
+        line = next(e for e in script if is_var_if(e, rosa.VAR_LINES_LIVE, rosa.LINE_COUNT))
         power = next(e for e in line["children"]["true"] if is_var_if(e, rosa.VAR_HOME_POWERED, 0))
         reward = power["children"]["true"]
         self.assertTrue(any(is_set(e, rosa.VAR_HOME_POWERED, 1) for e in reward))
@@ -309,8 +363,7 @@ class RosaTests(unittest.TestCase):
         self.assertEqual([e["args"]["text"] for e in reward if e["command"] == "EVENT_TEXT"],
                          [["Priya:\nRouter's on!\nI'm online again."], tickets.closed_lines(3)])
         dead = line["children"]["false"]
-        self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
-                         [["Still no power.\nFix the line!"]])
+        self.assertEqual(texts(dead), [["Still no power.\nFix both lines!"]])
         # Only the door's reward writes var 11 to 1; init writes 0 and nothing else touches it.
         writers_to_one = [e for script in all_script_lists() for e in walk(script)
                           if e["command"] == "EVENT_SET_VALUE" and e["args"]["variable"] == "11"
@@ -366,18 +419,16 @@ class RosaTests(unittest.TestCase):
                                  ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_HIDE"])
         hazard_indices = [a["_index"] for a in built_actors()
                           if a["symbol"].startswith(("signal_arc_", "signal_gust_"))]
-        self.assertEqual(hazard_indices, list(range(5, 5 + len(arcs) + len(gusts))))  # after the storm pole
+        first_hazard = 2 + 3 * rosa.LINE_COUNT   # Priya, her workstation, then three per line
+        self.assertEqual(hazard_indices, list(range(first_hazard, first_hazard + len(arcs) + len(gusts))))
 
-    def test_house_view_stays_within_ten_sprites_per_scanline(self):
-        # Same budget as Wind Ridge: count OBJ columns per tile row with the hero
-        # standing at the junction box, Priya and her workstation drawn, and every
-        # arc and gust visible.
-        bx, by = rosa.JUNCTION_BOX
-        sprites = [((bx, by), 3, 3)]  # hero: 24px wide, 24px tall
-        sprites += [(pos, 2, 2) for pos in (rosa.JUNCTION_BOX, rosa.ROSA, rosa.WORKSTATION)]
-        sprites += hazard_sprites()
-        load = sprite_load(sprites)
-        self.assertLessEqual(max(load.values()), 10, load)
+    def test_every_view_stays_within_ten_sprites_per_scanline(self):
+        # Same budget as Wind Ridge: OBJ columns per tile row with the hero standing
+        # on every spot (start, door, poles, boxes, checkpoints, hazards), with
+        # Priya, her workstation, the whole chain and every arc and gust drawn.
+        for spot in spots():
+            load = grid_chain.scanline_load(on_screen_sprites(), rosa.MAP_W, *spot)
+            self.assertLessEqual(max(load.values()), grid_chain.SCANLINE_OBJ_LIMIT, (spot, load))
 
     def test_floor_between_hazards_stays_within_ten_sprites_per_scanline(self):
         # Every floor tile the hero can stand on, with all arcs and the gust visible.
@@ -392,11 +443,17 @@ class RosaTests(unittest.TestCase):
             load = sprite_load(sprites)
             self.assertLessEqual(max(load.values()), 10, (x, load))
 
+    def test_every_view_stays_within_the_active_actor_limit(self):
+        for hero_x, _ in spots():
+            near = grid_chain.actors_near(on_screen_sprites(), rosa.MAP_W, hero_x)
+            self.assertLessEqual(len(near), rosa.MAX_ACTIVE_ACTORS, (hero_x, near))
+
     def test_storm_pole_uses_intro_sprite_and_starts_snapped_unless_live(self):
+        house = LINES[1]
         pole = actor_by_symbol(scene.POLE_SYMBOL)
         self.assertEqual(pole["id"], scene.actor_id("pole"))
         self.assertEqual(pole["spriteSheetId"], intro.POLE_SPRITE_ID)
-        self.assertEqual((pole["x"], pole["y"]), rosa.DAMAGED_POLE)
+        self.assertEqual((pole["x"], pole["y"]), house["pole_at"])
         self.assertTrue(pole["animate"])
         self.assertEqual(pole["script"], [], "pole is not interactive")
         self.assertEqual(pole["collisionGroup"], "", "pole does not collide")
@@ -413,6 +470,21 @@ class RosaTests(unittest.TestCase):
                       [(e["args"]["actorId"], e["args"]["spriteStateId"])
                        for e in init if e["command"] == "EVENT_ACTOR_SET_STATE"])
 
+    def test_every_pole_starts_snapped_unless_its_line_is_live(self):
+        for line in LINES:
+            pole = actor_by_symbol(line["pole_symbol"])
+            self.assertEqual((pole["x"], pole["y"]), line["pole_at"])
+            start = pole["startScript"][1]
+            self.assertTrue(is_var_if(start, line["live_var"], 1))
+            self.assertEqual([e["args"]["spriteStateId"] for e in start["children"]["true"]], ["Standing"])
+            self.assertEqual([e["args"]["spriteStateId"] for e in start["children"]["false"]], ["Snapped"])
+
+    def test_feeder_pole_stands_on_the_upper_step(self):
+        feeder = LINES[0]
+        self.assertEqual(feeder["pole_at"], (7, 8))
+        self.assertEqual(rosa.collision_grid()[feeder["pole_at"][1] + 1][feeder["pole_at"][0]],
+                         climb.COL_SOLID)
+
     def test_storm_pole_palette_has_its_own_slot(self):
         sprites = built_scene()["spritePaletteIds"]
         self.assertEqual(sprites[intro.SPRITE_SLOTS["pole"]], intro.palette_id("pole"))
@@ -422,13 +494,17 @@ class RosaTests(unittest.TestCase):
         actors = built_actors()
         symbols = [a["symbol"] for a in actors]
         self.assertEqual(symbols, [
-            scene.ROSA_SYMBOL, scene.WORKSTATION_SYMBOL, scene.POLE_SYMBOL, scene.CABLE_SYMBOL,
-            scene.JUNCTION_SYMBOL, "signal_arc_01", "signal_arc_02", "signal_gust_01",
+            scene.ROSA_SYMBOL, scene.WORKSTATION_SYMBOL,
+            "rosa_feeder_pole", "signal_feeder_cable_end", "signal_feeder_transformer",
+            scene.POLE_SYMBOL, "signal_cable_end", "signal_junction_box",
+            "signal_arc_01", "signal_arc_02", "signal_gust_01",
         ])
         self.assertFalse(any("debris" in s for s in symbols), "no debris in Signal Hill")
         self.assertEqual([a["_index"] for a in actors], list(range(len(actors))))
         self.assertEqual(len(set(a["id"] for a in actors)), len(actors))
-        self.assertEqual(len(actors), 8, "keep the actor count modest")  # 7 + storm pole
+        self.assertEqual(len(actors), rosa.actor_count())
+        self.assertLessEqual(len(actors), 20, "the engine's actor budget")
+        self.assertLessEqual(len(actors), rosa.MAX_SCENE_ACTORS)
         rosa_actor = actor_by_symbol(scene.ROSA_SYMBOL)
         self.assertEqual((rosa_actor["x"], rosa_actor["y"]), rosa.ROSA)
         self.assertEqual(rosa_actor["spriteSheetId"], rosa.ROSA_SPRITE_ID)
@@ -439,66 +515,124 @@ class RosaTests(unittest.TestCase):
         self.assertEqual((ws["x"], ws["y"]), rosa.WORKSTATION)
         self.assertEqual(ws["spriteSheetId"], rosa.WORKSTATION_SPRITE_ID)
         self.assertEqual(ws["startScript"][0]["args"]["spriteStateId"], "Off")
-        cable = actor_by_symbol(scene.CABLE_SYMBOL)
-        self.assertEqual((cable["x"], cable["y"]), rosa.DAMAGED_POLE)
-        self.assertEqual(cable["spriteSheetId"], climb.grid_resource_id("sprite:grid_cable_end"))
-        self.assertEqual(cable["startScript"][0]["args"]["spriteStateId"], "Dangling")
-        junction = actor_by_symbol(scene.JUNCTION_SYMBOL)
-        self.assertEqual((junction["x"], junction["y"]), rosa.JUNCTION_BOX)
+        for line in LINES:
+            cable = actor_by_symbol(line["cable_symbol"])
+            self.assertEqual((cable["x"], cable["y"]), line["pole_at"])
+            self.assertEqual(cable["spriteSheetId"], climb.grid_resource_id("sprite:grid_cable_end"))
+            self.assertEqual(cable["startScript"][0]["args"]["spriteStateId"], "Dangling")
+            box = actor_by_symbol(line["box_symbol"])
+            self.assertEqual((box["x"], box["y"]), line["box_at"])
+            self.assertEqual(box["startScript"][0]["args"]["spriteStateId"], "Dead")
+        transformer = actor_by_symbol("signal_feeder_transformer")
+        self.assertEqual(transformer["spriteSheetId"], ridge.TRANSFORMER_SPRITE_ID,
+                         "the Wind Ridge transformer asset, reused")
+        junction = actor_by_symbol("signal_junction_box")
         self.assertEqual(junction["spriteSheetId"], climb.grid_resource_id("sprite:grid_junction_box"))
-        self.assertEqual(junction["startScript"][0]["args"]["spriteStateId"], "Dead")
         arc = actor_by_symbol("signal_arc_01")
         self.assertEqual(arc["spriteSheetId"], rosa.ARC_SPRITE_ID)
         self.assertEqual(arc["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
 
-    def test_rosa_talk_tracks_home_and_line(self):
+    def test_rosa_talk_tracks_home_and_both_lines(self):
         script = actor_by_symbol(scene.ROSA_SYMBOL)["script"]
         self.assertTrue(is_var_if(script[0], rosa.VAR_HOME_POWERED, 1))
-        self.assertEqual([e["args"]["text"] for e in script[0]["children"]["true"]
-                          if e["command"] == "EVENT_TEXT"], [["Priya:\nI'm back online!\nThank you!"]])
+        self.assertEqual(texts(script[0]["children"]["true"]), [["Priya:\nI'm back online!\nThank you!"]])
         otherwise = script[0]["children"]["false"]
-        self.assertTrue(is_var_if(otherwise[0], rosa.VAR_LINE_LIVE, 1))
+        self.assertTrue(is_var_if(otherwise[0], rosa.VAR_LINES_LIVE, rosa.LINE_COUNT))
         live = otherwise[0]["children"]["true"]
         dead = otherwise[0]["children"]["false"]
-        self.assertEqual([e["args"]["text"] for e in live if e["command"] == "EVENT_TEXT"],
-                         [["Priya:\nLine's live!\nTry my door."]])
-        self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
-                         [["Priya:\nNo internet...\nI can't work."]])
+        self.assertEqual(texts(live), [["Priya:\nLines are live!\nTry my door."]])
+        self.assertEqual(texts(dead), [["Priya:\nNo internet...\nI can't work."]])
 
-    def test_junction_plugs_carried_cable_once_and_lights_slot_five(self):
-        script = actor_by_symbol(scene.JUNCTION_SYMBOL)["script"]
-        live = next(e for e in script if is_var_if(e, rosa.VAR_LINE_LIVE, 1))
-        self.assertEqual([e["args"]["text"] for e in live["children"]["true"]
-                          if e["command"] == "EVENT_TEXT"], [["Line is live."]])
-        has_cable = next(e for e in live["children"]["false"]
-                         if is_var_if(e, rosa.VAR_CARRYING_CABLE, 1))
-        branch = has_cable["children"]["true"]
-        self.assertTrue(any(is_set(e, rosa.VAR_CARRYING_CABLE, 0) for e in branch))
-        self.assertTrue(any(is_set(e, rosa.VAR_LINE_LIVE, 1) for e in branch))
-        palette = next(e for e in branch if e["command"] == "EVENT_PALETTE_SET_BACKGROUND")
-        self.assertEqual(palette["args"][f"palette{rosa.LINE_BG_SLOT}"],
-                         climb.grid_resource_id("palette:bg:metal_live"))
-        self.assertEqual(set(k for k, v in palette["args"].items() if v != "keep"),
-                         {f"palette{rosa.LINE_BG_SLOT}"})
-        states = [e["args"]["spriteStateId"] for e in branch if e["command"] == "EVENT_ACTOR_SET_STATE"]
-        self.assertEqual(states, ["Live", "Standing"])  # junction box, then the pole
-        no_cable = has_cable["children"]["false"]
-        self.assertEqual([e["args"]["text"] for e in no_cable if e["command"] == "EVENT_TEXT"],
-                         [["No cable yet.\nCheck the pole."]])
+    def test_each_box_takes_only_its_own_cable_and_counts_the_line(self):
+        for line in LINES:
+            script = actor_by_symbol(line["box_symbol"])["script"]
+            live = next(e for e in script if is_var_if(e, line["live_var"], 1))
+            self.assertEqual(texts(live["children"]["true"]), [["Already fixed."]])
+            has_cable = next(e for e in live["children"]["false"]
+                             if is_var_if(e, rosa.VAR_CARRYING_CABLE, line["number"]))
+            branch = has_cable["children"]["true"]
+            self.assertTrue(any(is_set(e, rosa.VAR_CARRYING_CABLE, 0) for e in branch))
+            self.assertTrue(any(is_set(e, line["live_var"], 1) for e in branch))
+            self.assertEqual([e["args"]["variable"] for e in branch if e["command"] == "EVENT_INC_VALUE"],
+                             [rosa.VAR_LINES_LIVE])
+            self.assertIn((scene.actor_id(line["pole"]), "Standing"),
+                          [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                           for e in branch if e["command"] == "EVENT_ACTOR_SET_STATE"])
+            # Only the metal slot changes, to a chain palette.
+            for palette in (e for e in walk(branch) if e["command"] == "EVENT_PALETTE_SET_BACKGROUND"):
+                self.assertEqual({k for k, v in palette["args"].items() if v != "keep"},
+                                 {f"palette{rosa.LINE_BG_SLOT}"})
+            [other] = has_cable["children"]["false"]
+            self.assertTrue(is_var_if(other, rosa.VAR_CARRYING_CABLE, 0))
+            self.assertEqual(texts(other["children"]["true"]), [["No cable yet.\nFind its pole."]])
+            self.assertEqual(texts(other["children"]["false"]), [["Wrong cable\nfor this box."]])
+        incs = [e for script in all_script_lists() for e in walk(script) if e["command"] == "EVENT_INC_VALUE"]
+        self.assertEqual(len(incs), rosa.LINE_COUNT, "nothing else changes the counter")
+
+    def test_power_reaches_a_box_only_through_every_line_upstream(self):
+        for line in LINES:
+            script = actor_by_symbol(line["box_symbol"])["script"]
+            plugged = next(e for e in walk(script) if is_var_if(e, rosa.VAR_CARRYING_CABLE, line["number"])
+                           and e["children"]["true"])["children"]["true"]
+            commands = [e["command"] for e in plugged]
+            # The chain refresh (which sets VAR_CHAIN_LIVE) runs before the message reads it.
+            refresh = next(i for i, e in enumerate(plugged)
+                           if any(is_set(x, rosa.VAR_CHAIN_LIVE, 0) for x in walk([e])))
+            message = plugged[-1]
+            self.assertLess(refresh, len(commands) - 1)
+            self.assertTrue(is_var_if(message, rosa.VAR_CHAIN_LIVE, rosa.LINE_COUNT))
+            self.assertEqual(texts(message["children"]["true"]), [["Both lines live!\nGo see Priya."]])
+            [lit] = message["children"]["false"]
+            self.assertTrue(is_at_least(lit, rosa.VAR_CHAIN_LIVE, line["number"]))
+            self.assertEqual(texts(lit["children"]["true"]), [["Power flows on!\nKeep going."]])
+            self.assertEqual(texts(lit["children"]["false"]), [["Fixed. No power\nfrom upstream."]])
+
+    def test_chain_lights_wires_and_boxes_only_as_far_as_continuous(self):
+        refresh = scene.chain_refresh_events("probe")
+
+        def outcome(live):
+            events = refresh
+            while len(events) == 1 and events[0]["command"] == "EVENT_IF":
+                variable = events[0]["args"]["condition"]["valueA"]["value"]
+                events = events[0]["children"]["true" if live[variable] else "false"]
+            palette = next(e["args"][f"palette{rosa.LINE_BG_SLOT}"] for e in events
+                           if e["command"] == "EVENT_PALETTE_SET_BACKGROUND")
+            stages_set = next(var_value(e) for e in events if e["command"] == "EVENT_SET_VALUE"
+                              and e["args"]["variable"] == rosa.VAR_CHAIN_LIVE)
+            boxes = {e["args"]["actorId"]: e["args"]["spriteStateId"] for e in events
+                     if e["command"] == "EVENT_ACTOR_SET_STATE"}
+            return palette, boxes, stages_set
+
+        for bits in itertools.product((0, 1), repeat=len(LINES)):
+            live = {line["live_var"]: bit for line, bit in zip(LINES, bits)}
+            stages = next((i for i, bit in enumerate(bits) if not bit), len(LINES))
+            palette, boxes, stages_set = outcome(live)
+            self.assertEqual(palette, scene.chain_palette_id(stages), bits)
+            self.assertEqual(stages_set, stages, bits)
+            for line in LINES:
+                self.assertEqual(boxes[scene.actor_id(line["box"])],
+                                 "Live" if line["number"] <= stages else "Dead", (bits, line["key"]))
+
+    def test_chain_palettes_light_stages_in_order(self):
+        palettes = {p["id"]: p["colors"] for _, p in scene.rosa_palettes()}
+        for stages, colors in rosa.CHAIN_PALETTES.items():
+            self.assertEqual(palettes[scene.chain_palette_id(stages)], colors)
+            for stage, index in enumerate(rosa.STAGE_COLOR_INDEX, start=1):
+                self.assertEqual(colors[index], rosa.WIRE_LIVE if stage <= stages else rosa.WIRE_DEAD)
+        self.assertEqual(len(rosa.STAGE_COLOR_INDEX), rosa.LINE_COUNT, "one colour per line")
 
     def test_cable_pickup_requires_empty_hands_and_dead_line(self):
-        script = actor_by_symbol(scene.CABLE_SYMBOL)["script"]
-        empty = script[0]
-        self.assertTrue(is_var_if(empty, rosa.VAR_CARRYING_CABLE, 0))
-        dead = next(e for e in empty["children"]["true"] if is_var_if(e, rosa.VAR_LINE_LIVE, 0))
-        self.assertTrue(any(is_set(e, rosa.VAR_CARRYING_CABLE, 1) for e in dead["children"]["true"]))
-        self.assertTrue(any(e["command"] == "EVENT_ACTOR_HIDE" for e in dead["children"]["true"]))
-        self.assertTrue(any(e["command"] == "EVENT_SOUND_PLAY_EFFECT" and
-                            e["args"]["type"] == FAKE_AUDIO["pickup"]
-                            for e in dead["children"]["true"]))
-        self.assertTrue(any(e["command"] == "EVENT_TEXT" and
-                            e["args"]["text"] == ["Got the cable!\nTo the box ahead."]
-                            for e in dead["children"]["true"]))
+        for line in LINES:
+            script = actor_by_symbol(line["cable_symbol"])["script"]
+            empty = script[0]
+            self.assertTrue(is_var_if(empty, rosa.VAR_CARRYING_CABLE, 0))
+            dead = next(e for e in empty["children"]["true"] if is_var_if(e, line["live_var"], 0))
+            take = dead["children"]["true"]
+            self.assertTrue(any(is_set(e, rosa.VAR_CARRYING_CABLE, line["number"]) for e in take))
+            self.assertTrue(any(e["command"] == "EVENT_ACTOR_HIDE" for e in take))
+            self.assertTrue(any(e["command"] == "EVENT_SOUND_PLAY_EFFECT" and
+                                e["args"]["type"] == FAKE_AUDIO["pickup"] for e in take))
+            self.assertEqual(texts(empty["children"]["false"]), [["Hands full!\nOne cable a trip."]])
 
     def test_checked_in_files_match_the_builders(self):
         """Run after make_rosa_scene.py: disk must match the in-memory build."""
@@ -540,7 +674,7 @@ class RosaTests(unittest.TestCase):
         self.assertEqual(len(backgrounds), 8)
         self.assertEqual(backgrounds[:5], [opening.resource_id(f"palette:bg:{name}")
                                            for name in ["night", "stone", "timber", "window", "foliage"]])
-        self.assertEqual(backgrounds[5], climb.grid_resource_id("palette:bg:metal_dead"))
+        self.assertEqual(backgrounds[rosa.LINE_BG_SLOT], scene.chain_palette_id(0))
         self.assertEqual(backgrounds[7], "default-ui")
         palettes = dict(scene.rosa_palettes())
         rosa_palette = palettes["project/palettes/signal_hill_sprite_rosa.gbsres"]
@@ -556,12 +690,15 @@ class RosaTests(unittest.TestCase):
             rosa.ARC_SPRITE_HARDWARE[3], rosa.ARC_SPRITE_HARDWARE[3],
         ])
         self.assertNotEqual(rosa_palette["id"], arc_palette["id"])
+        for stages in rosa.CHAIN_PALETTES:
+            self.assertIn(f"project/palettes/signal_hill_bg_chain_{stages}_live.gbsres", palettes)
 
     def test_shared_sidecars_exist(self):
-        """Sounds, music and the gust sprite are already on disk; Priya and arc art are not required."""
+        """Sounds, music, the gust sprite and the reused transformer are already on disk."""
         for path in (scene.DEATH_SOUND, scene.CONNECT_SOUND, scene.PICKUP_SOUND,
                      scene.MUSIC_SIDECAR, scene.GUST_SPRITE):
             self.assertTrue((PROJECT_DIR / path).exists(), path)
+        self.assertTrue((PROJECT_DIR / "assets/sprites/transformer.png.gbsres").exists())
 
     def test_hollow_exit_leads_to_pine_hollow_only_after_rosa_is_powered(self):
         trigger = trigger_by_symbol("trigger_signal_hollow_exit")

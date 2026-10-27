@@ -241,8 +241,9 @@ class RidgeTests(unittest.TestCase):
                     self.assertTrue(redraws, "HUD must be redrawn after text")
                     self.assertEqual(redraws[0]["args"]["text"], ridge.HUD_TEXT)
         # Init x2, Hiroshi x3, 3 x (pickup + hands full), 3 x box (already, all, lit,
-        # dark, no cable, wrong), door x2, CLOSED box, hill exit refusal.
-        self.assertEqual(checked, 33)
+        # dark, no cable, wrong), door x2, CLOSED box, hill exit refusal, and each
+        # box's reach trigger repeats its status lines (all, lit, dark) once per line.
+        self.assertEqual(checked, 42)
 
     def test_hud_uses_exact_two_digit_variable_tokens(self):
         self.assertEqual(ridge.HUD_TEXT, "LINE %D1$18$/3 HOME %D1$09$/1")
@@ -265,7 +266,7 @@ class RidgeTests(unittest.TestCase):
                         self.assertLessEqual(len(part), scene.MAX_DIALOGUE_CHARS, part)
                         checked += 1
         # One line per in-play text, two-line boxes count each part. Hiroshi names 4 boxes.
-        self.assertEqual(checked, 67)
+        self.assertEqual(checked, 85)  # 67 + the reach triggers' status lines (speaker lines included)
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
@@ -477,7 +478,9 @@ class RidgeTests(unittest.TestCase):
                          hazards.board_trigger_rect(hazards.BOARDS["wind_ridge"][0]))
         self.assertEqual(board["script"][0]["args"]["value"]["value"], 1)
         self.assertEqual(board["leaveScript"][0]["args"]["value"]["value"], 0)
-        exits = [t["_index"] for t in triggers if t is not board]
+        # The exit and the door come first; the box reach triggers sit after the boards.
+        exits = [t["_index"] for t in triggers
+                 if t["symbol"] in ("trigger_ridge_hill_exit", scene.DOOR_TRIGGER_SYMBOL)]
         self.assertTrue(all(board["_index"] > index for index in exits))
         self.assertEqual(hazards.VAR_ON_BOARD, "15")
 
@@ -549,7 +552,8 @@ class RidgeTests(unittest.TestCase):
             self.assertEqual(texts(other["children"]["true"]), [["No cable yet.\nFind its pole."]])
             self.assertEqual(texts(other["children"]["false"]), [["Wrong cable\nfor this box."]])
         incs = [e for script in all_script_lists() for e in walk(script) if e["command"] == "EVENT_INC_VALUE"]
-        self.assertEqual(len(incs), ridge.LINE_COUNT, "nothing else changes the counter")
+        # Each box and its reach trigger share one connect path: two counts per line, nothing else.
+        self.assertEqual(len(incs), 2 * ridge.LINE_COUNT, "nothing else changes the counter")
 
     def test_power_reaches_a_box_only_through_every_line_upstream(self):
         for line in LINES:

@@ -53,6 +53,12 @@ Scene module (tools/make_<job>_scene.py) builds one GridChain from the contract:
   bare_event_key    optional line key whose cable-drop events keep an un-suffixed key
                     (legacy event IDs); None for new jobs
 
+Box reach: box_reach_trigger(line, symbol=, index=, connect_sound_id=) returns the
+trigger for one line (call it once per line, after the job's own triggers). It sits
+three tiles before the box (reach_rect), so walking up with that line's cable plugs
+it in without a B press; any other visit does nothing. A box's B press and its
+reach trigger share box_connect_events, so the two paths cannot disagree.
+
 Palette resources: chain_palettes() gives {stages: colours}; chain_palette_resources()
 turns them into project/palettes files. The scene sets the background slot to
 chain_palette_id(0) at init and to chain_palette_id(n) as the chain lights.
@@ -354,15 +360,12 @@ class GridChain:
             ],
         )
 
-    def box_actor(self, line: dict[str, Any], index: int, sprite_id: str,
-                  connect_sound_id: str) -> dict[str, Any]:
-        """A box (transformer or junction). Only its own line's cable plugs in.
+    def box_connect_events(self, line: dict[str, Any], key: str, connect_sound_id: str) -> list[Event]:
+        """Plug the carried cable in: the line goes live, the chain refreshes, the box reports.
 
-        Plugging in repairs the line and stands its pole up; whether power reaches
-        it depends on the lines upstream (chain_refresh_events).
+        Shared by the box's B press (``box_actor``) and its reach trigger
+        (``box_reach_trigger``); ``key`` namespaces the event IDs of that caller.
         """
-        key = line["box"]
-        x, y = line["box_at"]
         # After chain_refresh_events, the chain variable says how far power reaches.
         done = [self.if_value(self.chain_var, len(self.lines), f"{key}:all", [
             *self.say([self.text["all_live"]], f"{key}:text-all"),
@@ -373,17 +376,61 @@ class GridChain:
                 *self.say([self.text["dark"]], f"{key}:text-dark"),
             ]),
         ])]
+        return [
+            self.set_value(self.carrying_var, 0, f"{key}:clear-cable"),
+            self.set_value(line["live_var"], 1, f"{key}:set-live"),
+            self.event("EVENT_INC_VALUE", {"variable": self.lines_var}, f"{key}:count"),
+            self.actor_state(self.actor_id(line["pole"]), "Standing", f"{key}:pole-standing"),
+            *self.chain_refresh_events(f"{key}:chain"),
+            self.sound_event(connect_sound_id, f"{key}:sfx"),
+            *done,
+        ]
+
+    def box_reach_trigger(self, line: dict[str, Any], *, symbol: str, index: int,
+                          connect_sound_id: str, name: str | None = None) -> dict[str, Any]:
+        """Walking up to a box with its cable plugs it in (no B press needed).
+
+        The trigger covers the three tiles before the box (``reach_rect``). Its
+        enter script runs the box's own connect path, and only when the hero
+        carries this line's cable and the line is still dead; any other visit
+        does nothing, so the box's B press (``box_actor``) stays the only text.
+        """
+        key = f"reach:{line['box']}"
+        x, y, width, height = reach_rect(line["box_at"])
+        script = [self.if_value(self.carrying_var, line["number"], f"{key}:has-cable", [
+            self.if_value(line["live_var"], 0, f"{key}:dead", self.box_connect_events(
+                line, key, connect_sound_id)),
+        ])]
+        return {
+            "_resourceType": "trigger",
+            "id": self.rid(f"trigger:reach:{line['box']}"),
+            "name": name or f"Reach {line['box_name']}",
+            "prefabId": "",
+            "x": x,
+            "y": y,
+            "symbol": symbol,
+            "prefabScriptOverrides": {},
+            "width": width,
+            "height": height,
+            "script": script,
+            "leaveScript": [],
+            "_index": index,
+        }
+
+    def box_actor(self, line: dict[str, Any], index: int, sprite_id: str,
+                  connect_sound_id: str) -> dict[str, Any]:
+        """A box (transformer or junction). Only its own line's cable plugs in.
+
+        Plugging in repairs the line and stands its pole up; whether power reaches
+        it depends on the lines upstream (chain_refresh_events).
+        """
+        key = line["box"]
+        x, y = line["box_at"]
         plug = [self.if_value(line["live_var"], 1, f"{key}:live", [
             *self.say([self.text["already"]], f"{key}:already-live"),
         ], [
             self.if_value(self.carrying_var, line["number"], f"{key}:has-cable", [
-                self.set_value(self.carrying_var, 0, f"{key}:clear-cable"),
-                self.set_value(line["live_var"], 1, f"{key}:set-live"),
-                self.event("EVENT_INC_VALUE", {"variable": self.lines_var}, f"{key}:count"),
-                self.actor_state(self.actor_id(line["pole"]), "Standing", f"{key}:pole-standing"),
-                *self.chain_refresh_events(f"{key}:chain"),
-                self.sound_event(connect_sound_id, f"{key}:sfx"),
-                *done,
+                *self.box_connect_events(line, key, connect_sound_id),
             ], [
                 self.if_value(self.carrying_var, 0, f"{key}:no-cable-check", [
                     *self.say([self.text["no_cable"]], f"{key}:no-cable"),
@@ -450,6 +497,12 @@ class GridChain:
 # ---------------------------------------------------------------------------
 # Self-check helpers (contract modules call these from their _self_check)
 # ---------------------------------------------------------------------------
+def reach_rect(box: tuple[int, int]) -> tuple[int, int, int, int]:
+    """(x, y, width, height) tiles of a box's reach trigger: three tiles ending at the box, feet row and two above."""
+    x, y = box
+    return (x - 3, y - 2, 3, 3)
+
+
 def stands(grid: list[list[int]], x: int, y: int) -> bool:
     """A 24px actor at feet tile (x, y): three clear rows, support below."""
     return (all(grid[r][x] == COL_EMPTY for r in (y, y - 1, y - 2))

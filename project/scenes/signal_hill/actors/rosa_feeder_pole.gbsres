@@ -1,0 +1,78 @@
+{
+  "_resourceType": "actor",
+  "id": "0b9c1eb4-314c-5603-aa5b-0fef57318308",
+  "_index": 2,
+  "symbol": "rosa_feeder_pole",
+  "prefabId": "",
+  "name": "Feeder Pole",
+  "coordinateType": "tiles",
+  "x": 7,
+  "y": 8,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "616a294b-fae9-5c68-965a-9a1db4b273d0",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "e48dcda4-1b94-51e1-8306-6059e6311f97"
+    },
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "21"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "f5327933-ee9d-580e-9af3-477e067ad479",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "$self$",
+              "spriteStateId": "Standing",
+              "loopAnim": true
+            },
+            "id": "b0942f47-82c9-5518-84b8-2a1a2b298d42"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "$self$",
+              "spriteStateId": "Snapped",
+              "loopAnim": true
+            },
+            "id": "992b5dcc-5ecd-5a6a-88ce-91a705d5f204"
+          }
+        ]
+      }
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

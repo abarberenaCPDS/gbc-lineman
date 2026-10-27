@@ -2,13 +2,16 @@
 
 Run with ``python3 tools/make_rosa_scene.py`` from any working directory.
 This writes only the Signal Hill scene resources, the Priya and live-arc sprite
-palettes and the Priya variable registrations. The authored geometry, positions,
-arc and gust timings and stable IDs live in the sibling ``rosa.py`` contract
-module.
+palettes, the chain's background palettes and the Priya variable registrations.
+The authored geometry, positions, arc and gust timings and stable IDs live in
+the sibling ``rosa.py`` contract module.
+
+The grid chain's events, actors and palettes come from the reusable
+``grid_chain`` module, built here with Signal Hill's ID function, lines,
+variables, dialogue and HUD. The transformer sprite is Wind Ridge's asset.
 
 Generic GB Studio helpers (collision RLE, sidecar lookup, JSON writing, the
-dialogue length check) are reused from ``make_climb_scene``. Event builders are
-local because the climb versions derive event IDs from the climb namespace.
+dialogue length check) are reused from ``make_climb_scene``.
 """
 
 from __future__ import annotations
@@ -37,15 +40,18 @@ GUST_SPRITE = "assets/sprites/climb_gust.png.gbsres"
 sys.path.insert(0, str(TOOLS_DIR))
 try:
     import climb  # noqa: E402  (shared palettes, grid sprites and climb timings)
+    import grid_chain  # noqa: E402  (the reusable grid chain: events, actors, palettes)
     import intro  # noqa: E402  (intro pole sprite and palette identities)
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
+    import ridge  # noqa: E402  (transformer sprite: Wind Ridge's asset, reused here)
     import voices  # noqa: E402  (speaker names and text blips)
     import rosa  # noqa: E402  (Priya's job contract: geometry, IDs, timings)
     import tickets  # noqa: E402  (work orders: exit to ticket 4, CLOSED box)
     import kiko  # noqa: E402  (Emil's job contract: the porch exit leads there)
 except ModuleNotFoundError as error:
-    if error.name in {"intro", "tickets", "voices", "climb", "opening", "rosa", "kiko", "make_climb_scene"}:
+    if error.name in {"grid_chain", "intro", "tickets", "voices", "climb", "opening", "ridge", "rosa",
+                      "kiko", "make_climb_scene"}:
         raise SystemExit(
             f"cannot generate signal_hill: tools/{error.name}.py is missing"
         ) from error
@@ -55,19 +61,47 @@ MAX_DIALOGUE_CHARS = shared.MAX_DIALOGUE_CHARS
 VAR_CARRYING_CABLE = rosa.VAR_CARRYING_CABLE
 VAR_LINE_LIVE = rosa.VAR_LINE_LIVE
 VAR_HOME_POWERED = rosa.VAR_HOME_POWERED
+VAR_LINES_LIVE = rosa.VAR_LINES_LIVE
+VAR_CHAIN_LIVE = rosa.VAR_CHAIN_LIVE
 ROSA_KEY = "rosa"
 WORKSTATION_KEY = "workstation"
-CABLE_KEY = "cable-end"
-JUNCTION_KEY = "junction-box"
 POLE_KEY = "pole"
 POLE_SYMBOL = "rosa_storm_pole"
 CABLE_SPRITE_KEY = "sprite:grid_cable_end"
 JUNCTION_SPRITE_KEY = "sprite:grid_junction_box"
 ROSA_SYMBOL = "signal_rosa"
 WORKSTATION_SYMBOL = "signal_workstation"
-CABLE_SYMBOL = "signal_cable_end"
-JUNCTION_SYMBOL = "signal_junction_box"
 DOOR_TRIGGER_SYMBOL = "trigger_signal_rosa_door"
+
+# The grid chain, upstream first (rosa.LINES). The house line keeps the original
+# job's keys, symbols and names (stable IDs); the feeder line is new.
+_LINE_NAMES = {
+    "feeder": {"pole": "pole:feeder", "cable": "cable-end:feeder", "box": "transformer:feeder",
+               "pole_symbol": "rosa_feeder_pole", "cable_symbol": "signal_feeder_cable_end",
+               "box_symbol": "signal_feeder_transformer", "pole_name": "Feeder Pole",
+               "cable_name": "Cable End (feeder)", "box_name": "Transformer (feeder)"},
+    "house": {"pole": POLE_KEY, "cable": "cable-end", "box": "junction-box",
+              "pole_symbol": POLE_SYMBOL, "cable_symbol": "signal_cable_end",
+              "box_symbol": "signal_junction_box", "pole_name": "Storm Pole",
+              "cable_name": "Dangling Cable End", "box_name": "Junction Box (Signal Hill)"},
+}
+LINES = []
+for _line in rosa.LINES:
+    # Coordinates move to pole_at/box_at: "pole"/"box" are actor keys here.
+    LINES.append({**_line, "pole_at": _line["pole"], "box_at": _line["box"], **_LINE_NAMES[_line["key"]]})
+LINE_BY_KEY = {line["key"]: line for line in LINES}
+
+# Dialogue for the chain's cable ends and boxes (grid_chain.GridChain text keys).
+ROSA_TEXT = {
+    "pickup": "Got the cable!\nFind its box.",
+    "hands_full": "Hands full!\nOne cable a trip.",
+    "already": "Already fixed.",
+    "all_live": "Both lines live!\nGo see Priya.",
+    "lit": "Power flows on!\nKeep going.",
+    "dark": "Fixed. No power\nfrom upstream.",
+    "no_cable": "No cable yet.\nFind its pole.",
+    "wrong_cable": "Wrong cable\nfor this box.",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -81,20 +115,8 @@ def arc_palette_id() -> str:
     return rosa.resource_id("palette:sprite:arc")
 
 
-def actor_id(key: str) -> str:
-    return rosa.resource_id(f"actor:{key}")
-
-
 def palette_resource(kind: str, name: str, colors: list[str]) -> dict[str, Any]:
-    title = "Signal Hill " + kind + " " + name
-    return {
-        "_resourceType": "palette",
-        "id": rosa.resource_id(f"palette:{kind}:{name.replace(' ', '_').lower()}"),
-        "name": title,
-        "colors": colors,
-        "defaultName": title,
-        "defaultColors": colors,
-    }
+    return grid_chain.palette_resource(rosa.resource_id, "Signal Hill", kind, name, colors)
 
 
 def rosa_palettes() -> list[tuple[str, dict[str, Any]]]:
@@ -102,57 +124,22 @@ def rosa_palettes() -> list[tuple[str, dict[str, Any]]]:
                                    shared.editor_sprite_colors(rosa.ROSA_SPRITE_HARDWARE))
     arc_sprite = palette_resource("sprite", "arc",
                                   shared.editor_sprite_colors(rosa.ARC_SPRITE_HARDWARE))
+    chain = grid_chain.chain_palette_resources(rosa.resource_id, label="Signal Hill",
+                                               file_prefix="signal_hill", palettes=rosa.CHAIN_PALETTES)
     return [
         ("project/palettes/signal_hill_sprite_rosa.gbsres", rosa_sprite),
         ("project/palettes/signal_hill_sprite_arc.gbsres", arc_sprite),
+        *chain,
     ]
 
 
-def metal_palette_id(live: bool) -> str:
-    # Reuses the climb's metal palettes (already on disk); this job writes none.
-    return climb.grid_resource_id("palette:bg:metal_live" if live else "palette:bg:metal_dead")
+def chain_palette_id(stages_live: int) -> str:
+    return grid_chain.chain_palette_id(rosa.resource_id, stages_live)
 
 
 # ---------------------------------------------------------------------------
-# Event builders (rosa-scoped IDs; EVENT_TEXT args copied from the climb)
+# Dialogue and HUD builders (Signal Hill-scoped IDs; EVENT_TEXT args copied from the climb)
 # ---------------------------------------------------------------------------
-def event(command: str, args: dict[str, Any], key: str) -> dict[str, Any]:
-    return {"command": command, "args": args, "id": rosa.resource_id(f"event:{key}")}
-
-
-def branch_event(command: str, args: dict[str, Any], key: str,
-                 true_events: list[dict[str, Any]],
-                 false_events: list[dict[str, Any]] | None = None) -> dict[str, Any]:
-    return {
-        **event(command, args, key),
-        "children": {"true": true_events, "false": false_events or []},
-    }
-
-
-def if_value(variable_id: str, value: int, key: str,
-             true_events: list[dict[str, Any]],
-             false_events: list[dict[str, Any]] | None = None) -> dict[str, Any]:
-    return branch_event(
-        "EVENT_IF",
-        {"condition": {
-            "type": "eq",
-            "valueA": {"type": "variable", "value": variable_id},
-            "valueB": shared.number(value),
-        }},
-        key, true_events, false_events,
-    )
-
-
-def set_value(variable_id: str, value: int, key: str) -> dict[str, Any]:
-    return event("EVENT_SET_VALUE", {"variable": variable_id, "value": shared.number(value)}, key)
-
-
-def set_position(x: int, y: int, key: str) -> dict[str, Any]:
-    return event("EVENT_ACTOR_SET_POSITION", {
-        "units": "tiles", "actorId": "player", "x": shared.number(x), "y": shared.number(y),
-    }, key)
-
-
 def text_event(lines: list[str], key: str) -> dict[str, Any]:
     return event("EVENT_TEXT", {
         "text": lines,
@@ -212,22 +199,29 @@ def say(lines: list[str], key: str, speaker: str | None = None) -> list[dict[str
     ]
 
 
-def sound_event(sound_id: str, key: str) -> dict[str, Any]:
-    return event("EVENT_SOUND_PLAY_EFFECT", {
-        "units": "time", "type": sound_id, "priority": "high", "pitch": 4,
-        "frequency": 200, "duration": 0.5, "wait": True, "effect": 0,
-    }, key)
-
-
-def wait_event(frames: int, key: str) -> dict[str, Any]:
-    return event("EVENT_WAIT", {"units": "frames", "frames": shared.number(frames)}, key)
-
-
-def background_palette_event(slots: dict[int, str], key: str) -> dict[str, Any]:
-    args: dict[str, Any] = {f"palette{index}": "keep" for index in range(8)}
-    for slot, palette_id in slots.items():
-        args[f"palette{slot}"] = palette_id
-    return event("EVENT_PALETTE_SET_BACKGROUND", args, key)
+# The reusable grid chain (tools/grid_chain.py) with Signal Hill's IDs, lines,
+# variables, dialogue and HUD. The aliases below keep this file's call sites.
+CHAIN = grid_chain.GridChain(
+    rid=rosa.resource_id, lines=LINES, chain_var=VAR_CHAIN_LIVE, lines_var=VAR_LINES_LIVE,
+    carrying_var=VAR_CARRYING_CABLE, line_bg_slot=rosa.LINE_BG_SLOT, text=ROSA_TEXT,
+    say=say, hud=hud_events, bare_event_key="house",
+)
+event = CHAIN.event
+branch_event = CHAIN.branch_event
+if_value = CHAIN.if_value
+set_value = CHAIN.set_value
+set_position = CHAIN.set_position
+background_palette_event = CHAIN.background_palette_event
+sound_event = CHAIN.sound_event
+wait_event = CHAIN.wait_event
+actor_state = CHAIN.actor_state
+actor_id = CHAIN.actor_id
+actor_resource = CHAIN.actor_resource
+chain_refresh_events = CHAIN.chain_refresh_events
+cable_drop_events = CHAIN.cable_drop_events
+cable_end_actor = CHAIN.cable_end_actor
+pole_actor = CHAIN.pole_actor
+box_actor = CHAIN.box_actor
 
 
 def window_palette_event(powered: bool, key: str) -> dict[str, Any]:
@@ -238,41 +232,19 @@ def window_palette_event(powered: bool, key: str) -> dict[str, Any]:
     }, key)
 
 
-def line_palette_event(live: bool, key: str) -> dict[str, Any]:
-    """Swap only BG slot 5 (the drawn cable route) between dead and live metal."""
-    return background_palette_event({rosa.LINE_BG_SLOT: metal_palette_id(live)}, key)
-
-
-def actor_state(target: str, state: str, key: str, loop: bool = True) -> dict[str, Any]:
-    return event("EVENT_ACTOR_SET_STATE", {
-        "actorId": target, "spriteStateId": state, "loopAnim": loop,
-    }, key)
-
-
-def cable_drop_events(key: str) -> list[dict[str, Any]]:
-    """A carried cable falls back to the pole when the carrier is hit."""
-    return [if_value(VAR_CARRYING_CABLE, 1, f"{key}:cable-drop", [
-        set_value(VAR_CARRYING_CABLE, 0, f"{key}:cable-clear"),
-        event("EVENT_ACTOR_SHOW", {"actorId": actor_id(CABLE_KEY)}, f"{key}:cable-show"),
-        actor_state(actor_id(CABLE_KEY), "Dangling", f"{key}:cable-dangling"),
-        *hud_events(f"{key}:cable-hud"),
-    ])]
-
-
 def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
     """Death sound, then drop any cable, then respawn.
 
     The cable drop runs before repositioning so the carrier's hands are empty
-    wherever the checkpoint sends them. Before Priya's power is on the hero
-    returns to START; afterwards, to the tile in front of the door.
+    wherever the checkpoint sends them. Checkpoints, furthest first: the tile in
+    front of Priya's door once her power is on, then the checkpoint of the
+    furthest repaired line, else START.
     """
     door_x, door_y = rosa.HOUSE_DOOR
     return [
         sound_event(death_sound_id, f"{key}:death-sfx"),
         *cable_drop_events(key),
-        if_value(VAR_HOME_POWERED, 0, f"{key}:respawn-check", [
-            set_position(*rosa.START, f"{key}:respawn-start"),
-        ], [
+        if_value(VAR_HOME_POWERED, 0, f"{key}:respawn-check", CHAIN.checkpoint_chain(key, rosa.START), [
             set_position(door_x - 1, door_y, f"{key}:respawn-door"),
         ]),
     ]
@@ -292,11 +264,16 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
         set_value(VAR_CARRYING_CABLE, 0, "init-carrying-cable"),
         set_value(VAR_LINE_LIVE, 0, "init-line-live"),
         set_value(VAR_HOME_POWERED, 0, "init-home-powered"),
+        set_value(rosa.VAR_FEEDER_LIVE, 0, "init-feeder-live"),
+        set_value(VAR_LINES_LIVE, 0, "init-lines-live"),
+        set_value(VAR_CHAIN_LIVE, 0, "init-chain-live"),
         window_palette_event(False, "init-window-cold"),
-        line_palette_event(False, "init-line-dead"),
-        # Pinned Snapped on every entry: the pole's own start script reads the
-        # line variable, and the order between the two scripts is unspecified.
-        actor_state(pole_actor_id(), "Snapped", "init-pole-snapped"),
+        *chain_refresh_events("init-chain"),
+        # Pinned Snapped on every entry: each pole's own start script reads its
+        # line variable, and the order between the scripts is unspecified.
+        *[actor_state(actor_id(line["pole"]), "Snapped",
+                      "init-pole-snapped" if line["key"] == "house" else f"init-{line['key']}-pole-snapped")
+          for line in LINES],
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-signal-hill-music"),
         # Intro boxes after the music cue; say() lifts the cutoff a previous visit may have left.
         *say(short_lines("Priya's offline!\nHer work is due."), "intro"),
@@ -307,43 +284,6 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # Actors and triggers
 # ---------------------------------------------------------------------------
-def actor_resource(*, index: int, symbol: str, name: str, x: int, y: int, sprite_id: str,
-                   key: str, animate: bool = True, anim_speed: int = 15,
-                   script: list[dict[str, Any]] | None = None,
-                   start_script: list[dict[str, Any]] | None = None,
-                   update_script: list[dict[str, Any]] | None = None,
-                   collision_group: str = "") -> dict[str, Any]:
-    return {
-        "_resourceType": "actor",
-        "id": actor_id(key),
-        "_index": index,
-        "symbol": symbol,
-        "prefabId": "",
-        "name": name,
-        "coordinateType": "tiles",
-        "x": x,
-        "y": y,
-        "frame": 0,
-        "animate": animate,
-        "spriteSheetId": sprite_id,
-        "paletteId": "",
-        "direction": "down",
-        "moveSpeed": 1,
-        "animSpeed": anim_speed,
-        "isPinned": False,
-        "persistent": False,
-        "collisionGroup": collision_group,
-        "collisionExtraFlags": [],
-        "prefabScriptOverrides": {},
-        "script": script or [],
-        "startScript": start_script or [],
-        "updateScript": update_script or [],
-        "hit1Script": [],
-        "hit2Script": [],
-        "hit3Script": [],
-    }
-
-
 def rosa_actor(index: int) -> dict[str, Any]:
     """Priya outside her door: Waiting until her house is powered, then Relieved."""
     key = ROSA_KEY
@@ -351,8 +291,8 @@ def rosa_actor(index: int) -> dict[str, Any]:
     script = [if_value(VAR_HOME_POWERED, 1, f"{key}:home", [
         *say(short_lines("I'm back online!\nThank you!"), f"{key}:thanks", "rosa"),
     ], [
-        if_value(VAR_LINE_LIVE, 1, f"{key}:line", [
-            *say(short_lines("Line's live!\nTry my door."), f"{key}:live", "rosa"),
+        if_value(VAR_LINES_LIVE, rosa.LINE_COUNT, f"{key}:lines", [
+            *say(short_lines("Lines are live!\nTry my door."), f"{key}:live", "rosa"),
         ], [
             *say(short_lines("No internet...\nI can't work."), f"{key}:dead", "rosa"),
         ]),
@@ -375,75 +315,8 @@ def workstation_actor(index: int) -> dict[str, Any]:
     )
 
 
-def cable_end_actor(index: int, sprite_id: str, pickup_sound_id: str) -> dict[str, Any]:
-    """Dangling cable on the snapped pole. B picks it up while the line is dead."""
-    key = CABLE_KEY
-    x, y = rosa.DAMAGED_POLE
-    pickup = [if_value(VAR_CARRYING_CABLE, 0, f"{key}:empty-hands", [
-        if_value(VAR_LINE_LIVE, 0, f"{key}:line-dead", [
-            set_value(VAR_CARRYING_CABLE, 1, f"{key}:carry"),
-            event("EVENT_ACTOR_HIDE", {"actorId": "$self$"}, f"{key}:hide"),
-            sound_event(pickup_sound_id, f"{key}:sfx"),
-            *say(short_lines("Got the cable!\nTo the box ahead."), f"{key}:text"),
-        ]),
-    ])]
-    return actor_resource(
-        index=index, symbol=CABLE_SYMBOL, name="Dangling Cable End", x=x, y=y,
-        sprite_id=sprite_id, key=key, script=pickup,
-        start_script=[actor_state("$self$", "Dangling", f"{key}:dangling")],
-    )
-
-
 def pole_actor_id() -> str:
     return actor_id(POLE_KEY)
-
-
-def pole_actor(index: int, sprite_id: str) -> dict[str, Any]:
-    """The snapped pole on the upper rock step: intro pole sprite, Standing once the line is live.
-
-    Non-colliding and not interactive; the cable-end pickup owns the B press.
-    """
-    key = POLE_KEY
-    x, y = rosa.DAMAGED_POLE
-    return actor_resource(
-        index=index, symbol=POLE_SYMBOL, name="Storm Pole", x=x, y=y,
-        sprite_id=sprite_id, key=key,
-        start_script=[
-            # Off, so B finds the cable end on this tile instead of the pole.
-            event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": "$self$"}, f"{key}:no-collision"),
-            if_value(VAR_LINE_LIVE, 1, f"{key}:line-check", [
-                actor_state("$self$", "Standing", f"{key}:standing"),
-            ], [
-                actor_state("$self$", "Snapped", f"{key}:snapped"),
-            ]),
-        ],
-    )
-
-
-def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dict[str, Any]:
-    """Dead junction box at the foot of Priya's porch. Plugging in the carried cable lights the line."""
-    key = JUNCTION_KEY
-    x, y = rosa.JUNCTION_BOX
-    plug = [if_value(VAR_LINE_LIVE, 1, f"{key}:live", [
-        *say(short_lines("Line is live."), f"{key}:already-live"),
-    ], [
-        if_value(VAR_CARRYING_CABLE, 1, f"{key}:has-cable", [
-            set_value(VAR_CARRYING_CABLE, 0, f"{key}:clear-cable"),
-            set_value(VAR_LINE_LIVE, 1, f"{key}:set-live"),
-            actor_state("$self$", "Live", f"{key}:live-state"),
-            actor_state(pole_actor_id(), "Standing", f"{key}:pole-standing"),
-            line_palette_event(True, f"{key}:metal-live"),
-            sound_event(connect_sound_id, f"{key}:sfx"),
-            *say(short_lines("Line is live!\nGo see Priya."), f"{key}:text"),
-        ], [
-            *say(short_lines("No cable yet.\nCheck the pole."), f"{key}:no-cable"),
-        ]),
-    ])]
-    return actor_resource(
-        index=index, symbol=JUNCTION_SYMBOL, name="Junction Box (Signal Hill)", x=x, y=y,
-        sprite_id=sprite_id, key=key, script=plug,
-        start_script=[actor_state("$self$", "Dead", f"{key}:dead")],
-    )
 
 
 def door_trigger(connect_sound_id: str) -> dict[str, Any]:
@@ -451,10 +324,11 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
 
     Only the top row of a standing 24px hero covers the door columns, so the
     respawn tile in front of the door also lands on this trigger. The var 11
-    guard keeps that from repeating the reward or the text.
+    guard keeps that from repeating the reward or the text. Both lines must be
+    repaired (the HUD count) before the house can power on.
     """
     x, y, width, height = rosa.DOOR_TRIGGER
-    script = [if_value(VAR_LINE_LIVE, 1, "door:line", [
+    script = [if_value(VAR_LINES_LIVE, rosa.LINE_COUNT, "door:lines", [
         if_value(VAR_HOME_POWERED, 0, "door:power-on", [
             set_value(VAR_HOME_POWERED, 1, "door:set-powered"),
             sound_event(connect_sound_id, "door:sfx"),
@@ -465,7 +339,7 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
             *say(tickets.closed_lines(3), "door:closed"),
         ]),
     ], [
-        *say(short_lines("Still no power.\nFix the line!"), "door:no-power"),
+        *say(short_lines("Still no power.\nFix both lines!"), "door:no-power"),
     ])]
     return {
         "_resourceType": "trigger",
@@ -646,7 +520,7 @@ def build_scene(music_id: str, death_sound_id: str) -> dict[str, Any]:
     ] + ["default-ui"]
     if len(background_palette_ids) != 8 or background_palette_ids[7] != "default-ui":
         raise ValueError("Signal Hill background palettes must preserve the UI in slot 7")
-    background_palette_ids[rosa.LINE_BG_SLOT] = metal_palette_id(False)
+    background_palette_ids[rosa.LINE_BG_SLOT] = chain_palette_id(0)
 
     scene = dict(template)
     scene.update({
@@ -672,23 +546,39 @@ def build_scene(music_id: str, death_sound_id: str) -> dict[str, Any]:
 
 
 def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[dict[str, Any]]:
-    actors = [
-        rosa_actor(0),
-        workstation_actor(1),
-        cable_end_actor(2, climb.grid_resource_id(CABLE_SPRITE_KEY), audio_ids["pickup"]),
-        junction_box_actor(3, climb.grid_resource_id(JUNCTION_SPRITE_KEY), audio_ids["connect"]),
-    ]
-    actors.extend(
+    cable_sprite = climb.grid_resource_id(CABLE_SPRITE_KEY)
+    box_sprites = {"junction": climb.grid_resource_id(JUNCTION_SPRITE_KEY),
+                   "transformer": ridge.TRANSFORMER_SPRITE_ID}
+    actors = [rosa_actor(0), workstation_actor(1)]
+    for line in LINES:
+        # Pole before its cable end: higher indexes draw on top, so the cable
+        # stays visible over the pole on their shared tile (cart bug B-13).
+        actors += [
+            pole_actor(line, 0, intro.POLE_SPRITE_ID),
+            cable_end_actor(line, 0, cable_sprite, audio_ids["pickup"]),
+            box_actor(line, 0, box_sprites[line["box_kind"]], audio_ids["connect"]),
+        ]
+    actors += [
         arc_actor(index, lane, rosa.ARC_START_DELAYS[index - 1], rosa.ARC_SPRITE_ID)
         for index, lane in enumerate(rosa.ARC_LANES, start=1)
-    )
-    actors.extend(
+    ]
+    actors += [
         gust_actor(index, lane, rosa.GUST_START_DELAYS[index - 1], sprite_ids["gust"])
         for index, lane in enumerate(rosa.GUST_LANES, start=1)
-    )
-    # Before the cable end (index 2): higher indexes draw on top, so the cable
-    # stays visible over the pole on their shared tile (cart bug B-13).
-    actors.insert(2, pole_actor(2, intro.POLE_SPRITE_ID))
+    ]
+    number = 0
+    for span in rosa.FALLEN_SPANS:
+        for lane, delay in zip(span["arcs"], span["delays"]):
+            number += 1
+            actors.append(CHAIN.span_arc_actor(
+                number, lane, delay, rosa.ARC_SPRITE_ID, span["live_after"],
+                timings=(rosa.ARC_WARNING_FRAMES, rosa.ARC_ACTIVE_FRAMES, rosa.ARC_REST_FRAMES),
+                symbol=f"signal_span_arc_{number:02d}", name=f"Downed Span Arc {number}",
+            ))
+    if len(actors) != rosa.actor_count():
+        raise ValueError(f"{len(actors)} actors built, rosa.actor_count() says {rosa.actor_count()}")
+    if len(actors) > rosa.MAX_SCENE_ACTORS:
+        raise ValueError(f"{len(actors)} actors exceed the engine's {rosa.MAX_SCENE_ACTORS}")
     # Editor order is list order: actors and triggers are indexed by position.
     for position, actor in enumerate(actors):
         actor["_index"] = position
@@ -712,7 +602,7 @@ def build_triggers(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
 def merged_variables(data: dict[str, Any]) -> dict[str, Any]:
     """Append the Signal Hill variables without changing any existing entry.
 
-    Same rule as make_ridge_scene.merged_variables: an existing ID with a
+    Same rule as make_climb_scene.merged_variables: an existing ID with a
     different name or symbol is refused rather than renamed.
     """
     merged = json.loads(json.dumps(data))
@@ -760,6 +650,7 @@ def main() -> None:
     warn_if_missing_asset(rosa.ROSA_SPRITE_ID, "sprites", "Priya sprite")
     warn_if_missing_asset(rosa.WORKSTATION_SPRITE_ID, "sprites", "Priya workstation sprite")
     warn_if_missing_asset(rosa.ARC_SPRITE_ID, "sprites", "live arc sprite")
+    warn_if_missing_asset(ridge.TRANSFORMER_SPRITE_ID, "sprites", "transformer sprite")
 
     scene = build_scene(music_id, audio_ids["death"])
     actors = build_actors(sprite_ids, audio_ids)
@@ -776,7 +667,7 @@ def main() -> None:
     print(
         f"generated signal_hill: {rosa.MAP_W}x{rosa.MAP_H} PLATFORM, "
         f"{len(actors)} actors, {len(triggers)} triggers; "
-        f"{len(rosa.ARC_LANES)} live arcs, delays {rosa.ARC_START_DELAYS}; "
+        f"{rosa.LINE_COUNT} lines, {len(rosa.ARC_LANES)} live arcs, delays {rosa.ARC_START_DELAYS}; "
         f"{len(rosa.GUST_LANES)} gust, delays {rosa.GUST_START_DELAYS}"
     )
 
