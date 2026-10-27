@@ -688,7 +688,8 @@ class KikoTests(unittest.TestCase):
         self.assertTrue(any(is_set(e, kiko.VAR_LINE_LIVE, 1) for e in branch))
         self.assertEqual(sum(is_set(e, kiko.VAR_LINE_LIVE, 1) for e in walk(branch)), 1)
         states = [e["args"]["spriteStateId"] for e in branch if e["command"] == "EVENT_ACTOR_SET_STATE"]
-        self.assertEqual(states, ["Standing"])  # the house pole; the box's own state comes from the chain
+        # The hero drops the Carry pose, then the house pole stands; the box's own state comes from the chain.
+        self.assertEqual(states, ["", "Standing"])
         junction = scene.actor_id(scene.JUNCTION_KEY)
         box_states = {e["args"]["spriteStateId"] for e in walk(branch)
                       if e["command"] == "EVENT_ACTOR_SET_STATE" and e["args"]["actorId"] == junction}

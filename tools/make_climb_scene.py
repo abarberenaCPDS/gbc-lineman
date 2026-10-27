@@ -370,6 +370,7 @@ def cable_drop_events(key: str) -> list[dict[str, Any]]:
     """A carried cable falls back to the storm pole when the carrier is hit."""
     return [if_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:cable-drop", [
         set_value(VAR_CARRYING_CABLE_ID, 0, f"{key}:cable-clear"),
+        actor_state("player", "", f"{key}:hero-empty-hands"),
         event("EVENT_ACTOR_SHOW", {"actorId": cable_actor_id()}, f"{key}:cable-show"),
         actor_state(cable_actor_id(), "Dangling", f"{key}:cable-dangling"),
         *hud_events(f"{key}:cable-hud"),
@@ -686,6 +687,7 @@ def cable_end_actor(index: int, sprite_id: str, pickup_sound_id: str) -> dict[st
     pickup = [if_value(VAR_CARRYING_CABLE_ID, 0, f"{key}:empty-hands", [
         if_value(VAR_LINE_LIVE_ID, 0, f"{key}:line-dead", [
             set_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:carry"),
+            actor_state("player", "Carry", f"{key}:hero-carry"),
             event("EVENT_ACTOR_HIDE", {"actorId": "$self$"}, f"{key}:hide"),
             sound_event(pickup_sound_id, f"{key}:sfx"),
             *say(short_lines("Got the cable!\nTake it up top."), f"{key}:text"),
@@ -715,6 +717,7 @@ def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dic
     ], [
         if_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:has-cable", [
             set_value(VAR_CARRYING_CABLE_ID, 0, f"{key}:clear-cable"),
+            actor_state("player", "", f"{key}:hero-empty-hands"),
             set_value(VAR_LINE_LIVE_ID, 1, f"{key}:set-live"),
             actor_state("$self$", "Live", f"{key}:live-state"),
             actor_state(pole_actor_id(), "Standing", f"{key}:pole-standing"),

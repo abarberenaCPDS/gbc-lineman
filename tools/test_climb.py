@@ -285,6 +285,9 @@ class ClimbTests(unittest.TestCase):
                           for e in flat if e["command"] == "EVENT_SET_VALUE"], [("6", 1)])
         hide = next(e for e in flat if e["command"] == "EVENT_ACTOR_HIDE")
         self.assertEqual(hide["args"]["actorId"], "$self$")
+        states = [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                  for e in flat if e["command"] == "EVENT_ACTOR_SET_STATE"]
+        self.assertEqual(states, [("player", "Carry")], "the hero shows the cable in hand")
         sound = next(e for e in flat if e["command"] == "EVENT_SOUND_PLAY_EFFECT")
         self.assertEqual(sound["args"]["type"], "pickup-sfx")
         text = next(e for e in flat if e["command"] == "EVENT_TEXT")
@@ -312,7 +315,7 @@ class ClimbTests(unittest.TestCase):
                          [("6", 0), ("7", 1)])
         states = [(e["args"]["actorId"], e["args"]["spriteStateId"])
                   for e in flat if e["command"] == "EVENT_ACTOR_SET_STATE"]
-        self.assertEqual(states, [("$self$", "Live"), (scene.pole_actor_id(), "Standing")])
+        self.assertEqual(states, [("player", ""), ("$self$", "Live"), (scene.pole_actor_id(), "Standing")])
         palette = next(e for e in flat if e["command"] == "EVENT_PALETTE_SET_BACKGROUND")
         self.assertEqual(palette["args"]["palette5"], climb.grid_resource_id("palette:bg:metal_live"))
         self.assertEqual({k: v for k, v in palette["args"].items() if k != "palette5"},
@@ -355,9 +358,9 @@ class ClimbTests(unittest.TestCase):
                               for e in flat if e["command"] == "EVENT_SET_VALUE"], [("6", 0)])
             show = next(e for e in flat if e["command"] == "EVENT_ACTOR_SHOW")
             self.assertEqual(show["args"]["actorId"], scene.cable_actor_id())
-            state = next(e for e in flat if e["command"] == "EVENT_ACTOR_SET_STATE")
-            self.assertEqual((state["args"]["actorId"], state["args"]["spriteStateId"]),
-                             (scene.cable_actor_id(), "Dangling"))
+            states = [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                      for e in flat if e["command"] == "EVENT_ACTOR_SET_STATE"]
+            self.assertEqual(states, [("player", ""), (scene.cable_actor_id(), "Dangling")])
             self.assertTrue(any(e["command"] == "EVENT_TEXT_DRAW" for e in flat), "HUD redraw")
 
     def test_marta_talk_tracks_line_and_saved_food(self):

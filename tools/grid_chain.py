@@ -311,6 +311,7 @@ class GridChain:
             tag = key if line["key"] == self.bare_event_key else f"{key}:{line['key']}"
             events.append(self.if_value(self.carrying_var, line["number"], f"{tag}:cable-drop", [
                 self.set_value(self.carrying_var, 0, f"{tag}:cable-clear"),
+                self.actor_state("player", "", f"{tag}:hero-empty-hands"),
                 self.event("EVENT_ACTOR_SHOW", {"actorId": self.actor_id(line["cable"])}, f"{tag}:cable-show"),
                 self.actor_state(self.actor_id(line["cable"]), "Dangling", f"{tag}:cable-dangling"),
                 *self.hud(f"{tag}:cable-hud"),
@@ -326,6 +327,7 @@ class GridChain:
         pickup = [self.if_value(self.carrying_var, 0, f"{key}:empty-hands", [
             self.if_value(line["live_var"], 0, f"{key}:line-dead", [
                 self.set_value(self.carrying_var, line["number"], f"{key}:carry"),
+                self.actor_state("player", "Carry", f"{key}:hero-carry"),
                 self.event("EVENT_ACTOR_HIDE", {"actorId": "$self$"}, f"{key}:hide"),
                 self.sound_event(pickup_sound_id, f"{key}:sfx"),
                 *self.say([self.text["pickup"]], f"{key}:text"),
@@ -378,6 +380,7 @@ class GridChain:
         ])]
         return [
             self.set_value(self.carrying_var, 0, f"{key}:clear-cable"),
+            self.actor_state("player", "", f"{key}:hero-empty-hands"),
             self.set_value(line["live_var"], 1, f"{key}:set-live"),
             self.event("EVENT_INC_VALUE", {"variable": self.lines_var}, f"{key}:count"),
             self.actor_state(self.actor_id(line["pole"]), "Standing", f"{key}:pole-standing"),
