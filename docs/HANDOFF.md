@@ -61,7 +61,9 @@ full jumps; the house line and Signal Hill's door are not played yet.
 Lab gallery (`lab-gallery` `06a56f2c…`): "LAB: hazards" shows; board breaks and respawns; arc fires; hidden cable shows.
 Cosmetic: the gallery reuses Pine Hollow's background, so the drawn mesa does not match its flat collision.
 
-1. **Native playtest, remaining:** B-16 fix or Abe's feel call, then Signal Hill house line and door; gallery whip
+B-16 fixed (`cde93d8`): one-way ledge in the T1 pit; native pit → ledge → rock → storm cable pickup works.
+
+1. **Native playtest, remaining:** Signal Hill house line (storm cable → porch junction box) and door; gallery whip
    (far end) and the movement room. Recipe: `make_intro_scene.py --test-start
    <folder> X Y right`, `rom_build` with `captureDebugArtifacts`, `emulator_run` source mode, keep the override while
    `emulator_debug` runs, restore with a plain `make_intro_scene.py`. Each scene opens with 2-3 dialogue boxes (A + ~80
