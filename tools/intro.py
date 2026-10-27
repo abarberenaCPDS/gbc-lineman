@@ -29,6 +29,7 @@ import uuid as _uuid
 from pathlib import Path
 
 import opening
+import scenes
 
 TILE = 8
 MAP_W, MAP_H = 20, 18
@@ -86,9 +87,9 @@ STORY_SCENE_ID = resource_id("scene:story")
 TITLE_SCENE_ID = resource_id("scene:title")
 SCENES = [
     # (scene id, folder, name, background file stem, index, editor x, y)
-    (LOGO_SCENE_ID, "intro_logo", "Abe's Games Logo", "intro_logo", 7, 0, -240),
-    (STORY_SCENE_ID, "intro_story", "Intro Story", "intro_story", 8, 240, -240),
-    (TITLE_SCENE_ID, "title", "Title", "title", 9, 480, -240),
+    (LOGO_SCENE_ID, "intro_logo", "Abe's Games Logo", "intro_logo", 7, *scenes.editor_position("intro_logo")),
+    (STORY_SCENE_ID, "intro_story", "Intro Story", "intro_story", 8, *scenes.editor_position("intro_story")),
+    (TITLE_SCENE_ID, "title", "Title", "title", 9, *scenes.editor_position("title")),
 ]
 # The title is TOPDOWN too: as a LOGO scene, its high background tiles (the
 # baked text band) were overwritten by engine UI tiles (exact ROM 3eb072a3).

@@ -55,8 +55,9 @@ try:
     import tickets  # noqa: E402  (work orders: summit exit, CLOSED box)
     import hazards  # noqa: E402  (cracked boards and hidden cables: placement and timings)
     import rosa  # noqa: E402  (Signal Hill owns the live arc sprite and palette)
+    import scenes  # noqa: E402  (scene registry: editor positions)
 except ModuleNotFoundError as error:
-    if error.name in {"tickets", "voices", "climb", "intro", "opening", "ridge", "hazards", "rosa"}:
+    if error.name in {"tickets", "voices", "climb", "intro", "opening", "ridge", "hazards", "rosa", "scenes"}:
         raise SystemExit(
             f"cannot generate storm_climb: tools/{error.name}.py is missing; "
             "it must provide the climb/opening data API"
@@ -982,11 +983,14 @@ def build_scene(music_id: str) -> dict[str, Any]:
         raise ValueError("Storm Climb background palettes must preserve the UI in slot 7")
     # Slot 5 starts dead; the scene init and the junction box swap it at runtime.
     background_palette_ids[LINE_BG_SLOT] = metal_palette_id(False)
+    editor_x, editor_y = scenes.editor_position("storm_climb")
     scene.update(
         {
             "id": resource_id("scene:storm-climb"),
             "_index": 0,
             "name": "Storm Climb",
+            "x": editor_x,
+            "y": editor_y,
             "width": int(climb.MAP_W),
             "height": int(climb.MAP_H),
             "collisions": collision_rle(climb.collision_grid(), int(climb.MAP_W), int(climb.MAP_H)),

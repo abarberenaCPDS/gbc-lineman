@@ -12,6 +12,7 @@ from typing import Any
 
 import climb
 import opening
+import scenes
 import tickets
 import voices
 from make_climb_scene import collision_rle
@@ -270,6 +271,7 @@ def exit_trigger() -> dict:
 
 def build_scene(backgrounds: list[str], sprites: list[str]) -> dict:
     music = json.loads((ROOT / "assets/music/cfe_storm_climb.uge.gbsres").read_text())["id"]
+    editor_x, editor_y = scenes.editor_position("service_opening")
     return {
         "_resourceType": "scene", "id": opening.resource_id("scene:service-opening"),
         "_index": 3, "name": "Service Opening - M-V1", "symbol": "scene_service_opening",
@@ -277,7 +279,7 @@ def build_scene(backgrounds: list[str], sprites: list[str]) -> dict:
         "width": 20, "height": 18, "type": "PLATFORM", "colorModeOverride": "none",
         "paletteIds": backgrounds, "spritePaletteIds": sprites,
         "collisions": collision_rle(opening.collision_grid(), 20, 18),
-        "autoFadeSpeed": 1, "x": 0, "y": 360,
+        "autoFadeSpeed": 1, "x": editor_x, "y": editor_y,
         "script": [
             if_value(HERO_SIZE, HERO_SIZE_24, "entry:hero", choose_hero(24, "entry:24"), choose_hero(16, "entry:16")),
             event("EVENT_ACTOR_SET_DIRECTION", {

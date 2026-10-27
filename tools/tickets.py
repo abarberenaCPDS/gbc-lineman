@@ -30,6 +30,7 @@ import kiko
 import opening
 import ridge
 import rosa
+import scenes
 
 ROOT = Path(__file__).resolve().parent.parent
 _TICKET_NAMESPACE = _uuid.UUID("3f9a6c21-5d7e-5b08-a4c3-9e1b7d2f6a40")
@@ -49,8 +50,8 @@ WORK_ORDER_SCENE_ID = resource_id("scene:work-order")
 REPORT_SCENE_ID = resource_id("scene:storm-report")
 # (scene id, folder/symbol, name, background png stem, editor x, editor y)
 SCENES = [
-    (WORK_ORDER_SCENE_ID, "work_order", "Work Order", "ticket_card", 720, -240),
-    (REPORT_SCENE_ID, "storm_report", "Storm Report", "ticket_card", 960, -240),
+    (WORK_ORDER_SCENE_ID, "work_order", "Work Order", "ticket_card", *scenes.editor_position("work_order")),
+    (REPORT_SCENE_ID, "storm_report", "Storm Report", "ticket_card", *scenes.editor_position("storm_report")),
 ]
 BACKGROUND_NAME = "ticket_card"                 # assets/backgrounds/ticket_card.png
 BACKGROUND_ID = resource_id("background:ticket_card")
