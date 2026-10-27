@@ -14,9 +14,9 @@ the mesa) and the junction box keeps its key on the porch.
 
 The live arc reuses Signal Hill's arc sprite and arc palette resource (written
 by ``make_rosa_scene.py``); this generator only references that palette ID.
-The gust copies the Signal Hill gust, the hidden cable copies the cable lane
-pattern, both with Emil's timings, and the transformer reuses Wind Ridge's
-sprite. Falling debris is retired.
+The hidden cable copies the cable lane pattern with Emil's timings, and the
+transformer reuses Wind Ridge's sprite. The mesa gust and falling debris are
+retired.
 
 Generic GB Studio helpers (collision RLE, sidecar lookup, JSON writing, the
 dialogue length check) are reused from ``make_climb_scene``. Event builders are
@@ -44,7 +44,6 @@ MUSIC_SIDECAR = "assets/music/cfe_storm_climb.uge.gbsres"
 DEATH_SOUND = "assets/sounds/death.wav.gbsres"
 CONNECT_SOUND = "assets/sounds/connect.wav.gbsres"
 PICKUP_SOUND = "assets/sounds/pickup.wav.gbsres"
-GUST_SPRITE = "assets/sprites/climb_gust.png.gbsres"
 
 sys.path.insert(0, str(TOOLS_DIR))
 try:
@@ -464,7 +463,7 @@ def arc_actor(index: int, lane: tuple[int, int, int], start_delay: int,
               sprite_id: str) -> dict[str, Any]:
     """Live cable lane: warning sparks (no collision), arc (hits via group 1), rest.
 
-    Same start-delay trick as the gust: the first cycle is detected by the
+    Same start-delay trick as the hidden cable: the first cycle is detected by the
     actor's own direction (it starts "down"), the branch hides the arc and waits
     ``start_delay`` frames once, then sets the direction to "up" so later cycles
     skip the branch.
@@ -512,59 +511,6 @@ def arc_actor(index: int, lane: tuple[int, int, int], start_delay: int,
     )
 
 
-def gust_actor(index: int, lane: tuple[int, int, int], start_delay: int,
-               sprite_id: str) -> dict[str, Any]:
-    """Timed wind lane: warning (no collision), burst (hits via group 1), rest.
-
-    The start delay runs once. Update scripts loop, so the first cycle is
-    detected by the actor's own direction: it starts "down", the first-cycle
-    branch hides the gust, waits ``start_delay`` frames and sets it to "up",
-    and later cycles skip the branch. The gust sprite has no directional
-    animations, so the change should be invisible; verify in ROM.
-    """
-    row, x0, x1 = lane
-    if x1 - x0 + 1 != 3:
-        raise ValueError("the authored gust sprite is exactly three tiles wide")
-    if start_delay < 0:
-        raise ValueError("gust start delay must be non-negative")
-    key = f"gust:{index}"
-
-    def own(command: str, suffix: str, **args: Any) -> dict[str, Any]:
-        return event(command, {"actorId": "$self$", **args}, f"{key}:{suffix}")
-
-    first_cycle_true = [
-        own("EVENT_ACTOR_SET_DIRECTION", "started", direction={"type": "direction", "value": "up"}),
-        own("EVENT_ACTOR_HIDE", "delay-hidden"),
-    ]
-    if start_delay > 0:
-        first_cycle_true.append(wait_event(start_delay, f"{key}:start-delay"))
-    first_cycle = branch_event(
-        "EVENT_IF_ACTOR_DIRECTION",
-        {"actorId": "$self$", "direction": {"type": "direction", "value": "down"}},
-        f"{key}:first-cycle",
-        first_cycle_true,
-    )
-    update = [
-        first_cycle,
-        own("EVENT_ACTOR_COLLISIONS_DISABLE", "warning-safe"),
-        own("EVENT_ACTOR_SET_STATE", "warning-state", spriteStateId="Warning", loopAnim=True),
-        own("EVENT_ACTOR_SHOW", "warning-visible"),
-        wait_event(kiko.GUST_WARNING_FRAMES, f"{key}:warning-time"),
-        own("EVENT_ACTOR_SET_STATE", "burst-state", spriteStateId="Burst", loopAnim=True),
-        own("EVENT_ACTOR_COLLISIONS_ENABLE", "burst-active"),
-        wait_event(kiko.GUST_ACTIVE_FRAMES, f"{key}:burst-time"),
-        own("EVENT_ACTOR_COLLISIONS_DISABLE", "rest-safe"),
-        own("EVENT_ACTOR_HIDE", "rest-hidden"),
-        wait_event(kiko.GUST_REST_FRAMES, f"{key}:rest-time"),
-    ]
-    return actor_resource(
-        index=index, symbol=f"pine_gust_{index:02d}", name=f"Telegraphed Gust {index}",
-        x=x0, y=row, sprite_id=sprite_id, key=key, anim_speed=8,
-        start_script=[own("EVENT_ACTOR_COLLISIONS_DISABLE", "initial-safe")],
-        update_script=update, collision_group="1",
-    )
-
-
 def hidden_cable_actor(number: int, lane: tuple[int, int, int], start_delay: int,
                        index: int) -> dict[str, Any]:
     """Buried line on the mesa: no wire art, dark, a brief spark, then the arc (group 1)."""
@@ -601,7 +547,7 @@ def build_scene(music_id: str, death_sound_id: str) -> dict[str, Any]:
     sprite_palette_ids[kiko.GRID_SPRITE_PALETTE_SLOT] = climb.grid_resource_id("palette:sprite:grid")
     sprite_palette_ids[kiko.ARC_SPRITE_PALETTE_SLOT] = arc_palette_id()
     sprite_palette_ids[intro.SPRITE_SLOTS["pole"]] = intro.palette_id("pole")
-    # Slot 4 is unused here (the debris slot is retired); the gust keeps the climb palette.
+    # Slots 4-5 are unused here (the debris and gust slots are retired) and keep the climb palettes.
     background_palette_ids = [
         opening.resource_id(f"palette:bg:{name}") for name, _ in opening.BG_PALETTES
     ] + ["default-ui"]
@@ -632,7 +578,7 @@ def build_scene(music_id: str, death_sound_id: str) -> dict[str, Any]:
     return scene
 
 
-def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[dict[str, Any]]:
+def build_actors(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
     cable_sprite = climb.grid_resource_id(CABLE_SPRITE_KEY)
     box_sprites = {"junction": climb.grid_resource_id(JUNCTION_SPRITE_KEY),
                    "transformer": kiko.TRANSFORMER_SPRITE_ID}
@@ -648,10 +594,6 @@ def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[
     actors.extend(
         arc_actor(index, lane, kiko.ARC_START_DELAYS[index - 1], kiko.ARC_SPRITE_ID)
         for index, lane in enumerate(kiko.ARC_LANES, start=1)
-    )
-    actors.extend(
-        gust_actor(index, lane, kiko.GUST_START_DELAYS[index - 1], sprite_ids["gust"])
-        for index, lane in enumerate(kiko.GUST_LANES, start=1)
     )
     # Hidden cables come last: the highest indexes draw on top.
     for number, (lane, delay) in enumerate(
@@ -725,9 +667,6 @@ def main() -> None:
         "connect": shared.sidecar_id(CONNECT_SOUND, "sound"),
         "pickup": shared.sidecar_id(PICKUP_SOUND, "sound"),
     }
-    sprite_ids = {
-        "gust": shared.sidecar_id(GUST_SPRITE, "sprite"),
-    }
     warn_if_missing_asset(kiko.BACKGROUND_ID, "backgrounds", "pine_hollow background")
     warn_if_missing_asset(kiko.KIKO_SPRITE_ID, "sprites", "Emil sprite")
     warn_if_missing_asset(kiko.STOVE_SPRITE_ID, "sprites", "electric stove sprite")
@@ -735,7 +674,7 @@ def main() -> None:
     warn_if_missing_asset(kiko.TRANSFORMER_SPRITE_ID, "sprites", "transformer sprite")
 
     scene = build_scene(music_id, audio_ids["death"])
-    actors = build_actors(sprite_ids, audio_ids)
+    actors = build_actors(audio_ids)
     triggers = build_triggers(audio_ids)
 
     write_variables()
@@ -756,8 +695,7 @@ def main() -> None:
         f"generated pine_hollow: {kiko.MAP_W}x{kiko.MAP_H} PLATFORM, "
         f"{len(actors)} actors, {len(triggers)} triggers; "
         f"{len(kiko.LINES)} lines, {len(hazards.HIDDEN_CABLES['pine_hollow'])} hidden cable, "
-        f"{len(kiko.ARC_LANES)} live arc, delays {kiko.ARC_START_DELAYS}; "
-        f"{len(kiko.GUST_LANES)} gust, delays {kiko.GUST_START_DELAYS}"
+        f"{len(kiko.ARC_LANES)} live arc, delays {kiko.ARC_START_DELAYS}"
     )
 
 

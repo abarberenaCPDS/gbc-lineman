@@ -37,9 +37,8 @@ class KikoBackgroundTests(unittest.TestCase):
 
     @staticmethod
     def stone_air() -> set[tuple[int, int]]:
-        """Open-air tiles that carry stone art: gust placards and downed-wire posts."""
-        placards = {(x, row) for row, x0, x1 in kiko.GUST_LANES for x in range(x0, x1 + 1)}
-        return placards | set(art.ARC_POST_TILES)
+        """Open-air tiles that carry stone art: the downed-wire posts."""
+        return set(art.ARC_POST_TILES)
 
     def native(self, tx: int, ty: int, x: int, y: int) -> int:
         gray = self.proxy.getpixel((tx * kiko.TILE + x, ty * kiko.TILE + y))[0]
@@ -199,18 +198,8 @@ class KikoBackgroundTests(unittest.TestCase):
         # The doorway is dark timber, not a window.
         self.assertTrue(all(self.native(dx, dy, x, 2) == 0 for x in range(2, 6)))
 
-    def test_gust_placard_sits_on_mesa(self):
-        for row, x0, x1 in kiko.GUST_LANES:
-            mesa_x0, mesa_x1 = kiko.MESA[0], kiko.MESA[1]
-            self.assertTrue(mesa_x0 <= x0 and x1 <= mesa_x1, "gust lane must be on the mesa")
-            self.assertEqual(row, kiko.MESA_ROW - 1, "gust lane on the mesa chest row")
-            for tx in range(x0, x1 + 1):
-                self.assertEqual(self.grid[row][tx], climb.COL_EMPTY)
-                self.assertEqual(self.grid[row + 2][tx], climb.COL_SOLID, "placard floor is mesa")
-                self.assertEqual(self.slot(tx, row), art.STONE, "placard is stone: the metal slot is wire only")
-                natives = self.natives(tx, row)
-                self.assertNotIn(climb.LINE_COLOR_INDEX, natives, "placard uses cable index")
-                self.assertTrue(any(n in (2, 3) for n in natives), "placard has no shading")
+    def test_no_gust_lane_is_drawn(self):
+        self.assertEqual(kiko.GUST_LANES, [], "the mesa gust is retired")
 
     def test_hud_rows_are_plain_sky(self):
         for ty in range(kiko.HUD_ROWS):

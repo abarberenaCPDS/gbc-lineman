@@ -46,7 +46,7 @@ HILL_HIGHLIGHTS = [[(64, 58), (68, 64)], [(184, 58), (180, 64)],
 STARS = [(24, 20), (64, 26), (120, 20), (176, 24), (226, 20), (262, 26)]
 # Pine silhouettes (x, top, w, bottom) in pixels, standing on the hill. Their
 # tips rise above the hill line into open sky. They are drawn in the sky
-# family, so they clip against the cable, mesa, cabin and gust placard.
+# family, so they clip against the cable, mesa and cabin.
 PINES = [(14, 40, 14, 79), (30, 52, 10, 79), (46, 40, 16, 79),
          (102, 48, 12, 79), (196, 40, 14, 79), (214, 52, 10, 79),
          (240, 44, 14, 79)]
@@ -62,7 +62,7 @@ ARC_POST_TOPS = [(tx, row) for row, x0, x1 in kiko.ARC_LANES
                  for tx in (x0 - 1, x1 + 1)]
 ARC_POST_TILES = [(tx, ty) for tx, top in ARC_POST_TOPS for ty in (top, top + 1)]
 
-# Lane cells, arc and gust alike: no art may sit on them.
+# Lane cells (arcs): no art may sit on them.
 LANE_CELLS = {(row, x) for row, x0, x1 in kiko.hazard_lanes()
               for x in range(x0, x1 + 1)}
 
@@ -141,13 +141,6 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
         if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in LANE_CELLS:
             raise AssertionError(f"arc post overlaps collision or lane at {tx},{ty}")
         slots[ty][tx] = STONE
-
-    # Gust lanes on the mesa get a stone hazard placard (the metal slot is wire only).
-    for row, x0, x1 in kiko.GUST_LANES:
-        for tx in range(x0, x1 + 1):
-            if grid[row][tx] != climb.COL_EMPTY:
-                raise AssertionError(f"gust placard overlaps collision at {tx},{row}")
-            slots[row][tx] = STONE
 
     # Wire tiles take the metal slot last. They may never hit collision (power
     # enters through the left cliff wall), a lane, the cabin, a post or a placard.
@@ -306,20 +299,6 @@ def _draw_arc_posts(c: _Canvas) -> None:
         c.rect(STONE, (x - 1, y0, x + 3, y0 + 1), p[3])
 
 
-def _draw_warnings(c: _Canvas) -> None:
-    # Stone-family placards on the mesa (the metal slot is wire only).
-    p = PALETTES[STONE]
-    for row, x0, x1 in kiko.GUST_LANES:
-        left, right = x0 * TILE, x1 * TILE + 7
-        y = row * TILE
-        c.rect(STONE, (left + 2, y + 2, right - 2, y + 5), p[0])
-        c.line(STONE, [(left + 4, y + 2), (right - 4, y + 5)], p[2])
-        c.line(STONE, [(right - 4, y + 2), (left + 4, y + 5)], p[2])
-        center = (left + right) // 2
-        c.line(STONE, [(center - 2, y + 3), (center + 2, y + 3)], p[3])
-        c.line(STONE, [(center, y + 1), (center, y + 6)], p[3])
-
-
 def _draw_cable(c: _Canvas, slots: list[list[int]]) -> None:
     """Paint each stage's wire pixels in its metal colour index, on claimed wire tiles only."""
     px = c.image.load()
@@ -349,7 +328,6 @@ def make_background() -> tuple[Image.Image, list[list[int]]]:
     _draw_cabin(canvas)
     _draw_windows(canvas)
     _draw_arc_posts(canvas)
-    _draw_warnings(canvas)
     _draw_cable(canvas, slots)
 
     allowed = [set(colors) for colors in PALETTES]

@@ -19,7 +19,6 @@ import kiko
 # keep the structural tests independent of which art sidecars exist yet.
 FAKE_MUSIC = "test-music"
 FAKE_AUDIO = {"death": "death-sound", "connect": "connect-sound", "pickup": "pickup-sound"}
-FAKE_SPRITES = {"gust": "gust-sprite"}
 PROJECT_DIR = scene.PROJECT_DIR
 
 
@@ -28,7 +27,7 @@ def built_scene():
 
 
 def built_actors():
-    return scene.build_actors(FAKE_SPRITES, FAKE_AUDIO)
+    return scene.build_actors(FAKE_AUDIO)
 
 
 def built_triggers():
@@ -118,18 +117,19 @@ def arc_sprites():
     return [((x0, row), 2, 2) for row, x0, _ in kiko.ARC_LANES]
 
 
-def gust_sprites():
-    return [((x0, row), 3, 2) for row, x0, _ in kiko.GUST_LANES]
-
-
 def hidden_cable_sprites():
     """The hidden cable is the live arc sprite: two OBJ columns, visible while it arcs."""
     return [((x0, row), 2, 2) for row, x0, _ in hazards.HIDDEN_CABLES["pine_hollow"]]
 
 
 def hazard_sprites():
-    """Every arc, gust and hidden cable, all visible at once."""
-    return arc_sprites() + gust_sprites() + hidden_cable_sprites()
+    """Every arc and hidden cable, all visible at once."""
+    return arc_sprites() + hidden_cable_sprites()
+
+
+# The hero is a 16px sprite: two OBJ columns per tile row on hardware (measured in
+# the emulator). grid_chain.scanline_load defaults to a 24px (3-column) hero.
+HERO_OBJ_SIZE = (2, 3)
 
 
 def chain_and_props_sprites():
@@ -145,7 +145,7 @@ def scanline_overflows(spots):
     sprites = chain_and_props_sprites() + hazard_sprites()
     out = {}
     for x, feet in spots:
-        load = grid_chain.scanline_load(sprites, kiko.MAP_W, x, feet)
+        load = grid_chain.scanline_load(sprites, kiko.MAP_W, x, feet, hero_size=HERO_OBJ_SIZE)
         worst = max(load.values())
         if worst > grid_chain.SCANLINE_OBJ_LIMIT:
             out[(x, feet)] = worst
@@ -399,21 +399,13 @@ class KikoTests(unittest.TestCase):
         self.assertEqual([e["id"] for e in writers_to_one],
                          [e["id"] for e in walk(reward) if is_set(e, kiko.VAR_HOME_POWERED, 1)])
 
-    def test_arc_and_gust_start_delays_are_distinct_and_run_once(self):
+    def test_arc_start_delays_run_once(self):
         self.assertEqual(len(kiko.ARC_START_DELAYS), len(kiko.ARC_LANES))
-        self.assertEqual(len(kiko.GUST_START_DELAYS), len(kiko.GUST_LANES))
-        self.assertEqual(len(set(kiko.ARC_START_DELAYS + kiko.GUST_START_DELAYS)),
-                         len(kiko.ARC_START_DELAYS + kiko.GUST_START_DELAYS),
-                         "no two hazards may fire in lockstep")
         arcs = [a for a in built_actors() if a["symbol"].startswith("pine_arc_")]
-        gusts = [a for a in built_actors() if a["symbol"].startswith("pine_gust_")]
         self.assertEqual(len(arcs), len(kiko.ARC_LANES))
-        self.assertEqual(len(gusts), len(kiko.GUST_LANES))
         cases = [
             (arcs, kiko.ARC_LANES, kiko.ARC_START_DELAYS, kiko.ARC_SPRITE_ID,
              ["Warning", "Arc"], [kiko.ARC_WARNING_FRAMES, kiko.ARC_ACTIVE_FRAMES, kiko.ARC_REST_FRAMES]),
-            (gusts, kiko.GUST_LANES, kiko.GUST_START_DELAYS, FAKE_SPRITES["gust"],
-             ["Warning", "Burst"], [kiko.GUST_WARNING_FRAMES, kiko.GUST_ACTIVE_FRAMES, kiko.GUST_REST_FRAMES]),
         ]
         for actors, lanes, delays, sprite, states_expected, loops_expected in cases:
             for actor, lane, delay in zip(actors, lanes, delays):
@@ -446,8 +438,8 @@ class KikoTests(unittest.TestCase):
                 self.assertEqual([e["command"] for e in rest[:2]],
                                  ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_HIDE"])
         hazard_indices = [a["_index"] for a in built_actors()
-                          if a["symbol"].startswith(("pine_arc_", "pine_gust_"))]
-        self.assertEqual(hazard_indices, [8, 9])  # after the two lines' poles, cable ends and boxes
+                          if a["symbol"].startswith("pine_arc_")]
+        self.assertEqual(hazard_indices, [8])  # after the two lines' poles, cable ends and boxes
 
     def test_hidden_cable_lane_is_open_air_on_the_mesa(self):
         grid = kiko.collision_grid()
@@ -477,19 +469,9 @@ class KikoTests(unittest.TestCase):
         self.assertEqual([e["args"]["frames"]["value"] for e in first["children"]["true"]
                           if e["command"] == "EVENT_WAIT"], [hazards.CABLE_START_DELAYS["pine_hollow"][0]])
 
-    # Known scanline overflow (OBJs per tile row with every hazard visible), found
-    # when the house line's pole and transformer were added to the floor. The
-    # porch window is clamped to x20-39, so the floor posts share it with Emil,
-    # the stove and the junction box. Clearing these needs a layout decision (see
-    # the report): move a post or hazard, or the stove off the porch row. Until
-    # then, nothing may overflow beyond these spots and loads.
-    KNOWN_SCANLINE_OVERFLOW = {
-        **{(x, 14): 11 for x in range(19, 31)},   # floor: transformer, house pole, arc and cable
-        **{(x, 8): 12 for x in range(7, 19)},     # mesa: feeder pole and cable, hidden cable, gust (pre-existing)
-        **{(x, 11): 13 for x in range(31, 39)},   # porch: Emil, stove, junction box, both posts
-    }
-
-    def test_scanline_overflow_is_no_worse_than_the_known_set(self):
+    def test_every_view_stays_within_ten_sprites_per_scanline(self):
+        # Ridge's rule: every standing tile and chain spot within the OBJ budget,
+        # with every hazard visible at once (the worst case).
         grid = kiko.collision_grid()
         spots = [(x, feet) for feet in (kiko.GROUND_ROW - 1, kiko.MESA_ROW, kiko.PORCH_ROW)
                  for x in range(1, kiko.MAP_W - 1) if stands(grid, x, feet)]
@@ -497,19 +479,7 @@ class KikoTests(unittest.TestCase):
         for line in scene.LINES:
             spots += [line["pole_at"], line["box_at"], line["checkpoint"]]
         spots += [(x0, row + 1) for row, x0, _ in kiko.hazard_lanes()]
-        overflow = scanline_overflows(spots)
-        for spot, worst in overflow.items():
-            self.assertIn(spot, self.KNOWN_SCANLINE_OVERFLOW, f"new scanline overflow at {spot}: {worst}")
-            self.assertLessEqual(worst, self.KNOWN_SCANLINE_OVERFLOW[spot], spot)
-
-    @unittest.expectedFailure
-    def test_every_view_stays_within_ten_sprites_per_scanline(self):
-        # The goal (ridge's rule): every standing tile and chain spot within the
-        # budget. Expected to fail until the known overflow above is resolved;
-        # unittest reports an unexpected pass, so remove this marker then.
-        self.assertEqual(scanline_overflows(
-            [(x, feet) for feet in (kiko.GROUND_ROW - 1, kiko.MESA_ROW, kiko.PORCH_ROW)
-             for x in range(1, kiko.MAP_W - 1) if stands(kiko.collision_grid(), x, feet)]), {})
+        self.assertEqual(scanline_overflows(spots), {})
 
     def test_chain_wire_routes_are_continuous_and_stage_coloured(self):
         grid_chain.check_wire_routes(kiko.WIRE_ROUTES, kiko.STAGE_COUNT, kiko.MAP_W, kiko.HUD_ROWS,
@@ -536,7 +506,7 @@ class KikoTests(unittest.TestCase):
         actors = built_actors()
         self.assertLessEqual(len(actors), kiko.MAX_SCENE_ACTORS, "gbvm allows 20 actors besides the player")
         self.assertEqual(len(actors), kiko.actor_count())
-        self.assertEqual(len(actors), 11)
+        self.assertEqual(len(actors), 10)
 
     def test_each_line_has_a_reach_trigger_that_connects_only_its_own_cable(self):
         triggers = built_triggers()
@@ -635,11 +605,11 @@ class KikoTests(unittest.TestCase):
             scene.KIKO_SYMBOL, scene.STOVE_SYMBOL,
             scene.POLE_SYMBOL, scene.CABLE_SYMBOL, "pine_feeder_box",
             "kiko_house_pole", "pine_house_cable_end", scene.JUNCTION_SYMBOL,
-            "pine_arc_01", "pine_gust_01", "pine_hidden_cable_01",
+            "pine_arc_01", "pine_hidden_cable_01",
         ])
         self.assertEqual([a["_index"] for a in actors], list(range(len(actors))))
         self.assertEqual(len(set(a["id"] for a in actors)), len(actors))
-        self.assertEqual(len(actors), 11, "keep the actor count modest")
+        self.assertEqual(len(actors), 10, "keep the actor count modest")
         kiko_actor = actor_by_symbol(scene.KIKO_SYMBOL)
         self.assertEqual((kiko_actor["x"], kiko_actor["y"]), kiko.KIKO)
         self.assertEqual(kiko_actor["spriteSheetId"], kiko.KIKO_SPRITE_ID)
@@ -729,12 +699,9 @@ class KikoTests(unittest.TestCase):
             "connect": shared.sidecar_id(scene.CONNECT_SOUND, "sound"),
             "pickup": shared.sidecar_id(scene.PICKUP_SOUND, "sound"),
         }
-        sprites = {
-            "gust": shared.sidecar_id(scene.GUST_SPRITE, "sprite"),
-        }
         expected = scene.build_scene(music, audio["death"])
         self.assertEqual(shared.load_json(scene.SCENE_DIR / "scene.gbsres"), expected)
-        for actor in scene.build_actors(sprites, audio):
+        for actor in scene.build_actors(audio):
             path = scene.SCENE_DIR / "actors" / f"{actor['symbol']}.gbsres"
             self.assertEqual(shared.load_json(path), actor)
         for trigger in scene.build_triggers(audio):
@@ -756,11 +723,10 @@ class KikoTests(unittest.TestCase):
                          climb.grid_resource_id("palette:sprite:grid"))
         self.assertEqual(sprites[kiko.ARC_SPRITE_PALETTE_SLOT], rosa.resource_id("palette:sprite:arc"))
         self.assertEqual(sprites[4:], template["spritePaletteIds"][4:],
-                         "unused slot 4 and the gust (slot 5) keep the climb palettes")
+                         "unused slots 4-5 (debris and gust) keep the climb palettes")
         self.assertEqual(kiko.KIKO_SPRITE_PALETTE_SLOT, 1)
         self.assertEqual(kiko.GRID_SPRITE_PALETTE_SLOT, 2)
         self.assertEqual(kiko.ARC_SPRITE_PALETTE_SLOT, 3)
-        self.assertEqual(kiko.GUST_SPRITE_PALETTE_SLOT, 5)
         backgrounds = resource["paletteIds"]
         self.assertEqual(len(backgrounds), 8)
         self.assertEqual(backgrounds[:5], [opening.resource_id(f"palette:bg:{name}")
@@ -786,9 +752,9 @@ class KikoTests(unittest.TestCase):
                          "arc palette is Signal Hill's resource, not a duplicate")
 
     def test_shared_sidecars_exist(self):
-        """Sounds, music, the gust sprite and Signal Hill's arc are already on disk."""
+        """Sounds, music and Signal Hill's arc are already on disk."""
         for path in (scene.DEATH_SOUND, scene.CONNECT_SOUND, scene.PICKUP_SOUND,
-                     scene.MUSIC_SIDECAR, scene.GUST_SPRITE):
+                     scene.MUSIC_SIDECAR):
             self.assertTrue((PROJECT_DIR / path).exists(), path)
         arc_palette = shared.load_json(PROJECT_DIR / "project" / "palettes" / "signal_hill_sprite_arc.gbsres")
         self.assertEqual(arc_palette["id"], scene.arc_palette_id())

@@ -1,19 +1,19 @@
 """Pine Hollow - deterministic contract for Emil's family's repair job (job 4).
 
 Data only for a 40x18-tile PLATFORM scene reached from Priya's porch once her
-house is powered. The job mixes the hazards learned so far: a wind gust on top
-of a long rock mesa (the feeder pole stands up there), a hidden cable lane on
-the mesa, then a live cable arc on the floor below. Two lines make one grid
-chain: the feeder line from the pole on the mesa to a transformer at the mesa's
-foot, then the house line from a second pole to the porch's junction box.
+house is powered. The job mixes the hazards learned so far: a hidden cable lane
+on a long rock mesa (the feeder pole and transformer stand up there), then a
+live cable arc on the floor below. Two lines make one grid chain: the feeder
+line from the pole on the mesa to the transformer beside it, then the house
+line from a second pole on the floor to the porch's junction box.
 Repairing both lights the family's window and switches on their electric
 stove so dinner can cook (Blackout Grid).
 
 Every generator for this job reads this module: ``make_kiko_art.py`` (art +
 collision-aligned background), ``make_kiko_sprites.py`` (Emil and the stove)
 and ``make_kiko_scene.py`` (scene, actors, triggers, scripts). The live arc
-reuses ``live_arc`` from Priya's job; the gust reuses the climb sprites; the
-transformer reuses Wind Ridge's sprite.
+reuses ``live_arc`` from Priya's job; the transformer reuses Wind Ridge's
+sprite.
 
 Units are 8x8-pixel tiles. Actor positions are the tile the actor stands in
 (feet row). Collision bytes follow GB Studio PLATFORM semantics:
@@ -66,7 +66,7 @@ LEDGES: list[tuple[int, int, int]] = []
 
 START = (2, 14)            # entry from Priya's porch, facing right
 DAMAGED_POLE = (9, 8)      # feeder pole on the mesa: its cable end is picked up here
-FEEDER_BOX = (21, 14)      # transformer T1 on the floor, at the mesa's foot
+FEEDER_BOX = (16, 8)       # transformer T1 on the mesa, past the feeder pole and the hidden cable
 HOUSE_POLE = (24, 14)      # house pole on the floor, before the arc and the porch
 JUNCTION_BOX = (33, 11)    # house junction box on the porch: plug-in point
 KIKO = (34, 11)            # Emil waits outside, left of the door
@@ -75,23 +75,20 @@ HOUSE_DOOR = (36, 11)
 HOUSE_RECT = (35, 38, 5, 11)
 HOUSE_WINDOWS = [(35, 8), (38, 8)]
 DOOR_TRIGGER = (35, 9, 3, 1)
-FEEDER_CHECKPOINT = (22, 14)   # respawn once the feeder line is repaired
+FEEDER_CHECKPOINT = (14, 8)    # respawn once the feeder line is repaired: on the mesa, past the hidden cable
 HOUSE_CHECKPOINT = (31, 11)    # respawn once the house line is repaired: the porch step
 
 # ---------------------------------------------------------------------------
 # Hazards
 #
 # Lanes are (row, x0, x1) inclusive on the walking hero's chest row: row 7 on
-# the mesa, row 13 on the floor. Gust lanes are 3 wide (climb_gust), arcs 2.
-# The mesa's hidden cable (hazards.HIDDEN_CABLES["pine_hollow"]) is placed by
-# hazards.py; the falling debris column is retired.
+# the mesa, row 13 on the floor. Arcs are 2 wide. The mesa's hidden cable
+# (hazards.HIDDEN_CABLES["pine_hollow"]) is placed by hazards.py; the falling
+# debris column is retired. The mesa gust is retired too: with a 16px hero the
+# mesa's chest row only has room for the transformer and the hidden cable.
 # ---------------------------------------------------------------------------
 
-GUST_LANES = [(MESA_ROW - 1, 16, 18)]   # mesa's right end: 3 standing tiles after the cable
-GUST_START_DELAYS = [40]
-GUST_WARNING_FRAMES = climb.GUST_WARNING_FRAMES
-GUST_ACTIVE_FRAMES = climb.GUST_ACTIVE_FRAMES
-GUST_REST_FRAMES = climb.GUST_REST_FRAMES
+GUST_LANES: list[tuple[int, int, int]] = []
 
 # On the floor between the house pole and the porch: the house line's carry path.
 ARC_LANES = [(GROUND_ROW - 2, 27, 28)]
@@ -144,11 +141,10 @@ HILL_EXIT_GATE_VAR = rosa.VAR_HOME_POWERED     # "11"
 # Palettes
 # ---------------------------------------------------------------------------
 # OBJ slots: 0 worker, 1 Emil, 2 grid sprites (cable ends, boxes, transformer,
-# stove), 3 live arc, 4 unused (the retired debris slot), 5 gust.
+# stove), 3 live arc, 4 unused (the retired debris slot), 5 unused (the retired gust).
 KIKO_SPRITE_PALETTE_SLOT = 1
 GRID_SPRITE_PALETTE_SLOT = climb.GRID_SPRITE_PALETTE_SLOT
 ARC_SPRITE_PALETTE_SLOT = rosa.ARC_SPRITE_PALETTE_SLOT
-GUST_SPRITE_PALETTE_SLOT = 5
 # Hardware colours, index 0 transparent: skin, mustard-yellow jacket, dark.
 KIKO_SPRITE_HARDWARE = ["000000", "D9A97E", "E0A82E", "2B2420"]
 ARC_SPRITE_HARDWARE = rosa.ARC_SPRITE_HARDWARE
@@ -160,8 +156,8 @@ STOVE_STATES = ["Off", "On"]
 # ---------------------------------------------------------------------------
 # Wires (background art), drawn in BG slot LINE_BG_SLOT (metal) only. Two
 # colour indices, one per chain stage, so two palettes light the chain as far
-# as it is continuous. The metal slot holds nothing but wire: placards and
-# posts use the stone slot.
+# as it is continuous. The metal slot holds nothing but wire: posts use the
+# stone slot.
 #
 #   stage 1 (index 1): live once the feeder line is repaired - edge -> feeder
 #                      pole, feeder line (pole -> T1), T1 -> house pole
@@ -251,13 +247,14 @@ def hazard_lanes() -> list[tuple[int, int, int]]:
     return sorted([*GUST_LANES, *ARC_LANES], key=lambda lane: lane[1])
 
 
+
 def _hazard_cells() -> set[tuple[int, int]]:
     return {(row, x) for row, x0, x1 in hazard_lanes() for x in range(x0, x1 + 1)}
 
 
 def actor_count() -> int:
-    """Emil, the stove, three per line (pole, cable end, box), arcs, gusts and hidden cables."""
-    return (2 + 3 * len(LINES) + len(GUST_LANES) + len(ARC_LANES)
+    """Emil, the stove, three per line (pole, cable end, box), arcs and hidden cables."""
+    return (2 + 3 * len(LINES) + len(ARC_LANES)
             + len(_hazards.HIDDEN_CABLES["pine_hollow"]))
 
 
@@ -281,8 +278,6 @@ def _self_check() -> None:
         assert row == surface - 2, f"lane {(row, x0, x1)} not on the chest row"
         assert all(grid[row][x] == COL_EMPTY for x in range(x0, x1 + 1)), "lane in rock"
         assert all(grid[surface][x] == COL_SOLID for x in range(x0, x1 + 1)), "lane floor"
-    for row, x0, x1 in GUST_LANES:
-        assert x1 - x0 == 2, "gust lanes match the 24px gust sprite"
     for row, x0, x1 in ARC_LANES:
         assert x1 - x0 == 1, "arc lanes match the 16px arc sprite"
     # Standing gaps of three tiles between every hazard lane, hidden cables included.
@@ -293,7 +288,6 @@ def _self_check() -> None:
     for row, x0, _ in ARC_LANES:
         assert x0 - MESA[1] >= 9, "mesa landing too close to a floor lane"
     assert PORCH[0] - ARC_LANES[-1][2] >= 2, "need a takeoff tile before the porch"
-    assert len(GUST_START_DELAYS) == len(GUST_LANES)
     assert len(ARC_START_DELAYS) == len(ARC_LANES)
     hx0, hx1, hy0, hy1 = HOUSE_RECT
     assert hx0 <= HOUSE_DOOR[0] <= hx1 and hy1 == PORCH_ROW, "door inside house"
@@ -313,9 +307,11 @@ def _self_check() -> None:
                    for x in range(rx, rx + rw) for y in range(ry, ry + rh))
         assert all(grid[y][bx - 1] == COL_EMPTY for y in range(ry, ry + rh)), "reach on open air"
         assert grid[by][bx - 1] == COL_EMPTY and grid[by + 1][bx - 1] != COL_EMPTY
-    # The feeder reach zone is on the floor the hero drops onto from the mesa.
-    fx, _, fw, _ = grid_chain.reach_rect(LINES[0]["box"])
-    assert all(grid[GROUND_ROW][x] == COL_SOLID for x in range(fx, fx + fw))
+    # The feeder transformer stands on the mesa; its reach zone stays clear of the hidden cable.
+    assert LINES[0]["box"][1] == MESA_ROW
+    frx, _, frw, _ = grid_chain.reach_rect(LINES[0]["box"])
+    assert all(x1 < frx or x0 >= frx + frw for _, x0, x1 in _hazards.HIDDEN_CABLES["pine_hollow"]), \
+        "feeder reach zone clear of the hidden cable"
     # Wires: every route stays on the map and below the HUD; the chain is continuous.
     grid_chain.check_wire_routes(WIRE_ROUTES, STAGE_COUNT, MAP_W, HUD_ROWS, GROUND_ROW)
     assert WIRE_ROUTES[-1][1][-1][0] == HOUSE_RECT[0], "the chain ends at the house"
