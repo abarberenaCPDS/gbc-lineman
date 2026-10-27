@@ -64,7 +64,7 @@ git tag -a v1.0.0 -m "chore(release): v1.0.0"
 ### Stable marker
 
 `stable` is an annotated tag on the last release Abe approved on the cart
-(currently `v0.10.2`). Move it only when he approves a newer release:
+(currently `v0.10.3`). Move it only when he approves a newer release:
 
 ```sh
 git tag -fa stable vX.Y.Z^{commit} -m "stable: vX.Y.Z (ROM <sha>), <Abe's verdict>"
