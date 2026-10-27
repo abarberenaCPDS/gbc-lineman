@@ -29,14 +29,21 @@ Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
 4. The intro pole sprite is each job's broken pole: Snapped → Standing when the line goes live (OBJ slot 7).
 5. Bigger characters: three adults 24px, Emil 20px (a kid; easy to make 24 if Abe prefers).
 
-## Wind Ridge three-line grid chain (in progress)
+## Wind Ridge three-line grid chain (approved on stream, not merged)
 
-Branch `feat/wind-ridge-lines` in worktree `../gb-mr-cfe-wind-ridge` (main untouched). `project_select` that worktree's
-`mr-cfe.gbsproj` before MCP work there. Wind Ridge is 100x30 with three lines in one continuous chain (see
-`tools/ridge.py` header and the PROJECT_PLAN log, 2026-10-27). Next: show Abe `build/web-chain` (or stream
-`build/rom/ridge-chain-preview.gbc`, start = Wind Ridge), get his verdict, then step 2: the lab (Abe chose tag + strip,
-hazard gallery + movement room; Storm Night and the village get tagged legacy and stripped from release ROMs).
-Then roll the chain idea to Signal Hill / Pine Hollow and merge to main only after Abe's OK.
+Branch `feat/wind-ridge-lines` in worktree `../gb-mr-cfe-wind-ridge`, VERSION `0.11.0-dev` (main still v0.10.3 = `stable`).
+`project_select` that worktree's `mr-cfe.gbsproj` before MCP work there. Abe on the stream: "yay! I love that concept of
+connecting the lines. this is a good version." Dev builds show the version on the HUD's second row.
+
+Next, in order:
+1. Stream `build/rom/ridge-chain-preview.gbc` (`4c8515a1…`, start = Wind Ridge, dev label) if Abe wants to see the label.
+2. Step 2, the lab (Abe chose): one registry tags every scene `game` / `lab` / `legacy`; lab scenes get a `LAB_` prefix and
+   their own editor area; a test proves no game scene leads into a lab scene; release ROMs build from a copy of the project
+   without lab/legacy scenes. Contents: hazard gallery + movement room (replacing ad-hoc `--test-start` runs). Storm Night
+   and the topdown village become `legacy`.
+3. Roll the grid-chain idea to Signal Hill and Pine Hollow (actor cap 20 per scene; keep the 10-per-line scanline test).
+4. Merge to main only after Abe's OK; then release (drop `-dev`), tag, and move `stable` if he approves on the cart.
+Not yet played natively: lines 2-3 with power flowing, the catwalk route, the door, every span live at once.
 Worktree note: the session guard rejects `cd` and `$PY` in compound commands; use small wrapper scripts with absolute paths.
 
 ## Open, in suggested order
