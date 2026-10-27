@@ -6,8 +6,9 @@ the Ridge variable registrations. The authored geometry, positions, gust
 timings and stable IDs live in the sibling ``ridge.py`` contract module.
 
 Generic GB Studio helpers (collision RLE, sidecar lookup, JSON writing, the
-dialogue length check) are reused from ``make_climb_scene``. Event builders are
-local because the climb versions derive event IDs from the climb namespace.
+dialogue length check) are reused from ``make_climb_scene``. The grid chain's
+events, actors and palettes come from the reusable ``grid_chain`` module, built
+here with Wind Ridge's ID function, lines, variables, dialogue and HUD.
 """
 
 from __future__ import annotations
@@ -44,9 +45,10 @@ try:
     import rosa  # noqa: E402  (Priya's job contract: the ridge exit leads there)
     import tickets  # noqa: E402  (work orders: hill exit, CLOSED box)
     import hazards  # noqa: E402  (cracked boards: placement, IDs and timings)
+    import grid_chain  # noqa: E402  (the reusable grid chain: events, actors, palettes)
 except ModuleNotFoundError as error:
     if error.name in {"tickets", "voices", "climb", "intro", "opening", "ridge", "rosa", "make_climb_scene",
-                      "hazards"}:
+                      "hazards", "grid_chain"}:
         raise SystemExit(
             f"cannot generate wind_ridge: tools/{error.name}.py is missing"
         ) from error
@@ -75,22 +77,41 @@ WHIP_SPRITE = "assets/sprites/whip_wire.png.gbsres"
 ARC_SPRITE = "assets/sprites/live_arc.png.gbsres"
 
 # The grid chain, upstream first (ridge.LINES). The house line keeps the
-# original job's keys and symbols (stable IDs, test_poles); the feeder keeps the
-# two-line prototype's; the middle line is new.
+# original job's keys, symbols and names (stable IDs, test_poles); the feeder
+# keeps the two-line prototype's; the middle line is new.
 _LINE_NAMES = {
     "house": {"pole": POLE_KEY, "cable": CABLE_KEY, "box": JUNCTION_KEY,
-              "pole_symbol": POLE_SYMBOL, "cable_symbol": CABLE_SYMBOL, "box_symbol": JUNCTION_SYMBOL},
+              "pole_symbol": POLE_SYMBOL, "cable_symbol": CABLE_SYMBOL, "box_symbol": JUNCTION_SYMBOL,
+              "pole_name": "Storm Pole", "cable_name": "Dangling Cable End",
+              "box_name": "Junction Box (Ridge House)"},
 }
 LINES = []
 for _line in ridge.LINES:
     _key = _line["key"]
-    # Coordinates move to pole_at/box_at: "pole"/"box" are actor keys here.
-    LINES.append({**_line, "pole_at": _line["pole"], "box_at": _line["box"], **_LINE_NAMES.get(_key, {
+    _kind = "Transformer" if _line["box_kind"] == "transformer" else "Junction Box"
+    _default = {
         "pole": f"pole:{_key}", "cable": f"cable-end:{_key}", "box": f"junction-box:{_key}",
         "pole_symbol": f"ridge_{_key}_pole", "cable_symbol": f"ridge_{_key}_cable_end",
         "box_symbol": f"ridge_{_key}_box",
-    })})
+        "pole_name": f"Storm Pole ({_key})", "cable_name": f"Cable End ({_key})",
+        "box_name": f"{_kind} ({_key})",
+    }
+    # Coordinates move to pole_at/box_at: "pole"/"box" are actor keys here.
+    LINES.append({**_line, "pole_at": _line["pole"], "box_at": _line["box"], **_default,
+                  **_LINE_NAMES.get(_key, {})})
 LINE_BY_KEY = {line["key"]: line for line in LINES}
+
+# Dialogue for the chain's cable ends and boxes (grid_chain.GridChain text keys).
+RIDGE_TEXT = {
+    "pickup": "Got the cable!\nFind its box.",
+    "hands_full": "Hands full!\nOne cable a trip.",
+    "already": "Already fixed.",
+    "all_live": "All lines live!\nGo see Hiroshi.",
+    "lit": "Power flows on!\nKeep going.",
+    "dark": "Fixed. No power\nfrom upstream.",
+    "no_cable": "No cable yet.\nFind its pole.",
+    "wrong_cable": "Wrong cable\nfor this box.",
+}
 
 
 # ---------------------------------------------------------------------------
@@ -101,24 +122,12 @@ def tomas_palette_id() -> str:
 
 
 
-def actor_id(key: str) -> str:
-    return ridge.resource_id(f"actor:{key}")
-
-
 def pole_actor_id() -> str:
     return actor_id(POLE_KEY)
 
 
 def palette_resource(kind: str, name: str, colors: list[str]) -> dict[str, Any]:
-    title = "Wind Ridge " + kind + " " + name
-    return {
-        "_resourceType": "palette",
-        "id": ridge.resource_id(f"palette:{kind}:{name.replace(' ', '_').lower()}"),
-        "name": title,
-        "colors": colors,
-        "defaultName": title,
-        "defaultColors": colors,
-    }
+    return grid_chain.palette_resource(ridge.resource_id, "Wind Ridge", kind, name, colors)
 
 
 def tomas_palettes() -> list[tuple[str, dict[str, Any]]]:
@@ -127,61 +136,19 @@ def tomas_palettes() -> list[tuple[str, dict[str, Any]]]:
     whip = palette_resource("sprite", "whip", shared.editor_sprite_colors(ridge.WHIP_SPRITE_HARDWARE))
     if whip["id"] != ridge.WHIP_PALETTE_ID:
         raise ValueError("whip palette id must match ridge.WHIP_PALETTE_ID")
-    chain = [(f"project/palettes/wind_ridge_bg_{chain_palette_name(stages)}.gbsres",
-              palette_resource("bg", chain_palette_name(stages), colors))
-             for stages, colors in ridge.CHAIN_PALETTES.items()]
+    chain = grid_chain.chain_palette_resources(ridge.resource_id, label="Wind Ridge",
+                                               file_prefix="wind_ridge", palettes=ridge.CHAIN_PALETTES)
     return [("project/palettes/wind_ridge_sprite_tomas.gbsres", sprite),
             ("project/palettes/wind_ridge_sprite_whip.gbsres", whip), *chain]
 
 
-def chain_palette_name(stages_live: int) -> str:
-    return f"chain_{stages_live}_live"
-
-
 def chain_palette_id(stages_live: int) -> str:
-    return ridge.resource_id(f"palette:bg:{chain_palette_name(stages_live)}")
+    return CHAIN.chain_palette_id(stages_live)
 
 
 # ---------------------------------------------------------------------------
 # Event builders (ridge-scoped IDs; EVENT_TEXT args copied from the climb)
 # ---------------------------------------------------------------------------
-def event(command: str, args: dict[str, Any], key: str) -> dict[str, Any]:
-    return {"command": command, "args": args, "id": ridge.resource_id(f"event:{key}")}
-
-
-def branch_event(command: str, args: dict[str, Any], key: str,
-                 true_events: list[dict[str, Any]],
-                 false_events: list[dict[str, Any]] | None = None) -> dict[str, Any]:
-    return {
-        **event(command, args, key),
-        "children": {"true": true_events, "false": false_events or []},
-    }
-
-
-def if_value(variable_id: str, value: int, key: str,
-             true_events: list[dict[str, Any]],
-             false_events: list[dict[str, Any]] | None = None) -> dict[str, Any]:
-    return branch_event(
-        "EVENT_IF",
-        {"condition": {
-            "type": "eq",
-            "valueA": {"type": "variable", "value": variable_id},
-            "valueB": shared.number(value),
-        }},
-        key, true_events, false_events,
-    )
-
-
-def set_value(variable_id: str, value: int, key: str) -> dict[str, Any]:
-    return event("EVENT_SET_VALUE", {"variable": variable_id, "value": shared.number(value)}, key)
-
-
-def set_position(x: int, y: int, key: str) -> dict[str, Any]:
-    return event("EVENT_ACTOR_SET_POSITION", {
-        "units": "tiles", "actorId": "player", "x": shared.number(x), "y": shared.number(y),
-    }, key)
-
-
 def text_event(lines: list[str], key: str) -> dict[str, Any]:
     return event("EVENT_TEXT", {
         "text": lines,
@@ -241,22 +208,30 @@ def say(lines: list[str], key: str, speaker: str | None = None) -> list[dict[str
     ]
 
 
-def sound_event(sound_id: str, key: str) -> dict[str, Any]:
-    return event("EVENT_SOUND_PLAY_EFFECT", {
-        "units": "time", "type": sound_id, "priority": "high", "pitch": 4,
-        "frequency": 200, "duration": 0.5, "wait": True, "effect": 0,
-    }, key)
-
-
-def wait_event(frames: int, key: str) -> dict[str, Any]:
-    return event("EVENT_WAIT", {"units": "frames", "frames": shared.number(frames)}, key)
-
-
-def background_palette_event(slots: dict[int, str], key: str) -> dict[str, Any]:
-    args: dict[str, Any] = {f"palette{index}": "keep" for index in range(8)}
-    for slot, palette_id in slots.items():
-        args[f"palette{slot}"] = palette_id
-    return event("EVENT_PALETTE_SET_BACKGROUND", args, key)
+# The reusable grid chain (tools/grid_chain.py) with Wind Ridge's IDs, lines,
+# variables, dialogue and HUD. The aliases below keep this file's call sites.
+CHAIN = grid_chain.GridChain(
+    rid=ridge.resource_id, lines=LINES, chain_var=ridge.VAR_CHAIN_LIVE, lines_var=ridge.VAR_LINES_LIVE,
+    carrying_var=VAR_CARRYING_CABLE, line_bg_slot=ridge.LINE_BG_SLOT, text=RIDGE_TEXT,
+    say=say, hud=hud_events, bare_event_key="house",
+)
+event = CHAIN.event
+branch_event = CHAIN.branch_event
+if_value = CHAIN.if_value
+if_at_least = CHAIN.if_at_least
+set_value = CHAIN.set_value
+set_position = CHAIN.set_position
+background_palette_event = CHAIN.background_palette_event
+sound_event = CHAIN.sound_event
+wait_event = CHAIN.wait_event
+actor_state = CHAIN.actor_state
+actor_id = CHAIN.actor_id
+actor_resource = CHAIN.actor_resource
+chain_refresh_events = CHAIN.chain_refresh_events
+cable_drop_events = CHAIN.cable_drop_events
+cable_end_actor = CHAIN.cable_end_actor
+pole_actor = CHAIN.pole_actor
+box_actor = CHAIN.box_actor
 
 
 def window_palette_event(powered: bool, key: str) -> dict[str, Any]:
@@ -267,62 +242,6 @@ def window_palette_event(powered: bool, key: str) -> dict[str, Any]:
     }, key)
 
 
-def if_at_least(variable_id: str, value: int, key: str,
-                true_events: list[dict[str, Any]],
-                false_events: list[dict[str, Any]] | None = None) -> dict[str, Any]:
-    return branch_event(
-        "EVENT_IF",
-        {"condition": {
-            "type": "gte",
-            "valueA": {"type": "variable", "value": variable_id},
-            "valueB": shared.number(value),
-        }},
-        key, true_events, false_events,
-    )
-
-
-def chain_refresh_events(key: str) -> list[dict[str, Any]]:
-    """Light the wires as far as the chain is continuous, and each box with them.
-
-    The wire palette (BG slot 5) shows how many leading lines are repaired; a
-    box is Live only when every line up to and including its own is.
-    """
-    def lit(stages: int) -> list[dict[str, Any]]:
-        out = [set_value(ridge.VAR_CHAIN_LIVE, stages, f"{key}:stages-{stages}"),
-               background_palette_event({ridge.LINE_BG_SLOT: chain_palette_id(stages)},
-                                        f"{key}:palette-{stages}")]
-        for line in LINES:
-            state = "Live" if line["number"] <= stages else "Dead"
-            out.append(actor_state(actor_id(line["box"]), state, f"{key}:box-{stages}-{line['key']}"))
-        return out
-
-    events = lit(len(LINES))
-    for line in reversed(LINES):
-        events = [if_value(line["live_var"], 1, f"{key}:{line['key']}", events, lit(line["number"] - 1))]
-    return events
-
-
-def actor_state(target: str, state: str, key: str, loop: bool = True) -> dict[str, Any]:
-    return event("EVENT_ACTOR_SET_STATE", {
-        "actorId": target, "spriteStateId": state, "loopAnim": loop,
-    }, key)
-
-
-def cable_drop_events(key: str) -> list[dict[str, Any]]:
-    """A carried cable falls back to its own pole when the carrier is hit."""
-    events = []
-    for line in LINES:
-        # The house line keeps the original event keys (stable IDs).
-        tag = key if line["key"] == "house" else f"{key}:{line['key']}"
-        events.append(if_value(VAR_CARRYING_CABLE, line["number"], f"{tag}:cable-drop", [
-            set_value(VAR_CARRYING_CABLE, 0, f"{tag}:cable-clear"),
-            event("EVENT_ACTOR_SHOW", {"actorId": actor_id(line["cable"])}, f"{tag}:cable-show"),
-            actor_state(actor_id(line["cable"]), "Dangling", f"{tag}:cable-dangling"),
-            *hud_events(f"{tag}:cable-hud"),
-        ]))
-    return events
-
-
 def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
     """Death sound, then drop any cable, then respawn.
 
@@ -331,11 +250,7 @@ def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
     door once his power is on, then the box of the furthest repaired line, else START.
     """
     door_x, door_y = ridge.HOUSE_DOOR
-    chosen = [set_position(*ridge.START, f"{key}:respawn-start")]
-    for line in LINES:
-        chosen = [if_value(line["live_var"], 1, f"{key}:respawn-{line['key']}-check", [
-            set_position(*line["checkpoint"], f"{key}:respawn-{line['key']}"),
-        ], chosen)]
+    chosen = CHAIN.checkpoint_chain(key, ridge.START)
     return [
         sound_event(death_sound_id, f"{key}:death-sfx"),
         *cable_drop_events(key),
@@ -384,43 +299,6 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # Actors and triggers
 # ---------------------------------------------------------------------------
-def actor_resource(*, index: int, symbol: str, name: str, x: int, y: int, sprite_id: str,
-                   key: str, animate: bool = True, anim_speed: int = 15,
-                   script: list[dict[str, Any]] | None = None,
-                   start_script: list[dict[str, Any]] | None = None,
-                   update_script: list[dict[str, Any]] | None = None,
-                   collision_group: str = "") -> dict[str, Any]:
-    return {
-        "_resourceType": "actor",
-        "id": actor_id(key),
-        "_index": index,
-        "symbol": symbol,
-        "prefabId": "",
-        "name": name,
-        "coordinateType": "tiles",
-        "x": x,
-        "y": y,
-        "frame": 0,
-        "animate": animate,
-        "spriteSheetId": sprite_id,
-        "paletteId": "",
-        "direction": "down",
-        "moveSpeed": 1,
-        "animSpeed": anim_speed,
-        "isPinned": False,
-        "persistent": False,
-        "collisionGroup": collision_group,
-        "collisionExtraFlags": [],
-        "prefabScriptOverrides": {},
-        "script": script or [],
-        "startScript": start_script or [],
-        "updateScript": update_script or [],
-        "hit1Script": [],
-        "hit2Script": [],
-        "hit3Script": [],
-    }
-
-
 def tomas_actor(index: int) -> dict[str, Any]:
     """Hiroshi outside his door: Waiting until the house is powered, then Relieved."""
     key = TOMAS_KEY
@@ -452,95 +330,13 @@ def concentrator_actor(index: int) -> dict[str, Any]:
     )
 
 
-def cable_end_actor(line: dict[str, Any], index: int, sprite_id: str,
-                    pickup_sound_id: str) -> dict[str, Any]:
-    """Dangling cable on its snapped pole. B picks it up with empty hands while its line is dead."""
-    key = line["cable"]
-    x, y = line["pole_at"]
-    pickup = [if_value(VAR_CARRYING_CABLE, 0, f"{key}:empty-hands", [
-        if_value(line["live_var"], 0, f"{key}:line-dead", [
-            set_value(VAR_CARRYING_CABLE, line["number"], f"{key}:carry"),
-            event("EVENT_ACTOR_HIDE", {"actorId": "$self$"}, f"{key}:hide"),
-            sound_event(pickup_sound_id, f"{key}:sfx"),
-            *say(short_lines("Got the cable!\nFind its box."), f"{key}:text"),
-        ]),
-    ], [
-        *say(short_lines("Hands full!\nOne cable a trip."), f"{key}:hands-full"),
-    ])]
-    return actor_resource(
-        index=index, symbol=line["cable_symbol"],
-        name="Dangling Cable End" if line["key"] == "house" else f"Cable End ({line['key']})",
-        x=x, y=y, sprite_id=sprite_id, key=key, script=pickup,
-        start_script=[actor_state("$self$", "Dangling", f"{key}:dangling")],
-    )
-
-
-def pole_actor(line: dict[str, Any], index: int, sprite_id: str) -> dict[str, Any]:
-    """A snapped pole: intro pole sprite, Standing once its line is repaired.
-
-    Non-colliding and not interactive; the cable-end pickup owns the B press.
-    """
-    key = line["pole"]
-    x, y = line["pole_at"]
-    return actor_resource(
-        index=index, symbol=line["pole_symbol"],
-        name="Storm Pole" if line["key"] == "house" else f"Storm Pole ({line['key']})", x=x, y=y,
-        sprite_id=sprite_id, key=key,
-        start_script=[
-            # Off, so B finds the cable end on this tile instead of the pole.
-            event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": "$self$"}, f"{key}:no-collision"),
-            if_value(line["live_var"], 1, f"{key}:line-check", [
-                actor_state("$self$", "Standing", f"{key}:standing"),
-            ], [
-                actor_state("$self$", "Snapped", f"{key}:snapped"),
-            ]),
-        ],
-    )
-
-
-def box_actor(line: dict[str, Any], index: int, sprite_id: str, connect_sound_id: str) -> dict[str, Any]:
-    """A box (transformer or junction). Only its own line's cable plugs in.
-
-    Plugging in repairs the line and stands its pole up; whether power reaches
-    it depends on the lines upstream (chain_refresh_events).
-    """
-    key = line["box"]
-    x, y = line["box_at"]
-    # After chain_refresh_events, VAR_CHAIN_LIVE says how far power reaches.
-    done = [if_value(ridge.VAR_CHAIN_LIVE, len(LINES), f"{key}:all", [
-        *say(short_lines("All lines live!\nGo see Hiroshi."), f"{key}:text-all"),
-    ], [
-        if_at_least(ridge.VAR_CHAIN_LIVE, line["number"], f"{key}:lit", [
-            *say(short_lines("Power flows on!\nKeep going."), f"{key}:text-lit"),
-        ], [
-            *say(short_lines("Fixed. No power\nfrom upstream."), f"{key}:text-dark"),
-        ]),
-    ])]
-    plug = [if_value(line["live_var"], 1, f"{key}:live", [
-        *say(short_lines("Already fixed."), f"{key}:already-live"),
-    ], [
-        if_value(VAR_CARRYING_CABLE, line["number"], f"{key}:has-cable", [
-            set_value(VAR_CARRYING_CABLE, 0, f"{key}:clear-cable"),
-            set_value(line["live_var"], 1, f"{key}:set-live"),
-            event("EVENT_INC_VALUE", {"variable": VAR_LINES_LIVE}, f"{key}:count"),
-            actor_state(actor_id(line["pole"]), "Standing", f"{key}:pole-standing"),
-            *chain_refresh_events(f"{key}:chain"),
-            sound_event(connect_sound_id, f"{key}:sfx"),
-            *done,
-        ], [
-            if_value(VAR_CARRYING_CABLE, 0, f"{key}:no-cable-check", [
-                *say(short_lines("No cable yet.\nFind its pole."), f"{key}:no-cable"),
-            ], [
-                *say(short_lines("Wrong cable\nfor this box."), f"{key}:wrong-cable"),
-            ]),
-        ]),
-    ])]
-    kind = "Transformer" if line["box_kind"] == "transformer" else "Junction Box"
-    return actor_resource(
-        index=index, symbol=line["box_symbol"],
-        name="Junction Box (Ridge House)" if line["key"] == "house" else f"{kind} ({line['key']})",
-        x=x, y=y, sprite_id=sprite_id, key=key, script=plug,
-        start_script=[actor_state("$self$", "Dead", f"{key}:dead")],
+def span_arc_actor(number: int, lane: tuple[int, int, int], start_delay: int,
+                   sprite_id: str, live_after: int) -> dict[str, Any]:
+    """Downed-span arc on Signal Hill's arc timings (grid_chain.GridChain.span_arc_actor)."""
+    return CHAIN.span_arc_actor(
+        number, lane, start_delay, sprite_id, live_after,
+        timings=(rosa.ARC_WARNING_FRAMES, rosa.ARC_ACTIVE_FRAMES, rosa.ARC_REST_FRAMES),
+        symbol=f"ridge_span_arc_{number:02d}", name=f"Downed Span Arc {number}",
     )
 
 
@@ -707,54 +503,6 @@ def gust_actor(index: int, lane: tuple[int, int, int], start_delay: int,
         index=index, symbol=f"ridge_gust_{index:02d}", name=f"Telegraphed Gust {index}",
         x=x0, y=row, sprite_id=sprite_id, key=key, anim_speed=8,
         start_script=[own("EVENT_ACTOR_COLLISIONS_DISABLE", "initial-safe")],
-        update_script=update, collision_group="1",
-    )
-
-
-def span_arc_actor(number: int, lane: tuple[int, int, int], start_delay: int,
-                   sprite_id: str, live_after: int) -> dict[str, Any]:
-    """Fallen-span arc: dark and safe until lines 1..``live_after`` are repaired, then
-    Signal Hill's arc cycle.
-
-    The first live cycle waits ``start_delay`` once (the gust's direction trick).
-    """
-    row, x0, x1 = lane
-    if x1 - x0 + 1 != 2:
-        raise ValueError("the authored live arc sprite is exactly two tiles wide")
-    key = f"span-arc:{number}"
-
-    def own(command: str, suffix: str, **args: Any) -> dict[str, Any]:
-        return event(command, {"actorId": "$self$", **args}, f"{key}:{suffix}")
-
-    first_cycle_true = [
-        own("EVENT_ACTOR_SET_DIRECTION", "started", direction={"type": "direction", "value": "up"}),
-    ]
-    if start_delay > 0:
-        first_cycle_true.append(wait_event(start_delay, f"{key}:start-delay"))
-    cycle = [
-        branch_event("EVENT_IF_ACTOR_DIRECTION",
-                     {"actorId": "$self$", "direction": {"type": "direction", "value": "down"}},
-                     f"{key}:first-cycle", first_cycle_true),
-        own("EVENT_ACTOR_SET_STATE", "warning-state", spriteStateId="Warning", loopAnim=True),
-        own("EVENT_ACTOR_SHOW", "warning-visible"),
-        wait_event(rosa.ARC_WARNING_FRAMES, f"{key}:warning-time"),
-        own("EVENT_ACTOR_SET_STATE", "arc-state", spriteStateId="Arc", loopAnim=True),
-        own("EVENT_ACTOR_COLLISIONS_ENABLE", "arc-active"),
-        wait_event(rosa.ARC_ACTIVE_FRAMES, f"{key}:arc-time"),
-        own("EVENT_ACTOR_COLLISIONS_DISABLE", "rest-safe"),
-        own("EVENT_ACTOR_HIDE", "rest-hidden"),
-        wait_event(rosa.ARC_REST_FRAMES, f"{key}:rest-time"),
-    ]
-    update = [if_at_least(ridge.VAR_CHAIN_LIVE, live_after, f"{key}:upstream", cycle, [
-        own("EVENT_ACTOR_COLLISIONS_DISABLE", "dead-safe"),
-        own("EVENT_ACTOR_HIDE", "dead-hidden"),
-        wait_event(1, f"{key}:dead-tick"),
-    ])]
-    return actor_resource(
-        index=0, symbol=f"ridge_span_arc_{number:02d}", name=f"Downed Span Arc {number}",
-        x=x0, y=row, sprite_id=sprite_id, key=key, anim_speed=8,
-        start_script=[own("EVENT_ACTOR_COLLISIONS_DISABLE", "initial-safe"),
-                      own("EVENT_ACTOR_HIDE", "initial-hidden")],
         update_script=update, collision_group="1",
     )
 

@@ -3,8 +3,10 @@
 Run with managed Python: tools/make_transformer_sprite.py
 
 Reuses the grid sprite conventions of make_grid_sprites.py (proxy colours,
-tall-object Y mapping, 8-slot animations) on GRID_SPRITE_PALETTE_SLOT, but with
-ridge.resource_id identities so ``ridge.TRANSFORMER_SPRITE_ID`` matches.
+tall-object Y mapping, 8-slot animations) on GRID_SPRITE_PALETTE_SLOT.
+``make_asset(resource_id, name)`` takes the job's ID function, so another
+scene's transformer is ``make_asset(other.resource_id)``; the default keeps
+Wind Ridge's ``ridge.TRANSFORMER_SPRITE_ID`` (ridge.resource_id("sprite:transformer")).
 Glyphs: '.' clear, '1' light metal, '2' accent (indicator only), '3' dark.
 Frames: 0 Dead, 1 Live lamp on, 2 Live lamp pulse.
 """
@@ -15,6 +17,7 @@ import hashlib
 import json
 import sys
 from pathlib import Path
+from typing import Callable
 
 TOOLS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(TOOLS_DIR))
@@ -27,14 +30,14 @@ W, H = ridge.TRANSFORMER_CANVAS
 
 
 @contextlib.contextmanager
-def _ridge_ids():
-    """Let the shared sidecar builder emit ridge-namespaced ids, then restore it.
+def _grid_ids(resource_id: Callable[[str], str]):
+    """Let the shared sidecar builder emit this job's ids, then restore it.
 
     Patching mgs._grid_id for the whole process made grid_cable_end regenerate
     with the wrong ids whenever both modules were imported (the test suite).
     """
     original = mgs._grid_id
-    mgs._grid_id = ridge.resource_id
+    mgs._grid_id = resource_id
     try:
         yield
     finally:
@@ -91,18 +94,19 @@ FRAMES = [
 ]
 
 
-def make_asset():
+def make_asset(resource_id: Callable[[str], str] = ridge.resource_id, name: str = NAME):
+    """(sheet, sidecar meta) for a transformer whose sprite ID is ``resource_id("sprite:" + name)``."""
     frames = [mgs._render(rows, W, H) for rows in FRAMES]
     sheet = mgs._sheet(frames, W, H)
     states = [
         {"name": "Dead", "animationType": "fixed", "animations": mgs._empty_animations([0])},
         {"name": "Live", "animationType": "fixed", "animations": mgs._empty_animations([1, 2])},
     ]
-    with _ridge_ids():
-        meta = mgs._sidecar(NAME, sheet, W, H, states, anim_speed=12)
+    with _grid_ids(resource_id):
+        meta = mgs._sidecar(name, sheet, W, H, states, anim_speed=12)
     # Interaction box: lower 16 px, full width (origin is canvas_h - 8 = 24).
     meta.update(boundsX=0, boundsY=16 - (H - 8), boundsWidth=16, boundsHeight=16)
-    assert meta["id"] == ridge.TRANSFORMER_SPRITE_ID
+    assert meta["id"] == resource_id(f"sprite:{name}")
     return sheet, meta
 
 

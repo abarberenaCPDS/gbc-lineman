@@ -20,6 +20,7 @@ from __future__ import annotations
 import uuid as _uuid
 
 import climb
+import grid_chain
 
 TILE = 8
 MAP_W, MAP_H = 100, 30
@@ -188,16 +189,9 @@ WIRE_ROUTES = [
 # Fallen span k is wired into stage k-1's colour: live as soon as it is.
 SPAN_STAGE = [span["live_after"] for span in FALLEN_SPANS]
 
-
-def chain_palette(stages_live: int) -> list[str]:
-    """Metal slot colours with the first ``stages_live`` chain stages lit."""
-    colors = list(METAL_DEAD)
-    for stage, index in enumerate(STAGE_COLOR_INDEX, start=1):
-        colors[index] = WIRE_LIVE if stage <= stages_live else WIRE_DEAD
-    return colors
-
-
-CHAIN_PALETTES = {stages: chain_palette(stages) for stages in range(len(LINES) + 1)}
+# {stages_live: metal colours} for the background wire slot (grid_chain.chain_palette).
+CHAIN_PALETTES = grid_chain.chain_palettes(metal_dead=METAL_DEAD, wire_live=WIRE_LIVE,
+                                           wire_dead=WIRE_DEAD, stage_color_index=STAGE_COLOR_INDEX)
 
 # ---------------------------------------------------------------------------
 # Variables (project-global). Var 6 (carrying cable) is shared with the climb
@@ -287,12 +281,6 @@ def _hazard_cells() -> set[tuple[int, int]]:
     return {(row, x) for row, x0, x1 in hazard_lanes() for x in range(x0, x1 + 1)}
 
 
-def _stands(grid: list[list[int]], x: int, y: int) -> bool:
-    """A 24px actor at feet tile (x, y): three clear rows, support below."""
-    return (all(grid[r][x] == COL_EMPTY for r in (y, y - 1, y - 2))
-            and grid[y + 1][x] in (COL_TOP, COL_SOLID))
-
-
 def actor_count() -> int:
     """Hiroshi, concentrator, three per line (pole, cable end, box), hazards, boards."""
     import hazards
@@ -306,12 +294,7 @@ def _self_check() -> None:
     props = [START, TOMAS, CONCENTRATOR, HOUSE_DOOR]
     for line in LINES:
         props += [line["pole"], line["box"], line["checkpoint"]]
-    hazards = _hazard_cells()
-    for x, y in props:
-        assert 0 < x < MAP_W - 1 and HUD_ROWS + 2 <= y < MAP_H - 1, f"bounds {(x, y)}"
-        assert _stands(grid, x, y), f"actor tile {(x, y)} must stand clear on support"
-        assert all(abs(x - hx) > 1 or abs(y - hy) > 2 for hy, hx in hazards), (
-            f"prop {(x, y)} too close to a hazard")
+    grid_chain.check_props(grid, props, _hazard_cells(), HUD_ROWS)
     for row, x0, x1 in hazard_lanes():
         surface = row + 2
         assert all(grid[row][x] == COL_EMPTY for x in range(x0, x1 + 1)), "lane in rock"
@@ -333,13 +316,8 @@ def _self_check() -> None:
     # Floor whips stay off screen from the porch (camera clamped at MAP_W - 20):
     # their 32px canvas reaches the porch actors' row and would make 11 OBJs.
     assert all(x1 < MAP_W - 20 for row, _, x1 in WHIP_LANES if row == CHEST_LOW)
-    for span in FALLEN_SPANS:
-        c0, c1 = span["columns"]
-        assert all(c0 <= x0 and x1 <= c1 for _, x0, x1 in span["arcs"])
-        assert len(span["delays"]) == len(span["arcs"])
-        # Span k lies between pole k and box k, so line k's carry crosses it.
-        line = LINES[span["live_after"]]
-        assert line["pole"][0] < c0 and c1 < line["box"][0], "span on its line's carry path"
+    # Span k lies between pole k and box k, so line k's carry crosses it.
+    grid_chain.check_spans(FALLEN_SPANS, LINES)
     assert len(GUST_START_DELAYS) == len(GUST_LANES)
     assert len(WHIP_START_DELAYS) == len(WHIP_LANES)
     # Raised blocks are one tap (three tiles) above whatever they stand on.
@@ -349,11 +327,7 @@ def _self_check() -> None:
     row, cx0, cx1 = CATWALK
     assert row == SURFACE_HIGH and cx0 == PLATEAU_B[1] + 1, "catwalk continues the plateau"
     # The chain runs left to right: pole k < box k < pole k+1.
-    xs = []
-    for line in LINES:
-        xs += [line["pole"][0], line["box"][0]]
-    assert xs == sorted(xs) and len(set(xs)) == len(xs), "chain order"
-    assert [line["number"] for line in LINES] == [1, 2, 3]
+    grid_chain.check_chain_order(LINES)
     hx0, hx1, hy0, hy1 = HOUSE_RECT
     assert hx0 <= HOUSE_DOOR[0] <= hx1 and hy1 == PORCH_ROW, "door inside house"
     assert all(hx0 <= x <= hx1 and hy0 <= y <= hy1 for x, y in HOUSE_WINDOWS)
@@ -362,14 +336,8 @@ def _self_check() -> None:
     assert LINES[-1]["checkpoint"][0] < tx, "the house checkpoint stays off the door trigger"
     assert LINES[-1]["box"][0] < TOMAS[0] < HOUSE_DOOR[0] < CONCENTRATOR[0]
     # Wires: every route stays on the map and below the HUD; the chain is continuous.
-    for stage, route in WIRE_ROUTES:
-        assert stage in (1, 2, 3)
-        assert all(HUD_ROWS <= y < GROUND_ROW and 0 <= x < MAP_W for x, y in route), route
-    for (_, a), (_, b) in zip(WIRE_ROUTES, WIRE_ROUTES[1:]):
-        assert set(a) & set(b), "consecutive wire routes share a cell (continuity)"
-    assert WIRE_ROUTES[0][1][0][0] == 0, "power enters at the left edge"
+    grid_chain.check_wire_routes(WIRE_ROUTES, len(LINES), MAP_W, HUD_ROWS, GROUND_ROW)
     assert WIRE_ROUTES[-1][1][-1][0] == HOUSE_RECT[0], "the chain ends at the house"
-    assert sorted(STAGE_COLOR_INDEX) == [1, 2, 3]
     assert len({tuple(c) for c in CHAIN_PALETTES.values()}) == len(LINES) + 1
     ids = {SCENE_ID, BACKGROUND_ID, TOMAS_SPRITE_ID, CONCENTRATOR_SPRITE_ID,
            WHIP_SPRITE_ID, WHIP_PALETTE_ID, TRANSFORMER_SPRITE_ID}

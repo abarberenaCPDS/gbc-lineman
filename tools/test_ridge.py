@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 import climb
+import grid_chain
 import tickets
 import hazards
 import intro
@@ -385,29 +386,16 @@ class RidgeTests(unittest.TestCase):
         """(feet tile, OBJ columns, OBJ tile rows) for every actor that can be visible."""
         sprites = [(ridge.TOMAS, 2, 3)]          # Hiroshi: 24px figure on a 16x32 canvas
         sprites += [(ridge.CONCENTRATOR, 2, 2)]
-        for line in LINES:
-            # Storm pole (2x4 intro sprite) and cable end (2x2) share the pickup tile.
-            sprites += [(line["pole_at"], 2, 4), (line["pole_at"], 2, 2)]
-            sprites += [(line["box_at"], 2, 4 if line["box_kind"] == "transformer" else 2)]
+        sprites += grid_chain.chain_sprites(LINES)
         sprites += [((x0, row), 3, 2) for row, x0, _ in ridge.GUST_LANES]
         sprites += [((x0, row), 2, 2) for row, x0, _ in ridge.span_arc_lanes()]
         sprites += [((x0, row + 1), 2, 4) for row, x0, _ in ridge.WHIP_LANES]
         sprites += [(hazards.board_actor_position(board), 3, 2) for board in hazards.BOARDS["wind_ridge"]]
         return sprites
 
-    def _screen_left(self, hero_x):
-        return min(max(hero_x - 10, 0), ridge.MAP_W - 20)   # the camera clamps at both edges
-
     def _scanline_load(self, hero_x, hero_feet):
         """OBJ columns per tile row on the screen around the hero."""
-        left = self._screen_left(hero_x)
-        load = {}
-        for (x, feet), width, height in [((hero_x, hero_feet), 3, 3), *self._on_screen_sprites()]:
-            if x + width <= left or x >= left + 20:
-                continue  # off screen: not drawn
-            for row in range(feet - height + 1, feet + 1):
-                load[row] = load.get(row, 0) + width
-        return load
+        return grid_chain.scanline_load(self._on_screen_sprites(), ridge.MAP_W, hero_x, hero_feet)
 
     def _spots(self):
         spots = [ridge.START, ridge.HOUSE_DOOR]
@@ -421,14 +409,13 @@ class RidgeTests(unittest.TestCase):
         # the house props shared the gusts' rows (13 8x16 OBJs on one line).
         for spot in self._spots():
             load = self._scanline_load(*spot)
-            self.assertLessEqual(max(load.values()), 10, (spot, load))
+            self.assertLessEqual(max(load.values()), grid_chain.SCANLINE_OBJ_LIMIT, (spot, load))
 
     def test_every_view_stays_within_the_active_actor_limit(self):
         # gbvm runs at most 12 actors at once, the player included. Count actors
         # within a screen plus two tiles each side of every spot.
         for hero_x, _ in self._spots():
-            left = self._screen_left(hero_x) - 2
-            near = [x for (x, _), _, _ in self._on_screen_sprites() if left <= x < left + 24]
+            near = grid_chain.actors_near(self._on_screen_sprites(), ridge.MAP_W, hero_x)
             # Pole and cable end share a tile but are two actors; count entries, not tiles.
             self.assertLessEqual(len(near), ridge.MAX_ACTIVE_ACTORS, (hero_x, near))
 
