@@ -294,6 +294,7 @@ def hud_events(key: str) -> list[dict[str, Any]]:
             {"text": HUD_TEXT, "x": 0, "y": 0, "location": "overlay"},
             f"{key}:counter",
         ),
+        *intro.dev_hud_events(event, key),
     ]
 
 

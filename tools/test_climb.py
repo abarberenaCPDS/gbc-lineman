@@ -86,7 +86,7 @@ class ClimbTests(unittest.TestCase):
         self.assertEqual(script[11]["args"]["text"], ["A: jump\nDown+A: drop"])
         self.assertEqual([event["command"] for event in script[12:]], [
             "EVENT_OVERLAY_SET_SCANLINE_CUTOFF", "EVENT_OVERLAY_SHOW", "EVENT_TEXT_DRAW",
-        ])
+        ] + ["EVENT_TEXT_DRAW"] * (intro.dev_label() is not None))
         self.assertFalse(any(
             event["command"] == "EVENT_SET_VALUE" and event["args"]["variable"] == "4"
             for event in script
@@ -538,7 +538,7 @@ class ClimbTests(unittest.TestCase):
         draws = [entry["args"]["text"] for script in self._all_scripts()
                  for entry in self._flatten(script) if entry["command"] == "EVENT_TEXT_DRAW"]
         self.assertTrue(draws, "HUD must be drawn")
-        self.assertEqual(set(draws), {scene.HUD_TEXT})
+        self.assertEqual(set(draws) - {intro.dev_label()} - {None}, {scene.HUD_TEXT})
         self.assertEqual(scene.HUD_TEXT, "LINE %D1$07$/1 HOME %D1$00$/1")
         tokens = re.findall(r"\$(\d+)\$", scene.HUD_TEXT)
         self.assertEqual(tokens, ["07", "00"])

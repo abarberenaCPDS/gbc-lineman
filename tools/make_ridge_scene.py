@@ -214,6 +214,7 @@ def hud_events(key: str) -> list[dict[str, Any]]:
         event("EVENT_OVERLAY_SHOW", {"color": "black", "x": 0, "y": 0}, f"{key}:show"),
         event("EVENT_TEXT_DRAW", {"text": ridge.HUD_TEXT, "x": 0, "y": 0, "location": "overlay"},
               f"{key}:counter"),
+        *intro.dev_hud_events(event, key),
     ]
 
 

@@ -257,7 +257,7 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(kiko.HUD_TEXT, "LINE %D1$12$/1 HOME %D1$13$/1")
         draws = {entry["args"]["text"] for script in all_script_lists()
                  for entry in walk(script) if entry["command"] == "EVENT_TEXT_DRAW"}
-        self.assertEqual(draws, {kiko.HUD_TEXT})
+        self.assertEqual(draws - {intro.dev_label()} - {None}, {kiko.HUD_TEXT})
         tokens = re.findall(r"\$(\d+)\$", kiko.HUD_TEXT)
         self.assertEqual(tokens, ["12", "13"])
         self.assertTrue(all(len(token) == 2 for token in tokens))

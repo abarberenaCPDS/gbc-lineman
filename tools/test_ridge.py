@@ -247,7 +247,7 @@ class RidgeTests(unittest.TestCase):
         self.assertEqual(ridge.HUD_TEXT, "LINE %D1$18$/3 HOME %D1$09$/1")
         draws = {entry["args"]["text"] for script in all_script_lists()
                  for entry in walk(script) if entry["command"] == "EVENT_TEXT_DRAW"}
-        self.assertEqual(draws, {ridge.HUD_TEXT})
+        self.assertEqual(draws - {intro.dev_label()} - {None}, {ridge.HUD_TEXT})
         tokens = re.findall(r"\$(\d+)\$", ridge.HUD_TEXT)
         self.assertEqual(tokens, ["18", "09"])
         self.assertTrue(all(len(token) == 2 for token in tokens))

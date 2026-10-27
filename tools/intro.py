@@ -51,6 +51,33 @@ def read_version() -> str:
     return "v" + VERSION_FILE.read_text().strip()
 
 
+def dev_label() -> str | None:
+    """The version for on-screen display in dev builds; None for releases.
+
+    Abe (2026-10-27): dev builds must say so on screen, and test builds often
+    start mid-game, so the title's version tag is never seen.
+    """
+    version = read_version()
+    return version if "-dev" in version else None
+
+
+HUD_COLUMNS = 20
+
+
+def dev_hud_events(event, key: str) -> list[dict]:
+    """Right-aligned dev label on the HUD's second row (empty in releases).
+
+    ``event(command, args, key)`` is the calling scene's builder, so the event
+    ID stays in that scene's namespace.
+    """
+    label = dev_label()
+    if label is None:
+        return []
+    return [event("EVENT_TEXT_DRAW",
+                  {"text": label, "x": HUD_COLUMNS - len(label), "y": 1, "location": "overlay"},
+                  f"{key}:dev-label")]
+
+
 # ---------------------------------------------------------------------------
 # Scenes (editor placement above the job row; indices after Pine Hollow's 6)
 # ---------------------------------------------------------------------------

@@ -367,5 +367,25 @@ class SettingsTests(unittest.TestCase):
         self.assertLessEqual(changed, set(intro.settings_start()))
 
 
+class DevLabelTests(unittest.TestCase):
+    """Abe (2026-10-27): dev builds say so on screen, not only on the title."""
+
+    def test_label_only_in_dev_versions(self):
+        version = intro.read_version()
+        self.assertEqual(intro.dev_label(), version if "-dev" in version else None)
+
+    def test_label_sits_right_aligned_on_the_second_hud_row(self):
+        events = intro.dev_hud_events(lambda command, args, key: {"command": command, "args": args, "id": key},
+                                      "probe")
+        if intro.dev_label() is None:
+            self.assertEqual(events, [])
+            return
+        [draw] = events
+        self.assertEqual(draw["command"], "EVENT_TEXT_DRAW")
+        self.assertEqual(draw["args"]["y"], 1, "row 0 holds the LINE/HOME counter")
+        self.assertEqual(draw["args"]["x"] + len(draw["args"]["text"]), intro.HUD_COLUMNS)
+        self.assertGreaterEqual(draw["args"]["x"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

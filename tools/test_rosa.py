@@ -239,7 +239,7 @@ class RosaTests(unittest.TestCase):
         self.assertEqual(rosa.HUD_TEXT, "LINE %D1$10$/1 HOME %D1$11$/1")
         draws = {entry["args"]["text"] for script in all_script_lists()
                  for entry in walk(script) if entry["command"] == "EVENT_TEXT_DRAW"}
-        self.assertEqual(draws, {rosa.HUD_TEXT})
+        self.assertEqual(draws - {intro.dev_label()} - {None}, {rosa.HUD_TEXT})
         tokens = re.findall(r"\$(\d+)\$", rosa.HUD_TEXT)
         self.assertEqual(tokens, ["10", "11"])
         self.assertTrue(all(len(token) == 2 for token in tokens))
