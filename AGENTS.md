@@ -29,8 +29,8 @@ does not change launch settings. Compiler-facing background PNGs are indexed
 proxies, not the authored RGB fixtures (color pitfalls: `docs/MCP_TOOLKIT.md`).
 
 The active redesign is `storm_climb`: `tools/climb.py` owns its geometry;
-regenerate with managed Python: `make_climb_art.py`, `make_climb_sprites.py`,
-then `make_climb_scene.py` and `make_engine_fields.py`. Music needs
+regenerate with managed Python: `make_climb_art.py`, then `make_climb_scene.py`
+and `make_engine_fields.py`. Music needs
 `python3 tools/compose_climb.py --render` first (installed Docker `uge-builder`,
 offline/no pull); the legacy `compose_music.py` writes JSON, not binary UGE.
 See `docs/PROJECT_PLAN.md` for current acceptance gaps and the visual-quality gate.

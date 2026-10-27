@@ -201,7 +201,8 @@ MCP static tool; each needed native play.
   `.gbsres`). GB Studio never reads an actor's palette field, so a sprite shared
   across scenes needs the same slot free in every scene that uses it. Before reusing a
   sprite, list each target scene's `spritePaletteIds`. Job scenes: 0 hero, 1 neighbour,
-  2 grid props, 3 live arc, 4 debris, 5 gust, 6 legacy, 7 intro pole.
+  2 grid props, 3 live arc, 4 boards (`hazards.py` `BOARD_SPRITE_PALETTE_SLOT`; the
+  old debris sprite is retired), 5 gust, 6 legacy, 7 intro pole.
 - **Actors draw in descending index order**: a higher `_index` gets a lower OAM slot
   and draws on top (seen in OAM on two scenes). An actor sharing a tile with an
   interactive one must have the lower index and collisions off, or it hides it and

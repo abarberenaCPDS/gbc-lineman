@@ -36,6 +36,9 @@ class ClimbGustTests(unittest.TestCase):
         self.assertEqual([len(state["animations"][0]["frames"]) for state in data["states"]], [2, 2])
         self.assertGreater(data["numTiles"], 0)
         self.assertNotEqual(data["id"], "2be8c676-2f99-5e22-8928-b11e02e78046")
+        retired = gust.OUTPUT.with_name("climb_debris.png")
+        self.assertFalse(retired.exists(), "retired climb_debris sprite must stay deleted")
+        self.assertFalse(retired.with_name("climb_debris.png.gbsres").exists())
         self.assertTrue(all(tile["paletteIndex"] == 5
                             for state in data["states"]
                             for frame in state["animations"][0]["frames"]
