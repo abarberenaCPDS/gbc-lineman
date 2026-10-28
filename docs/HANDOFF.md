@@ -1,79 +1,101 @@
-# Session handoff: Mister CFE (2026-10-27) — 0.13.0-dev on `feat/wind-ridge-lines`
+# Session handoff: Mister CFE (2026-10-28) — 0.14.0-dev on `feat/wind-ridge-lines`
 
-Start a new session with: **"Read docs/HANDOFF.md and continue."**
+Start a new session in the worktree `../gb-mr-cfe-wind-ridge` with:
+**"Read docs/HANDOFF.md and start phase 2."**
 `PROJECT_PLAN.md` is the long-term record (progress log, newest first).
 
 ## Read first
 
-`AGENTS.md`, `CLAUDE.md`, the top of `docs/PROJECT_PLAN.md` and its progress log,
-`docs/MCP_TOOLKIT.md` §5 (engine facts, including the new OBJ palette slot map and the
-stale MCP index) and §8 (budget, worker rules). Load the `chromatic-budget-playtest` skill
-before emulator work or spawning workers. VERSION `0.10.0` (tag `v0.10.0`). Local-only repo; one-line
-Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
+`AGENTS.md`, `CLAUDE.md`, the top of `docs/PROJECT_PLAN.md` and its newest log rows, `docs/BUGS.md`,
+`docs/MCP_TOOLKIT.md` §5 (engine facts, OBJ palette slot map) and §8 (budget, worker rules). Load the
+`chromatic-budget-playtest` skill before emulator work or spawning workers. Local-only repo; one-line Conventional
+Commits, no AI attribution. `project/settings.gbsres` starts at the logo (`8f0deaff…`); never commit a `--test-start`.
 
 ## State
 
-- **Committed:** speaker names + voices, 24px neighbours, animated storm poles, renamed
-  neighbours, docs (see `git log`). `project/settings.gbsres` starts at the logo
-  (`8f0deaff…`); never commit a `--test-start` override.
-- **Cart:** v0.10.2 `86d3d954…` flashed 2026-10-26 (attract loop + B-14/B-15 fixes + v0.10.0 hazards/tickets). Flashing:
-  later writes to that device need no new data-loss consent (given 2026-10-26), but
-  always bind the exact ROM via `rom_inspect` and confirm Abe isn't mid-play.
-- **Names:** Marta → **Amara** (Nigeria), Tomás → **Hiroshi** (Japan), Rosa → **Priya**
-  (India), Kiko → **Emil** (Denmark). Code keys keep the old names on purpose.
+- Branch `feat/wind-ridge-lines`, VERSION **0.14.0-dev** (`272e6ed`), not merged; main is v0.10.3 = `stable`.
+  `.mcp.json` is copied into the worktree (gitignored); `project_select` the worktree's `mr-cfe.gbsproj` first.
+  If the MCP is missing, Abe runs `/mcp` to reconnect.
+- **Versioning (Abe):** bump VERSION per landed phase: phase 2 → `0.15.0-dev`, phase 3 → `0.16.0-dev`, fixes → patch.
+  Bump in its own `chore(release)` commit, regenerate every profile (HUD label + title tag read VERSION), before any
+  build/stream for Abe.
+- Cart: v0.10.2. Streams to Abe's Chromatic go through MCP `play` (rom_inspect → device list_devices → play,
+  `saveMode: none`); no stop command exists (kill the `chromatic-cli live-demo` pid if Abe says cancel).
+- Names: Amara/Hiroshi/Priya/Emil on screen; code keys stay `marta`/`tomas`/`rosa`/`kiko`.
 
-## Done this burst (HANDOFF items 2–5)
+## Abe's direction for this round (2026-10-27/28, verbatim where quoted)
 
-2. Speaker names: `tools/voices.py`; `say(lines, key, speaker)` in each job generator.
-3. Per-character voice pitch (Amara 660, Hiroshi 440, Priya 990, Emil 1320 Hz; narrator 880).
-4. The intro pole sprite is each job's broken pole: Snapped → Standing when the line goes live (OBJ slot 7).
-5. Bigger characters: three adults 24px, Emil 20px (a kid; easy to make 24 if Abe prefers).
+"our goal is to improve the gameplay with the elements we have so far."
+- "lines should not be connected by just colliding with them, there should be an action" — **done (phase 1)**
+- "if picked up the wrong cable, pressing a button should allow you drop the cable" — **done** (B away from zones)
+- "we can remove the 16px worker"; "service opening: Select button doesn't really make sense" — **done**
+- "let's improve all levels: introduce more obstacles and lines broken to be connected" — phase 3
+- "scenes need re-work to be improved" — phase 3
+- "levels should consistently have the obstacles we've designed" — phase 3
+- "we can increase the number lines to connect, difficulty, etc" — Abe chose **go past 3 lines** → phase 2 + 3
+- Extras (carried-cable HUD, result card, jump-rule tests): "no extras at this time".
 
-## Branch `feat/wind-ridge-lines` (VERSION `0.13.0-dev`, not merged)
+## How the game works now (phase 1, `723e66f`)
 
-Worktree `../gb-mr-cfe-wind-ridge`; main is still v0.10.3 = `stable`. `project_select` the worktree's `mr-cfe.gbsproj`
-before MCP work (`.mcp.json` is copied in, gitignored). Abe on the 0.12.0-dev stream (`54e5d273…`): "good".
+- **B-press model** (`tools/grid_chain.py`, mirrored for storm_climb in `make_climb_scene.py`): var **27** "Chain
+  Near" = 0 none, 1..N pole zone (line number), 100+N box zone. Zone triggers set it on enter and clear it on leave
+  only if it still holds their value. One B input script per job scene (`EVENT_SET_INPUT_SCRIPT`, **override off** so
+  neighbours' native B talk still works): box zone → plug logic (wrong cable / no cable / lit / dark texts), pole zone
+  → pickup ("Hands full!" if carrying), else carrying → drop to its pole ("Cable dropped."). Cable/box/pole actors
+  have no scripts. Carry pose on pickup, Default on plug/drop/hit.
+- Zones: pole `(x-1, y-2, 3, 3)`; box = `reach_rect` **5x3** (3 tiles before + the box's 2 columns) or a line's own
+  `reach` (Signal Hill T1 pit `(9,12,2,3)`). The engine counts only the **first listed trigger** overlapping the hero:
+  order is exit, door, boards, box zones, pole zones. Tests (`first_hit`) assert standing on every box tile resolves
+  to that box. Neighbour zones were removed (they shadowed boxes).
+- **Open rough edge:** with override off, B next to Hiroshi/Priya/Emil while in a box zone can also start their native
+  talk. Planned fix in phase 3: route neighbour talk through the B script (override on), one action per press.
+- Lines today: Storm Climb 1, Wind Ridge 3 (100x30), Signal Hill 2 (40x18), Pine Hollow 2 (40x18).
+- Variables used: 0-27 (17-20 ridge, 21-23 signal, 24-26 pine, 27 near; 5 is the retired opening size var, unused).
 
-Done on the branch (2026-10-27, see the progress log): scene registry `tools/scenes.py` (game/lab/legacy) +
-`make_release.py` (release copy without lab/legacy scenes); lab scenes `LAB_Hazard Gallery` and `LAB_Movement Room`
-(`lab` profile, `--test-start <folder>`); `tools/grid_chain.py`; two-line chains on Signal Hill (vars 21-23) and Pine
-Hollow (vars 24-26); B-06 box reach triggers (auto-plug on entry with the right cable); hero `Carry` pose; Priya's
-glasses, Emil's bowl, Hiroshi's hose, shorter pole wire; `climb_debris` retired.
+## Phase 2 — room for more lines (target `0.15.0-dev`)
 
-## Next, in suggested order
+Hard limits found so far:
+- **Wire colours:** wires are background art in BG palette slot `LINE_BG_SLOT` = 5 (metal), colour indices 1..3 =
+  one per stage (`grid_chain.MAX_STAGES = 3`, `chain_palettes()` swaps slot 5 as the chain lights). >3 lines needs a
+  **second wire slot** (e.g. stages 4-6 on another BG slot's indices 1..3, swapped together by the chain refresh).
+  Check which BG slots each job scene uses (`make_*_art.py` slot maps) before picking one.
+- **Actors ≤ 20 per scene.** A line costs 3 actors (pole, cable end, box). Fold the cable end into the **pole actor
+  states** (e.g. `Snapped+Cable` / `Snapped` / `Standing`) → 2 per line, so 5 lines = 10 actors + neighbour + props +
+  hazards. Keep existing actor/resource IDs stable where possible (the cable-end IDs can be retired).
+- **10 OBJs per scanline** in every 20-tile camera window (`grid_chain.scanline_load`; the hero counts 2 OBJ
+  columns x 3 rows — measured in OAM). Posts are 2x4; place them so a window never stacks too many on one row.
+- **Triggers ≤ 30 per scene** (now: ridge 10, rosa 7, kiko 7). Each line adds 2 zones.
+- Variables: per scene, one "live" var per line + lines-count + chain-live; allocate from **28** up.
+Deliverable: `grid_chain` supports 1..6 lines (two wire slots, 2-actor lines), Wind Ridge regenerates and still
+passes, tests for the new limits. No level redesign yet.
 
-Done 2026-10-27 (later): Pine Hollow fits 10 OBJs per line (mesa gust dropped, T1 on the mesa; strict test passes, porch
-measured 10 in OAM); gallery whip; `AGENTS.md` docs. Native: Pine house line pickup, Carry pose on/off, B-06 auto-plug
-from a porch jump, chain gating (house first stays dark). Source-debug note: keep the `--test-start` settings in place
-while `emulator_debug` runs (it rechecks live sources), then restore.
+## Phase 3 — rebuild the levels (target `0.16.0-dev`)
 
-Native 2026-10-27 (`pine-feeder` `e29941fe…`, start = feeder pole (9,8)): feeder pickup on the mesa, walk right past the
-hidden cable (inactive at that moment), T1 reach trigger auto-plugs: var 24 = 1, var 25 = 1, var 26 = 1, "Power flows
-on…", stage-1 wire lit.
+- Proposed line counts (Abe has not objected; confirm at start): **Storm Climb 1, Signal Hill 3, Pine Hollow 4,
+  Wind Ridge 5.** Wider maps where needed (Ridge is already 100x30; Signal/Pine are 40x18).
+- **Consistent hazard kit on every job level:** cracked boards, hidden cables, live arcs, timed gusts, whipping
+  wires, live fallen spans (arcs that go live as upstream lines are fixed — Ridge's mechanic; makes repair order a
+  puzzle). Mix grows level to level.
+- Neighbour talk through the B script (see rough edge above).
+- Lessons to design in from the start: a 2-tile-wide pit traps the hero (B-16); boxes need open tiles in front;
+  the first-overlapping-trigger rule; scanline budget per camera window; keep hazards ≥ 5 tiles from landing spots.
+- Lab: give the hazard gallery / movement room their own flat backgrounds (gallery reuses Pine's art, mismatch);
+  use them for test starts.
+- Workers: art (backgrounds, sprites) → Agent `model: "sonnet"`; plumbing → `model: "haiku"`; ≤5 in parallel,
+  disjoint file ownership per worker; main regenerates every profile and runs the full suite after they finish.
 
-Native 2026-10-27, later (same ROM, one run): feeder → arc hit respawns at the feeder checkpoint (14,8) → house pole →
-porch reach → "Both lines live" (var 25 = 2, var 26 = 2, both wires lit) → door: Emil "Stove's on! Soup is cooking!",
-var 13 = 1. **Pine Hollow passes end to end.**
-Signal Hill (`signal-chain2` `40743687…`): it had no reach triggers (wired now, commit `1826144`; T1's trigger is its
-pit). Feeder pickup, drop into the pit auto-plugs T1 ("Power flows on! Keep going.", var 21/22/23 = 1); B on T1 also
-works. **B-16 (open):** climbing from the T1 pit onto the storm-pole rock (4 tiles up, 2 wide) failed with short and
-full jumps; the house line and Signal Hill's door are not played yet.
-Lab gallery (`lab-gallery` `06a56f2c…`): "LAB: hazards" shows; board breaks and respawns; arc fires; hidden cable shows.
-Cosmetic: the gallery reuses Pine Hollow's background, so the drawn mesa does not match its flat collision.
+## Verification recipe (native)
 
-B-16 fixed (`cde93d8`): one-way ledge in the T1 pit; native pit → ledge → rock → storm cable pickup works.
+`make_intro_scene.py --test-start <folder> X Y right` → `rom_build` with `captureDebugArtifacts` → `emulator_run`
+`debugMode: source` → keep the override while `emulator_debug` runs (it rechecks live sources) → restore with a plain
+`make_intro_scene.py`. Each job scene opens with 2-3 dialogue boxes (A + ~80 frames each). Player position: WRAM
+offset 4639, `[flags, x u16, y u16]`, pixels = value >> 5 (y = feet row x 8). Arcs show as OAM palette 3 objects.
+Text-first; screenshots only for looks. Each `rom_build` log is ~15k tokens: budget ~6 builds per session.
+Worktree note: the session guard rejects `cd` and `$PY` in compound commands; use wrapper scripts with absolute paths
+(e.g. a `py.sh` that cds to the worktree and runs the managed Python).
 
-1. **Native playtest, remaining:** Signal Hill house line (storm cable → porch junction box) and door; gallery whip
-   (far end) and the movement room. Recipe: `make_intro_scene.py --test-start
-   <folder> X Y right`, `rom_build` with `captureDebugArtifacts`, `emulator_run` source mode, keep the override while
-   `emulator_debug` runs, restore with a plain `make_intro_scene.py`. Each scene opens with 2-3 dialogue boxes (A + ~80
-   frames each). Build logs are ~15k tokens each: budget about 6 builds per session.
-2. Look check on the cart: Priya's glasses, Emil's bowl, Hiroshi's hose, carry pose.
-3. **Merge to main only after Abe's OK**; then release (drop `-dev`), tag, move `stable` if he approves on the cart.
-   B-07 (one-shelf drop) is still not flashed; Abe should feel-test it on the cart.
-Not yet played natively: Wind Ridge lines 2-3 with power, the catwalk route, the door, every span live at once.
-Worktree note: the session guard rejects `cd` and `$PY` in compound commands; use small wrapper scripts with absolute paths.
+## Not yet played natively
 
-Use parallel workers per the skill (art: Sonnet; plumbing: Haiku). Main selects the
-project **before** spawning workers, gives plumbing workers the OBJ slot map, and
-regenerates every profile + runs the full suite after they finish.
+Signal Hill house line + door; Wind Ridge lines 2-3 with power, catwalk, door; gallery whip; movement room. Look
+check on the cart: Priya's glasses, Emil's bowl, Hiroshi's hose, carry pose. B-07 not flashed.
+**Merge to main only after Abe's OK**; then release (drop `-dev`), tag, move `stable` if he approves on the cart.
