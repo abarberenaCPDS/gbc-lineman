@@ -60,7 +60,7 @@ def collision_grid() -> list[list[int]]:
 def standing(x: int, y: int, body_rows: int = 3, grid: list[list[int]] | None = None) -> bool:
     """True if feet on tile (x, y) rest on ground and the body fits above it.
 
-    body_rows is the hero height in tiles (3 for the 24px default, 2 for 16px).
+    body_rows is the hero height in tiles (3 for the 24px hero).
     One-way platforms count as ground from above but never block the body.
     """
     grid = grid or collision_grid()

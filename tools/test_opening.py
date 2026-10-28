@@ -59,64 +59,26 @@ class OpeningTests(unittest.TestCase):
         entry = scene.build_scene([], [])["script"]
         self.assertFalse(any(e["command"] == "EVENT_SET_VALUE" for e in entry))
 
-    def test_size_comparison_returns_to_clear_ground_first(self):
+    def test_entry_uses_only_the_24px_hero_and_no_select_input(self):
         import make_opening_scene as scene
-        script = scene.size_comparison_script()
-        self.assertEqual(script[0]["command"], "EVENT_SCRIPT_LOCK")
-        self.assertEqual(script[1]["command"], "EVENT_ACTOR_SET_POSITION")
-        self.assertEqual((script[1]["args"]["x"]["value"], script[1]["args"]["y"]["value"]), opening.START)
-        self.assertEqual(script[-1]["command"], "EVENT_SCRIPT_UNLOCK")
-        for branch in ("true", "false"):
-            self.assertIn("EVENT_PLAYER_SET_SPRITE", [e["command"] for e in script[2]["children"][branch]])
-
-    def test_fresh_entry_selects_24px_hero_for_default_zero(self):
-        import make_opening_scene as scene
-        self.assertEqual((scene.HERO_SIZE_24, scene.HERO_SIZE_16), (0, 1))
-        entry = scene.build_scene([], [])["script"][0]
-        self.assertEqual(entry["args"]["condition"]["valueA"]["value"], scene.HERO_SIZE)
-        self.assertEqual(entry["args"]["condition"]["valueB"]["value"], scene.HERO_SIZE_24)
-        self.assertEqual(self.sprite_and_speed(entry["children"]["true"]), (
+        entry = scene.build_scene([], [])["script"]
+        self.assertEqual(self.sprite_and_speed(entry), (
             opening.resource_id("sprite:opening_worker24"), scene.hero_speed(24),
         ))
-        self.assertEqual(self.sprite_and_speed(entry["children"]["false"]), (
-            opening.resource_id("sprite:opening_worker16"), scene.hero_speed(16),
-        ))
+        self.assertNotIn("EVENT_SET_INPUT_SCRIPT", list(self.all_commands(entry)))
+        self.assertFalse(any(e["command"] == "EVENT_IF" and e["args"]["condition"]["valueA"]["value"] == "5"
+                             for e in entry))
+        controls = [e["args"]["text"][0] for e in entry if e["command"] == "EVENT_TEXT"]
+        self.assertEqual(controls, ["B: repair panel"])
 
-    def test_select_toggles_default_24_to_16_then_back(self):
-        import make_opening_scene as scene
-        script = scene.size_comparison_script()
-        toggle = script[2]
-        self.assertEqual(toggle["args"]["condition"]["valueA"]["value"], scene.HERO_SIZE)
-        self.assertEqual(toggle["args"]["condition"]["valueB"]["value"], scene.HERO_SIZE_24)
-
-        # With default 0, SELECT chooses the 16px comparison sprite and writes 1.
-        from_24 = toggle["children"]["true"]
-        self.assertEqual(self.sprite_and_speed(from_24), (
-            opening.resource_id("sprite:opening_worker16"), scene.hero_speed(16),
-        ))
-        write_16 = next(e for e in from_24 if e["command"] == "EVENT_SET_VALUE")
-        self.assertEqual((write_16["args"]["variable"], write_16["args"]["value"]["value"]),
-                         (scene.HERO_SIZE, scene.HERO_SIZE_16))
-
-        # With 1, the next SELECT restores the 24px hero and writes 0.
-        from_16 = toggle["children"]["false"]
-        self.assertEqual(self.sprite_and_speed(from_16), (
-            opening.resource_id("sprite:opening_worker24"), scene.hero_speed(24),
-        ))
-        write_24 = next(e for e in from_16 if e["command"] == "EVENT_SET_VALUE")
-        self.assertEqual((write_24["args"]["variable"], write_24["args"]["value"]["value"]),
-                         (scene.HERO_SIZE, scene.HERO_SIZE_24))
-
-    def test_repair_restores_animation_speed_for_active_sprite(self):
+    def test_repair_restores_24px_animation_speed(self):
         import make_opening_scene as scene
         script = scene.repair_script()[0]["children"]["true"]
         resume = next(e for e in script if e.get("id") == opening.resource_id("event:repair:resume-speed"))
-        self.assertEqual(resume["args"]["condition"]["valueA"]["value"], scene.HERO_SIZE)
-        self.assertEqual(resume["args"]["condition"]["valueB"]["value"], scene.HERO_SIZE_24)
-        speed24 = resume["children"]["true"][0]
-        speed16 = resume["children"]["false"][0]
-        self.assertEqual(speed24["args"]["speed"], scene.hero_speed(24))
-        self.assertEqual(speed16["args"]["speed"], scene.hero_speed(16))
+        self.assertEqual(resume["command"], "EVENT_ACTOR_SET_ANIMATION_SPEED")
+        self.assertEqual(resume["args"]["speed"], scene.hero_speed(24))
+        self.assertFalse(any(e["command"] == "EVENT_IF" and e["args"]["condition"]["valueA"]["value"] == "5"
+                             for e in script))
 
     def test_geometry(self):
         opening._self_check()
@@ -154,8 +116,7 @@ class OpeningTests(unittest.TestCase):
                     self.assertTrue(set(tile.get_flattened_data()) <= allowed, f"palette spill at {tx},{ty}")
 
     def test_character_states_and_proxy_colors(self):
-        for name, states in (("opening_worker16", {"Default", "Repair", "Carry"}),
-                              ("opening_worker24", {"Default", "Repair", "Carry"}),
+        for name, states in (("opening_worker24", {"Default", "Repair", "Carry"}),
                               ("opening_marta", {"Waiting", "Powered"}),
                               ("opening_terminal", {"Off", "On"})):
             with self.subTest(asset=name):
@@ -170,7 +131,7 @@ class OpeningTests(unittest.TestCase):
                             self.assertIn((r, g, b), {(255, 255, 255), (160, 160, 160), (0, 0, 0)})
 
     def test_candidate_feet_and_art_heights(self):
-        for size, min_y in ((16, -8), (24, -16)):
+        for size, min_y in ((24, -16),):
             name = f"opening_worker{size}"
             path = ROOT / f"assets/sprites/{name}.png"
             metadata = json.loads(Path(str(path) + ".gbsres").read_text())
@@ -181,7 +142,7 @@ class OpeningTests(unittest.TestCase):
                 for state in metadata["states"]:
                     for animation in state["animations"]:
                         for frame in animation["frames"]:
-                            self.assertLessEqual(len(frame["tiles"]), 2 if size == 16 else 4)
+                            self.assertLessEqual(len(frame["tiles"]), 4)
                             for tile in frame["tiles"]:
                                 for py in range(16):
                                     for px in range(8):
@@ -192,14 +153,14 @@ class OpeningTests(unittest.TestCase):
                                             self.assertLess(world_y, 8)
 
     def test_carry_state_differs_from_default_with_same_bounds(self):
-        for size in (16, 24):
+        for size in (24,):
             path = ROOT / f"assets/sprites/opening_worker{size}.png"
             metadata = json.loads(Path(str(path) + ".gbsres").read_text())
             default = metadata["states"][0]
             carry = metadata["states"][-1]
             self.assertEqual(carry["name"], "Carry")
             self.assertEqual(carry["animationType"], default["animationType"])
-            self.assertEqual(metadata["boundsY"], -8 if size == 16 else -16)
+            self.assertEqual(metadata["boundsY"], -16)
             self.assertEqual(metadata["boundsHeight"], size)
             with Image.open(path) as sheet:
                 sheet = sheet.convert("RGBA")
@@ -217,7 +178,7 @@ class OpeningTests(unittest.TestCase):
 
     def test_repair_frames_are_visually_distinct_not_just_different_ids(self):
         from PIL import ImageOps
-        for size in (16, 24):
+        for size in (24,):
             path = ROOT / f"assets/sprites/opening_worker{size}.png"
             metadata = json.loads(Path(str(path) + ".gbsres").read_text())
             state = next(s for s in metadata["states"] if s["name"] == "Repair")
@@ -284,12 +245,10 @@ class OpeningTests(unittest.TestCase):
         dialogue_lines = next(e for e in gate["children"]["false"] if e["command"] == "EVENT_TEXT")["args"]["text"][0]
         self.assertTrue(all(len(line) <= 17 for line in dialogue_lines.split("\n")))
 
-    def test_exit_geometry_is_reachable_for_both_hero_sizes(self):
-        for body_rows in (3, 2):  # 24px default and 16px comparison
-            with self.subTest(body_rows=body_rows):
-                reach = opening.reachable(opening.START, body_rows=body_rows)
-                self.assertIn(opening.EXIT_STAND, reach)
-                self.assertIn(opening.EXIT_NUDGE, reach)
+    def test_exit_geometry_is_reachable_for_the_24px_hero(self):
+        reach = opening.reachable(opening.START, body_rows=3)
+        self.assertIn(opening.EXIT_STAND, reach)
+        self.assertIn(opening.EXIT_NUDGE, reach)
 
     def test_exit_trigger_file_matches_generator_and_climb_id(self):
         import make_opening_scene as scene

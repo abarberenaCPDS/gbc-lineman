@@ -21,11 +21,6 @@ ROOT = Path(__file__).resolve().parent.parent
 SCENE_DIR = ROOT / "project/scenes/service_opening"
 EXIT_SYMBOL = "trigger_service_exit"
 RESTORED = "4"
-HERO_SIZE = "5"
-# var 5 defaults to 0 on a fresh boot: 0 selects the preferred 24px hero,
-# while 1 selects the 16px comparison sprite.
-HERO_SIZE_24 = 0
-HERO_SIZE_16 = 1
 
 
 def event(command: str, args: dict[str, Any], key: str, **children: list) -> dict:
@@ -92,10 +87,11 @@ def write_palettes() -> tuple[list[str], list[str]]:
 
 
 def write_variables() -> None:
+    # Var 5 (the retired Opening Hero Size) keeps its existing entry; nothing
+    # reads it now, and test_climb still checks that entry.
     path = ROOT / "project/variables.gbsres"
     data = json.loads(path.read_text())
-    for key, name, symbol in ((RESTORED, "Service Restored", "var_service_restored"),
-                              (HERO_SIZE, "Opening Hero Size", "var_opening_hero_size")):
+    for key, name, symbol in ((RESTORED, "Service Restored", "var_service_restored"),):
         value = {"id": key, "name": name, "symbol": symbol}
         existing = next((v for v in data["variables"] if v["id"] == key), None)
         if existing is not None and existing != value:
@@ -177,33 +173,13 @@ def sound(asset_name: str, key: str) -> dict:
     }, key)
 
 
-def choose_hero(size: int, key: str) -> list[dict]:
-    name = f"opening_worker{size}"
-    sprite = json.loads((ROOT / f"assets/sprites/{name}.png.gbsres").read_text())
+def choose_hero(key: str) -> list[dict]:
+    """Show the 24px electrician with its default state and animation speed."""
+    sprite = json.loads((ROOT / "assets/sprites/opening_worker24.png.gbsres").read_text())
     return [
         event("EVENT_PLAYER_SET_SPRITE", {"spriteSheetId": sprite["id"]}, f"{key}:sheet"),
         actor_state("player", "", f"{key}:default"),
         actor_speed("player", sprite.get("animSpeed", 15), f"{key}:speed"),
-    ]
-
-
-def size_comparison_script() -> list[dict]:
-    return [
-        event("EVENT_SCRIPT_LOCK", {}, "compare:lock"),
-        # Return to known clear ground before changing the taller sprite's bounds.
-        event("EVENT_ACTOR_SET_POSITION", {
-            "actorId": "player", "units": "tiles",
-            "x": number(opening.START[0]), "y": number(opening.START[1]),
-        }, "compare:safe-ground"),
-        if_value(HERO_SIZE, HERO_SIZE_24, "compare:toggle", [
-            *choose_hero(16, "compare:16"), set_value(HERO_SIZE, HERO_SIZE_16, "compare:mark16"),
-        ], [
-            *choose_hero(24, "compare:24"), set_value(HERO_SIZE, HERO_SIZE_24, "compare:mark24"),
-        ]),
-        event("EVENT_ACTOR_SET_DIRECTION", {
-            "actorId": "player", "direction": {"type": "direction", "value": "right"},
-        }, "compare:face-right"),
-        event("EVENT_SCRIPT_UNLOCK", {}, "compare:unlock"),
     ]
 
 
@@ -239,9 +215,7 @@ def repair_script() -> list[dict]:
         actor_state(gate_id(), "Open", "repair:gate-open"),
         sound("connect", "repair:connect-sound"),
         actor_state("player", "", "repair:resume-default"),
-        if_value(HERO_SIZE, HERO_SIZE_24, "repair:resume-speed", [
-            actor_speed("player", hero_speed(24), "repair:speed24"),
-        ], [actor_speed("player", hero_speed(16), "repair:speed16")]),
+        actor_speed("player", hero_speed(24), "repair:resume-speed"),
     ]
     return [if_value(RESTORED, 0, "repair:once", work)]
 
@@ -281,15 +255,13 @@ def build_scene(backgrounds: list[str], sprites: list[str]) -> dict:
         "collisions": collision_rle(opening.collision_grid(), 20, 18),
         "autoFadeSpeed": 1, "x": editor_x, "y": editor_y,
         "script": [
-            if_value(HERO_SIZE, HERO_SIZE_24, "entry:hero", choose_hero(24, "entry:24"), choose_hero(16, "entry:16")),
+            *choose_hero("entry:24"),
             event("EVENT_ACTOR_SET_DIRECTION", {
                 "actorId": "player", "direction": {"type": "direction", "value": "right"},
             }, "entry:face-right"),
             if_value(RESTORED, 0, "entry:power", [palette_state(False, "entry:cold")], [palette_state(True, "entry:powered")]),
             event("EVENT_MUSIC_PLAY", {"musicId": music}, "entry:music"),
-            event("EVENT_SET_INPUT_SCRIPT", {"input": ["select"], "override": True},
-                  "entry:compare-input", true=size_comparison_script()),
-            dialogue("B: repair panel\nSELECT: swap", "entry:controls"),
+            dialogue("B: repair panel", "entry:controls"),
         ],
         "playerHit1Script": [], "playerHit2Script": [], "playerHit3Script": [],
     }
@@ -299,7 +271,7 @@ def main() -> None:
     # Validate all source assets before writing any scene resources.
     expected = [(ROOT / "assets/backgrounds/service_opening.png.gbsres", "background:service-opening")]
     expected.extend((ROOT / f"assets/sprites/{name}.png.gbsres", "sprite:" + name)
-                    for name in ("opening_worker16", "opening_worker24", "opening_marta", "opening_terminal"))
+                    for name in ("opening_worker24", "opening_marta", "opening_terminal"))
     for path, key in expected:
         if json.loads(path.read_text())["id"] != opening.resource_id(key):
             raise ValueError(f"unexpected resource identity in {path}")

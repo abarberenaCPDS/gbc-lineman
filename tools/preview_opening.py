@@ -54,7 +54,7 @@ def main() -> None:
     cold = opening.BG_PALETTES[3][1]
     warm = opening.POWERED_WINDOW
     fixtures = []
-    for size in (16, 24):
+    for size in (24,):
         for powered in (False, True):
             frame = background.copy().convert("RGB")
             if powered:

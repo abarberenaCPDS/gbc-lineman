@@ -680,8 +680,6 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
             raise AssertionError("terminal art must be confined to the lower 8 source rows")
         if meta["boundsY"] != 0 or (meta["boundsWidth"], meta["boundsHeight"]) != (8, 8):
             raise AssertionError("terminal bounds must describe its visible 8x8 lower icon")
-    if name == "opening_worker16" and (meta["boundsY"], meta["boundsHeight"]) != (-8, 16):
-        raise AssertionError("16px worker bounds must retain the feet anchor")
     if name == "opening_worker24" and (meta["boundsY"], meta["boundsHeight"]) != (-16, 24):
         raise AssertionError("24px worker bounds must retain the feet anchor")
     if name.startswith("opening_worker"):
@@ -738,7 +736,6 @@ def _validate(name: str, image: Image.Image, meta: dict) -> None:
 def make_assets() -> Iterable[tuple[str, Image.Image, dict]]:
     """Return each owned resource as ``(name, image, native sidecar)``."""
     assets = [
-        _worker_asset("opening_worker16", 16),
         _worker_asset("opening_worker24", 24),
         _marta_asset(),
         _terminal_asset(),

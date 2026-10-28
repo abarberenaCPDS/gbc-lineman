@@ -21,8 +21,8 @@ title → `service_opening` (M-V1); after the B repair its awning exit enters
 Hiroshi, Priya and Emil on screen; code keys keep the old names (`marta`, `tomas`,
 `rosa`, `kiko`) so resource IDs stay stable. `tools/voices.py` owns speaker names
 and text blips; pass `speaker=` to a job's `say()`.
-Its preferred hero is 24px (opening size variable 5: 0=tall default,
-1=16px comparator); SELECT returns to safe ground before swapping colliders.
+Its hero is the 24px electrician only (`opening_worker24`); the 16px comparator
+and its SELECT swap were removed.
 Managed-Python command: `tools/make_project.py opening --fixtures --verify`.
 `tools/opening.py` owns its palette/geometry/ID contract; the scene generator
 does not change launch settings. Compiler-facing background PNGs are indexed

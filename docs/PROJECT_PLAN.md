@@ -38,14 +38,12 @@ fairness verdict, top-checkpoint completion or device approval.
 
 **M-V1 browser feedback (2026-10-25):** Abe played the new preview and said
 “wow! much better this time.” He selected the **24px electrician** as the
-preferred in-game default; the 16px version remains a comparison fixture.
+preferred in-game default; the 16px comparison fixture was removed on 2026-10-27.
 This is positive visual-direction feedback, **not** a report that the
 entire climb or physical cartridge passed. Abe separately listened to the new
 climb theme in the opening preview and said it **works well**. The 24px default
-has since been verified in a fresh native ROM: size variable 0 maps to 24px,
-1 to the 16px comparator;
-fresh native boot displays seven objects and variable 5=0. SELECT toggles
-5→7→5 visible objects / variable 1→0; B still restores power (variable 4=1).
+has since been verified in a fresh native ROM: fresh boot displays seven objects
+(variable 5 was 0 then; it is now unused); B still restores power (variable 4=1).
 Native ROM `build/rom/service-opening-default24.gbc` SHA-256
 `fd632ba2fd3195685e81369cbb616207a288fccfd7c42cb53a97e3abbf60e360`;
 all 25 focused tests pass. New browser export is separate; human re-check not yet
@@ -341,8 +339,8 @@ Subsequent scene expansion is blocked on user approval of M-V1, not pixel count 
   User then explicitly discarded the previous state; new preview `list_states`
   returns no saved states. No old state will be restored; unrelated recordings
   and stored project files were not deleted. Human art/music approval is pending.
-- Preview controls: arrows move, A/Z jumps, B/X repairs or talks, SELECT/Shift
-  compares hero size and returns home. Authored comparison (not gameplay):
+- Preview controls: arrows move, A/Z jumps, B/X repairs or talks, Shift
+  returns home (the SELECT size comparison was removed on 2026-10-27). Authored comparison (not gameplay):
   `artifacts/visual-opening/size_power_comparison.png`.
 - Remaining gates: final art/interaction feel approval, actual scene
   re-entry/save persistence, broader collision/timing checks and hardware.
