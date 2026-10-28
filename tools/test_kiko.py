@@ -23,7 +23,7 @@ PROJECT_DIR = scene.PROJECT_DIR
 
 
 def built_scene():
-    return scene.build_scene(FAKE_MUSIC, FAKE_AUDIO["death"])
+    return scene.build_scene(FAKE_MUSIC, FAKE_AUDIO)
 
 
 def built_actors():
@@ -178,6 +178,41 @@ def set_positions(events):
             for e in walk(events) if e["command"] == "EVENT_ACTOR_SET_POSITION"]
 
 
+def b_script():
+    """The scene's one B input script (EVENT_SET_INPUT_SCRIPT) from init."""
+    [attach] = [e for e in built_scene()["script"] if e["command"] == "EVENT_SET_INPUT_SCRIPT"]
+    return attach
+
+
+def b_zones(attach):
+    """({near value: its true events}, events after the last zone) for the B script's zone chain."""
+    zones = {}
+    events = attach["children"]["true"]
+    while (len(events) == 1 and events[0]["command"] == "EVENT_IF"
+           and events[0]["args"]["condition"]["valueA"] == {"type": "variable", "value": climb.VAR_NEAR}):
+        entry = events[0]
+        zones[entry["args"]["condition"]["valueB"]["value"]] = entry["children"]["true"]
+        events = entry["children"]["false"]
+    return zones, events
+
+
+def zone_symbols():
+    return [t["symbol"] for t in built_triggers() if t["symbol"].endswith(("_reach", "_pole_zone"))]
+
+
+def first_hit(triggers, tile):
+    """The trigger the engine fires for a hero covering ``tile``: the first listed trigger that holds it."""
+    x, y = tile
+    return next((t for t in triggers
+                 if t["x"] <= x < t["x"] + t["width"] and t["y"] <= y < t["y"] + t["height"]), None)
+
+
+def box_tiles(box):
+    """Every tile a hero standing on this box covers: its two columns, the body rows above the feet."""
+    bx, by = box
+    return [(x, y) for x in (bx, bx + 1) for y in (by - 2, by - 1, by)]
+
+
 class KikoTests(unittest.TestCase):
     def test_ids_are_stable_and_unique(self):
         ids = {
@@ -246,6 +281,7 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(by_id[kiko.VAR_HOME_POWERED],
                          {"id": "13", "name": "Kiko Home Powered", "symbol": "var_kiko_home_powered"})
         self.assertEqual(by_id["6"]["symbol"], "var_carrying_cable")
+        self.assertEqual(by_id[climb.VAR_NEAR], {"id": "27", "name": "Chain Near", "symbol": "var_chain_near"})
         self.assertEqual(by_id["10"]["symbol"], "var_hill_line_live")
         self.assertEqual(by_id["11"]["symbol"], "var_rosa_home_powered")
 
@@ -254,7 +290,7 @@ class KikoTests(unittest.TestCase):
         grown = scene.merged_variables(synthetic)
         self.assertEqual(grown["variables"][:12], synthetic["variables"])
         self.assertEqual([v["id"] for v in grown["variables"]],
-                         [str(i) for i in range(12)] + ["12", "13", "24", "25", "26", hazards.VAR_ON_BOARD])
+                         [str(i) for i in range(12)] + ["12", "13", "24", "25", "26", hazards.VAR_ON_BOARD, "27"])
         self.assertEqual(by_id["24"]["symbol"], "var_hollow_feeder_live")
         self.assertEqual(by_id["25"]["symbol"], "var_hollow_lines_live")
         self.assertEqual(by_id["26"]["symbol"], "var_hollow_chain_live")
@@ -307,8 +343,8 @@ class KikoTests(unittest.TestCase):
                     self.assertEqual(redraws[0]["args"]["text"], kiko.HUD_TEXT)
         # Authored in-play texts: two intro boxes, Emil x3, cable pickup, junction x3, door x2.
         # Intro x3, Emil x4, two chain ends and three boxes each (status + pickup/no cable),
-        # door x2 + CLOSED box, reach triggers' status lines, report-exit refusal.
-        self.assertEqual(checked, 32)
+        # door x2 + CLOSED box, report-exit refusal; the B drop's line once per branch.
+        self.assertEqual(checked, 28)  # 32 - the box zones' repeated status lines + the B drop's two lines
 
     def test_hud_uses_exact_two_digit_variable_tokens(self):
         self.assertEqual(kiko.HUD_TEXT, "LINES %D1$25$/2 HOME %D1$13$/1")
@@ -334,7 +370,7 @@ class KikoTests(unittest.TestCase):
                         self.assertNotIn("’", part, "use ASCII apostrophes in dialogue")
                         checked += 1
         # One part per line; two-line boxes count each part.
-        self.assertEqual(checked, 65)  # every line part of every box, speaker name lines included
+        self.assertEqual(checked, 55)  # 65 - the reach triggers' status lines + the B drop's two lines
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
@@ -508,47 +544,52 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(len(actors), kiko.actor_count())
         self.assertEqual(len(actors), 10)
 
-    def test_each_line_has_a_reach_trigger_that_connects_only_its_own_cable(self):
+    def test_each_line_has_a_box_zone_that_arms_only_its_own_plug_in(self):
         triggers = built_triggers()
         for line in scene.LINES:
             trigger = trigger_by_symbol(f"trigger_pine_{line['key']}_reach")
             self.assertEqual((trigger["x"], trigger["y"], trigger["width"], trigger["height"]),
                              grid_chain.reach_rect(line["box_at"]))
-            self.assertEqual(trigger["x"] + trigger["width"], line["box_at"][0], "three tiles ending at the box")
-            [gate] = trigger["script"]
-            self.assertTrue(is_var_if(gate, kiko.VAR_CARRYING_CABLE, line["number"]),
-                            "only the line's own cable connects from the trigger")
-            dead = gate["children"]["true"][0]
-            self.assertTrue(is_var_if(dead, line["live_var"], 0))
-            sets = [(e["args"]["variable"], var_value(e)) for e in walk(dead["children"]["true"])
-                    if e["command"] == "EVENT_SET_VALUE"]
-            self.assertIn((line["live_var"], 1), sets)
-            self.assertIn((kiko.VAR_CARRYING_CABLE, 0), sets)
-            self.assertEqual(trigger["leaveScript"], [])
+            self.assertEqual(trigger["x"] + trigger["width"], line["box_at"][0] + 2,
+                             "three tiles before the box, then its two columns")
+            [enter] = trigger["script"]
+            self.assertTrue(is_set(enter, climb.VAR_NEAR, grid_chain.BOX_ZONE + line["number"]),
+                            "the zone arms this line's box only")
+            [leave] = trigger["leaveScript"]
+            self.assertTrue(is_var_if(leave, climb.VAR_NEAR, grid_chain.BOX_ZONE + line["number"]))
             self.assertEqual(sum(t["_index"] == trigger["_index"] for t in triggers), 1,
                              "trigger indices are unique")
-        exit_, door, *reach = triggers
-        self.assertEqual([t["symbol"] for t in reach],
-                         ["trigger_pine_feeder_reach", "trigger_pine_house_reach"])
+        self.assertEqual([t["symbol"] for t in triggers[2:]],
+                         ["trigger_pine_feeder_reach", "trigger_pine_house_reach",
+                          "trigger_pine_feeder_pole_zone", "trigger_pine_house_pole_zone"])
         self.assertEqual([t["_index"] for t in triggers], list(range(len(triggers))))
 
-    def test_house_reach_trigger_fires_for_a_hero_at_x243_with_the_house_cable(self):
-        # B-06: a B press at x243 did nothing; walking up to the box with the house
-        # cable connects it. The hero stands at x=243px with feet on the porch row.
+    def test_house_box_zone_holds_a_hero_at_x243_with_the_house_cable(self):
+        # B-06: a B press at x243 did nothing. The hero stands at x=243px with feet on
+        # the porch row: inside the house box zone, which arms the house cable's plug-in.
         trigger = trigger_by_symbol("trigger_pine_house_reach")
         trig = tile_px(trigger["x"], trigger["y"], trigger["width"], trigger["height"])
         hero = (243, (kiko.PORCH_ROW - 2) * 8, 24, 24)
-        self.assertTrue(overlaps(hero, trig), "the hero at x243 overlaps the reach trigger")
-        self.assertFalse(overlaps(tile_px(*kiko.JUNCTION_BOX), trig), "the trigger ends where the box begins")
+        self.assertTrue(overlaps(hero, trig), "the hero at x243 is inside the house box zone")
+        self.assertTrue(overlaps(tile_px(*kiko.JUNCTION_BOX), trig), "the zone covers the box's own tile")
         self.assertEqual(trigger["x"], 30)
-        # The trigger's script only acts for the house cable (carrying 2).
-        [gate] = trigger["script"]
-        self.assertTrue(is_var_if(gate, kiko.VAR_CARRYING_CABLE, 2))
+        [enter] = trigger["script"]
+        self.assertTrue(is_set(enter, climb.VAR_NEAR, grid_chain.BOX_ZONE + 2))
+
+    def test_standing_on_any_box_tile_resolves_to_that_boxs_zone(self):
+        # The engine fires the first listed trigger that covers the hero, so a hero
+        # on a box's own tiles must resolve to that box's zone, not a neighbour's.
+        triggers = built_triggers()
+        for line in scene.LINES:
+            for tile in box_tiles(line["box_at"]):
+                hit = first_hit(triggers, tile)
+                self.assertIsNotNone(hit, (line["key"], tile))
+                self.assertEqual(hit["symbol"], "trigger_pine_" + line["key"] + "_reach", (line["key"], tile))
 
     def test_reach_triggers_do_not_overlap_the_exit_or_the_door(self):
         triggers = built_triggers()
         rects = {t["symbol"]: (t["x"], t["y"], t["width"], t["height"]) for t in triggers}
-        for name in ("trigger_pine_feeder_reach", "trigger_pine_house_reach"):
+        for name in zone_symbols():
             for other, rect in rects.items():
                 if other != name:
                     self.assertFalse(overlaps(tile_px(*rects[name]), tile_px(*rect)), (name, other))
@@ -648,8 +689,9 @@ class KikoTests(unittest.TestCase):
                          [["Emil:\nOur stove's dead.\nI'm so hungry!"]])
 
     def test_junction_plugs_carried_cable_once_and_lights_line(self):
-        script = actor_by_symbol(scene.JUNCTION_SYMBOL)["script"]
-        live = next(e for e in script if is_var_if(e, kiko.VAR_LINE_LIVE, 1))
+        zones, _ = b_zones(b_script())
+        [live] = zones[grid_chain.BOX_ZONE + 2]
+        self.assertTrue(is_var_if(live, kiko.VAR_LINE_LIVE, 1))
         self.assertEqual(walk_texts(live["children"]["true"]), [["Line is live."]])
         has_cable = next(e for e in live["children"]["false"]
                          if is_var_if(e, kiko.VAR_CARRYING_CABLE, 2))
@@ -672,24 +714,32 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(walk_texts(has_cable["children"]["false"])[0], ["No cable yet.\nCheck the pole."])
 
     def test_cable_pickup_requires_empty_hands_and_dead_line(self):
-        script = actor_by_symbol(scene.CABLE_SYMBOL)["script"]
-        empty = script[0]
-        self.assertTrue(is_var_if(empty, kiko.VAR_CARRYING_CABLE, 0))
-        dead = next(e for e in empty["children"]["true"] if is_var_if(e, kiko.VAR_FEEDER_LIVE, 0))
-        self.assertTrue(any(is_set(e, kiko.VAR_CARRYING_CABLE, 1) for e in dead["children"]["true"]))
-        self.assertTrue(any(e["command"] == "EVENT_ACTOR_HIDE" for e in dead["children"]["true"]))
-        self.assertTrue(any(e["command"] == "EVENT_SOUND_PLAY_EFFECT" and
-                            e["args"]["type"] == FAKE_AUDIO["pickup"]
-                            for e in dead["children"]["true"]))
+        zones, _ = b_zones(b_script())
+        for number, live_var in ((1, kiko.VAR_FEEDER_LIVE), (2, kiko.VAR_LINE_LIVE)):
+            [empty] = zones[number]
+            self.assertTrue(is_var_if(empty, kiko.VAR_CARRYING_CABLE, 0))
+            dead = next(e for e in empty["children"]["true"] if is_var_if(e, live_var, 0))
+            take = dead["children"]["true"]
+            self.assertTrue(any(is_set(e, kiko.VAR_CARRYING_CABLE, number) for e in take))
+            self.assertTrue(any(e["command"] == "EVENT_ACTOR_HIDE" for e in take))
+            self.assertTrue(any(e["command"] == "EVENT_SOUND_PLAY_EFFECT" and
+                                e["args"]["type"] == FAKE_AUDIO["pickup"] for e in take))
+        feeder = next(e for e in zones[1][0]["children"]["true"] if is_var_if(e, kiko.VAR_FEEDER_LIVE, 0))
         self.assertTrue(any(e["command"] == "EVENT_TEXT" and
                             e["args"]["text"] == ["Got the cable!\nTo the box ahead."]
-                            for e in dead["children"]["true"]))
-        # The house cable end is the same job on the house pole: it needs the house line dead.
-        house = actor_by_symbol("pine_house_cable_end")["script"][0]
-        self.assertTrue(is_var_if(house, kiko.VAR_CARRYING_CABLE, 0))
-        self.assertTrue(any(is_var_if(e, kiko.VAR_LINE_LIVE, 0) and
-                            any(is_set(x, kiko.VAR_CARRYING_CABLE, 2) for x in walk(e["children"]["true"]))
-                            for e in house["children"]["true"]))
+                            for e in feeder["children"]["true"]))
+        self.assertEqual(walk_texts(zones[1][0]["children"]["false"]), [["Hands full!\nOne cable a trip."]])
+
+    def test_b_away_from_every_zone_drops_the_carried_cable_to_its_pole(self):
+        zones, rest = b_zones(b_script())
+        self.assertEqual(zones[grid_chain.NPC_ZONE], [], "the neighbour zone never drops the cable")
+        [drop] = rest
+        branches = {e["args"]["condition"]["valueB"]["value"]: e["children"]["true"]
+                    for e in drop["children"]["true"] if e["command"] == "EVENT_IF"}
+        self.assertEqual(set(branches), {1, 2})
+        for number in (1, 2):
+            self.assertTrue(any(is_set(e, kiko.VAR_CARRYING_CABLE, 0) for e in branches[number]))
+            self.assertEqual(walk_texts(branches[number]), [["Cable dropped."]])
 
     def test_checked_in_files_match_the_builders(self):
         """Run after make_kiko_scene.py: disk must match the in-memory build."""
@@ -699,7 +749,7 @@ class KikoTests(unittest.TestCase):
             "connect": shared.sidecar_id(scene.CONNECT_SOUND, "sound"),
             "pickup": shared.sidecar_id(scene.PICKUP_SOUND, "sound"),
         }
-        expected = scene.build_scene(music, audio["death"])
+        expected = scene.build_scene(music, audio)
         self.assertEqual(shared.load_json(scene.SCENE_DIR / "scene.gbsres"), expected)
         for actor in scene.build_actors(audio):
             path = scene.SCENE_DIR / "actors" / f"{actor['symbol']}.gbsres"

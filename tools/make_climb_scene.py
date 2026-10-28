@@ -56,8 +56,10 @@ try:
     import hazards  # noqa: E402  (cracked boards and hidden cables: placement and timings)
     import rosa  # noqa: E402  (Signal Hill owns the live arc sprite and palette)
     import scenes  # noqa: E402  (scene registry: editor positions)
+    import grid_chain  # noqa: E402  (B-press zone values and zone rects, shared with the job scenes)
 except ModuleNotFoundError as error:
-    if error.name in {"tickets", "voices", "climb", "intro", "opening", "ridge", "hazards", "rosa", "scenes"}:
+    if error.name in {"tickets", "voices", "climb", "intro", "opening", "ridge", "hazards", "rosa", "scenes",
+                      "grid_chain"}:
         raise SystemExit(
             f"cannot generate storm_climb: tools/{error.name}.py is missing; "
             "it must provide the climb/opening data API"
@@ -67,6 +69,10 @@ except ModuleNotFoundError as error:
 POLE_SPRITE_PALETTE_SLOT = intro.SPRITE_SLOTS["pole"]
 VAR_CARRYING_CABLE_ID = climb.VAR_CARRYING_CABLE
 VAR_LINE_LIVE_ID = climb.VAR_LINE_LIVE
+VAR_NEAR_ID = climb.VAR_NEAR
+# The one line's B-press zone values (grid_chain: pole zone = line number, box zone = BOX_ZONE + number).
+POLE_ZONE_VALUE = 1
+BOX_ZONE_VALUE = grid_chain.BOX_ZONE + 1
 LINE_BG_SLOT = climb.LINE_BG_SLOT
 GRID_SPRITE_PALETTE_SLOT = climb.GRID_SPRITE_PALETTE_SLOT
 
@@ -118,6 +124,7 @@ def merged_variables(data: dict[str, Any]) -> dict[str, Any]:
     for key, name, symbol in (
         (VAR_CARRYING_CABLE_ID, "Carrying Cable", "var_carrying_cable"),
         (VAR_LINE_LIVE_ID, "Line Live", "var_line_live"),
+        climb.NEAR_VARIABLE,
         *hazards.VARIABLES,
     ):
         value = {"id": key, "name": name, "symbol": symbol}
@@ -366,15 +373,106 @@ def pole_actor_id() -> str:
     return resource_id(f"actor:{POLE_ACTOR_KEY}")
 
 
-def cable_drop_events(key: str) -> list[dict[str, Any]]:
-    """A carried cable falls back to the storm pole when the carrier is hit."""
+def cable_drop_events(key: str, text: str | None = None) -> list[dict[str, Any]]:
+    """A carried cable falls back to the storm pole: when the carrier is hit, or on B away from every zone.
+
+    ``text`` adds one line of dialogue after the drop (the B press says so).
+    """
     return [if_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:cable-drop", [
         set_value(VAR_CARRYING_CABLE_ID, 0, f"{key}:cable-clear"),
         actor_state("player", "", f"{key}:hero-empty-hands"),
         event("EVENT_ACTOR_SHOW", {"actorId": cable_actor_id()}, f"{key}:cable-show"),
         actor_state(cable_actor_id(), "Dangling", f"{key}:cable-dangling"),
         *hud_events(f"{key}:cable-hud"),
+        *(say([text], f"{key}:dropped") if text else []),
     ])]
+
+
+# ---------------------------------------------------------------------------
+# B press (grid_chain.py's model, for the one line): zones set VAR_NEAR, and one
+# input script picks up, plugs in, drops or stays quiet. Override is off, so
+# Amara's native B talk keeps working; the cable and junction actors have no script.
+# ---------------------------------------------------------------------------
+def zone_trigger(*, name: str, symbol: str, index: int, rect: tuple[int, int, int, int],
+                 value: int, trigger_key: str) -> dict[str, Any]:
+    """Entering sets VAR_NEAR to ``value``; leaving clears it only while it still holds ``value``."""
+    x, y, width, height = rect
+    key = f"zone:{trigger_key}"
+    return {
+        "_resourceType": "trigger",
+        "id": resource_id(f"trigger:{trigger_key}"),
+        "name": name,
+        "prefabId": "",
+        "x": x,
+        "y": y,
+        "symbol": symbol,
+        "prefabScriptOverrides": {},
+        "width": width,
+        "height": height,
+        "script": [set_value(VAR_NEAR_ID, value, f"{key}:enter")],
+        "leaveScript": [if_value(VAR_NEAR_ID, value, f"{key}:leave", [
+            set_value(VAR_NEAR_ID, grid_chain.NEAR_NONE, f"{key}:clear"),
+        ])],
+        "_index": index,
+    }
+
+
+def b_press_script(connect_sound_id: str, pickup_sound_id: str) -> dict[str, Any]:
+    key = "b-press"
+    pickup = [if_value(VAR_CARRYING_CABLE_ID, 0, f"{key}:pole:empty-hands", [
+        if_value(VAR_LINE_LIVE_ID, 0, f"{key}:pole:line-dead", [
+            set_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:pole:carry"),
+            actor_state("player", "Carry", f"{key}:pole:hero-carry"),
+            event("EVENT_ACTOR_HIDE", {"actorId": cable_actor_id()}, f"{key}:pole:hide"),
+            sound_event(pickup_sound_id, f"{key}:pole:sfx"),
+            *say(short_lines("Got the cable!\nTake it up top."), f"{key}:pole:text"),
+        ]),
+    ], [
+        *say(short_lines("Hands full!\nOne cable a trip."), f"{key}:pole:hands-full"),
+    ])]
+    plug = [if_value(VAR_LINE_LIVE_ID, 1, f"{key}:box:live", [
+        *say(short_lines("Line is live."), f"{key}:box:already-live"),
+    ], [
+        if_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:box:has-cable", [
+            set_value(VAR_CARRYING_CABLE_ID, 0, f"{key}:box:clear-cable"),
+            actor_state("player", "", f"{key}:box:hero-empty-hands"),
+            set_value(VAR_LINE_LIVE_ID, 1, f"{key}:box:set-live"),
+            actor_state(junction_actor_id(), "Live", f"{key}:box:live-state"),
+            actor_state(pole_actor_id(), "Standing", f"{key}:box:pole-standing"),
+            line_palette_state(True, f"{key}:box:metal-live"),
+            sound_event(connect_sound_id, f"{key}:box:sfx"),
+            *say(short_lines("Line is live!\nOn to Amara's."), f"{key}:box:text"),
+        ], [
+            *say(short_lines("No cable yet.\nCheck the pole."), f"{key}:box:no-cable"),
+        ]),
+    ])]
+    drop = if_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:drop",
+                    cable_drop_events(f"{key}:drop", grid_chain.CARRY_TEXT_DROPPED), [])
+    body = [if_value(VAR_NEAR_ID, grid_chain.NPC_ZONE, f"{key}:npc", [], [drop])]
+    body = [if_value(VAR_NEAR_ID, BOX_ZONE_VALUE, f"{key}:box-zone", plug, body)]
+    body = [if_value(VAR_NEAR_ID, POLE_ZONE_VALUE, f"{key}:pole-zone", pickup, body)]
+    return {
+        **event("EVENT_SET_INPUT_SCRIPT", {"input": ["b"], "override": False}, key),
+        "children": {"true": body},
+    }
+
+
+def climb_zone_triggers() -> list[dict[str, Any]]:
+    """Pole, junction and Amara zones, after the other triggers (no overlap with them)."""
+    rects = {
+        "pole": grid_chain.pole_zone_rect(climb.DAMAGED_POLE),
+        "box": grid_chain.reach_rect(climb.JUNCTION_BOX),
+        "npc": grid_chain.npc_zone_rect(MARTA_SHELF_POSITION),
+    }
+    specs = [
+        ("Pole Zone (storm pole)", "trigger_grid_pole_zone", rects["pole"], POLE_ZONE_VALUE, "pole-zone:cable"),
+        ("Junction Zone", "trigger_grid_junction_zone", rects["box"], BOX_ZONE_VALUE, "reach:junction"),
+        ("Amara Zone", "trigger_marta_zone", rects["npc"], grid_chain.NPC_ZONE, "npc-zone:marta"),
+    ]
+    # Indexes 14-16: the scene's existing triggers keep theirs (gusts 0-7, summit 10, boards 11-13, 99/100).
+    return [zone_trigger(name=name, symbol=symbol, index=14 + position, rect=rect, value=value,
+                         trigger_key=trigger_key)
+            for position, (name, symbol, rect, value, trigger_key) in enumerate(specs)]
 
 
 def actor_state(actor_id: str, state: str, key: str, loop: bool = True) -> dict[str, Any]:
@@ -558,7 +656,7 @@ def collision_rle(grid: list[list[int]], width: int, height: int) -> str:
     return "".join(out)
 
 
-def scene_script(music_id: str) -> list[dict[str, Any]]:
+def scene_script(music_id: str, audio_ids: dict[str, str]) -> list[dict[str, Any]]:
     return [
         event(
             "EVENT_PLAYER_SET_SPRITE",
@@ -574,6 +672,8 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
         # Live Wire starts every entry with an empty hand and a dead line.
         set_value(VAR_CARRYING_CABLE_ID, 0, "init-carrying-cable"),
         set_value(VAR_LINE_LIVE_ID, 0, "init-line-live"),
+        set_value(VAR_NEAR_ID, grid_chain.NEAR_NONE, "init-near"),
+        b_press_script(audio_ids["connect"], audio_ids["pickup"]),
         # Standing on a cracked board is tracked by its trigger; a fresh entry starts off it.
         set_value(hazards.VAR_ON_BOARD, 0, "init-on-board"),
         # Explicit cold summit window on every entry, matching the var 0 reset.
@@ -675,24 +775,14 @@ def checkpoint_actor(index: int, marta_sprite_id: str) -> dict[str, Any]:
     return actor
 
 
-def cable_end_actor(index: int, sprite_id: str, pickup_sound_id: str) -> dict[str, Any]:
-    """Dangling cable on the storm-snapped pole (shelf 21). B picks it up.
+def cable_end_actor(index: int, sprite_id: str) -> dict[str, Any]:
+    """Dangling cable on the storm-snapped pole (shelf 21). No script: the B press in its pole zone picks it up.
 
-    Only a visible cable can be picked up, and it is hidden once carried. The
-    start script is unconditional, like Amara's, because scene init resets
+    The start script is unconditional, like Amara's, because scene init resets
     var 6 and 7 on every entry.
     """
     key = CABLE_ACTOR_KEY
     x, y = climb.DAMAGED_POLE
-    pickup = [if_value(VAR_CARRYING_CABLE_ID, 0, f"{key}:empty-hands", [
-        if_value(VAR_LINE_LIVE_ID, 0, f"{key}:line-dead", [
-            set_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:carry"),
-            actor_state("player", "Carry", f"{key}:hero-carry"),
-            event("EVENT_ACTOR_HIDE", {"actorId": "$self$"}, f"{key}:hide"),
-            sound_event(pickup_sound_id, f"{key}:sfx"),
-            *say(short_lines("Got the cable!\nTake it up top."), f"{key}:text"),
-        ]),
-    ])]
     actor = actor_resource(
         index=index,
         symbol=CABLE_ACTOR_SYMBOL,
@@ -701,33 +791,16 @@ def cable_end_actor(index: int, sprite_id: str, pickup_sound_id: str) -> dict[st
         y=y,
         sprite_id=sprite_id,
         key=key,
-        script=pickup,
         start_script=[actor_state("$self$", "Dangling", f"{key}:dangling")],
     )
     actor["animate"] = True
     return actor
 
 
-def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dict[str, Any]:
-    """Dead junction box on shelf 15. Plugging in the carried cable energizes it."""
+def junction_box_actor(index: int, sprite_id: str) -> dict[str, Any]:
+    """Dead junction box on shelf 15. No script: the B press in its zone plugs the carried cable in."""
     key = JUNCTION_ACTOR_KEY
     x, y = climb.JUNCTION_BOX
-    plug = [if_value(VAR_LINE_LIVE_ID, 1, f"{key}:live", [
-        *say(short_lines("Line is live."), f"{key}:already-live"),
-    ], [
-        if_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:has-cable", [
-            set_value(VAR_CARRYING_CABLE_ID, 0, f"{key}:clear-cable"),
-            actor_state("player", "", f"{key}:hero-empty-hands"),
-            set_value(VAR_LINE_LIVE_ID, 1, f"{key}:set-live"),
-            actor_state("$self$", "Live", f"{key}:live-state"),
-            actor_state(pole_actor_id(), "Standing", f"{key}:pole-standing"),
-            line_palette_state(True, f"{key}:metal-live"),
-            sound_event(connect_sound_id, f"{key}:sfx"),
-            *say(short_lines("Line is live!\nOn to Amara's."), f"{key}:text"),
-        ], [
-            *say(short_lines("No cable yet.\nCheck the pole."), f"{key}:no-cable"),
-        ]),
-    ])]
     actor = actor_resource(
         index=index,
         symbol=JUNCTION_ACTOR_SYMBOL,
@@ -736,7 +809,6 @@ def junction_box_actor(index: int, sprite_id: str, connect_sound_id: str) -> dic
         y=y,
         sprite_id=sprite_id,
         key=key,
-        script=plug,
         start_script=[actor_state("$self$", "Dead", f"{key}:dead")],
     )
     actor["animate"] = True
@@ -747,7 +819,7 @@ def pole_actor(index: int, sprite_id: str) -> dict[str, Any]:
     """The snapped storm pole on shelf 21, using the intro pole sprite.
 
     Snapped while the line is dead, Standing once the junction box makes it live.
-    Non-colliding and not interactive: the cable-end pickup owns the B press.
+    Non-colliding and not interactive: the B input script owns the press.
     """
     key = POLE_ACTOR_KEY
     x, y = climb.DAMAGED_POLE
@@ -978,7 +1050,7 @@ def gust_marker_triggers(death_sound_id: str) -> list[dict[str, Any]]:
     return markers
 
 
-def build_scene(music_id: str) -> dict[str, Any]:
+def build_scene(music_id: str, audio_ids: dict[str, str]) -> dict[str, Any]:
     if int(climb.MAP_W) != 20 or int(climb.MAP_H) != 36:
         raise ValueError("storm_climb must match the Storm Night 20x36 scene schema")
     scene = load_json(REFERENCE_SCENE)
@@ -1017,7 +1089,7 @@ def build_scene(music_id: str) -> dict[str, Any]:
             "backgroundId": resource_id("background:storm-climb"),
             "paletteIds": background_palette_ids,
             "spritePaletteIds": sprite_palette_ids,
-            "script": scene_script(music_id),
+            "script": scene_script(music_id, audio_ids),
             "playerHit1Script": respawn_events("debris-hit", sidecar_id("assets/sounds/death.wav.gbsres", "sound")),
         }
     )
@@ -1061,7 +1133,7 @@ def main() -> None:
         "pickup": sidecar_id("assets/sounds/pickup.wav.gbsres", "sound"),
     }
 
-    scene = build_scene(music_id)
+    scene = build_scene(music_id, audio_ids)
     actors = [checkpoint_actor(0, sprite_ids["marta"])]
     actors.extend(
         timed_gust_actor(index + 1, climb.GUST_LANES[index], sprite_ids["gust"])
@@ -1071,10 +1143,8 @@ def main() -> None:
     # order (higher index = lower OAM = on top), so the pole goes first and the
     # cable stays visible above it (cart bug B-13).
     actors.append(pole_actor(len(actors), intro.POLE_SPRITE_ID))
-    actors.append(cable_end_actor(len(actors), climb.grid_resource_id("sprite:grid_cable_end"),
-                                  audio_ids["pickup"]))
-    actors.append(junction_box_actor(len(actors), climb.grid_resource_id("sprite:grid_junction_box"),
-                                     audio_ids["connect"]))
+    actors.append(cable_end_actor(len(actors), climb.grid_resource_id("sprite:grid_cable_end")))
+    actors.append(junction_box_actor(len(actors), climb.grid_resource_id("sprite:grid_junction_box")))
     # Cracked boards and hidden cables go last: the highest indexes draw on top.
     actors.extend(hazard_actors(len(actors)))
     triggers = gust_marker_triggers(audio_ids["death"])
@@ -1082,6 +1152,8 @@ def main() -> None:
     triggers.append(street_exit_trigger())
     triggers.append(summit_exit_trigger())
     triggers.extend(hazard_triggers())
+    # B-press zones last (their own indexes 14-16; the existing trigger indexes are kept).
+    triggers.extend(climb_zone_triggers())
 
     write_variables()
     for relative_path, palette in grid_palettes() + hazard_palettes():

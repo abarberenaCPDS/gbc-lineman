@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "7f08e6e8-ab10-5ca9-8651-aba5a673d678",
+  "name": "Junction Zone",
+  "prefabId": "",
+  "x": 14,
+  "y": 12,
+  "symbol": "trigger_grid_junction_zone",
+  "prefabScriptOverrides": {},
+  "width": 5,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 101
+        }
+      },
+      "id": "9efe53d5-d079-53b4-8fb6-1c87f1bbb306"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 101
+          }
+        }
+      },
+      "id": "a1abde03-6e60-586b-9bcf-16be7fa9cfbd",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "3fa968fb-978c-5dd7-bcf1-b9e71a75691f"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 15
+}

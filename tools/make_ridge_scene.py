@@ -212,8 +212,8 @@ def say(lines: list[str], key: str, speaker: str | None = None) -> list[dict[str
 # variables, dialogue and HUD. The aliases below keep this file's call sites.
 CHAIN = grid_chain.GridChain(
     rid=ridge.resource_id, lines=LINES, chain_var=ridge.VAR_CHAIN_LIVE, lines_var=ridge.VAR_LINES_LIVE,
-    carrying_var=VAR_CARRYING_CABLE, line_bg_slot=ridge.LINE_BG_SLOT, text=RIDGE_TEXT,
-    say=say, hud=hud_events, bare_event_key="house",
+    carrying_var=VAR_CARRYING_CABLE, near_var=climb.VAR_NEAR, line_bg_slot=ridge.LINE_BG_SLOT,
+    text=RIDGE_TEXT, say=say, hud=hud_events, bare_event_key="house",
 )
 event = CHAIN.event
 branch_event = CHAIN.branch_event
@@ -265,7 +265,7 @@ def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # Scene init
 # ---------------------------------------------------------------------------
-def scene_script(music_id: str) -> list[dict[str, Any]]:
+def scene_script(music_id: str, audio_ids: dict[str, str]) -> list[dict[str, Any]]:
     return [
         event("EVENT_PLAYER_SET_SPRITE",
               {"spriteSheetId": opening.resource_id("sprite:opening_worker24")},
@@ -274,6 +274,9 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
               {"actorId": "player", "direction": {"type": "direction", "value": "right"}},
               "init-player-direction"),
         set_value(VAR_CARRYING_CABLE, 0, "init-carrying-cable"),
+        set_value(climb.VAR_NEAR, grid_chain.NEAR_NONE, "init-near"),
+        # B: pick up, plug in, drop or talk, by the zone the hero stands in (grid_chain).
+        CHAIN.input_script_event(connect_sound_id=audio_ids["connect"], pickup_sound_id=audio_ids["pickup"]),
         set_value(VAR_LINE_LIVE, 0, "init-line-live"),
         set_value(VAR_HOME_POWERED, 0, "init-home-powered"),
         set_value(VAR_FEEDER_LIVE, 0, "init-feeder-live"),
@@ -534,7 +537,7 @@ def short_lines(*lines: str) -> list[str]:
 # ---------------------------------------------------------------------------
 # Scene
 # ---------------------------------------------------------------------------
-def build_scene(music_id: str, death_sound_id: str) -> dict[str, Any]:
+def build_scene(music_id: str, audio_ids: dict[str, str]) -> dict[str, Any]:
     if (ridge.MAP_W, ridge.MAP_H) != (100, 30):
         raise ValueError("wind_ridge must match the 100x30 PLATFORM contract")
     template = shared.load_json(CLIMB_SCENE)
@@ -575,8 +578,8 @@ def build_scene(music_id: str, death_sound_id: str) -> dict[str, Any]:
         "backgroundId": ridge.BACKGROUND_ID,
         "paletteIds": background_palette_ids,
         "spritePaletteIds": sprite_palette_ids,
-        "script": scene_script(music_id),
-        "playerHit1Script": respawn_events("player-hit", death_sound_id),
+        "script": scene_script(music_id, audio_ids),
+        "playerHit1Script": respawn_events("player-hit", audio_ids["death"]),
         "playerHit2Script": [],
         "playerHit3Script": [],
     })
@@ -593,8 +596,8 @@ def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[
         # stays visible over the pole on their shared tile (cart bug B-13).
         actors += [
             pole_actor(line, 0, intro.POLE_SPRITE_ID),
-            cable_end_actor(line, 0, cable_sprite, audio_ids["pickup"]),
-            box_actor(line, 0, box_sprites[line["box_kind"]], audio_ids["connect"]),
+            cable_end_actor(line, 0, cable_sprite),
+            box_actor(line, 0, box_sprites[line["box_kind"]]),
         ]
     actors += [
         gust_actor(number, lane, delay, sprite_ids["gust"])
@@ -630,10 +633,15 @@ def build_triggers(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
         board_trigger(number, board, BOARD_TRIGGER_BASE_INDEX + number - 1)
         for number, board in enumerate(hazards.BOARDS["wind_ridge"], start=1)
     )
-    # Box reach triggers come last: they sit clear of the exit, door and boards.
+    # B-press zones come last (box zones, then poles): where two overlap the earlier
+    # trigger wins. No neighbour zone: Hiroshi's talk stays native (see docs/BUGS.md B-06).
+    # They sit clear of the exit, door and boards.
     triggers.extend(
-        CHAIN.box_reach_trigger(line, symbol=f"trigger_ridge_{line['key']}_reach", index=0,
-                                connect_sound_id=audio_ids["connect"])
+        CHAIN.box_zone_trigger(line, symbol=f"trigger_ridge_{line['key']}_reach", index=0)
+        for line in LINES
+    )
+    triggers.extend(
+        CHAIN.pole_zone_trigger(line, symbol=f"trigger_ridge_{line['key']}_pole_zone", index=0)
         for line in LINES
     )
     for index, trigger in enumerate(triggers):
@@ -651,7 +659,7 @@ def merged_variables(data: dict[str, Any]) -> dict[str, Any]:
     different name or symbol is refused rather than renamed.
     """
     merged = json.loads(json.dumps(data))
-    for key, name, symbol in (*ridge.VARIABLES, *hazards.VARIABLES):
+    for key, name, symbol in (*ridge.VARIABLES, *hazards.VARIABLES, climb.NEAR_VARIABLE):
         value = {"id": key, "name": name, "symbol": symbol}
         existing = next((v for v in merged["variables"] if v["id"] == key), None)
         if existing is not None and existing != value:
@@ -699,7 +707,7 @@ def main() -> None:
     warn_if_missing_asset(ridge.TOMAS_SPRITE_ID, "sprites", "Hiroshi sprite")
     warn_if_missing_asset(ridge.CONCENTRATOR_SPRITE_ID, "sprites", "oxygen concentrator sprite")
 
-    scene = build_scene(music_id, audio_ids["death"])
+    scene = build_scene(music_id, audio_ids)
     actors = build_actors(sprite_ids, audio_ids)
     triggers = build_triggers(audio_ids)
 

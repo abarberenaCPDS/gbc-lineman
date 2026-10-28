@@ -287,13 +287,13 @@ def actor_state(target: str, state: str, key: str, loop: bool = True) -> dict[st
 # variables, dialogue and HUD. The aliases below keep this file's call sites.
 CHAIN = grid_chain.GridChain(
     rid=kiko.resource_id, lines=LINES, chain_var=VAR_CHAIN_LIVE, lines_var=VAR_LINES_LIVE,
-    carrying_var=VAR_CARRYING_CABLE, line_bg_slot=kiko.LINE_BG_SLOT, text=kiko.CHAIN_TEXT,
+    carrying_var=VAR_CARRYING_CABLE, near_var=climb.VAR_NEAR, line_bg_slot=kiko.LINE_BG_SLOT,
+    text=kiko.CHAIN_TEXT,
     say=say, hud=hud_events, bare_event_key="feeder",
 )
 pole_actor = CHAIN.pole_actor
 cable_end_actor = CHAIN.cable_end_actor
 box_actor = CHAIN.box_actor
-box_reach_trigger = CHAIN.box_reach_trigger
 actor_resource = CHAIN.actor_resource
 
 
@@ -323,7 +323,7 @@ def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # Scene init
 # ---------------------------------------------------------------------------
-def scene_script(music_id: str) -> list[dict[str, Any]]:
+def scene_script(music_id: str, audio_ids: dict[str, str]) -> list[dict[str, Any]]:
     return [
         event("EVENT_PLAYER_SET_SPRITE",
               {"spriteSheetId": opening.resource_id("sprite:opening_worker24")},
@@ -332,6 +332,9 @@ def scene_script(music_id: str) -> list[dict[str, Any]]:
               {"actorId": "player", "direction": {"type": "direction", "value": "right"}},
               "init-player-direction"),
         set_value(VAR_CARRYING_CABLE, 0, "init-carrying-cable"),
+        set_value(climb.VAR_NEAR, grid_chain.NEAR_NONE, "init-near"),
+        # B: pick up, plug in, drop or talk, by the zone the hero stands in (grid_chain).
+        CHAIN.input_script_event(connect_sound_id=audio_ids["connect"], pickup_sound_id=audio_ids["pickup"]),
         set_value(VAR_LINE_LIVE, 0, "init-line-live"),
         set_value(VAR_HOME_POWERED, 0, "init-home-powered"),
         set_value(VAR_FEEDER_LIVE, 0, "init-feeder-live"),
@@ -534,7 +537,7 @@ def short_lines(*lines: str) -> list[str]:
 # ---------------------------------------------------------------------------
 # Scene
 # ---------------------------------------------------------------------------
-def build_scene(music_id: str, death_sound_id: str) -> dict[str, Any]:
+def build_scene(music_id: str, audio_ids: dict[str, str]) -> dict[str, Any]:
     if (kiko.MAP_W, kiko.MAP_H) != (40, 18):
         raise ValueError("pine_hollow must match the 40x18 PLATFORM contract")
     template = shared.load_json(CLIMB_SCENE)
@@ -570,8 +573,8 @@ def build_scene(music_id: str, death_sound_id: str) -> dict[str, Any]:
         "backgroundId": kiko.BACKGROUND_ID,
         "paletteIds": background_palette_ids,
         "spritePaletteIds": sprite_palette_ids,
-        "script": scene_script(music_id),
-        "playerHit1Script": respawn_events("player-hit", death_sound_id),
+        "script": scene_script(music_id, audio_ids),
+        "playerHit1Script": respawn_events("player-hit", audio_ids["death"]),
         "playerHit2Script": [],
         "playerHit3Script": [],
     })
@@ -588,8 +591,8 @@ def build_actors(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
         # stays visible over the pole on their shared tile (cart bug B-13).
         actors += [
             pole_actor(line, 0, intro.POLE_SPRITE_ID),
-            cable_end_actor(line, 0, cable_sprite, audio_ids["pickup"]),
-            box_actor(line, 0, box_sprites[line["box_kind"]], audio_ids["connect"]),
+            cable_end_actor(line, 0, cable_sprite),
+            box_actor(line, 0, box_sprites[line["box_kind"]]),
         ]
     actors.extend(
         arc_actor(index, lane, kiko.ARC_START_DELAYS[index - 1], kiko.ARC_SPRITE_ID)
@@ -610,13 +613,18 @@ def build_actors(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
 
 def build_triggers(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
     triggers = [report_exit_trigger(), door_trigger(audio_ids["connect"])]
-    # Box reach triggers come last: they sit clear of the exit and the door.
-    base = len(triggers)
+    # B-press zones come last: box zones, then poles (no neighbour zone: Emil's talk
+    # stays native, see docs/BUGS.md B-06). They sit clear of the exit and the door.
     triggers.extend(
-        box_reach_trigger(line, symbol=f"trigger_pine_{line['key']}_reach", index=base + position,
-                          connect_sound_id=audio_ids["connect"])
-        for position, line in enumerate(LINES)
+        CHAIN.box_zone_trigger(line, symbol=f"trigger_pine_{line['key']}_reach", index=0)
+        for line in LINES
     )
+    triggers.extend(
+        CHAIN.pole_zone_trigger(line, symbol=f"trigger_pine_{line['key']}_pole_zone", index=0)
+        for line in LINES
+    )
+    for index, trigger in enumerate(triggers):
+        trigger["_index"] = index
     return triggers
 
 
@@ -630,7 +638,7 @@ def merged_variables(data: dict[str, Any]) -> dict[str, Any]:
     different name or symbol is refused rather than renamed.
     """
     merged = json.loads(json.dumps(data))
-    for key, name, symbol in (*kiko.VARIABLES, *hazards.VARIABLES):
+    for key, name, symbol in (*kiko.VARIABLES, *hazards.VARIABLES, climb.NEAR_VARIABLE):
         value = {"id": key, "name": name, "symbol": symbol}
         existing = next((v for v in merged["variables"] if v["id"] == key), None)
         if existing is not None and existing != value:
@@ -673,7 +681,7 @@ def main() -> None:
     warn_if_missing_asset(kiko.ARC_SPRITE_ID, "sprites", "live arc sprite")
     warn_if_missing_asset(kiko.TRANSFORMER_SPRITE_ID, "sprites", "transformer sprite")
 
-    scene = build_scene(music_id, audio_ids["death"])
+    scene = build_scene(music_id, audio_ids)
     actors = build_actors(audio_ids)
     triggers = build_triggers(audio_ids)
 

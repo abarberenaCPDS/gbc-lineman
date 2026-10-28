@@ -24,7 +24,7 @@ PROJECT_DIR = scene.PROJECT_DIR
 
 
 def built_scene():
-    return scene.build_scene(FAKE_MUSIC, FAKE_AUDIO["death"])
+    return scene.build_scene(FAKE_MUSIC, FAKE_AUDIO)
 
 
 def built_actors():
@@ -118,6 +118,41 @@ def is_var_if(event, variable, value):
             and condition.get("valueB", {}).get("value") == value)
 
 
+def b_script():
+    """The scene's one B input script (EVENT_SET_INPUT_SCRIPT) from init."""
+    [attach] = [e for e in built_scene()["script"] if e["command"] == "EVENT_SET_INPUT_SCRIPT"]
+    return attach
+
+
+def b_zones(attach):
+    """({near value: its true events}, events after the last zone) for the B script's zone chain."""
+    zones = {}
+    events = attach["children"]["true"]
+    while (len(events) == 1 and events[0]["command"] == "EVENT_IF"
+           and events[0]["args"]["condition"]["valueA"] == {"type": "variable", "value": climb.VAR_NEAR}):
+        entry = events[0]
+        zones[entry["args"]["condition"]["valueB"]["value"]] = entry["children"]["true"]
+        events = entry["children"]["false"]
+    return zones, events
+
+
+def zone_symbols():
+    return [t["symbol"] for t in built_triggers() if t["symbol"].endswith(("_reach", "_pole_zone"))]
+
+
+def first_hit(triggers, tile):
+    """The trigger the engine fires for a hero covering ``tile``: the first listed trigger that holds it."""
+    x, y = tile
+    return next((t for t in triggers
+                 if t["x"] <= x < t["x"] + t["width"] and t["y"] <= y < t["y"] + t["height"]), None)
+
+
+def box_tiles(box):
+    """Every tile a hero standing on this box covers: its two columns, the body rows above the feet."""
+    bx, by = box
+    return [(x, y) for x in (bx, bx + 1) for y in (by - 2, by - 1, by)]
+
+
 class RidgeTests(unittest.TestCase):
     def test_ids_are_stable_and_unique(self):
         ids = {
@@ -190,13 +225,15 @@ class RidgeTests(unittest.TestCase):
                          {"id": "15", "name": "On Cracked Board", "symbol": "var_on_cracked_board"})
         self.assertEqual(by_id["6"]["symbol"], "var_carrying_cable")
         self.assertEqual(by_id["7"]["symbol"], "var_line_live")
+        self.assertEqual(by_id[climb.VAR_NEAR],
+                         {"id": "27", "name": "Chain Near", "symbol": "var_chain_near"})
 
         synthetic = {"variables": [{"id": str(i), "name": f"v{i}", "symbol": f"var_v{i}"}
                                    for i in range(8)]}
         grown = scene.merged_variables(synthetic)
         self.assertEqual(grown["variables"][:8], synthetic["variables"])
         self.assertEqual([v["id"] for v in grown["variables"]],
-                         [str(i) for i in range(10)] + ["17", "18", "19", "20", hazards.VAR_ON_BOARD])
+                         [str(i) for i in range(10)] + ["17", "18", "19", "20", hazards.VAR_ON_BOARD, "27"])
         with self.assertRaises(ValueError):
             scene.merged_variables({"variables": [{"id": "8", "name": "Other", "symbol": "x"}]})
 
@@ -222,8 +259,11 @@ class RidgeTests(unittest.TestCase):
                          {scene.chain_palette_id(n) for n in range(len(LINES) + 1)})
         music = next(e for e in script if e["command"] == "EVENT_MUSIC_PLAY")
         self.assertEqual(music["args"]["musicId"], FAKE_MUSIC)
-        self.assertEqual(texts(script), [["Hiroshi needs his\noxygen machine!"],
-                                         ["Three lines down.\nOne cable a trip."]])
+        self.assertEqual([e["args"]["text"] for e in script if e["command"] == "EVENT_TEXT"],
+                         [["Hiroshi needs his\noxygen machine!"], ["Three lines down.\nOne cable a trip."]])
+        near = [e for e in script if e["command"] == "EVENT_SET_VALUE" and e["args"]["variable"] == climb.VAR_NEAR]
+        self.assertEqual([var_value(e) for e in near], [grid_chain.NEAR_NONE])
+        self.assertLess(script.index(near[0]), script.index(b_script()))
 
     def test_every_in_play_text_is_preceded_by_cutoff_and_followed_by_hud(self):
         checked = 0
@@ -241,9 +281,9 @@ class RidgeTests(unittest.TestCase):
                     self.assertTrue(redraws, "HUD must be redrawn after text")
                     self.assertEqual(redraws[0]["args"]["text"], ridge.HUD_TEXT)
         # Init x2, Hiroshi x3, 3 x (pickup + hands full), 3 x box (already, all, lit,
-        # dark, no cable, wrong), door x2, CLOSED box, hill exit refusal, and each
-        # box's reach trigger repeats its status lines (all, lit, dark) once per line.
-        self.assertEqual(checked, 42)
+        # dark, no cable, wrong), the B drop's line once per branch, door x2, CLOSED box,
+        # hill exit refusal. The box zones no longer repeat the box's status lines.
+        self.assertEqual(checked, 36)
 
     def test_hud_uses_exact_two_digit_variable_tokens(self):
         self.assertEqual(ridge.HUD_TEXT, "LINE %D1$18$/3 HOME %D1$09$/1")
@@ -266,7 +306,7 @@ class RidgeTests(unittest.TestCase):
                         self.assertLessEqual(len(part), scene.MAX_DIALOGUE_CHARS, part)
                         checked += 1
         # One line per in-play text, two-line boxes count each part. Hiroshi names 4 boxes.
-        self.assertEqual(checked, 85)  # 67 + the reach triggers' status lines (speaker lines included)
+        self.assertEqual(checked, 70)  # 85 - the reach triggers' status lines + the B drop's three lines
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
@@ -484,6 +524,13 @@ class RidgeTests(unittest.TestCase):
         self.assertTrue(all(board["_index"] > index for index in exits))
         self.assertEqual(hazards.VAR_ON_BOARD, "15")
 
+    def test_cable_end_and_box_actors_carry_no_scripts_of_their_own(self):
+        for line in LINES:
+            self.assertEqual(actor_by_symbol(line["cable_symbol"])["script"], [])
+            self.assertEqual(actor_by_symbol(line["box_symbol"])["script"], [])
+        tomas = actor_by_symbol(scene.TOMAS_SYMBOL)
+        self.assertTrue(tomas["script"], "Hiroshi keeps his native B talk")
+
     def test_storm_pole_uses_intro_sprite_and_starts_snapped_unless_live(self):
         pole = actor_by_symbol(scene.POLE_SYMBOL)
         self.assertEqual(pole["id"], scene.actor_id("pole"))
@@ -529,9 +576,10 @@ class RidgeTests(unittest.TestCase):
                          [["Hiroshi:\nThe line's dead!\nMy machine's off."]])
 
     def test_each_box_takes_only_its_own_cable_and_counts_the_line(self):
+        zones, _ = b_zones(b_script())
         for line in LINES:
-            script = actor_by_symbol(line["box_symbol"])["script"]
-            live = next(e for e in script if is_var_if(e, line["live_var"], 1))
+            [live] = zones[grid_chain.BOX_ZONE + line["number"]]
+            self.assertTrue(is_var_if(live, line["live_var"], 1))
             self.assertEqual(texts(live["children"]["true"]), [["Already fixed."]])
             has_cable = next(e for e in live["children"]["false"]
                              if is_var_if(e, ridge.VAR_CARRYING_CABLE, line["number"]))
@@ -552,14 +600,16 @@ class RidgeTests(unittest.TestCase):
             self.assertEqual(texts(other["children"]["true"]), [["No cable yet.\nFind its pole."]])
             self.assertEqual(texts(other["children"]["false"]), [["Wrong cable\nfor this box."]])
         incs = [e for script in all_script_lists() for e in walk(script) if e["command"] == "EVENT_INC_VALUE"]
-        # Each box and its reach trigger share one connect path: two counts per line, nothing else.
-        self.assertEqual(len(incs), 2 * ridge.LINE_COUNT, "nothing else changes the counter")
+        # One connect path per box, reached only from its B press: one count per line, nothing else.
+        self.assertEqual(len(incs), ridge.LINE_COUNT, "nothing else changes the counter")
 
     def test_power_reaches_a_box_only_through_every_line_upstream(self):
+        zones, _ = b_zones(b_script())
         for line in LINES:
-            script = actor_by_symbol(line["box_symbol"])["script"]
-            plugged = next(e for e in walk(script) if is_var_if(e, ridge.VAR_CARRYING_CABLE, line["number"])
-                           and e["children"]["true"])["children"]["true"]
+            [live] = zones[grid_chain.BOX_ZONE + line["number"]]
+            has_cable = next(e for e in live["children"]["false"]
+                             if is_var_if(e, ridge.VAR_CARRYING_CABLE, line["number"]))
+            plugged = has_cable["children"]["true"]
             commands = [e["command"] for e in plugged]
             # The chain refresh (which sets VAR_CHAIN_LIVE) runs before the message reads it.
             refresh = next(i for i, e in enumerate(plugged)
@@ -607,18 +657,89 @@ class RidgeTests(unittest.TestCase):
             for stage, index in enumerate(ridge.STAGE_COLOR_INDEX, start=1):
                 self.assertEqual(colors[index], ridge.WIRE_LIVE if stage <= stages else ridge.WIRE_DEAD)
 
-    def test_cable_pickup_requires_empty_hands_and_dead_line(self):
+    def test_pickup_is_b_in_the_pole_zone_with_empty_hands_and_dead_line(self):
+        zones, _ = b_zones(b_script())
         for line in LINES:
-            script = actor_by_symbol(line["cable_symbol"])["script"]
-            empty = script[0]
+            [empty] = zones[line["number"]]
             self.assertTrue(is_var_if(empty, ridge.VAR_CARRYING_CABLE, 0))
-            dead = next(e for e in empty["children"]["true"] if is_var_if(e, line["live_var"], 0))
+            [dead] = empty["children"]["true"]
+            self.assertTrue(is_var_if(dead, line["live_var"], 0))
             take = dead["children"]["true"]
             self.assertTrue(any(is_set(e, ridge.VAR_CARRYING_CABLE, line["number"]) for e in take))
-            self.assertTrue(any(e["command"] == "EVENT_ACTOR_HIDE" for e in take))
+            hide = next(e for e in take if e["command"] == "EVENT_ACTOR_HIDE")
+            self.assertEqual(hide["args"]["actorId"], scene.actor_id(line["cable"]))
             self.assertTrue(any(e["command"] == "EVENT_SOUND_PLAY_EFFECT" and
                                 e["args"]["type"] == FAKE_AUDIO["pickup"] for e in take))
             self.assertEqual(texts(empty["children"]["false"]), [["Hands full!\nOne cable a trip."]])
+
+    def test_b_away_from_every_zone_drops_the_carried_cable_to_its_pole(self):
+        zones, rest = b_zones(b_script())
+        self.assertEqual(zones[grid_chain.NPC_ZONE], [], "the neighbour zone never drops the cable")
+        [drop] = rest
+        self.assertTrue(is_at_least(drop, ridge.VAR_CARRYING_CABLE, 1))
+        branches = {e["args"]["condition"]["valueB"]["value"]: e["children"]["true"]
+                    for e in drop["children"]["true"] if e["command"] == "EVENT_IF"}
+        self.assertEqual(set(branches), {line["number"] for line in LINES})
+        for line in LINES:
+            branch = branches[line["number"]]
+            self.assertTrue(any(is_set(e, ridge.VAR_CARRYING_CABLE, 0) for e in branch))
+            states = [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                      for e in branch if e["command"] == "EVENT_ACTOR_SET_STATE"]
+            self.assertIn((scene.actor_id(line["cable"]), "Dangling"), states)
+            self.assertTrue(any(e["command"] == "EVENT_ACTOR_SHOW" and
+                                e["args"]["actorId"] == scene.actor_id(line["cable"]) for e in branch))
+            self.assertEqual(texts(branch), [["Cable dropped."]])
+
+    def test_zone_triggers_set_near_on_enter_and_clear_only_their_own_value(self):
+        triggers = {t["symbol"]: t for t in built_triggers()}
+        expected = {}
+        for line in LINES:
+            expected[f"trigger_ridge_{line['key']}_reach"] = grid_chain.BOX_ZONE + line["number"]
+            expected[f"trigger_ridge_{line['key']}_pole_zone"] = line["number"]
+        self.assertEqual(set(zone_symbols()), set(expected))
+        for symbol, value in expected.items():
+            zone = triggers[symbol]
+            [enter] = zone["script"]
+            self.assertEqual((enter["command"], enter["args"]["variable"], var_value(enter)),
+                             ("EVENT_SET_VALUE", climb.VAR_NEAR, value), symbol)
+            [leave] = zone["leaveScript"]
+            self.assertTrue(is_var_if(leave, climb.VAR_NEAR, value), symbol)
+            self.assertTrue(is_set(leave["children"]["true"][0], climb.VAR_NEAR, grid_chain.NEAR_NONE), symbol)
+
+    def test_zones_never_connect_pick_up_or_drop_on_enter(self):
+        for symbol in zone_symbols():
+            trigger = trigger_by_symbol(symbol)
+            for entry in walk(trigger["script"] + trigger["leaveScript"]):
+                self.assertIn(entry["command"], ("EVENT_SET_VALUE", "EVENT_IF"), symbol)
+                if entry["command"] == "EVENT_SET_VALUE":
+                    self.assertEqual(entry["args"]["variable"], climb.VAR_NEAR, symbol)
+
+    def test_standing_on_any_box_tile_resolves_to_that_boxs_zone(self):
+        # The engine fires the first listed trigger that covers the hero, so a hero
+        # on a box's own tiles must resolve to that box's zone, not a neighbour's.
+        triggers = built_triggers()
+        for line in LINES:
+            for tile in box_tiles(line["box_at"]):
+                hit = first_hit(triggers, tile)
+                self.assertIsNotNone(hit, (line["key"], tile))
+                self.assertEqual(hit["symbol"], "trigger_ridge_" + line["key"] + "_reach", (line["key"], tile))
+
+    def test_zones_fit_the_trigger_budget_and_clear_the_exit_door_and_boards(self):
+        triggers = built_triggers()
+        self.assertLessEqual(len(triggers), 30, "GB Studio allows up to 30 triggers per scene")
+        zones = [t for t in triggers if t["symbol"] in zone_symbols()]
+
+        def rect(t):
+            return (t["x"], t["y"], t["width"], t["height"])
+
+        def overlap(a, b):
+            return (a[0] < b[0] + b[2] and b[0] < a[0] + a[2] and a[1] < b[1] + b[3] and b[1] < a[1] + a[3])
+
+        for zone in zones:
+            for other in triggers:
+                if other is zone:
+                    continue
+                self.assertFalse(overlap(rect(zone), rect(other)), (zone["symbol"], other["symbol"]))
 
     def test_span_arcs_stay_dark_until_every_line_upstream_is_live(self):
         arcs = [a for a in built_actors() if a["symbol"].startswith("ridge_span_arc_")]
@@ -674,7 +795,7 @@ class RidgeTests(unittest.TestCase):
             "gust": shared.sidecar_id(scene.GUST_SPRITE, "sprite"),
             "arc": shared.sidecar_id(scene.ARC_SPRITE, "sprite"),
         }
-        expected = scene.build_scene(music, audio["death"])
+        expected = scene.build_scene(music, audio)
         self.assertEqual(shared.load_json(scene.SCENE_DIR / "scene.gbsres"), expected)
         for actor in scene.build_actors(sprites, audio):
             path = scene.SCENE_DIR / "actors" / f"{actor['symbol']}.gbsres"

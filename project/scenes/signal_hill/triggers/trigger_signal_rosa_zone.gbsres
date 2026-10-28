@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "0c6e323f-004c-5703-8e24-f726cbb2bba3",
+  "name": "Priya Zone",
+  "prefabId": "",
+  "x": 33,
+  "y": 9,
+  "symbol": "trigger_signal_rosa_zone",
+  "prefabScriptOverrides": {},
+  "width": 2,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 200
+        }
+      },
+      "id": "22b19736-49d6-5de0-9148-494757f7fcaf"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 200
+          }
+        }
+      },
+      "id": "96ad306f-3d9b-57e0-95e9-d24bc09efd9a",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "acd00ba2-4dea-5b97-9fbf-0f5e0abc5358"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 6
+}

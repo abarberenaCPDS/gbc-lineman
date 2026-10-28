@@ -106,6 +106,10 @@ DAMAGED_POLE = (3, 20)      # cable-end pickup, left end of shelf 21
 JUNCTION_BOX = (17, 14)     # plug-in point, right end of shelf 15
 VAR_CARRYING_CABLE = "6"
 VAR_LINE_LIVE = "7"
+# Which B-press zone the hero stands in (grid_chain.NEAR_NONE / pole and box zone
+# values / NPC_ZONE). Set by zone triggers, read by the scene's B input script.
+VAR_NEAR = "27"
+NEAR_VARIABLE = (VAR_NEAR, "Chain Near", "var_chain_near")
 # Grid sprites share OBJ palette slot 2 (free in the climb since the house icon
 # was replaced by Amara; the opening's slot 2 is the terminal palette).
 GRID_SPRITE_PALETTE_SLOT = 2

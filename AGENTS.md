@@ -55,7 +55,7 @@ source modules/generators rather than generated art or scene resources.
 - `tools/scenes.py` is the scene registry: every scene folder is tagged `game`, `lab` or `legacy` with its id, editor position and owning generator; `test_scenes.py` fails if a folder is unregistered or a game scene switches into a lab/legacy scene. Register new scenes there first.
 - Lab scenes (`LAB_` names, editor row y=1200; `tools/make_lab_scene.py`, profile `lab`): hazard gallery and movement room for test starts, e.g. `make_intro_scene.py --test-start lab_movement_room 2 14 right` (restore settings before committing).
 - Release ROMs: `tools/make_release.py` copies the project to `build/release-project/` without lab and legacy scenes (refuses a `-dev` VERSION unless `--allow-dev`), then build that copy. Storm Night stays in the source tree: `make_climb_scene.py` uses it as a template.
-- Job scenes share the grid chain in `tools/grid_chain.py` (lines, transformers, box reach triggers, hero `Carry` pose); each job's contract (`ridge.py`, `rosa.py`, `kiko.py`) owns coordinates and variables.
+- Job scenes share the grid chain in `tools/grid_chain.py` (lines, transformers, B-press pole/box zones via var 27 and one B input script, hero `Carry` pose; B away from zones drops a carried cable); each job's contract (`ridge.py`, `rosa.py`, `kiko.py`) owns coordinates and variables.
 - `*.bak` files are GB Studio editor backups; `build/`, `artifacts/`, `save-states/`, `__pycache__/`, and `user_settings.gbsres` are gitignored generated/local state. Never force-add them.
 - Project settings: sprite mode 8x16, music driver `huge`, color-only. Respawn coordinates/state handling are scene-specific; inspect scripts rather than assuming a scene reload.
 

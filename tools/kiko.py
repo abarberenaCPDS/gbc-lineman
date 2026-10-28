@@ -298,14 +298,15 @@ def _self_check() -> None:
     # The chain runs left to right: feeder pole < T1 < house pole < junction < door.
     grid_chain.check_chain_order(LINES)
     assert START[0] < DAMAGED_POLE[0] and JUNCTION_BOX[0] < HOUSE_DOOR[0]
-    # Each box's reach trigger: three tiles ending at the box, on open air the hero walks through.
+    # Each box's zone: its two columns plus the three tiles before it, on open air the hero walks through.
     for line in LINES:
         rx, ry, rw, rh = grid_chain.reach_rect(line["box"])
         bx, by = line["box"]
-        assert rx + rw == bx and rw == 3, "reach trigger is three tiles, ending at the box"
+        assert rx + rw == bx + 2 and rw == 5, "box zone covers the box's two columns and three tiles before it"
         assert all(0 < x < MAP_W - 1 and HUD_ROWS <= y < GROUND_ROW
                    for x in range(rx, rx + rw) for y in range(ry, ry + rh))
-        assert all(grid[y][bx - 1] == COL_EMPTY for y in range(ry, ry + rh)), "reach on open air"
+        assert all(grid[y][x] == COL_EMPTY for y in range(ry, ry + rh) for x in range(bx - 1, bx + 2)), \
+            "box zone on open air"
         assert grid[by][bx - 1] == COL_EMPTY and grid[by + 1][bx - 1] != COL_EMPTY
     # The feeder transformer stands on the mesa; its reach zone stays clear of the hidden cable.
     assert LINES[0]["box"][1] == MESA_ROW

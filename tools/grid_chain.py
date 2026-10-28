@@ -53,11 +53,24 @@ Scene module (tools/make_<job>_scene.py) builds one GridChain from the contract:
   bare_event_key    optional line key whose cable-drop events keep an un-suffixed key
                     (legacy event IDs); None for new jobs
 
-Box reach: box_reach_trigger(line, symbol=, index=, connect_sound_id=) returns the
-trigger for one line (call it once per line, after the job's own triggers). It sits
-three tiles before the box (reach_rect), so walking up with that line's cable plugs
-it in without a B press; any other visit does nothing. A box's B press and its
-reach trigger share box_connect_events, so the two paths cannot disagree.
+B-press model (Abe: "there should be an action, like pressing the button"): nothing
+connects, picks up or drops on contact. Walking into a zone only records where the
+hero stands in one project variable, ``near_var`` (climb.VAR_NEAR):
+
+  0                 no zone (a carried cable drops back to its pole on B)
+  line number       pole zone (pole_zone_rect): the cable-end pickup
+  BOX_ZONE + number box zone (reach_rect, or the line's own "reach"): plug in
+  NPC_ZONE          a neighbour's zone: B does nothing here, so the neighbour's
+                    own B talk (native actor interaction) keeps working
+
+``pole_zone_trigger``, ``box_zone_trigger`` and ``npc_zone_trigger`` return the
+zone triggers (call once each, after the job's own triggers; box zones first, so
+where zones overlap a box wins over a pole and a pole over a neighbour). The enter
+script sets the value; the leave script clears it only while it still holds this
+zone's value, so the order of enter and leave in a same-frame hand-over does not
+matter. ``input_script_event`` is the one B input script: it runs the zone's pickup,
+plug-in or drop. It is attached with override off, so native B still reaches the
+neighbours' talk; the pole, cable and box actors have no B script of their own.
 
 Palette resources: chain_palettes() gives {stages: colours}; chain_palette_resources()
 turns them into project/palettes files. The scene sets the background slot to
@@ -79,6 +92,13 @@ Rid = Callable[[str], str]
 MAX_STAGES = 3            # metal slot indexes 1..3 carry the stages; index 0 is the placeholder
 SCREEN_TILES = 20         # PLATFORM camera window width; the camera clamps at both map edges
 SCANLINE_OBJ_LIMIT = 10   # 8x16 OBJs per tile row the tests allow on screen at once
+
+# Values of the ``near`` variable (see the module docstring). Pole zones use the
+# line number (1..N), box zones BOX_ZONE + line number; NPC_ZONE is shared.
+NEAR_NONE = 0
+BOX_ZONE = 100
+NPC_ZONE = 200
+CARRY_TEXT_DROPPED = "Cable dropped."
 
 COL_EMPTY = climb.COL_EMPTY
 COL_TOP = climb.COL_TOP
@@ -152,7 +172,7 @@ class GridChain:
     """Script and actor builders for one scene's grid chain (see the module docstring)."""
 
     def __init__(self, *, rid: Rid, lines: Sequence[dict[str, Any]], chain_var: str, lines_var: str,
-                 carrying_var: str, line_bg_slot: int, text: dict[str, str],
+                 carrying_var: str, near_var: str, line_bg_slot: int, text: dict[str, str],
                  say: Callable[..., list[Event]], hud: Callable[[str], list[Event]],
                  bare_event_key: str | None = None) -> None:
         self.rid = rid
@@ -160,6 +180,7 @@ class GridChain:
         self.chain_var = chain_var
         self.lines_var = lines_var
         self.carrying_var = carrying_var
+        self.near_var = near_var
         self.line_bg_slot = line_bg_slot
         self.text = dict(text)
         self.say = say
@@ -304,8 +325,11 @@ class GridChain:
             ], chosen)]
         return chosen
 
-    def cable_drop_events(self, key: str) -> list[Event]:
-        """A carried cable falls back to its own pole when the carrier is hit."""
+    def cable_drop_events(self, key: str, text: str | None = None) -> list[Event]:
+        """A carried cable falls back to its own pole: when the carrier is hit, or on B away from every zone.
+
+        ``text`` adds one line of dialogue after the drop (the B press says so).
+        """
         events = []
         for line in self.lines:
             tag = key if line["key"] == self.bare_event_key else f"{key}:{line['key']}"
@@ -315,29 +339,118 @@ class GridChain:
                 self.event("EVENT_ACTOR_SHOW", {"actorId": self.actor_id(line["cable"])}, f"{tag}:cable-show"),
                 self.actor_state(self.actor_id(line["cable"]), "Dangling", f"{tag}:cable-dangling"),
                 *self.hud(f"{tag}:cable-hud"),
+                *(self.say([text], f"{tag}:dropped") if text else []),
             ]))
         return events
 
-    # -- chain actors ----------------------------------------------------------
-    def cable_end_actor(self, line: dict[str, Any], index: int, sprite_id: str,
-                        pickup_sound_id: str) -> dict[str, Any]:
-        """Dangling cable on its snapped pole. B picks it up with empty hands while its line is dead."""
-        key = line["cable"]
-        x, y = line["pole_at"]
-        pickup = [self.if_value(self.carrying_var, 0, f"{key}:empty-hands", [
+    # -- B press: zones, and the one input script that acts on them -----------
+    def zone_trigger(self, *, name: str, symbol: str, index: int, rect: tuple[int, int, int, int],
+                     value: int, trigger_key: str) -> dict[str, Any]:
+        """A zone trigger: entering sets ``near_var`` to ``value``; leaving clears it if it still holds it."""
+        x, y, width, height = rect
+        key = f"zone:{trigger_key}"
+        return {
+            "_resourceType": "trigger",
+            "id": self.rid(f"trigger:{trigger_key}"),
+            "name": name,
+            "prefabId": "",
+            "x": x,
+            "y": y,
+            "symbol": symbol,
+            "prefabScriptOverrides": {},
+            "width": width,
+            "height": height,
+            "script": [self.set_value(self.near_var, value, f"{key}:enter")],
+            "leaveScript": [self.if_value(self.near_var, value, f"{key}:leave", [
+                self.set_value(self.near_var, NEAR_NONE, f"{key}:clear"),
+            ])],
+            "_index": index,
+        }
+
+    def pole_zone_trigger(self, line: dict[str, Any], *, symbol: str, index: int) -> dict[str, Any]:
+        """Standing at a pole arms its cable end's pickup (value: the line number)."""
+        return self.zone_trigger(name=f"Pole Zone ({line['key']})", symbol=symbol, index=index,
+                                 rect=pole_zone_rect(line["pole_at"]), value=line["number"],
+                                 trigger_key=f"pole-zone:{line['key']}")
+
+    def box_zone_trigger(self, line: dict[str, Any], *, symbol: str, index: int) -> dict[str, Any]:
+        """Standing at a box arms its plug-in (value: BOX_ZONE + the line number).
+
+        The zone is ``reach_rect`` (three tiles before the box), or the line's own
+        ``reach`` rect when the tiles before the box are rock.
+        """
+        rect = tuple(line.get("reach") or reach_rect(line["box_at"]))
+        return self.zone_trigger(name=f"Box Zone {line['box_name']}", symbol=symbol, index=index,
+                                 rect=rect, value=BOX_ZONE + line["number"],
+                                 trigger_key=f"reach:{line['box']}")
+
+    def npc_zone_trigger(self, *, npc_at: tuple[int, int], name: str, symbol: str, index: int,
+                         trigger_key: str) -> dict[str, Any]:
+        """A neighbour's zone: B does nothing here, so the neighbour's own talk runs natively."""
+        return self.zone_trigger(name=name, symbol=symbol, index=index, rect=npc_zone_rect(npc_at),
+                                 value=NPC_ZONE, trigger_key=trigger_key)
+
+    def pickup_press_events(self, line: dict[str, Any], key: str, pickup_sound_id: str) -> list[Event]:
+        """B in a pole zone: with empty hands and a dead line, carry the cable; otherwise say why not."""
+        return [self.if_value(self.carrying_var, 0, f"{key}:empty-hands", [
             self.if_value(line["live_var"], 0, f"{key}:line-dead", [
                 self.set_value(self.carrying_var, line["number"], f"{key}:carry"),
                 self.actor_state("player", "Carry", f"{key}:hero-carry"),
-                self.event("EVENT_ACTOR_HIDE", {"actorId": "$self$"}, f"{key}:hide"),
+                self.event("EVENT_ACTOR_HIDE", {"actorId": self.actor_id(line["cable"])}, f"{key}:hide"),
                 self.sound_event(pickup_sound_id, f"{key}:sfx"),
                 *self.say([self.text["pickup"]], f"{key}:text"),
             ]),
         ], [
             *self.say([self.text["hands_full"]], f"{key}:hands-full"),
         ])]
+
+    def box_press_events(self, line: dict[str, Any], key: str, connect_sound_id: str) -> list[Event]:
+        """B in a box zone: plug the carried cable in, or say why not (already live, no cable, wrong cable)."""
+        return [self.if_value(line["live_var"], 1, f"{key}:live", [
+            *self.say([self.text["already"]], f"{key}:already-live"),
+        ], [
+            self.if_value(self.carrying_var, line["number"], f"{key}:has-cable", [
+                *self.box_connect_events(line, f"{key}:connect", connect_sound_id),
+            ], [
+                self.if_value(self.carrying_var, 0, f"{key}:no-cable-check", [
+                    *self.say([self.text["no_cable"]], f"{key}:no-cable"),
+                ], [
+                    *self.say([self.text["wrong_cable"]], f"{key}:wrong-cable"),
+                ]),
+            ]),
+        ])]
+
+    def input_script_event(self, *, connect_sound_id: str, pickup_sound_id: str, key: str = "b-press") -> Event:
+        """The B input script, attached once per scene at init.
+
+        Acts on ``near_var``: a pole zone picks up, a box zone plugs in, the
+        neighbour zone does nothing (native talk), and any other place drops a
+        carried cable back to its pole. Attached with override off (the default
+        B action keeps running), so the neighbours' B talk is unchanged; the
+        cable, pole and box actors carry no script of their own.
+        """
+        drop = self.if_at_least(self.carrying_var, 1, f"{key}:drop",
+                                self.cable_drop_events(f"{key}:drop", CARRY_TEXT_DROPPED), [])
+        body: list[Event] = [self.if_value(self.near_var, NPC_ZONE, f"{key}:npc", [], [drop])]
+        for line in reversed(self.lines):
+            prefix = f"{key}:{line['key']}"
+            body = [self.if_value(self.near_var, BOX_ZONE + line["number"], f"{prefix}:box",
+                                  self.box_press_events(line, f"{prefix}:box", connect_sound_id), body)]
+            body = [self.if_value(self.near_var, line["number"], f"{prefix}:pole",
+                                  self.pickup_press_events(line, f"{prefix}:pole", pickup_sound_id), body)]
+        return {
+            **self.event("EVENT_SET_INPUT_SCRIPT", {"input": ["b"], "override": False}, key),
+            "children": {"true": body},
+        }
+
+    # -- chain actors ----------------------------------------------------------
+    def cable_end_actor(self, line: dict[str, Any], index: int, sprite_id: str) -> dict[str, Any]:
+        """Dangling cable on its snapped pole. No script: the B press in its pole zone picks it up."""
+        key = line["cable"]
+        x, y = line["pole_at"]
         return self.actor_resource(
             index=index, symbol=line["cable_symbol"], name=line["cable_name"],
-            x=x, y=y, sprite_id=sprite_id, key=key, script=pickup,
+            x=x, y=y, sprite_id=sprite_id, key=key,
             start_script=[self.actor_state("$self$", "Dangling", f"{key}:dangling")],
         )
 
@@ -365,8 +478,8 @@ class GridChain:
     def box_connect_events(self, line: dict[str, Any], key: str, connect_sound_id: str) -> list[Event]:
         """Plug the carried cable in: the line goes live, the chain refreshes, the box reports.
 
-        Shared by the box's B press (``box_actor``) and its reach trigger
-        (``box_reach_trigger``); ``key`` namespaces the event IDs of that caller.
+        Called only from the B input script's box zone (``box_press_events``);
+        ``key`` namespaces the event IDs of that caller.
         """
         # After chain_refresh_events, the chain variable says how far power reaches.
         done = [self.if_value(self.chain_var, len(self.lines), f"{key}:all", [
@@ -389,63 +502,17 @@ class GridChain:
             *done,
         ]
 
-    def box_reach_trigger(self, line: dict[str, Any], *, symbol: str, index: int,
-                          connect_sound_id: str, name: str | None = None) -> dict[str, Any]:
-        """Walking up to a box with its cable plugs it in (no B press needed).
-
-        The trigger covers the three tiles before the box (``reach_rect``), or the
-        line's own ``reach`` rect when the tiles before the box are rock. Its
-        enter script runs the box's own connect path, and only when the hero
-        carries this line's cable and the line is still dead; any other visit
-        does nothing, so the box's B press (``box_actor``) stays the only text.
-        """
-        key = f"reach:{line['box']}"
-        x, y, width, height = line.get("reach") or reach_rect(line["box_at"])
-        script = [self.if_value(self.carrying_var, line["number"], f"{key}:has-cable", [
-            self.if_value(line["live_var"], 0, f"{key}:dead", self.box_connect_events(
-                line, key, connect_sound_id)),
-        ])]
-        return {
-            "_resourceType": "trigger",
-            "id": self.rid(f"trigger:reach:{line['box']}"),
-            "name": name or f"Reach {line['box_name']}",
-            "prefabId": "",
-            "x": x,
-            "y": y,
-            "symbol": symbol,
-            "prefabScriptOverrides": {},
-            "width": width,
-            "height": height,
-            "script": script,
-            "leaveScript": [],
-            "_index": index,
-        }
-
-    def box_actor(self, line: dict[str, Any], index: int, sprite_id: str,
-                  connect_sound_id: str) -> dict[str, Any]:
-        """A box (transformer or junction). Only its own line's cable plugs in.
+    def box_actor(self, line: dict[str, Any], index: int, sprite_id: str) -> dict[str, Any]:
+        """A box (transformer or junction). No script: its box zone's B press plugs the cable in.
 
         Plugging in repairs the line and stands its pole up; whether power reaches
         it depends on the lines upstream (chain_refresh_events).
         """
         key = line["box"]
         x, y = line["box_at"]
-        plug = [self.if_value(line["live_var"], 1, f"{key}:live", [
-            *self.say([self.text["already"]], f"{key}:already-live"),
-        ], [
-            self.if_value(self.carrying_var, line["number"], f"{key}:has-cable", [
-                *self.box_connect_events(line, key, connect_sound_id),
-            ], [
-                self.if_value(self.carrying_var, 0, f"{key}:no-cable-check", [
-                    *self.say([self.text["no_cable"]], f"{key}:no-cable"),
-                ], [
-                    *self.say([self.text["wrong_cable"]], f"{key}:wrong-cable"),
-                ]),
-            ]),
-        ])]
         return self.actor_resource(
             index=index, symbol=line["box_symbol"], name=line["box_name"], x=x, y=y,
-            sprite_id=sprite_id, key=key, script=plug,
+            sprite_id=sprite_id, key=key,
             start_script=[self.actor_state("$self$", "Dead", f"{key}:dead")],
         )
 
@@ -502,9 +569,25 @@ class GridChain:
 # Self-check helpers (contract modules call these from their _self_check)
 # ---------------------------------------------------------------------------
 def reach_rect(box: tuple[int, int]) -> tuple[int, int, int, int]:
-    """(x, y, width, height) tiles of a box's reach trigger: three tiles ending at the box, feet row and two above."""
+    """(x, y, width, height) tiles of a box's zone: the three tiles before the box plus its two columns.
+
+    Feet row and two above. A hero standing on the box (its own columns) is in
+    the zone, so the box's B action wins where it stands.
+    """
     x, y = box
-    return (x - 3, y - 2, 3, 3)
+    return (x - 3, y - 2, 5, 3)
+
+
+def pole_zone_rect(pole: tuple[int, int]) -> tuple[int, int, int, int]:
+    """Pickup zone of a pole: its feet tile and the tile on either side, feet row and two above."""
+    x, y = pole
+    return (x - 1, y - 2, 3, 3)
+
+
+def npc_zone_rect(npc: tuple[int, int]) -> tuple[int, int, int, int]:
+    """A neighbour's zone: two tiles, the one before the neighbour and its own, feet row and two above."""
+    x, y = npc
+    return (x - 1, y - 2, 2, 3)
 
 
 def stands(grid: list[list[int]], x: int, y: int) -> bool:

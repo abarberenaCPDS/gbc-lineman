@@ -26,7 +26,7 @@ LINES = scene.LINES
 
 
 def built_scene():
-    return scene.build_scene(FAKE_MUSIC, FAKE_AUDIO["death"])
+    return scene.build_scene(FAKE_MUSIC, FAKE_AUDIO)
 
 
 def built_actors():
@@ -145,6 +145,41 @@ def spots():
     return found
 
 
+def b_script():
+    """The scene's one B input script (EVENT_SET_INPUT_SCRIPT) from init."""
+    [attach] = [e for e in built_scene()["script"] if e["command"] == "EVENT_SET_INPUT_SCRIPT"]
+    return attach
+
+
+def b_zones(attach):
+    """({near value: its true events}, events after the last zone) for the B script's zone chain."""
+    zones = {}
+    events = attach["children"]["true"]
+    while (len(events) == 1 and events[0]["command"] == "EVENT_IF"
+           and events[0]["args"]["condition"]["valueA"] == {"type": "variable", "value": climb.VAR_NEAR}):
+        entry = events[0]
+        zones[entry["args"]["condition"]["valueB"]["value"]] = entry["children"]["true"]
+        events = entry["children"]["false"]
+    return zones, events
+
+
+def zone_symbols():
+    return [t["symbol"] for t in built_triggers() if t["symbol"].endswith(("_reach", "_pole_zone"))]
+
+
+def first_hit(triggers, tile):
+    """The trigger the engine fires for a hero covering ``tile``: the first listed trigger that holds it."""
+    x, y = tile
+    return next((t for t in triggers
+                 if t["x"] <= x < t["x"] + t["width"] and t["y"] <= y < t["y"] + t["height"]), None)
+
+
+def box_tiles(box):
+    """Every tile a hero standing on this box covers: its two columns, the body rows above the feet."""
+    bx, by = box
+    return [(x, y) for x in (bx, bx + 1) for y in (by - 2, by - 1, by)]
+
+
 class RosaTests(unittest.TestCase):
     def test_ids_are_stable_and_unique(self):
         ids = {
@@ -226,13 +261,14 @@ class RosaTests(unittest.TestCase):
         self.assertEqual(by_id["7"]["symbol"], "var_line_live")
         self.assertEqual(by_id["8"]["symbol"], "var_ridge_line_live")
         self.assertEqual(by_id["9"]["symbol"], "var_tomas_home_powered")
+        self.assertEqual(by_id[climb.VAR_NEAR], {"id": "27", "name": "Chain Near", "symbol": "var_chain_near"})
 
         synthetic = {"variables": [{"id": str(i), "name": f"v{i}", "symbol": f"var_v{i}"}
                                    for i in range(8)]}
         grown = scene.merged_variables(synthetic)
         self.assertEqual(grown["variables"][:8], synthetic["variables"])
         self.assertEqual([v["id"] for v in grown["variables"]],
-                         [str(i) for i in range(8)] + ["10", "11", "21", "22", "23"])
+                         [str(i) for i in range(8)] + ["10", "11", "21", "22", "23", "27"])
         with self.assertRaises(ValueError):
             scene.merged_variables({"variables": [{"id": "10", "name": "Other", "symbol": "x"}]})
 
@@ -544,9 +580,10 @@ class RosaTests(unittest.TestCase):
         self.assertEqual(texts(dead), [["Priya:\nNo internet...\nI can't work."]])
 
     def test_each_box_takes_only_its_own_cable_and_counts_the_line(self):
+        zones, _ = b_zones(b_script())
         for line in LINES:
-            script = actor_by_symbol(line["box_symbol"])["script"]
-            live = next(e for e in script if is_var_if(e, line["live_var"], 1))
+            [live] = zones[grid_chain.BOX_ZONE + line["number"]]
+            self.assertTrue(is_var_if(live, line["live_var"], 1))
             self.assertEqual(texts(live["children"]["true"]), [["Already fixed."]])
             has_cable = next(e for e in live["children"]["false"]
                              if is_var_if(e, rosa.VAR_CARRYING_CABLE, line["number"]))
@@ -567,14 +604,16 @@ class RosaTests(unittest.TestCase):
             self.assertEqual(texts(other["children"]["true"]), [["No cable yet.\nFind its pole."]])
             self.assertEqual(texts(other["children"]["false"]), [["Wrong cable\nfor this box."]])
         incs = [e for script in all_script_lists() for e in walk(script) if e["command"] == "EVENT_INC_VALUE"]
-        # Each line connects from its box (B) or its reach trigger (B-06); nothing else counts.
-        self.assertEqual(len(incs), 2 * rosa.LINE_COUNT, "nothing else changes the counter")
+        # One connect path per box, reached only from its B press: one count per line, nothing else.
+        self.assertEqual(len(incs), rosa.LINE_COUNT, "nothing else changes the counter")
 
     def test_power_reaches_a_box_only_through_every_line_upstream(self):
+        zones, _ = b_zones(b_script())
         for line in LINES:
-            script = actor_by_symbol(line["box_symbol"])["script"]
-            plugged = next(e for e in walk(script) if is_var_if(e, rosa.VAR_CARRYING_CABLE, line["number"])
-                           and e["children"]["true"])["children"]["true"]
+            [live] = zones[grid_chain.BOX_ZONE + line["number"]]
+            has_cable = next(e for e in live["children"]["false"]
+                             if is_var_if(e, rosa.VAR_CARRYING_CABLE, line["number"]))
+            plugged = has_cable["children"]["true"]
             commands = [e["command"] for e in plugged]
             # The chain refresh (which sets VAR_CHAIN_LIVE) runs before the message reads it.
             refresh = next(i for i, e in enumerate(plugged)
@@ -622,18 +661,76 @@ class RosaTests(unittest.TestCase):
                 self.assertEqual(colors[index], rosa.WIRE_LIVE if stage <= stages else rosa.WIRE_DEAD)
         self.assertEqual(len(rosa.STAGE_COLOR_INDEX), rosa.LINE_COUNT, "one colour per line")
 
-    def test_cable_pickup_requires_empty_hands_and_dead_line(self):
+    def test_pickup_is_b_in_the_pole_zone_with_empty_hands_and_dead_line(self):
+        zones, _ = b_zones(b_script())
         for line in LINES:
-            script = actor_by_symbol(line["cable_symbol"])["script"]
-            empty = script[0]
+            [empty] = zones[line["number"]]
             self.assertTrue(is_var_if(empty, rosa.VAR_CARRYING_CABLE, 0))
-            dead = next(e for e in empty["children"]["true"] if is_var_if(e, line["live_var"], 0))
+            [dead] = empty["children"]["true"]
+            self.assertTrue(is_var_if(dead, line["live_var"], 0))
             take = dead["children"]["true"]
             self.assertTrue(any(is_set(e, rosa.VAR_CARRYING_CABLE, line["number"]) for e in take))
-            self.assertTrue(any(e["command"] == "EVENT_ACTOR_HIDE" for e in take))
+            hide = next(e for e in take if e["command"] == "EVENT_ACTOR_HIDE")
+            self.assertEqual(hide["args"]["actorId"], scene.actor_id(line["cable"]))
             self.assertTrue(any(e["command"] == "EVENT_SOUND_PLAY_EFFECT" and
                                 e["args"]["type"] == FAKE_AUDIO["pickup"] for e in take))
             self.assertEqual(texts(empty["children"]["false"]), [["Hands full!\nOne cable a trip."]])
+
+    def test_b_away_from_every_zone_drops_the_carried_cable_to_its_pole(self):
+        zones, rest = b_zones(b_script())
+        self.assertEqual(zones[grid_chain.NPC_ZONE], [], "the neighbour zone never drops the cable")
+        [drop] = rest
+        self.assertTrue(is_at_least(drop, rosa.VAR_CARRYING_CABLE, 1))
+        branches = {e["args"]["condition"]["valueB"]["value"]: e["children"]["true"]
+                    for e in drop["children"]["true"] if e["command"] == "EVENT_IF"}
+        self.assertEqual(set(branches), {line["number"] for line in LINES})
+        for line in LINES:
+            branch = branches[line["number"]]
+            self.assertTrue(any(is_set(e, rosa.VAR_CARRYING_CABLE, 0) for e in branch))
+            self.assertIn((scene.actor_id(line["cable"]), "Dangling"),
+                          [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                           for e in branch if e["command"] == "EVENT_ACTOR_SET_STATE"])
+            self.assertEqual(texts(branch), [["Cable dropped."]])
+
+    def test_zone_triggers_set_near_on_enter_and_clear_only_their_own_value(self):
+        triggers = {t["symbol"]: t for t in built_triggers()}
+        expected = {}
+        for line in LINES:
+            expected[f"trigger_signal_{line['key']}_reach"] = grid_chain.BOX_ZONE + line["number"]
+            expected[f"trigger_signal_{line['key']}_pole_zone"] = line["number"]
+        self.assertEqual(set(zone_symbols()), set(expected))
+        for symbol, value in expected.items():
+            zone = triggers[symbol]
+            [enter] = zone["script"]
+            self.assertEqual((enter["command"], enter["args"]["variable"], var_value(enter)),
+                             ("EVENT_SET_VALUE", climb.VAR_NEAR, value), symbol)
+            [leave] = zone["leaveScript"]
+            self.assertTrue(is_var_if(leave, climb.VAR_NEAR, value), symbol)
+
+    def test_standing_on_any_box_tile_resolves_to_that_boxs_zone(self):
+        # The engine fires the first listed trigger that covers the hero, so a hero
+        # on a box's own tiles must resolve to that box's zone, not a neighbour's.
+        triggers = built_triggers()
+        for line in LINES:
+            for tile in box_tiles(line["box_at"]):
+                hit = first_hit(triggers, tile)
+                self.assertIsNotNone(hit, (line["key"], tile))
+                self.assertEqual(hit["symbol"], "trigger_signal_" + line["key"] + "_reach", (line["key"], tile))
+
+    def test_zones_fit_the_trigger_budget_and_clear_the_exit_and_door(self):
+        triggers = built_triggers()
+        self.assertLessEqual(len(triggers), 30, "GB Studio allows up to 30 triggers per scene")
+
+        def rect(t):
+            return (t["x"], t["y"], t["width"], t["height"])
+
+        def overlap(a, b):
+            return (a[0] < b[0] + b[2] and b[0] < a[0] + a[2] and a[1] < b[1] + b[3] and b[1] < a[1] + a[3])
+
+        for zone in (t for t in triggers if t["symbol"] in zone_symbols()):
+            for other in triggers:
+                if other is not zone:
+                    self.assertFalse(overlap(rect(zone), rect(other)), (zone["symbol"], other["symbol"]))
 
     def test_checked_in_files_match_the_builders(self):
         """Run after make_rosa_scene.py: disk must match the in-memory build."""
@@ -644,7 +741,7 @@ class RosaTests(unittest.TestCase):
             "pickup": shared.sidecar_id(scene.PICKUP_SOUND, "sound"),
         }
         sprites = {"gust": shared.sidecar_id(scene.GUST_SPRITE, "sprite")}
-        expected = scene.build_scene(music, audio["death"])
+        expected = scene.build_scene(music, audio)
         self.assertEqual(shared.load_json(scene.SCENE_DIR / "scene.gbsres"), expected)
         for actor in scene.build_actors(sprites, audio):
             path = scene.SCENE_DIR / "actors" / f"{actor['symbol']}.gbsres"
@@ -701,9 +798,10 @@ class RosaTests(unittest.TestCase):
             self.assertTrue((PROJECT_DIR / path).exists(), path)
         self.assertTrue((PROJECT_DIR / "assets/sprites/transformer.png.gbsres").exists())
 
-    def test_each_box_has_a_reach_trigger_on_open_air_for_its_own_cable(self):
-        # B-06: walking (or dropping) up to a box with its cable plugs it in. T1 sits
-        # in the pit between the step and the storm-pole rock, so its trigger is the pit.
+    def test_each_box_has_a_zone_on_open_air_that_arms_its_own_plug_in(self):
+        # B-06: walking up to a box arms its B press (the zone sets var 27); the press
+        # plugs the cable in. T1 sits in the pit between the step and the storm-pole rock,
+        # so its zone is the pit.
         grid = rosa.collision_grid()
         for line in scene.LINES:
             trigger = trigger_by_symbol(f"trigger_signal_{line['key']}_reach")
@@ -713,8 +811,8 @@ class RosaTests(unittest.TestCase):
             self.assertTrue(all(grid[r][c] in (climb.COL_EMPTY, climb.COL_TOP)
                                 for r in range(y, y + h) for c in range(x, x + w)),
                             f"{line['key']} trigger in rock")
-            [gate] = trigger["script"]
-            self.assertTrue(is_var_if(gate, rosa.VAR_CARRYING_CABLE, line["number"]))
+            [enter] = trigger["script"]
+            self.assertTrue(is_set(enter, climb.VAR_NEAR, grid_chain.BOX_ZONE + line["number"]))
         self.assertEqual(trigger_by_symbol("trigger_signal_feeder_reach")["x"], rosa.LINES[0]["box"][0])
 
     def test_hollow_exit_leads_to_pine_hollow_only_after_rosa_is_powered(self):
