@@ -1,5 +1,6 @@
 """Focused tests for grid-chain palette, actor, and scene-budget support."""
 
+import json
 import unittest
 from pathlib import Path
 import sys
@@ -59,6 +60,95 @@ def walk_events(events):
         yield event
         for branch in event.get("children", {}).values():
             yield from walk_events(branch)
+
+
+def sprite_profiles(project_dir):
+    """Index real sprite sidecars by ID and stem, retaining frame OBJ tiles and bounds."""
+    profiles = {}
+    for path in (project_dir / "assets" / "sprites").glob("*.png.gbsres"):
+        data = json.loads(path.read_text(encoding="utf-8"))
+        frames = []
+        for state in data.get("states", []):
+            for animation in state.get("animations", []):
+                for frame in animation.get("frames", []):
+                    frames.append(tuple((tile["x"], tile["y"]) for tile in frame.get("tiles", [])))
+        profiles[data["id"]] = profile = {
+            "name": path.name.removesuffix(".png.gbsres"),
+            "canvas": (data["canvasWidth"], data["canvasHeight"]),
+            "bounds": (data["boundsX"], data["boundsY"],
+                       data["boundsWidth"], data["boundsHeight"]),
+            "frames": frames,
+        }
+        profiles[profile["name"]] = profile
+    return profiles
+
+
+def actor_profile(actor, profiles):
+    """Resolve fake test sprite IDs to the real shared hazard art; otherwise use the actor ID."""
+    symbol = actor["symbol"]
+    fallback = None
+    if "gust" in symbol:
+        fallback = "climb_gust"
+    elif "whip" in symbol:
+        fallback = "whip_wire"
+    elif "board" in symbol:
+        fallback = "cracked_board"
+    elif "arc" in symbol or "hidden_cable" in symbol:
+        fallback = "live_arc"
+    profile = profiles.get(fallback) if fallback else profiles.get(actor["spriteSheetId"])
+    if profile is None:
+        raise AssertionError(f"no sprite sidecar for {symbol} ({actor['spriteSheetId']})")
+    return profile
+
+
+def camera_rect(hero_x, hero_y, map_width, map_height):
+    """World-pixel viewport for the 20x18 camera, clamped to the map edges."""
+    left = min(max(hero_x - grid_chain.SCREEN_TILES // 2, 0),
+               max(0, map_width - grid_chain.SCREEN_TILES))
+    top = min(max(hero_y - 9, 0), max(0, map_height - 18))
+    return (left * 8, top * 8, min(map_width, 20) * 8, min(map_height, 18) * 8)
+
+
+def sprite_budget(project_dir, actors, hero_at, map_width, map_height, hero_name="opening_worker24",
+                  profiles=None):
+    """Return per-tile-row OAM pressure and visible active actors using real art bounds."""
+    profiles = profiles or sprite_profiles(project_dir)
+    hero_profile = profiles[hero_name]
+    hero_x, hero_y = hero_at
+    vx, vy, vw, vh = camera_rect(hero_x, hero_y, map_width, map_height)
+    load = {}
+
+    def add_sprite(actor_x, actor_y, profile):
+        px = actor_x * 8
+        by_row = {}
+        for frame in profile["frames"]:
+            frame_rows = {}
+            for obj_x, obj_y in frame:
+                if px + obj_x < vx + vw and px + obj_x + 8 > vx:
+                    # Count each 8x16 OBJ on both of its 8px scanline bands.
+                    top_row = actor_y - 1 - obj_y // 8
+                    for row in (top_row, top_row + 1):
+                        if vy <= row * 8 < vy + vh:
+                            frame_rows[row] = frame_rows.get(row, 0) + 1
+            for row, count in frame_rows.items():
+                by_row[row] = max(by_row.get(row, 0), count)
+        for row, count in by_row.items():
+            load[row] = load.get(row, 0) + count
+
+    # The player is a 24px 8x16 sprite, not an assumed 3x3 solid rectangle.
+    add_sprite(hero_x, hero_y, hero_profile)
+
+    active = []
+    for actor in actors:
+        profile = actor_profile(actor, profiles)
+        add_sprite(actor["x"], actor["y"], profile)
+        bx, by, bw, bh = profile["bounds"]
+        actor_left = actor["x"] * 8 + bx
+        actor_top = actor["y"] * 8 + by
+        if (actor_left < vx + vw and actor_left + bw > vx
+                and actor_top < vy + vh and actor_top + bh > vy):
+            active.append(actor["symbol"])
+    return load, active
 
 
 def actor_states(events, actor_id):
@@ -197,6 +287,71 @@ class TwoActorChainTests(unittest.TestCase):
         self.assertEqual(grid_chain.scanline_load(sprites, 20, 5, 10), {
             7: 4, 8: 7, 9: 7, 10: 7,
         })
+
+
+class BoxScriptDispatchTests(unittest.TestCase):
+    def setUp(self):
+        self.lines = [line(i) for i in range(1, 6)]
+        self.chain = chain(self.lines)
+
+    def test_global_b_calls_only_the_selected_box_custom_script(self):
+        attach = self.chain.input_script_event(pickup_sound_id="pickup", override=True)
+        self.assertTrue(attach["args"]["override"])
+        events = list(walk_events(attach["children"]["true"]))
+        for item in self.lines:
+            with self.subTest(line=item["number"]):
+                zone = next(e for e in events if e["command"] == "EVENT_IF"
+                            and e["args"]["condition"]["valueA"] == {"type": "variable", "value": "near"}
+                            and e["args"]["condition"]["valueB"]["value"]
+                            == grid_chain.BOX_ZONE + item["number"])
+                bindings = self.chain.box_script_actor_bindings(item)
+                expected_args = {"customEventId": self.chain.box_script_id(item)}
+                expected_args.update({f"$actor[{index}]$": actor_id
+                                      for index, (actor_id, _name) in enumerate(bindings)})
+                self.assertEqual(zone["children"]["true"], [{
+                    "command": "EVENT_CALL_CUSTOM_EVENT",
+                    "args": expected_args,
+                    "id": rid(f"event:b-press:{item['key']}:call-box"),
+                }])
+        commands = [e["command"] for e in events]
+        self.assertNotIn("EVENT_PALETTE_SET_BACKGROUND", commands,
+                         "the large chain refresh must stay out of the shared B script")
+        self.assertNotIn("EVENT_INC_VALUE", commands,
+                         "box repair logic belongs to per-actor scripts")
+
+    def test_each_canonical_box_script_keeps_its_gate_repair_and_chain_refresh(self):
+        resources = self.chain.box_script_resources(
+            label="Test Grid", file_prefix="test_grid", connect_sound_id="connect",
+        )
+        self.assertEqual(len(resources), 5)
+        for item, (path, resource) in zip(self.lines, resources):
+            with self.subTest(line=item["number"]):
+                self.assertEqual(path, f"project/scripts/test_grid_box_{item['key']}.gbsres")
+                self.assertEqual(resource["_resourceType"], "script")
+                self.assertEqual(resource["id"], rid(f"script:box:{item['key']}"))
+                self.assertEqual(resource["variables"], {})
+                self.assertEqual(len(resource["actors"]), 6, "box handlers bind all boxes and their pole")
+                actor_params = set(resource["actors"])
+                [live] = resource["script"]
+                self.assertEqual(live["args"]["condition"]["valueA"],
+                                 {"type": "variable", "value": item["live_var"]})
+                has_cable = next(e for e in live["children"]["false"]
+                                 if e["args"]["condition"]["valueA"] ==
+                                 {"type": "variable", "value": "carrying"})
+                connect = has_cable["children"]["true"]
+                self.assertTrue(any(e["command"] == "EVENT_INC_VALUE"
+                                    and e["args"]["variable"] == "lines-live"
+                                    for e in walk_events(connect)))
+                palettes = [e for e in walk_events(connect)
+                            if e["command"] == "EVENT_PALETTE_SET_BACKGROUND"]
+                self.assertTrue(palettes)
+                self.assertTrue(all(e["args"]["palette5"].startswith("id:palette:bg:chain_")
+                                    and e["args"]["palette6"].startswith("id:palette:bg:chain_")
+                                    for e in palettes))
+                actor_targets = {e["args"]["actorId"] for e in walk_events(resource["script"])
+                                 if e["command"] == "EVENT_ACTOR_SET_STATE"
+                                 and e["args"]["actorId"] != "player"}
+                self.assertTrue(actor_targets <= actor_params)
 
 
 class SceneLimitTests(unittest.TestCase):

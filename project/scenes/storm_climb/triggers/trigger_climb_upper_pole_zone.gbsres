@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "3af40f58-ed3c-5418-ae54-a48382e16865",
+  "name": "Pole Zone (upper)",
+  "prefabId": "",
+  "x": 15,
+  "y": 12,
+  "symbol": "trigger_climb_upper_pole_zone",
+  "prefabScriptOverrides": {},
+  "width": 3,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 4
+        }
+      },
+      "id": "67d16803-9b87-5b5a-b614-724e887fae58"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 4
+          }
+        }
+      },
+      "id": "25b61160-55e8-5673-aa89-459b2d2f9adf",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "16a10102-e4aa-5b4e-8725-290f926b9442"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 14
+}

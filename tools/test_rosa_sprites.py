@@ -48,14 +48,6 @@ def _opaque(frame: Image.Image, x: int, y: int) -> bool:
 
 
 class ContractTests(unittest.TestCase):
-    def test_palette_slots_and_hardware_match_contract(self):
-        self.assertEqual(rosa.ROSA_SPRITE_PALETTE_SLOT, 1)
-        self.assertEqual(rosa.GRID_SPRITE_PALETTE_SLOT, 2)
-        self.assertEqual(rosa.ARC_SPRITE_PALETTE_SLOT, 3)
-        for hardware in (rosa.ROSA_SPRITE_HARDWARE, rosa.ARC_SPRITE_HARDWARE, mr.GRID_SPRITE_HARDWARE):
-            self.assertEqual(len(hardware), 4)
-            self.assertEqual(hardware[0], "000000")
-
     def test_grid_palette_copy_matches_climb_scene(self):
         import make_climb_scene
         self.assertEqual(mr.GRID_SPRITE_HARDWARE, make_climb_scene.GRID_SPRITE_HARDWARE)

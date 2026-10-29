@@ -1,16 +1,16 @@
 {
   "_resourceType": "actor",
-  "id": "8973aae5-b91f-5bd3-8c54-cd4f6250821d",
-  "_index": 9,
-  "symbol": "ridge_gust_02",
+  "id": "93e10336-c51c-59f5-95b3-78bd474249be",
+  "_index": 16,
+  "symbol": "signal_whip_02",
   "prefabId": "",
-  "name": "Telegraphed Gust 2",
+  "name": "Whipping Live Wire 2",
   "coordinateType": "tiles",
-  "x": 65,
-  "y": 25,
+  "x": 64,
+  "y": 14,
   "frame": 0,
   "animate": true,
-  "spriteSheetId": "31b39167-ad7a-5152-8387-976ca2d50655",
+  "spriteSheetId": "a44718b5-97ba-5d0e-88db-18455b018bed",
   "paletteId": "",
   "direction": "down",
   "moveSpeed": 1,
@@ -27,7 +27,16 @@
       "args": {
         "actorId": "$self$"
       },
-      "id": "cffaac68-01c5-5e32-87db-59e02dc6bd92"
+      "id": "ca8e4a92-a7a6-5f40-a635-f6777febc6e9"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Hang",
+        "loopAnim": true
+      },
+      "id": "a6d28c1f-cff7-5ba5-b2d8-c1e200beb368"
     }
   ],
   "updateScript": [
@@ -40,7 +49,7 @@
           "value": "down"
         }
       },
-      "id": "1c89cd07-4501-508a-b712-4187f6285526",
+      "id": "8182838c-0bc6-524f-af7e-4ab15ff44987",
       "children": {
         "true": [
           {
@@ -52,14 +61,7 @@
                 "value": "up"
               }
             },
-            "id": "6cab46f1-a1f3-568d-a310-5005ee5ed542"
-          },
-          {
-            "command": "EVENT_ACTOR_HIDE",
-            "args": {
-              "actorId": "$self$"
-            },
-            "id": "0578a4a3-f776-5a92-ad4b-50ab820b6f42"
+            "id": "ab17e235-dd45-5681-9cc5-fe70960d35f0"
           },
           {
             "command": "EVENT_WAIT",
@@ -67,10 +69,10 @@
               "units": "frames",
               "frames": {
                 "type": "number",
-                "value": 70
+                "value": 50
               }
             },
-            "id": "f70dc236-afe3-584c-865d-940d81b98191"
+            "id": "6e82ef87-734d-5bfa-81e9-52a4d185077e"
           }
         ],
         "false": []
@@ -81,23 +83,16 @@
       "args": {
         "actorId": "$self$"
       },
-      "id": "489e600b-79e1-55d3-9f4f-0cf121f8d8b5"
+      "id": "451aff7d-55a8-544b-863b-d4f8b3d3de92"
     },
     {
       "command": "EVENT_ACTOR_SET_STATE",
       "args": {
         "actorId": "$self$",
-        "spriteStateId": "Warning",
+        "spriteStateId": "Sway",
         "loopAnim": true
       },
-      "id": "c95cec1e-8536-5379-8ba5-85e02408eb29"
-    },
-    {
-      "command": "EVENT_ACTOR_SHOW",
-      "args": {
-        "actorId": "$self$"
-      },
-      "id": "c16c916d-b844-509e-930c-897826deca61"
+      "id": "c6ca696d-951f-5c55-b6a6-dfd0961ad0b6"
     },
     {
       "command": "EVENT_WAIT",
@@ -105,26 +100,26 @@
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 54
+          "value": 38
         }
       },
-      "id": "0bface8d-2a0c-5b4d-a12c-e5801fb61d1f"
+      "id": "84c299b1-5d31-5c4b-be4c-8f26951507ef"
     },
     {
       "command": "EVENT_ACTOR_SET_STATE",
       "args": {
         "actorId": "$self$",
-        "spriteStateId": "Burst",
+        "spriteStateId": "Swing",
         "loopAnim": true
       },
-      "id": "c8959bbe-1c97-5e83-8e00-260d69c1610e"
+      "id": "2727f1f0-d8e2-526f-9b54-4f4199ac08c8"
     },
     {
       "command": "EVENT_ACTOR_COLLISIONS_ENABLE",
       "args": {
         "actorId": "$self$"
       },
-      "id": "0fdff398-0ef9-503d-9c35-96ce47977870"
+      "id": "3ab2e41c-4d0b-5d83-b425-e7e653613415"
     },
     {
       "command": "EVENT_WAIT",
@@ -132,24 +127,26 @@
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 20
+          "value": 22
         }
       },
-      "id": "bf63c1e8-d6a1-5162-8c89-3b825628a8cd"
+      "id": "d9d89ece-5dba-580e-8b04-903b64d3314a"
     },
     {
       "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
       "args": {
         "actorId": "$self$"
       },
-      "id": "b9e2eb56-bc64-5072-b8c5-e378bb51c7a7"
+      "id": "a8c08d72-08d1-5814-958b-983c21cbdc3b"
     },
     {
-      "command": "EVENT_ACTOR_HIDE",
+      "command": "EVENT_ACTOR_SET_STATE",
       "args": {
-        "actorId": "$self$"
+        "actorId": "$self$",
+        "spriteStateId": "Hang",
+        "loopAnim": true
       },
-      "id": "89b50662-0c01-581e-bd0e-43b8a7c239a1"
+      "id": "1b7effe4-d5f2-5631-923b-68f61691842b"
     },
     {
       "command": "EVENT_WAIT",
@@ -157,10 +154,10 @@
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 90
+          "value": 56
         }
       },
-      "id": "d8436236-212a-541f-ad42-c112c842f905"
+      "id": "e428a1bb-fa32-50d5-b5c1-601b1eb2bff1"
     }
   ],
   "hit1Script": [],

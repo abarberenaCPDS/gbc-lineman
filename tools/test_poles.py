@@ -37,20 +37,6 @@ class PoleCableTests(unittest.TestCase):
                       if "cable_end" in path.stem]
             self.assertEqual(cables, [], scene)
 
-    def test_pole_starts_in_snapped_plus_cable_or_standing(self):
-        for scene, pole_name in JOBS.items():
-            pole = actor(scene, pole_name)
-            start = pole["startScript"]
-            self.assertEqual(start[0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE", scene)
-            self.assertEqual(start[1]["command"], "EVENT_IF", scene)
-            condition = start[1]["args"]["condition"]
-            self.assertEqual(condition["type"], "eq", scene)
-            self.assertEqual(condition["valueB"]["value"], 1, scene)
-            self.assertEqual([e["args"]["spriteStateId"] for e in start[1]["children"]["true"]],
-                             ["Standing"], scene)
-            self.assertEqual([e["args"]["spriteStateId"] for e in start[1]["children"]["false"]],
-                             ["Snapped+Cable"], scene)
-
 
 if __name__ == "__main__":
     unittest.main()

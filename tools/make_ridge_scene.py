@@ -40,6 +40,7 @@ try:
     import intro  # noqa: E402  (intro pole sprite and palette identities)
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
+    import shock  # noqa: E402  (electrocution beat before the respawn)
     import voices  # noqa: E402  (speaker names and text blips)
     import ridge  # noqa: E402  (Hiroshi's job contract: geometry, IDs, timings)
     import rosa  # noqa: E402  (Priya's job contract: the ridge exit leads there)
@@ -105,7 +106,7 @@ RIDGE_TEXT = {
     "pickup": "Got the cable!\nFind its box.",
     "hands_full": "Hands full!\nOne cable a trip.",
     "already": "Already fixed.",
-    "all_live": "All lines live!\nGo see Hiroshi.",
+    "all_live": "All 5 lines live!\nGo see Hiroshi.",
     "lit": "Power flows on!\nKeep going.",
     "dark": "Fixed. No power\nfrom upstream.",
     "no_cable": "No cable yet.\nFind its pole.",
@@ -232,6 +233,11 @@ pole_actor = CHAIN.pole_actor
 box_actor = CHAIN.box_actor
 
 
+def box_script_resources(audio_ids: dict[str, str]) -> list[tuple[str, dict[str, Any]]]:
+    return CHAIN.box_script_resources(label="Wind Ridge", file_prefix="wind_ridge",
+                                      connect_sound_id=audio_ids["connect"])
+
+
 def window_palette_event(powered: bool, key: str) -> dict[str, Any]:
     """Swap only the Hiroshi window slot (cold -> powered_window)."""
     name = "powered_window" if powered else "window"
@@ -251,6 +257,7 @@ def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
     chosen = CHAIN.checkpoint_chain(key, ridge.START)
     return [
         sound_event(death_sound_id, f"{key}:death-sfx"),
+        *shock.shock_events(key),
         *cable_drop_events(key),
         # The respawn teleports the hero without a leave event: forget the board.
         set_value(hazards.VAR_ON_BOARD, 0, f"{key}:clear-board"),
@@ -274,12 +281,16 @@ def scene_script(music_id: str, audio_ids: dict[str, str]) -> list[dict[str, Any
         set_value(VAR_CARRYING_CABLE, 0, "init-carrying-cable"),
         set_value(climb.VAR_NEAR, grid_chain.NEAR_NONE, "init-near"),
         # B: pick up, plug in, drop or talk, by the zone the hero stands in (grid_chain).
-        CHAIN.input_script_event(connect_sound_id=audio_ids["connect"], pickup_sound_id=audio_ids["pickup"]),
+        CHAIN.input_script_event(pickup_sound_id=audio_ids["pickup"],
+                                 npc_events=tomas_talk_events("b-press:npc"),
+                                 npc_actor_id=actor_id(TOMAS_KEY), override=True),
         set_value(VAR_LINE_LIVE, 0, "init-line-live"),
         set_value(VAR_HOME_POWERED, 0, "init-home-powered"),
         set_value(VAR_FEEDER_LIVE, 0, "init-feeder-live"),
+        set_value(ridge.VAR_WEST_LIVE, 0, "init-west-live"),
         set_value(VAR_LINES_LIVE, 0, "init-lines-live"),
         set_value(ridge.VAR_MIDDLE_LIVE, 0, "init-middle-live"),
+        set_value(ridge.VAR_EAST_LIVE, 0, "init-east-live"),
         set_value(ridge.VAR_CHAIN_LIVE, 0, "init-chain-live"),
         # Standing on a cracked board is tracked by its trigger; a fresh entry starts off it.
         set_value(hazards.VAR_ON_BOARD, 0, "init-on-board"),
@@ -292,27 +303,32 @@ def scene_script(music_id: str, audio_ids: dict[str, str]) -> list[dict[str, Any
           for line in LINES],
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-ridge-music"),
         # Intro box after the music cue; say() lifts the cutoff the previous visit may have left.
-        *say(short_lines("Hiroshi needs his\noxygen machine!"), "intro"),
-        *say(short_lines("Three lines down.\nOne cable a trip."), "intro-lines"),
+        *say(short_lines("Hiroshi's oxygen\nmachine is off!"), "intro"),
+        *say(short_lines("Fix all 5 lines.\nOne cable a trip."), "intro-lines"),
     ]
 
 
 # ---------------------------------------------------------------------------
 # Actors and triggers
 # ---------------------------------------------------------------------------
+def tomas_talk_events(key: str) -> list[dict[str, Any]]:
+    """Hiroshi's dialogue tree, also used by the global B dispatcher."""
+    return [if_value(VAR_HOME_POWERED, 1, f"{key}:home", [
+        *say(short_lines("Ahh, fresh air.\nNice work."), f"{key}:thanks", "tomas"),
+    ], [
+        if_value(VAR_LINES_LIVE, ridge.LINE_COUNT, f"{key}:lines", [
+            *say(short_lines("Five lines live!\nTry my door."), f"{key}:live", "tomas"),
+        ], [
+            *say(short_lines("Dead line. Dry\nas my jokes."), f"{key}:dead", "tomas"),
+        ]),
+    ])]
+
+
 def tomas_actor(index: int) -> dict[str, Any]:
     """Hiroshi outside his door: Waiting until the house is powered, then Relieved."""
     key = TOMAS_KEY
     x, y = ridge.TOMAS
-    script = [if_value(VAR_HOME_POWERED, 1, f"{key}:home", [
-        *say(short_lines("Thanks, friend!\nBreathing easy."), f"{key}:thanks", "tomas"),
-    ], [
-        if_value(VAR_LINES_LIVE, ridge.LINE_COUNT, f"{key}:line", [
-            *say(short_lines("Line's live!\nTry my door."), f"{key}:live", "tomas"),
-        ], [
-            *say(short_lines("The line's dead!\nMy machine's off."), f"{key}:dead", "tomas"),
-        ]),
-    ])]
+    script = tomas_talk_events(f"{key}:actor-talk")
     return actor_resource(
         index=index, symbol=TOMAS_SYMBOL, name="Hiroshi (Wind Ridge)", x=x, y=y,
         sprite_id=ridge.TOMAS_SPRITE_ID, key=key, script=script,
@@ -336,7 +352,7 @@ def span_arc_actor(number: int, lane: tuple[int, int, int], start_delay: int,
     """Downed-span arc on Signal Hill's arc timings (grid_chain.GridChain.span_arc_actor)."""
     return CHAIN.span_arc_actor(
         number, lane, start_delay, sprite_id, live_after,
-        timings=(rosa.ARC_WARNING_FRAMES, rosa.ARC_ACTIVE_FRAMES, rosa.ARC_REST_FRAMES),
+        timings=(ridge.JOB_ARC_WARNING_FRAMES, ridge.JOB_ARC_ACTIVE_FRAMES, ridge.JOB_ARC_REST_FRAMES),
         symbol=f"ridge_span_arc_{number:02d}", name=f"Downed Span Arc {number}",
     )
 
@@ -356,7 +372,7 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
             window_palette_event(True, "door:window-warm"),
             actor_state(actor_id(TOMAS_KEY), "Relieved", "door:tomas-relieved"),
             actor_state(actor_id(CONCENTRATOR_KEY), "On", "door:concentrator-on"),
-            *say(short_lines("Power's on!\nI can breathe."), "door:text", "tomas"),
+            *say(short_lines("Lights are on.\nI stayed calm."), "door:text", "tomas"),
             *say(tickets.closed_lines(2), "door:closed"),
         ]),
     ], [
@@ -528,6 +544,22 @@ def whip_actor(number: int, lane: tuple[int, int, int], start_delay: int) -> dic
     )
 
 
+def hidden_cable_actor(number: int, lane: tuple[int, int, int], start_delay: int,
+                       index: int) -> dict[str, Any]:
+    """Buried live cable: hidden, briefly sparks, then arcs (OBJ palette slot 3)."""
+    row, x0, x1 = lane
+    if x1 - x0 + 1 != 2:
+        raise ValueError("the live arc sprite is exactly two tiles wide")
+    key = f"hidden-cable:{number}"
+    return actor_resource(
+        index=index, symbol=f"ridge_hidden_cable_{number:02d}", name=f"Hidden Cable {number}",
+        x=x0, y=row, sprite_id=rosa.ARC_SPRITE_ID, key=key, anim_speed=8,
+        start_script=hazards.cable_start_script(key, event),
+        update_script=hazards.cable_update_script(key, start_delay, event, wait_event, branch_event),
+        collision_group="1",
+    )
+
+
 def short_lines(*lines: str) -> list[str]:
     return shared.short_lines(*lines)
 
@@ -549,17 +581,17 @@ def build_scene(music_id: str, audio_ids: dict[str, str]) -> dict[str, Any]:
     # The intro pole sprite's tiles carry OBJ slot intro.SPRITE_SLOTS["pole"]; set it
     # here rather than inheriting it from the climb template.
     sprite_palette_ids[shared.POLE_SPRITE_PALETTE_SLOT] = intro.palette_id("pole")
-    if hazards.BOARDS["wind_ridge"]:
-        sprite_palette_ids[hazards.BOARD_SPRITE_PALETTE_SLOT] = hazards.BOARD_PALETTE_ID
     # live_arc tiles carry slot 3 (Signal Hill's palette); the whip is ours, slot 6.
     sprite_palette_ids[ridge.ARC_SPRITE_PALETTE_SLOT] = rosa.resource_id("palette:sprite:arc")
     sprite_palette_ids[ridge.WHIP_SPRITE_PALETTE_SLOT] = ridge.WHIP_PALETTE_ID
+    sprite_palette_ids[hazards.BOARD_SPRITE_PALETTE_SLOT] = hazards.BOARD_PALETTE_ID
     background_palette_ids = [
         opening.resource_id(f"palette:bg:{name}") for name, _ in opening.BG_PALETTES
     ] + ["default-ui"]
     if len(background_palette_ids) != 8 or background_palette_ids[7] != "default-ui":
         raise ValueError("Wind Ridge background palettes must preserve the UI in slot 7")
-    background_palette_ids[ridge.LINE_BG_SLOT] = chain_palette_id(0)
+    for slot, palette_id in CHAIN.chain_palette_ids(0).items():
+        background_palette_ids[slot] = palette_id
 
     scene = dict(template)
     scene.update({
@@ -608,6 +640,9 @@ def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[
         whip_actor(number, lane, delay)
         for number, (lane, delay) in enumerate(zip(ridge.WHIP_LANES, ridge.WHIP_START_DELAYS), start=1)
     ]
+    for number, (lane, delay) in enumerate(
+            zip(hazards.HIDDEN_CABLES["wind_ridge"], hazards.CABLE_START_DELAYS["wind_ridge"]), start=1):
+        actors.append(hidden_cable_actor(number, lane, delay, len(actors)))
     # Cracked boards come last: the highest indexes draw on top.
     for number, board in enumerate(hazards.BOARDS["wind_ridge"], start=1):
         actors.append(board_actor(number, board, len(actors)))
@@ -629,9 +664,8 @@ def build_triggers(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
         board_trigger(number, board, BOARD_TRIGGER_BASE_INDEX + number - 1)
         for number, board in enumerate(hazards.BOARDS["wind_ridge"], start=1)
     )
-    # B-press zones come last (box zones, then poles): where two overlap the earlier
-    # trigger wins. No neighbour zone: Hiroshi's talk stays native (see docs/BUGS.md B-06).
-    # They sit clear of the exit, door and boards.
+    # Keep the authored 5x3 house reach intact. Talk tiles are dispatched by the
+    # B input script and need no overlapping trigger zone.
     triggers.extend(
         CHAIN.box_zone_trigger(line, symbol=f"trigger_ridge_{line['key']}_reach", index=0)
         for line in LINES
@@ -710,6 +744,8 @@ def main() -> None:
     write_variables()
     for relative_path, palette in tomas_palettes() + shared.hazard_palettes():
         shared.write_json(PROJECT_DIR / relative_path, palette)
+    for relative_path, script in box_script_resources(audio_ids):
+        shared.write_json(PROJECT_DIR / relative_path, script)
     shared.remove_retired_debris_actors(SCENE_DIR, prefix="ridge_")
     shared.write_json(SCENE_DIR / "scene.gbsres", scene)
     # This generator owns the whole scene folder: drop actors/triggers it no longer makes.

@@ -1,0 +1,39 @@
+{
+  "_resourceType": "actor",
+  "id": "eea4c2e2-21ce-503e-a267-822626948154",
+  "_index": 5,
+  "symbol": "signal_west_box",
+  "prefabId": "",
+  "name": "Transformer (west)",
+  "coordinateType": "tiles",
+  "x": 26,
+  "y": 14,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "eb1514c8-7a57-5b4e-b43b-aec73a9cd726",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Dead",
+        "loopAnim": true
+      },
+      "id": "a62b0b2c-3180-5a76-840d-dc5a746cdb36"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

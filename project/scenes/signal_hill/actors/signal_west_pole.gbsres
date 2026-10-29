@@ -1,0 +1,78 @@
+{
+  "_resourceType": "actor",
+  "id": "5b4bb4e3-8e97-513f-a5dd-abe4ee00732b",
+  "_index": 4,
+  "symbol": "signal_west_pole",
+  "prefabId": "",
+  "name": "Storm Pole (west)",
+  "coordinateType": "tiles",
+  "x": 12,
+  "y": 11,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "616a294b-fae9-5c68-965a-9a1db4b273d0",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "e1f82c28-9ee2-54f5-90ba-5841b6da26c9"
+    },
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "30"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "e6f5f415-150c-5f43-8d6d-bb039c29fc85",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "$self$",
+              "spriteStateId": "Standing",
+              "loopAnim": true
+            },
+            "id": "0d5ebd04-0a1b-5960-8340-51dd416eef2a"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "$self$",
+              "spriteStateId": "Snapped+Cable",
+              "loopAnim": true
+            },
+            "id": "3ecd6884-4952-5749-94c7-964a969f4486"
+          }
+        ]
+      }
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

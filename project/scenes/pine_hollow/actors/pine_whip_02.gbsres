@@ -1,0 +1,166 @@
+{
+  "_resourceType": "actor",
+  "id": "13b621c8-4f8a-5add-9408-bfb3cb0c1f2a",
+  "_index": 16,
+  "symbol": "pine_whip_02",
+  "prefabId": "",
+  "name": "Whipping Live Wire 2",
+  "coordinateType": "tiles",
+  "x": 51,
+  "y": 14,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "a44718b5-97ba-5d0e-88db-18455b018bed",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 8,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "1",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "dff4cb00-1c4f-54a5-aec3-aa9b9e1e4b36"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Hang",
+        "loopAnim": true
+      },
+      "id": "6289f748-1cd1-5814-859b-84277068ce04"
+    }
+  ],
+  "updateScript": [
+    {
+      "command": "EVENT_IF_ACTOR_DIRECTION",
+      "args": {
+        "actorId": "$self$",
+        "direction": {
+          "type": "direction",
+          "value": "down"
+        }
+      },
+      "id": "bb3450bf-57a6-510d-a59e-e779c0614e65",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_ACTOR_SET_DIRECTION",
+            "args": {
+              "actorId": "$self$",
+              "direction": {
+                "type": "direction",
+                "value": "up"
+              }
+            },
+            "id": "4f178361-f9d0-52be-89d6-79471f5a9a01"
+          },
+          {
+            "command": "EVENT_WAIT",
+            "args": {
+              "units": "frames",
+              "frames": {
+                "type": "number",
+                "value": 45
+              }
+            },
+            "id": "4d6b5f84-7716-5cdc-a641-591510560d95"
+          }
+        ],
+        "false": []
+      }
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "9e4abe31-0c0b-5a90-b236-dfae3b0a9dd6"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Sway",
+        "loopAnim": true
+      },
+      "id": "b0648c17-53fc-5349-8a53-84286d57a2a5"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 36
+        }
+      },
+      "id": "9bcf40f3-3e36-566a-8018-0de641a9c4db"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Swing",
+        "loopAnim": true
+      },
+      "id": "724678ab-d7d4-5c0a-8392-357c528c2789"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_ENABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "6262f72a-ca97-582f-8030-1b37c8d22e74"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 24
+        }
+      },
+      "id": "684d05d4-97bd-5eb5-a444-9a24b9a19493"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "0af076d1-a28d-5d4f-8238-76ebb174f92a"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Hang",
+        "loopAnim": true
+      },
+      "id": "bbf567b3-520f-508e-a36f-5fa614a65b6a"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 46
+        }
+      },
+      "id": "0909ae63-1534-52f5-b5f5-ed3d1acb4186"
+    }
+  ],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

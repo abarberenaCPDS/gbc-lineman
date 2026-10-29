@@ -1,22 +1,20 @@
 """Generate the deterministic Pine Hollow scene (Emil's repair job) from ``kiko.py``.
 
 Run with ``python3 tools/make_kiko_scene.py`` from any working directory.
-This writes only the Pine Hollow scene resources, Emil's sprite palette, the
-chain palettes and the Emil variable registrations. The authored geometry,
+This writes only the Pine Hollow scene resources, Emil's and hazard sprite
+palettes, the chain palettes and the job variable registrations. Geometry,
 positions, hazard timings and stable IDs live in the sibling ``kiko.py``
 contract module.
 
-The grid chain (two lines: feeder and house) comes from the reusable
+The five-line grid chain comes from the reusable
 ``grid_chain`` module, built here with Pine Hollow's IDs, lines, variables,
-dialogue and HUD. The house line keeps the legacy pole/cable-end/junction-box
-actor keys, so the feeder keeps the legacy pole and cable end (the actors on
-the mesa) and the junction box keeps its key on the porch.
+dialogue and HUD. Stable pole and junction-box keys are retained; each cable end
+is folded into its pole sprite, with no separate cable actor.
 
 The live arc reuses Signal Hill's arc sprite and arc palette resource (written
 by ``make_rosa_scene.py``); this generator only references that palette ID.
-The hidden cable copies the cable lane pattern with Emil's timings, and the
-transformer reuses Wind Ridge's sprite. The mesa gust and falling debris are
-retired.
+The hidden cable, gust, live arcs, fallen spans, whipping wire and cracked board
+complete Pine Hollow's obstacle kit. The transformer reuses Wind Ridge's sprite.
 
 Generic GB Studio helpers (collision RLE, sidecar lookup, JSON writing, the
 dialogue length check) are reused from ``make_climb_scene``. Event builders are
@@ -44,6 +42,7 @@ MUSIC_SIDECAR = "assets/music/cfe_storm_climb.uge.gbsres"
 DEATH_SOUND = "assets/sounds/death.wav.gbsres"
 CONNECT_SOUND = "assets/sounds/connect.wav.gbsres"
 PICKUP_SOUND = "assets/sounds/pickup.wav.gbsres"
+GUST_SPRITE = "assets/sprites/climb_gust.png.gbsres"
 
 sys.path.insert(0, str(TOOLS_DIR))
 try:
@@ -53,12 +52,14 @@ try:
     import kiko  # noqa: E402  (Emil's job contract: geometry, IDs, timings)
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
     import opening  # noqa: E402  (shared approved palette/sprite identities)
+    import shock  # noqa: E402  (electrocution beat before the respawn)
+    import ridge  # noqa: E402  (shared transformer and whipping-wire assets)
     import voices  # noqa: E402  (speaker names and text blips)
     import rosa  # noqa: E402  (Signal Hill owns the live arc palette this job reuses)
     import tickets  # noqa: E402  (work orders: CLOSED box, report exit)
     import hazards  # noqa: E402  (hidden cable placement, IDs and timings)
 except ModuleNotFoundError as error:
-    if error.name in {"tickets", "intro", "voices", "climb", "kiko", "opening", "rosa", "make_climb_scene",
+    if error.name in {"tickets", "intro", "voices", "climb", "kiko", "opening", "ridge", "rosa", "make_climb_scene",
                       "hazards", "grid_chain"}:
         raise SystemExit(
             f"cannot generate pine_hollow: tools/{error.name}.py is missing"
@@ -295,6 +296,11 @@ box_actor = CHAIN.box_actor
 actor_resource = CHAIN.actor_resource
 
 
+def box_script_resources(audio_ids: dict[str, str]) -> list[tuple[str, dict[str, Any]]]:
+    return CHAIN.box_script_resources(label="Pine Hollow", file_prefix="pine_hollow",
+                                      connect_sound_id=audio_ids["connect"])
+
+
 def pole_actor_id() -> str:
     return actor_id(POLE_KEY)
 
@@ -310,7 +316,9 @@ def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
     door_x, door_y = kiko.HOUSE_DOOR
     return [
         sound_event(death_sound_id, f"{key}:death-sfx"),
+        *shock.shock_events(key),
         *CHAIN.cable_drop_events(key),
+        set_value(hazards.VAR_ON_BOARD, 0, f"{key}:clear-board"),
         if_value(VAR_HOME_POWERED, 0, f"{key}:respawn-check",
                  CHAIN.checkpoint_chain(key, kiko.START), [
                      set_position(door_x - 1, door_y, f"{key}:respawn-door"),
@@ -332,12 +340,18 @@ def scene_script(music_id: str, audio_ids: dict[str, str]) -> list[dict[str, Any
         set_value(VAR_CARRYING_CABLE, 0, "init-carrying-cable"),
         set_value(climb.VAR_NEAR, grid_chain.NEAR_NONE, "init-near"),
         # B: pick up, plug in, drop or talk, by the zone the hero stands in (grid_chain).
-        CHAIN.input_script_event(connect_sound_id=audio_ids["connect"], pickup_sound_id=audio_ids["pickup"]),
+        CHAIN.input_script_event(pickup_sound_id=audio_ids["pickup"],
+                                 npc_events=kiko_talk_events("b-press:npc"),
+                                 npc_actor_id=actor_id(KIKO_KEY), override=True),
         set_value(VAR_LINE_LIVE, 0, "init-line-live"),
         set_value(VAR_HOME_POWERED, 0, "init-home-powered"),
         set_value(VAR_FEEDER_LIVE, 0, "init-feeder-live"),
+        set_value(kiko.VAR_WEST_LIVE, 0, "init-west-live"),
+        set_value(kiko.VAR_MIDDLE_LIVE, 0, "init-middle-live"),
+        set_value(kiko.VAR_EAST_LIVE, 0, "init-east-live"),
         set_value(VAR_LINES_LIVE, 0, "init-lines-live"),
         set_value(VAR_CHAIN_LIVE, 0, "init-chain-live"),
+        set_value(hazards.VAR_ON_BOARD, 0, "init-on-board"),
         window_palette_event(False, "init-window-cold"),
         *CHAIN.chain_refresh_events("init-chain"),
         # Pinned Snapped+Cable on every entry: each pole's own start script reads its
@@ -347,8 +361,8 @@ def scene_script(music_id: str, audio_ids: dict[str, str]) -> list[dict[str, Any
           for line in LINES],
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-pine-hollow-music"),
         # Intro boxes after the music cue; say() lifts the cutoff a previous visit may have left.
-        *say(short_lines(f"No power at\n{voices.name('kiko')}'s house!"), "intro"),
-        *say(short_lines("Two lines to fix.\nOne cable a trip."), "intro-lines"),
+        *say(short_lines(f"{voices.name('kiko')}'s house is\ndark and hungry!"), "intro"),
+        *say(short_lines("Fix 5 lines,\nthen soup!"), "intro-lines"),
         *say(short_lines("Dinner's cold..."), "cold"),
     ]
 
@@ -356,19 +370,24 @@ def scene_script(music_id: str, audio_ids: dict[str, str]) -> list[dict[str, Any
 # ---------------------------------------------------------------------------
 # Actors and triggers
 # ---------------------------------------------------------------------------
+def kiko_talk_events(key: str) -> list[dict[str, Any]]:
+    """Emil's talk tree, dispatched by the scene's single B input script."""
+    return [if_value(VAR_HOME_POWERED, 1, f"{key}:home", [
+        *say(short_lines("Dinner time!\nThank you!"), f"{key}:thanks", "kiko"),
+    ], [
+        if_value(VAR_LINES_LIVE, kiko.LINE_COUNT, f"{key}:lines", [
+            *say(short_lines("All 5 lines live!\nTry our door."), f"{key}:live", "kiko"),
+        ], [
+            *say(short_lines("Stove's dead.\nMy tummy growls!"), f"{key}:dead", "kiko"),
+        ]),
+    ])]
+
+
 def kiko_actor(index: int) -> dict[str, Any]:
     """Emil outside the house: Waiting until the house is powered, then Relieved."""
     key = KIKO_KEY
     x, y = kiko.KIKO
-    script = [if_value(VAR_HOME_POWERED, 1, f"{key}:home", [
-        *say(short_lines("Dinner time!\nThank you!"), f"{key}:thanks", "kiko"),
-    ], [
-        if_value(VAR_LINES_LIVE, kiko.LINE_COUNT, f"{key}:lines", [
-            *say(short_lines("Both lines live!\nTry our door."), f"{key}:live", "kiko"),
-        ], [
-            *say(short_lines("Our stove's dead.\nI'm so hungry!"), f"{key}:dead", "kiko"),
-        ]),
-    ])]
+    script = kiko_talk_events(f"{key}:actor-talk")
     return actor_resource(
         index=index, symbol=KIKO_SYMBOL, name="Emil (Pine Hollow)", x=x, y=y,
         sprite_id=kiko.KIKO_SPRITE_ID, key=key, script=script,
@@ -392,8 +411,8 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
 
     Only the top row of a standing 24px hero covers the door columns, so the
     respawn tile in front of the door also lands on this trigger. The var 13
-    guard keeps that from repeating the reward or the text. The door needs both
-    lines (the HUD count reads 2).
+    guard keeps that from repeating the reward or the text. The door needs all
+    lines (the HUD count reads 5).
     """
     x, y, width, height = kiko.DOOR_TRIGGER
     script = [if_value(VAR_LINES_LIVE, kiko.LINE_COUNT, "door:lines", [
@@ -403,11 +422,11 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
             window_palette_event(True, "door:window-warm"),
             actor_state(actor_id(KIKO_KEY), "Relieved", "door:kiko-relieved"),
             actor_state(actor_id(STOVE_KEY), "On", "door:stove-on"),
-            *say(short_lines("Stove's on!\nSoup is cooking!"), "door:text", "kiko"),
+            *say(short_lines("Stove's on!\nSoup party!"), "door:text", "kiko"),
             *say(tickets.closed_lines(4), "door:closed"),
         ]),
     ], [
-        *say(short_lines("Still no power.\nFix both lines!"), "door:no-power"),
+        *say(short_lines("Still no power.\nFix all 5 lines!"), "door:no-power"),
     ])]
     return {
         "_resourceType": "trigger",
@@ -528,6 +547,93 @@ def hidden_cable_actor(number: int, lane: tuple[int, int, int], start_delay: int
     )
 
 
+def gust_actor(index: int, lane: tuple[int, int, int], start_delay: int,
+               sprite_id: str) -> dict[str, Any]:
+    """Timed wind lane: safe warning, active burst, and hidden rest."""
+    row, x0, x1 = lane
+    if x1 - x0 + 1 != 3:
+        raise ValueError("the authored gust sprite is exactly three tiles wide")
+    key = f"gust:{index}"
+
+    def own(command: str, suffix: str, **args: Any) -> dict[str, Any]:
+        return event(command, {"actorId": "$self$", **args}, f"{key}:{suffix}")
+
+    first_cycle_true = [
+        own("EVENT_ACTOR_SET_DIRECTION", "started", direction={"type": "direction", "value": "up"}),
+        own("EVENT_ACTOR_HIDE", "delay-hidden"),
+    ]
+    if start_delay > 0:
+        first_cycle_true.append(wait_event(start_delay, f"{key}:start-delay"))
+    first_cycle = branch_event(
+        "EVENT_IF_ACTOR_DIRECTION",
+        {"actorId": "$self$", "direction": {"type": "direction", "value": "down"}},
+        f"{key}:first-cycle", first_cycle_true,
+    )
+    update = [
+        first_cycle,
+        own("EVENT_ACTOR_COLLISIONS_DISABLE", "warning-safe"),
+        own("EVENT_ACTOR_SET_STATE", "warning-state", spriteStateId="Warning", loopAnim=True),
+        own("EVENT_ACTOR_SHOW", "warning-visible"),
+        wait_event(kiko.GUST_WARNING_FRAMES, f"{key}:warning-time"),
+        own("EVENT_ACTOR_SET_STATE", "burst-state", spriteStateId="Burst", loopAnim=True),
+        own("EVENT_ACTOR_COLLISIONS_ENABLE", "burst-active"),
+        wait_event(kiko.GUST_ACTIVE_FRAMES, f"{key}:burst-time"),
+        own("EVENT_ACTOR_COLLISIONS_DISABLE", "rest-safe"),
+        own("EVENT_ACTOR_HIDE", "rest-hidden"),
+        wait_event(kiko.GUST_REST_FRAMES, f"{key}:rest-time"),
+    ]
+    return actor_resource(
+        index=index, symbol=f"pine_gust_{index:02d}", name=f"Telegraphed Gust {index}",
+        x=x0, y=row, sprite_id=sprite_id, key=key, anim_speed=8,
+        start_script=[own("EVENT_ACTOR_COLLISIONS_DISABLE", "initial-safe")],
+        update_script=update, collision_group="1",
+    )
+
+
+def whip_actor(number: int, lane: tuple[int, int, int], start_delay: int) -> dict[str, Any]:
+    row, x0, x1 = lane
+    if x1 - x0 + 1 != ridge.WHIP_CANVAS[0] // 8:
+        raise ValueError("the whip lane is the sprite's width")
+    key = f"whip:{number}"
+    return actor_resource(
+        index=0, symbol=f"pine_whip_{number:02d}", name=f"Whipping Live Wire {number}",
+        x=x0, y=row + 1, sprite_id=kiko.WHIP_SPRITE_ID, key=key, anim_speed=8,
+        start_script=hazards.whip_start_script(key, event),
+        update_script=hazards.whip_update_script(
+            key, start_delay, kiko.WHIP_SWAY_FRAMES, kiko.WHIP_SWING_FRAMES, kiko.WHIP_HANG_FRAMES,
+            event, wait_event, branch_event),
+        collision_group="1",
+    )
+
+
+def board_actor(number: int, board: tuple[int, int, int], index: int) -> dict[str, Any]:
+    key = f"board:{number}"
+    x, y = hazards.board_actor_position(board)
+    actor = actor_resource(
+        index=index, symbol=f"pine_board_{number:02d}", name=f"Cracked Board {number}",
+        x=x, y=y, sprite_id=hazards.BOARD_SPRITE_ID, key=key,
+        start_script=hazards.board_start_script(key, event),
+    )
+    actor["collisionGroup"] = "1"
+    actor["animate"] = True
+    actor["updateScript"] = hazards.board_update_script(
+        number, key, event, wait_event, if_value, set_value)
+    return actor
+
+
+def board_trigger(number: int, board: tuple[int, int, int], index: int) -> dict[str, Any]:
+    key = f"board:{number}"
+    x, y, width, height = hazards.board_trigger_rect(board)
+    on_script, leave_script = hazards.board_trigger_scripts(number, f"{key}:trigger", set_value)
+    return {
+        "_resourceType": "trigger", "id": kiko.resource_id(f"trigger:{key}"),
+        "name": f"Cracked Board {number} Stand", "prefabId": "", "x": x, "y": y,
+        "symbol": f"trigger_pine_cracked_board_{number:02d}", "prefabScriptOverrides": {},
+        "width": width, "height": height, "script": on_script,
+        "leaveScript": leave_script, "_index": index,
+    }
+
+
 def short_lines(*lines: str) -> list[str]:
     return shared.short_lines(*lines)
 
@@ -536,8 +642,8 @@ def short_lines(*lines: str) -> list[str]:
 # Scene
 # ---------------------------------------------------------------------------
 def build_scene(music_id: str, audio_ids: dict[str, str]) -> dict[str, Any]:
-    if (kiko.MAP_W, kiko.MAP_H) != (40, 18):
-        raise ValueError("pine_hollow must match the 40x18 PLATFORM contract")
+    if (kiko.MAP_W, kiko.MAP_H) != (100, 18):
+        raise ValueError("pine_hollow must match the 100x18 PLATFORM contract")
     template = shared.load_json(CLIMB_SCENE)
     sprite_palette_ids = template.get("spritePaletteIds")
     if not isinstance(sprite_palette_ids, list) or len(sprite_palette_ids) != 8:
@@ -548,13 +654,15 @@ def build_scene(music_id: str, audio_ids: dict[str, str]) -> dict[str, Any]:
     sprite_palette_ids[kiko.GRID_SPRITE_PALETTE_SLOT] = climb.grid_resource_id("palette:sprite:grid")
     sprite_palette_ids[kiko.ARC_SPRITE_PALETTE_SLOT] = arc_palette_id()
     sprite_palette_ids[intro.SPRITE_SLOTS["pole"]] = intro.palette_id("pole")
-    # Slots 4-5 are unused here (the debris and gust slots are retired) and keep the climb palettes.
+    sprite_palette_ids[hazards.BOARD_SPRITE_PALETTE_SLOT] = hazards.BOARD_PALETTE_ID
+    sprite_palette_ids[kiko.WHIP_SPRITE_PALETTE_SLOT] = kiko.WHIP_PALETTE_ID
     background_palette_ids = [
         opening.resource_id(f"palette:bg:{name}") for name, _ in opening.BG_PALETTES
     ] + ["default-ui"]
     if len(background_palette_ids) != 8 or background_palette_ids[7] != "default-ui":
         raise ValueError("Pine Hollow background palettes must preserve the UI in slot 7")
-    background_palette_ids[kiko.LINE_BG_SLOT] = chain_palette_id(0)
+    for slot, palette_id in CHAIN.chain_palette_ids(0).items():
+        background_palette_ids[slot] = palette_id
 
     scene = dict(template)
     scene.update({
@@ -579,7 +687,9 @@ def build_scene(music_id: str, audio_ids: dict[str, str]) -> dict[str, Any]:
     return scene
 
 
-def build_actors(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
+def build_actors(audio_ids: dict[str, str], sprite_ids: dict[str, str] | None = None) -> list[dict[str, Any]]:
+    if sprite_ids is None:
+        sprite_ids = {"gust": shared.sidecar_id(GUST_SPRITE, "sprite")}
     box_sprites = {"junction": climb.grid_resource_id(JUNCTION_SPRITE_KEY),
                    "transformer": kiko.TRANSFORMER_SPRITE_ID}
     actors = [kiko_actor(0), stove_actor(1, kiko.STOVE_SPRITE_ID)]
@@ -594,11 +704,30 @@ def build_actors(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
         arc_actor(index, lane, kiko.ARC_START_DELAYS[index - 1], kiko.ARC_SPRITE_ID)
         for index, lane in enumerate(kiko.ARC_LANES, start=1)
     )
+    actors.extend(
+        gust_actor(index, lane, kiko.GUST_START_DELAYS[index - 1], sprite_ids["gust"])
+        for index, lane in enumerate(kiko.GUST_LANES, start=1)
+    )
+    number = 0
+    for span in kiko.FALLEN_SPANS:
+        for lane, delay in zip(span["arcs"], span["delays"]):
+            number += 1
+            actors.append(CHAIN.span_arc_actor(
+                number, lane, delay, kiko.ARC_SPRITE_ID, span["live_after"],
+                timings=(kiko.ARC_WARNING_FRAMES, kiko.ARC_ACTIVE_FRAMES, kiko.ARC_REST_FRAMES),
+                symbol=f"pine_span_arc_{number:02d}", name=f"Downed Span Arc {number}",
+            ))
+    actors.extend(
+        whip_actor(index, lane, kiko.WHIP_START_DELAYS[index - 1])
+        for index, lane in enumerate(kiko.WHIP_LANES, start=1)
+    )
     # Hidden cables come last: the highest indexes draw on top.
     for number, (lane, delay) in enumerate(
             zip(hazards.HIDDEN_CABLES["pine_hollow"], hazards.CABLE_START_DELAYS["pine_hollow"]),
             start=1):
         actors.append(hidden_cable_actor(number, lane, delay, len(actors)))
+    for number, board in enumerate(hazards.BOARDS["pine_hollow"], start=1):
+        actors.append(board_actor(number, board, len(actors)))
     if len(actors) > kiko.MAX_SCENE_ACTORS:
         raise ValueError(f"{len(actors)} actors exceed the engine's {kiko.MAX_SCENE_ACTORS}")
     # Editor order is list order: actors and triggers are indexed by position.
@@ -609,8 +738,11 @@ def build_actors(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
 
 def build_triggers(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
     triggers = [report_exit_trigger(), door_trigger(audio_ids["connect"])]
-    # B-press zones come last: box zones, then poles (no neighbour zone: Emil's talk
-    # stays native, see docs/BUGS.md B-06). They sit clear of the exit and the door.
+    triggers.extend(
+        board_trigger(number, board, index=0)
+        for number, board in enumerate(hazards.BOARDS["pine_hollow"], start=1)
+    )
+    # Preserve the complete 5x3 box zones; Emil talk uses position predicates in B.
     triggers.extend(
         CHAIN.box_zone_trigger(line, symbol=f"trigger_pine_{line['key']}_reach", index=0)
         for line in LINES
@@ -671,19 +803,24 @@ def main() -> None:
         "connect": shared.sidecar_id(CONNECT_SOUND, "sound"),
         "pickup": shared.sidecar_id(PICKUP_SOUND, "sound"),
     }
+    sprite_ids = {"gust": shared.sidecar_id(GUST_SPRITE, "sprite")}
     warn_if_missing_asset(kiko.BACKGROUND_ID, "backgrounds", "pine_hollow background")
     warn_if_missing_asset(kiko.KIKO_SPRITE_ID, "sprites", "Emil sprite")
     warn_if_missing_asset(kiko.STOVE_SPRITE_ID, "sprites", "electric stove sprite")
     warn_if_missing_asset(kiko.ARC_SPRITE_ID, "sprites", "live arc sprite")
     warn_if_missing_asset(kiko.TRANSFORMER_SPRITE_ID, "sprites", "transformer sprite")
+    warn_if_missing_asset(kiko.WHIP_SPRITE_ID, "sprites", "whipping wire sprite")
+    warn_if_missing_asset(hazards.BOARD_SPRITE_ID, "sprites", "cracked board sprite")
 
     scene = build_scene(music_id, audio_ids)
-    actors = build_actors(audio_ids)
+    actors = build_actors(audio_ids, sprite_ids)
     triggers = build_triggers(audio_ids)
 
     write_variables()
-    for relative_path, palette in kiko_palettes():
+    for relative_path, palette in kiko_palettes() + shared.hazard_palettes():
         shared.write_json(PROJECT_DIR / relative_path, palette)
+    for relative_path, script in box_script_resources(audio_ids):
+        shared.write_json(PROJECT_DIR / relative_path, script)
     shared.remove_retired_debris_actors(SCENE_DIR, prefix="pine_")
     shared.write_json(SCENE_DIR / "scene.gbsres", scene)
     # This generator owns the whole scene folder: drop actors/triggers it no longer makes.

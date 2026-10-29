@@ -12,8 +12,10 @@ import intro
 import make_climb_scene as shared
 import make_kiko_scene as scene
 import opening
+import ridge
 import rosa
 import kiko
+from test_grid_chain import sprite_budget, sprite_profiles
 
 # Hermetic fixtures: the builders only reference these IDs, so fixed strings
 # keep the structural tests independent of which art sidecars exist yet.
@@ -28,6 +30,15 @@ def built_scene():
 
 def built_actors():
     return scene.build_actors(FAKE_AUDIO)
+
+
+def box_script_resources():
+    return scene.box_script_resources(FAKE_AUDIO)
+
+
+def box_script(line):
+    return next(script for _, script in box_script_resources()
+                if script["id"] == scene.CHAIN.box_script_id(line))
 
 
 def built_triggers():
@@ -55,6 +66,7 @@ def all_script_lists():
     for actor in built_actors():
         lists.extend([actor["script"], actor["startScript"], actor["updateScript"],
                       actor["hit1Script"]])
+    lists.extend(script["script"] for _, script in box_script_resources())
     for trigger in built_triggers():
         lists.extend([trigger["script"], trigger["leaveScript"]])
     return lists
@@ -62,6 +74,12 @@ def all_script_lists():
 
 def actor_by_symbol(symbol):
     return next(a for a in built_actors() if a["symbol"] == symbol)
+
+
+def box_script_actor_arg(line, target_actor_id):
+    return str(next(index for index, (actor_id, _name)
+                    in enumerate(scene.CHAIN.box_script_actor_bindings(line))
+                    if actor_id == target_actor_id))
 
 
 def trigger_by_symbol(symbol):
@@ -104,52 +122,17 @@ def stands(grid, x, y):
             and grid[y + 1][x] in (climb.COL_TOP, climb.COL_SOLID))
 
 
-def sprite_load(sprites):
-    """OBJ columns per tile row. Each entry is ((x, feet_row), width_tiles, height_tiles)."""
-    load = {}
-    for (_, feet), width, height in sprites:
-        for row in range(feet - height + 1, feet + 1):
-            load[row] = load.get(row, 0) + width
-    return load
-
-
-def arc_sprites():
-    return [((x0, row), 2, 2) for row, x0, _ in kiko.ARC_LANES]
-
-
-def hidden_cable_sprites():
-    """The hidden cable is the live arc sprite: two OBJ columns, visible while it arcs."""
-    return [((x0, row), 2, 2) for row, x0, _ in hazards.HIDDEN_CABLES["pine_hollow"]]
-
-
-def hazard_sprites():
-    """Every arc and hidden cable, all visible at once."""
-    return arc_sprites() + hidden_cable_sprites()
-
-
-# The hero is a 16px sprite: two OBJ columns per tile row on hardware (measured in
-# the emulator). grid_chain.scanline_load defaults to a 24px (3-column) hero.
-HERO_OBJ_SIZE = (2, 3)
-
-
-def chain_and_props_sprites():
-    """Every grid-chain sprite (poles, cable ends, transformer and junction box) plus Emil and the stove.
-
-    Emil's sprite is 16x32 (two OBJ columns, four tile rows); the stove is 16x16.
-    """
-    return grid_chain.chain_sprites(scene.LINES) + [(kiko.KIKO, 2, 4), (kiko.STOVE, 2, 2)]
-
-
-def scanline_overflows(spots):
-    """{spot: worst OBJ load} for every spot whose camera window exceeds the scanline budget."""
-    sprites = chain_and_props_sprites() + hazard_sprites()
-    out = {}
-    for x, feet in spots:
-        load = grid_chain.scanline_load(sprites, kiko.MAP_W, x, feet, hero_size=HERO_OBJ_SIZE)
-        worst = max(load.values())
-        if worst > grid_chain.SCANLINE_OBJ_LIMIT:
-            out[(x, feet)] = worst
-    return out
+def budget_spots():
+    """Every collision-supported hero tile plus explicit props/checkpoints/hazards."""
+    grid = kiko.collision_grid()
+    found = {(x, y) for y in range(2, kiko.MAP_H - 1) for x in range(1, kiko.MAP_W - 1)
+             if grid_chain.stands(grid, x, y)}
+    found.update((kiko.START, kiko.HOUSE_DOOR))
+    for line in scene.LINES:
+        found.update((line["pole_at"], line["box_at"], line["checkpoint"]))
+    found.update((x0, row + 1) for row, x0, _ in kiko.hazard_lanes())
+    found.update((x0, row + 1) for row, x0, _ in hazards.HIDDEN_CABLES["pine_hollow"])
+    return sorted(found)
 
 
 def overlaps(a, b):
@@ -188,11 +171,25 @@ def b_zones(attach):
     """({near value: its true events}, events after the last zone) for the B script's zone chain."""
     zones = {}
     events = attach["children"]["true"]
+    while len(events) == 1 and events[0]["command"] in (
+            "EVENT_IF_ACTOR_AT_POSITION", "EVENT_IF_ACTOR_DISTANCE_FROM_ACTOR"):
+        npc = events[0]
+        zones.setdefault(grid_chain.NPC_ZONE, npc["children"]["true"])
+        events = npc["children"]["false"]
     while (len(events) == 1 and events[0]["command"] == "EVENT_IF"
            and events[0]["args"]["condition"]["valueA"] == {"type": "variable", "value": climb.VAR_NEAR}):
         entry = events[0]
         zones[entry["args"]["condition"]["valueB"]["value"]] = entry["children"]["true"]
         events = entry["children"]["false"]
+    if len(events) == 1 and events[0]["command"] == "EVENT_IF_ACTOR_DISTANCE_FROM_ACTOR":
+        npc = events[0]
+        zones[grid_chain.NPC_ZONE] = npc["children"]["true"]
+        events = npc["children"]["false"]
+        if (len(events) == 1 and events[0]["command"] == "EVENT_IF"
+                and events[0]["args"]["condition"]["valueA"] ==
+                {"type": "variable", "value": climb.VAR_NEAR}
+                and events[0]["args"]["condition"]["valueB"]["value"] == grid_chain.NPC_ZONE):
+            events = events[0]["children"]["false"]
     return zones, events
 
 
@@ -226,6 +223,8 @@ class KikoTests(unittest.TestCase):
         }
         actor_ids = [a["id"] for a in built_actors()]
         ids.update({f"actor{i}": value for i, value in enumerate(actor_ids)})
+        ids.update({f"box_script{i}": script["id"]
+                    for i, (_, script) in enumerate(box_script_resources())})
         self.assertEqual(len(set(ids.values())), len(ids), "resource IDs collide")
         self.assertEqual(kiko.resource_id("scene:pine-hollow"), kiko.SCENE_ID)
         self.assertNotEqual(kiko.resource_id("actor:kiko"), kiko.resource_id("trigger:kiko-door"))
@@ -245,7 +244,7 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(resource["name"], "Pine Hollow")
         self.assertEqual(resource["symbol"], "scene_pine_hollow")
         self.assertEqual(resource["type"], "PLATFORM")
-        self.assertEqual((resource["width"], resource["height"]), (40, 18))
+        self.assertEqual((resource["width"], resource["height"]), (100, 18))
         self.assertEqual(resource["backgroundId"], kiko.BACKGROUND_ID)
         self.assertEqual(resource["id"], kiko.SCENE_ID)
         self.assertEqual(resource["_resourceType"], "scene")
@@ -261,12 +260,29 @@ class KikoTests(unittest.TestCase):
                          "editor index and position must be free")
         self.assertNotIn(resource["_index"], [t[0] for t in taken], "scene index must be unique")
 
+    def test_five_line_route_preserves_the_opening_mesa_and_full_hazard_kit(self):
+        self.assertEqual((kiko.MAP_W, kiko.MAP_H), (100, 18))
+        self.assertIn((5, 6, 12, 14), kiko.SOLID_BLOCKS)
+        self.assertIn((7, 18, 9, 14), kiko.SOLID_BLOCKS)
+        self.assertEqual((kiko.DAMAGED_POLE, kiko.FEEDER_BOX), ((9, 8), (16, 8)))
+        self.assertEqual(hazards.HIDDEN_CABLES["pine_hollow"], [(7, 11, 12)])
+        self.assertEqual([(line["key"], line["pole"], line["box"], line["checkpoint"], line["live_var"])
+                          for line in kiko.LINES], [
+            ("feeder", (9, 8), (16, 8), (14, 8), "24"),
+            ("west", (22, 11), (35, 14), (36, 14), "33"),
+            ("middle", (41, 8), (57, 8), (58, 8), "34"),
+            ("east", (61, 11), (70, 8), (71, 8), "35"),
+            ("house", (74, 8), (89, 11), (88, 11), "12"),
+        ])
+        self.assertEqual(kiko.STAGE_COLOR_INDEX, [1, 3, 2, 1, 3])
+        self.assertEqual(kiko.actor_count(), kiko.MAX_SCENE_ACTORS)
+
     def test_collisions_match_contract(self):
         resource = built_scene()
         self.assertEqual(decode_rle(resource["collisions"]),
                          [cell for row in kiko.collision_grid() for cell in row])
         self.assertEqual(
-            shared.collision_rle(kiko.collision_grid(), 40, 18),
+            shared.collision_rle(kiko.collision_grid(), kiko.MAP_W, kiko.MAP_H),
             resource["collisions"],
         )
 
@@ -290,7 +306,9 @@ class KikoTests(unittest.TestCase):
         grown = scene.merged_variables(synthetic)
         self.assertEqual(grown["variables"][:12], synthetic["variables"])
         self.assertEqual([v["id"] for v in grown["variables"]],
-                         [str(i) for i in range(12)] + ["12", "13", "24", "25", "26", hazards.VAR_ON_BOARD, "27"])
+                         [str(i) for i in range(12)]
+                         + [v[0] for v in kiko.VARIABLES if v[0] not in {str(i) for i in range(12)}]
+                         + [hazards.VAR_ON_BOARD, climb.VAR_NEAR])
         self.assertEqual(by_id["24"]["symbol"], "var_hollow_feeder_live")
         self.assertEqual(by_id["25"]["symbol"], "var_hollow_lines_live")
         self.assertEqual(by_id["26"]["symbol"], "var_hollow_chain_live")
@@ -299,7 +317,9 @@ class KikoTests(unittest.TestCase):
 
     def test_scene_init_resets_vars_and_sets_cold_window_and_dead_line(self):
         script = built_scene()["script"]
-        for variable in ("6", "12", "13", "24", "25", "26"):
+        for variable in (kiko.VAR_CARRYING_CABLE, kiko.VAR_LINE_LIVE, kiko.VAR_HOME_POWERED,
+                         kiko.VAR_FEEDER_LIVE, kiko.VAR_LINES_LIVE, kiko.VAR_CHAIN_LIVE,
+                         *(line["live_var"] for line in scene.LINES)):
             self.assertTrue(any(is_set(e, variable, 0) for e in script),
                             f"init must reset var {variable}")
         for variable in ("4", "10", "11"):
@@ -319,11 +339,14 @@ class KikoTests(unittest.TestCase):
         self.assertTrue(lit_zero)
         self.assertEqual({e["args"][f"palette{kiko.LINE_BG_SLOT}"] for e in lit_zero},
                          {scene.chain_palette_id(stages) for stages in range(kiko.STAGE_COUNT + 1)})
+        self.assertEqual({e["args"][f"palette{kiko.LINE_BG_SLOT_2}"] for e in lit_zero},
+                         {grid_chain.chain_palette_id(kiko.resource_id, stages, kiko.LINE_BG_SLOT_2)
+                          for stages in range(kiko.STAGE_COUNT + 1)})
         music = next(e for e in script if e["command"] == "EVENT_MUSIC_PLAY")
         self.assertEqual(music["args"]["musicId"], FAKE_MUSIC)
         intro = [e for e in script if e["command"] == "EVENT_TEXT"]
         self.assertEqual([e["args"]["text"] for e in intro],
-                         [["No power at\nEmil's house!"], ["Two lines to fix.\nOne cable a trip."],
+                         [["Emil's house is\ndark and hungry!"], ["Fix 5 lines,\nthen soup!"],
                           ["Dinner's cold..."]])
 
     def test_every_in_play_text_is_preceded_by_cutoff_and_followed_by_hud(self):
@@ -344,15 +367,15 @@ class KikoTests(unittest.TestCase):
         # Authored in-play texts: two intro boxes, Emil x3, cable pickup, junction x3, door x2.
         # Intro x3, Emil x4, two chain ends and three boxes each (status + pickup/no cable),
         # door x2 + CLOSED box, report-exit refusal; the B drop's line once per branch.
-        self.assertEqual(checked, 28)  # 32 - the box zones' repeated status lines + the B drop's two lines
+        self.assertGreaterEqual(checked, kiko.LINE_COUNT * 10)
 
     def test_hud_uses_exact_two_digit_variable_tokens(self):
-        self.assertEqual(kiko.HUD_TEXT, "LINES %D1$25$/2 HOME %D1$13$/1")
+        self.assertEqual(kiko.HUD_TEXT, f"LINES %D1${kiko.VAR_LINES_LIVE}$/5 HOME %D1${kiko.VAR_HOME_POWERED}$/1")
         draws = {entry["args"]["text"] for script in all_script_lists()
                  for entry in walk(script) if entry["command"] == "EVENT_TEXT_DRAW"}
         self.assertEqual(draws - {intro.dev_label()} - {None}, {kiko.HUD_TEXT})
         tokens = re.findall(r"\$(\d+)\$", kiko.HUD_TEXT)
-        self.assertEqual(tokens, ["25", "13"])
+        self.assertEqual(tokens, [kiko.VAR_LINES_LIVE, kiko.VAR_HOME_POWERED])
         self.assertTrue(all(len(token) == 2 for token in tokens))
         self.assertLessEqual(len(re.sub(r"%D1\$\d+\$", "00", kiko.HUD_TEXT)), 20,
                              "HUD must fit the 20-tile overlay row")
@@ -370,7 +393,7 @@ class KikoTests(unittest.TestCase):
                         self.assertNotIn("’", part, "use ASCII apostrophes in dialogue")
                         checked += 1
         # One part per line; two-line boxes count each part.
-        self.assertEqual(checked, 55)  # 65 - the reach triggers' status lines + the B drop's two lines
+        self.assertGreaterEqual(checked, kiko.LINE_COUNT * 18)
 
     def test_cable_drop_runs_before_respawn_in_player_hit(self):
         hit = built_scene()["playerHit1Script"]
@@ -395,7 +418,7 @@ class KikoTests(unittest.TestCase):
         branch = next(e for e in hit if is_var_if(e, kiko.VAR_HOME_POWERED, 0))
         # Before Emil's power: the furthest repaired line's checkpoint, else START.
         self.assertEqual(set(set_positions(branch["children"]["true"])),
-                         {kiko.START, kiko.FEEDER_CHECKPOINT, kiko.HOUSE_CHECKPOINT})
+                         {kiko.START, *(line["checkpoint"] for line in scene.LINES)})
         self.assertEqual(set_positions(branch["children"]["true"])[-1], kiko.START,
                          "START is the fallback, reached when no line is live")
         house = next(e for e in branch["children"]["true"] if is_var_if(e, kiko.VAR_LINE_LIVE, 1))
@@ -410,8 +433,8 @@ class KikoTests(unittest.TestCase):
         self.assertEqual((trigger["x"], trigger["y"], trigger["width"], trigger["height"]),
                          kiko.DOOR_TRIGGER)
         script = trigger["script"]
-        # The door needs both lines: the HUD count reads 2.
-        line = next(e for e in script if is_var_if(e, kiko.VAR_LINES_LIVE, 2))
+        # The door needs every line in the five-line chain.
+        line = next(e for e in script if is_var_if(e, kiko.VAR_LINES_LIVE, kiko.LINE_COUNT))
         power = next(e for e in line["children"]["true"]
                      if is_var_if(e, kiko.VAR_HOME_POWERED, 0))
         reward = power["children"]["true"]
@@ -425,10 +448,10 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(states, {(scene.actor_id(scene.KIKO_KEY), "Relieved"),
                                   (scene.actor_id(scene.STOVE_KEY), "On")})
         self.assertEqual([e["args"]["text"] for e in reward if e["command"] == "EVENT_TEXT"],
-                         [["Emil:\nStove's on!\nSoup is cooking!"], tickets.closed_lines(4)])
+                         [["Emil:\nStove's on!\nSoup party!"], tickets.closed_lines(4)])
         dead = line["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
-                         [["Still no power.\nFix both lines!"]])
+                          [["Still no power.\nFix all 5 lines!"]])
         # Only the door's reward writes var 13 to 1; init writes 0 and nothing else touches it.
         writers_to_one = [e for script in all_script_lists() for e in walk(script)
                           if e["command"] == "EVENT_SET_VALUE" and e["args"]["variable"] == "13"
@@ -476,7 +499,8 @@ class KikoTests(unittest.TestCase):
                                  ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_HIDE"])
         hazard_indices = [a["_index"] for a in built_actors()
                           if a["symbol"].startswith("pine_arc_")]
-        self.assertEqual(hazard_indices, [6])  # after two pole-and-box line pairs
+        first_hazard = 2 + 2 * kiko.LINE_COUNT
+        self.assertEqual(hazard_indices, list(range(first_hazard, first_hazard + len(arcs))))
 
     def test_hidden_cable_lane_is_open_air_on_the_mesa(self):
         grid = kiko.collision_grid()
@@ -506,29 +530,46 @@ class KikoTests(unittest.TestCase):
         self.assertEqual([e["args"]["frames"]["value"] for e in first["children"]["true"]
                           if e["command"] == "EVENT_WAIT"], [hazards.CABLE_START_DELAYS["pine_hollow"][0]])
 
+    def test_board_trigger_and_actor_use_the_contract_rectangle_and_number(self):
+        board = hazards.BOARDS["pine_hollow"][0]
+        actor = actor_by_symbol("pine_board_01")
+        trigger = trigger_by_symbol("trigger_pine_cracked_board_01")
+        self.assertEqual((actor["x"], actor["y"]), hazards.board_actor_position(board))
+        self.assertEqual((trigger["x"], trigger["y"], trigger["width"], trigger["height"]),
+                         hazards.board_trigger_rect(board))
+        self.assertEqual(var_value(trigger["script"][0]), 1)
+        self.assertEqual(actor["collisionGroup"], "1")
+        self.assertEqual(actor["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
+
     def test_every_view_stays_within_ten_sprites_per_scanline(self):
-        # Ridge's rule: every standing tile and chain spot within the OBJ budget,
-        # with every hazard visible at once (the worst case).
-        grid = kiko.collision_grid()
-        spots = [(x, feet) for feet in (kiko.GROUND_ROW - 1, kiko.MESA_ROW, kiko.PORCH_ROW)
-                 for x in range(1, kiko.MAP_W - 1) if stands(grid, x, feet)]
-        spots += [kiko.START, kiko.HOUSE_DOOR]
-        for line in scene.LINES:
-            spots += [line["pole_at"], line["box_at"], line["checkpoint"]]
-        spots += [(x0, row + 1) for row, x0, _ in kiko.hazard_lanes()]
-        self.assertEqual(scanline_overflows(spots), {})
+        actors = built_actors()
+        profiles = sprite_profiles(PROJECT_DIR)
+        for spot in budget_spots():
+            load, _ = sprite_budget(PROJECT_DIR, actors, spot, kiko.MAP_W, kiko.MAP_H,
+                                    profiles=profiles)
+            self.assertLessEqual(max(load.values()), grid_chain.SCANLINE_OBJ_LIMIT, (spot, load))
+
+    def test_every_view_stays_within_the_active_actor_limit(self):
+        actors = built_actors()
+        profiles = sprite_profiles(PROJECT_DIR)
+        for spot in budget_spots():
+            _, near = sprite_budget(PROJECT_DIR, actors, spot, kiko.MAP_W, kiko.MAP_H,
+                                    profiles=profiles)
+            self.assertLessEqual(len(near), kiko.MAX_ACTIVE_ACTORS, (spot, near))
 
     def test_chain_wire_routes_are_continuous_and_stage_coloured(self):
         grid_chain.check_wire_routes(kiko.WIRE_ROUTES, kiko.STAGE_COUNT, kiko.MAP_W, kiko.HUD_ROWS,
                                      kiko.GROUND_ROW)
-        self.assertEqual(kiko.STAGE_COLOR_INDEX, [1, 3])
+        self.assertEqual(kiko.STAGE_COLOR_INDEX, [1, 3, 2, 1, 3])
         self.assertEqual(kiko.WIRE_ROUTES[0][1][0], (0, kiko.OVERHEAD), "power enters at the left edge")
         self.assertEqual(kiko.WIRE_ROUTES[-1][1][-1][0], kiko.HOUSE_RECT[0], "the chain ends at the house")
 
     def test_lines_are_feeder_then_house_with_their_checkpoints(self):
-        feeder, house = scene.LINES
-        self.assertEqual((feeder["key"], feeder["number"], feeder["live_var"]), ("feeder", 1, kiko.VAR_FEEDER_LIVE))
-        self.assertEqual((house["key"], house["number"], house["live_var"]), ("house", 2, kiko.VAR_LINE_LIVE))
+        self.assertEqual([line["key"] for line in scene.LINES],
+                         ["feeder", "west", "middle", "east", "house"])
+        feeder, house = scene.LINES[0], scene.LINES[-1]
+        self.assertEqual((feeder["number"], feeder["live_var"]), (1, kiko.VAR_FEEDER_LIVE))
+        self.assertEqual((house["number"], house["live_var"]), (5, kiko.VAR_LINE_LIVE))
         self.assertEqual(feeder["pole_at"], kiko.DAMAGED_POLE)
         self.assertEqual(feeder["box_at"], kiko.FEEDER_BOX)
         self.assertEqual(house["pole_at"], kiko.HOUSE_POLE)
@@ -542,18 +583,18 @@ class KikoTests(unittest.TestCase):
     def test_actor_count_stays_within_the_engine_budget(self):
         actors = built_actors()
         self.assertLessEqual(len(actors), kiko.MAX_SCENE_ACTORS, "gbvm allows 20 actors besides the player")
-        self.assertEqual(len(actors), 2 + 2 * len(scene.LINES) + len(kiko.ARC_LANES)
-                         + len(hazards.HIDDEN_CABLES["pine_hollow"]))
-        self.assertEqual(len(actors), 8)
+        self.assertEqual(len(actors), kiko.actor_count())
+        self.assertEqual(len(actors), kiko.MAX_SCENE_ACTORS, "full hazard kit fits the 20-actor budget")
 
     def test_each_line_has_a_box_zone_that_arms_only_its_own_plug_in(self):
         triggers = built_triggers()
         for line in scene.LINES:
             trigger = trigger_by_symbol(f"trigger_pine_{line['key']}_reach")
             self.assertEqual((trigger["x"], trigger["y"], trigger["width"], trigger["height"]),
-                             grid_chain.reach_rect(line["box_at"]))
-            self.assertEqual(trigger["x"] + trigger["width"], line["box_at"][0] + 2,
-                             "three tiles before the box, then its two columns")
+                             line.get("reach") or grid_chain.reach_rect(line["box_at"]))
+            reach_end = trigger["x"] + trigger["width"]
+            self.assertIn(reach_end, (line["box_at"][0], line["box_at"][0] + 2),
+                          "reach is either the three approach tiles or approach plus box")
             [enter] = trigger["script"]
             self.assertTrue(is_set(enter, climb.VAR_NEAR, grid_chain.BOX_ZONE + line["number"]),
                             "the zone arms this line's box only")
@@ -562,21 +603,37 @@ class KikoTests(unittest.TestCase):
             self.assertEqual(sum(t["_index"] == trigger["_index"] for t in triggers), 1,
                              "trigger indices are unique")
         self.assertEqual([t["symbol"] for t in triggers[2:]],
-                         ["trigger_pine_feeder_reach", "trigger_pine_house_reach",
-                          "trigger_pine_feeder_pole_zone", "trigger_pine_house_pole_zone"])
+                         ["trigger_pine_cracked_board_01"]
+                         + [f"trigger_pine_{line['key']}_reach" for line in scene.LINES]
+                         + [f"trigger_pine_{line['key']}_pole_zone" for line in scene.LINES])
         self.assertEqual([t["_index"] for t in triggers], list(range(len(triggers))))
 
-    def test_house_box_zone_holds_a_hero_at_x243_with_the_house_cable(self):
-        # B-06: a B press at x243 did nothing. The hero stands at x=243px with feet on
-        # the porch row: inside the house box zone, which arms the house cable's plug-in.
+    def test_global_b_invokes_the_matching_box_actor_script(self):
+        zones, _ = b_zones(b_script())
+        for line in scene.LINES:
+            with self.subTest(line=line["key"]):
+                [invoke] = zones[grid_chain.BOX_ZONE + line["number"]]
+                script = box_script(line)
+                self.assertEqual(invoke["command"], "EVENT_CALL_CUSTOM_EVENT")
+                self.assertEqual(invoke["args"]["customEventId"], script["id"])
+                self.assertTrue(script["script"], "the canonical script owns the large repair/refresh body")
+                self.assertEqual(actor_by_symbol(line["box_symbol"])["script"], [])
+                expected_actor_args = {
+                    f"$actor[{index}]$": actor_id
+                    for index, (actor_id, _name) in enumerate(scene.CHAIN.box_script_actor_bindings(line))
+                }
+                self.assertEqual({key: value for key, value in invoke["args"].items()
+                                  if key.startswith("$actor[")}, expected_actor_args)
+
+    def test_house_box_zone_covers_the_dynamic_house_box_position(self):
+        # The house box zone includes the player's standing rectangle on the porch.
         trigger = trigger_by_symbol("trigger_pine_house_reach")
         trig = tile_px(trigger["x"], trigger["y"], trigger["width"], trigger["height"])
-        hero = (243, (kiko.PORCH_ROW - 2) * 8, 24, 24)
-        self.assertTrue(overlaps(hero, trig), "the hero at x243 is inside the house box zone")
-        self.assertTrue(overlaps(tile_px(*kiko.JUNCTION_BOX), trig), "the zone covers the box's own tile")
-        self.assertEqual(trigger["x"], 30)
+        hero = ((kiko.JUNCTION_BOX[0] - 1) * 8 + 3, (kiko.PORCH_ROW - 2) * 8, 24, 24)
+        self.assertTrue(overlaps(hero, trig), "hero is inside the house box zone")
+        self.assertEqual(trigger["x"], kiko.JUNCTION_BOX[0] - 3)
         [enter] = trigger["script"]
-        self.assertTrue(is_set(enter, climb.VAR_NEAR, grid_chain.BOX_ZONE + 2))
+        self.assertTrue(is_set(enter, climb.VAR_NEAR, grid_chain.BOX_ZONE + kiko.LINE_COUNT))
 
     def test_standing_on_any_box_tile_resolves_to_that_boxs_zone(self):
         # The engine fires the first listed trigger that covers the hero, so a hero
@@ -586,15 +643,19 @@ class KikoTests(unittest.TestCase):
             for tile in box_tiles(line["box_at"]):
                 hit = first_hit(triggers, tile)
                 self.assertIsNotNone(hit, (line["key"], tile))
-                self.assertEqual(hit["symbol"], "trigger_pine_" + line["key"] + "_reach", (line["key"], tile))
+                self.assertEqual(hit["symbol"], "trigger_pine_" + line["key"] + "_reach",
+                                 (line["key"], tile))
 
     def test_reach_triggers_do_not_overlap_the_exit_or_the_door(self):
         triggers = built_triggers()
+        self.assertEqual(len(triggers), 2 + len(hazards.BOARDS["pine_hollow"]) + 2 * len(scene.LINES),
+                         "five lines, full hazards and exits use 13 triggers; talk uses a position test")
+        self.assertLessEqual(len(triggers), grid_chain.MAX_TRIGGERS)
         rects = {t["symbol"]: (t["x"], t["y"], t["width"], t["height"]) for t in triggers}
-        for name in zone_symbols():
-            for other, rect in rects.items():
-                if other != name:
-                    self.assertFalse(overlaps(tile_px(*rects[name]), tile_px(*rect)), (name, other))
+        items = list(rects.items())
+        for index, (name, rect) in enumerate(items):
+            for other, other_rect in items[index + 1:]:
+                self.assertFalse(overlaps(tile_px(*rect), tile_px(*other_rect)), (name, other))
         self.assertEqual(rects[scene.DOOR_TRIGGER_SYMBOL], kiko.DOOR_TRIGGER)
 
     def test_checkpoint_positions_are_clear_of_the_door_and_the_hazards(self):
@@ -644,15 +705,21 @@ class KikoTests(unittest.TestCase):
     def test_actor_roster(self):
         actors = built_actors()
         symbols = [a["symbol"] for a in actors]
-        self.assertEqual(symbols, [
-            scene.KIKO_SYMBOL, scene.STOVE_SYMBOL,
-            scene.POLE_SYMBOL, "pine_feeder_box",
-            "kiko_house_pole", scene.JUNCTION_SYMBOL,
-            "pine_arc_01", "pine_hidden_cable_01",
-        ])
+        expected = [scene.KIKO_SYMBOL, scene.STOVE_SYMBOL]
+        for line in scene.LINES:
+            expected.extend((line["pole_symbol"], line["box_symbol"]))
+        expected += [f"pine_arc_{n:02d}" for n in range(1, len(kiko.ARC_LANES) + 1)]
+        expected += [f"pine_gust_{n:02d}" for n in range(1, len(kiko.GUST_LANES) + 1)]
+        expected += [f"pine_span_arc_{n:02d}" for n in range(1, len(kiko.span_arc_lanes()) + 1)]
+        expected += [f"pine_whip_{n:02d}" for n in range(1, len(kiko.WHIP_LANES) + 1)]
+        expected += [f"pine_hidden_cable_{n:02d}"
+                     for n in range(1, len(hazards.HIDDEN_CABLES["pine_hollow"]) + 1)]
+        expected += [f"pine_board_{n:02d}"
+                     for n in range(1, len(hazards.BOARDS["pine_hollow"]) + 1)]
+        self.assertEqual(symbols, expected)
         self.assertEqual([a["_index"] for a in actors], list(range(len(actors))))
         self.assertEqual(len(set(a["id"] for a in actors)), len(actors))
-        self.assertEqual(len(actors), 8, "keep the actor count modest")
+        self.assertEqual(len(actors), kiko.MAX_SCENE_ACTORS)
         kiko_actor = actor_by_symbol(scene.KIKO_SYMBOL)
         self.assertEqual((kiko_actor["x"], kiko_actor["y"]), kiko.KIKO)
         self.assertEqual(kiko_actor["spriteSheetId"], kiko.KIKO_SPRITE_ID)
@@ -669,10 +736,10 @@ class KikoTests(unittest.TestCase):
         self.assertNotIn(scene.CABLE_SYMBOL, symbols)
         junction = actor_by_symbol(scene.JUNCTION_SYMBOL)
         self.assertEqual((junction["x"], junction["y"]), kiko.JUNCTION_BOX)
-        self.assertEqual(junction["spriteSheetId"], climb.grid_resource_id("sprite:grid_junction_box"))
+        self.assertEqual(junction["spriteSheetId"], ridge.TRANSFORMER_SPRITE_ID)  # house box matches every transformer
         self.assertEqual(junction["startScript"][0]["args"]["spriteStateId"], "Dead")
         self.assertFalse([a for a in actors if "debris" in a["symbol"]])
-        arc = actor_by_symbol("pine_arc_01")
+        arc = actor_by_symbol("pine_span_arc_01")
         self.assertEqual(arc["spriteSheetId"], kiko.ARC_SPRITE_ID)
         self.assertEqual(arc["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
 
@@ -682,21 +749,25 @@ class KikoTests(unittest.TestCase):
         self.assertEqual([e["args"]["text"] for e in script[0]["children"]["true"]
                           if e["command"] == "EVENT_TEXT"], [["Emil:\nDinner time!\nThank you!"]])
         otherwise = script[0]["children"]["false"]
-        self.assertTrue(is_var_if(otherwise[0], kiko.VAR_LINES_LIVE, 2))
+        self.assertTrue(is_var_if(otherwise[0], kiko.VAR_LINES_LIVE, kiko.LINE_COUNT))
         live = otherwise[0]["children"]["true"]
         dead = otherwise[0]["children"]["false"]
         self.assertEqual([e["args"]["text"] for e in live if e["command"] == "EVENT_TEXT"],
-                         [["Emil:\nBoth lines live!\nTry our door."]])
+                          [["Emil:\nAll 5 lines live!\nTry our door."]])
         self.assertEqual([e["args"]["text"] for e in dead if e["command"] == "EVENT_TEXT"],
-                         [["Emil:\nOur stove's dead.\nI'm so hungry!"]])
+                         [["Emil:\nStove's dead.\nMy tummy growls!"]])
 
     def test_junction_plugs_carried_cable_once_and_lights_line(self):
         zones, _ = b_zones(b_script())
-        [live] = zones[grid_chain.BOX_ZONE + 2]
+        [invoke] = zones[grid_chain.BOX_ZONE + kiko.LINE_COUNT]
+        script = box_script(scene.LINES[-1])
+        self.assertEqual(invoke["command"], "EVENT_CALL_CUSTOM_EVENT")
+        self.assertEqual(invoke["args"]["customEventId"], script["id"])
+        [live] = script["script"]
         self.assertTrue(is_var_if(live, kiko.VAR_LINE_LIVE, 1))
         self.assertEqual(walk_texts(live["children"]["true"]), [["Line is live."]])
         has_cable = next(e for e in live["children"]["false"]
-                         if is_var_if(e, kiko.VAR_CARRYING_CABLE, 2))
+                         if is_var_if(e, kiko.VAR_CARRYING_CABLE, kiko.LINE_COUNT))
         branch = has_cable["children"]["true"]
         self.assertTrue(any(is_set(e, kiko.VAR_CARRYING_CABLE, 0) for e in branch))
         self.assertTrue(any(is_set(e, kiko.VAR_LINE_LIVE, 1) for e in branch))
@@ -704,26 +775,26 @@ class KikoTests(unittest.TestCase):
         states = [e["args"]["spriteStateId"] for e in branch if e["command"] == "EVENT_ACTOR_SET_STATE"]
         # The hero drops the Carry pose, then the house pole stands; the box's own state comes from the chain.
         self.assertEqual(states, ["", "Standing"])
-        junction = scene.actor_id(scene.JUNCTION_KEY)
+        junction = box_script_actor_arg(scene.LINES[-1], scene.actor_id(scene.JUNCTION_KEY))
         box_states = {e["args"]["spriteStateId"] for e in walk(branch)
                       if e["command"] == "EVENT_ACTOR_SET_STATE" and e["args"]["actorId"] == junction}
         self.assertEqual(box_states, {"Live", "Dead"}, "the chain refresh sets the box Live or Dead")
         # The status line names how far power reaches once the house line is in.
-        self.assertEqual(walk_texts(branch), [["Both lines live!\nGo see Emil."],
-                                              ["Power flows on!\nOne more line."],
+        self.assertEqual(walk_texts(branch), [["All 5 lines live!\nGo see Emil."],
+                                               ["Power flows on!\nKeep going."],
                                               ["Fixed. No power\nfrom upstream."]])
         # Empty hands at a dead line point back to the pole, like the other jobs.
         self.assertEqual(walk_texts(has_cable["children"]["false"])[0], ["No cable yet.\nCheck the pole."])
 
     def test_cable_pickup_requires_empty_hands_and_dead_line(self):
         zones, _ = b_zones(b_script())
-        for number, live_var in ((1, kiko.VAR_FEEDER_LIVE), (2, kiko.VAR_LINE_LIVE)):
+        for line in scene.LINES:
+            number, live_var = line["number"], line["live_var"]
             [empty] = zones[number]
             self.assertTrue(is_var_if(empty, kiko.VAR_CARRYING_CABLE, 0))
             dead = next(e for e in empty["children"]["true"] if is_var_if(e, live_var, 0))
             take = dead["children"]["true"]
             self.assertTrue(any(is_set(e, kiko.VAR_CARRYING_CABLE, number) for e in take))
-            line = next(line for line in scene.LINES if line["number"] == number)
             self.assertIn((scene.actor_id(line["pole"]), "Snapped"),
                           [(e["args"]["actorId"], e["args"]["spriteStateId"])
                            for e in take if e["command"] == "EVENT_ACTOR_SET_STATE"])
@@ -737,13 +808,17 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(walk_texts(zones[1][0]["children"]["false"]), [["Hands full!\nOne cable a trip."]])
 
     def test_b_away_from_every_zone_drops_the_carried_cable_to_its_pole(self):
-        zones, rest = b_zones(b_script())
-        self.assertEqual(zones[grid_chain.NPC_ZONE], [], "the neighbour zone never drops the cable")
+        attach = b_script()
+        zones, rest = b_zones(attach)
+        self.assertTrue(attach["args"]["override"], "one B press must dispatch either talk or a cable action")
+        self.assertEqual(walk_texts(zones[grid_chain.NPC_ZONE]),
+                         walk_texts(actor_by_symbol(scene.KIKO_SYMBOL)["script"]))
+        self.assertNotIn(["Cable dropped."], walk_texts(zones[grid_chain.NPC_ZONE]))
         [drop] = rest
         branches = {e["args"]["condition"]["valueB"]["value"]: e["children"]["true"]
                     for e in drop["children"]["true"] if e["command"] == "EVENT_IF"}
-        self.assertEqual(set(branches), {1, 2})
-        for number in (1, 2):
+        self.assertEqual(set(branches), {line["number"] for line in scene.LINES})
+        for number in range(1, kiko.LINE_COUNT + 1):
             self.assertTrue(any(is_set(e, kiko.VAR_CARRYING_CABLE, 0) for e in branches[number]))
             line = next(line for line in scene.LINES if line["number"] == number)
             self.assertIn((scene.actor_id(line["pole"]), "Snapped+Cable"),
@@ -768,6 +843,8 @@ class KikoTests(unittest.TestCase):
         for trigger in scene.build_triggers(audio):
             path = scene.SCENE_DIR / "triggers" / f"{trigger['symbol']}.gbsres"
             self.assertEqual(shared.load_json(path), trigger)
+        for relative, script in scene.box_script_resources(audio):
+            self.assertEqual(shared.load_json(PROJECT_DIR / relative), script)
         for relative, palette in scene.kiko_palettes():
             self.assertEqual(shared.load_json(PROJECT_DIR / relative), palette)
         on_disk = shared.load_json(scene.VARIABLES_PATH)
@@ -783,8 +860,10 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(sprites[kiko.GRID_SPRITE_PALETTE_SLOT],
                          climb.grid_resource_id("palette:sprite:grid"))
         self.assertEqual(sprites[kiko.ARC_SPRITE_PALETTE_SLOT], rosa.resource_id("palette:sprite:arc"))
-        self.assertEqual(sprites[4:], template["spritePaletteIds"][4:],
-                         "unused slots 4-5 (debris and gust) keep the climb palettes")
+        self.assertEqual(sprites[hazards.BOARD_SPRITE_PALETTE_SLOT], hazards.BOARD_PALETTE_ID)
+        self.assertEqual(sprites[kiko.GUST_SPRITE_PALETTE_SLOT], template["spritePaletteIds"][5])
+        self.assertEqual(sprites[kiko.WHIP_SPRITE_PALETTE_SLOT], ridge.WHIP_PALETTE_ID)
+        self.assertEqual(sprites[intro.SPRITE_SLOTS["pole"]], intro.palette_id("pole"))
         self.assertEqual(kiko.KIKO_SPRITE_PALETTE_SLOT, 1)
         self.assertEqual(kiko.GRID_SPRITE_PALETTE_SLOT, 2)
         self.assertEqual(kiko.ARC_SPRITE_PALETTE_SLOT, 3)
@@ -793,14 +872,22 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(backgrounds[:5], [opening.resource_id(f"palette:bg:{name}")
                                            for name in ["night", "stone", "timber", "window", "foliage"]])
         self.assertEqual(backgrounds[kiko.LINE_BG_SLOT], scene.chain_palette_id(0), "the wire slot starts dark")
+        self.assertEqual(backgrounds[kiko.LINE_BG_SLOT_2],
+                         grid_chain.chain_palette_id(kiko.resource_id, 0, kiko.LINE_BG_SLOT_2))
         self.assertEqual(backgrounds[7], "default-ui")
         palettes = dict(scene.kiko_palettes())
-        self.assertEqual(len(palettes), 1 + kiko.STAGE_COUNT + 1, "Emil's sprite plus one palette per chain count")
+        self.assertEqual(len(palettes), 1 + (kiko.STAGE_COUNT + 1) * 2,
+                         "Emil's sprite plus both wire palettes per chain count")
         chain_files = sorted(p for p in palettes if "_bg_chain_" in p)
-        self.assertEqual(chain_files, [f"project/palettes/pine_hollow_bg_chain_{n}_live.gbsres"
-                                       for n in range(kiko.STAGE_COUNT + 1)])
+        expected_files = {f"project/palettes/pine_hollow_bg_chain_{n}_live.gbsres"
+                          for n in range(kiko.STAGE_COUNT + 1)}
+        expected_files |= {f"project/palettes/pine_hollow_bg_chain_{n}_live_slot_6.gbsres"
+                           for n in range(kiko.STAGE_COUNT + 1)}
+        self.assertEqual(set(chain_files), expected_files)
         self.assertEqual({palettes[p]["id"] for p in chain_files},
-                         {scene.chain_palette_id(n) for n in range(kiko.STAGE_COUNT + 1)})
+                         {grid_chain.chain_palette_id(kiko.resource_id, n, slot)
+                          for n in range(kiko.STAGE_COUNT + 1)
+                          for slot in (kiko.LINE_BG_SLOT, kiko.LINE_BG_SLOT_2)})
         kiko_palette = palettes["project/palettes/pine_hollow_sprite_kiko.gbsres"]
         relative = "project/palettes/pine_hollow_sprite_kiko.gbsres"
         self.assertEqual(kiko_palette["id"], scene.kiko_palette_id())

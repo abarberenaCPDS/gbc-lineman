@@ -6,7 +6,7 @@
   "prefabId": "",
   "name": "Priya (Signal Hill)",
   "coordinateType": "tiles",
-  "x": 34,
+  "x": 95,
   "y": 11,
   "frame": 0,
   "animate": true,
@@ -36,7 +36,7 @@
           }
         }
       },
-      "id": "4068cf56-2cff-5b95-ab5c-4531b9ff594a",
+      "id": "c528f311-4f85-5f68-86a3-e6349ae52c9b",
       "children": {
         "true": [
           {
@@ -47,7 +47,7 @@
               "duration": 0.03,
               "units": "time"
             },
-            "id": "665a1b42-089e-5c5f-9d35-8624eac49b01"
+            "id": "1997f32a-2890-5a5b-a22f-24f6593f74bb"
           },
           {
             "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -58,13 +58,13 @@
                 "value": 150
               }
             },
-            "id": "ad62e5e7-1391-5207-8c84-501e521b7ff6"
+            "id": "fbb1e1db-96de-5686-bef9-73bf755b42d9"
           },
           {
             "command": "EVENT_TEXT",
             "args": {
               "text": [
-                "Priya:\nI'm back online!\nThank you!"
+                "Priya:\nBack online!\nYou're a star!"
               ],
               "avatarId": "",
               "minHeight": 4,
@@ -83,7 +83,7 @@
               "closeDelayTime": 0.5,
               "closeDelayFrames": 30
             },
-            "id": "8fddaba9-e004-5c74-ac2c-e8f1f95e08b2"
+            "id": "9594f3c3-b01c-5ce5-9356-94a44ce77741"
           },
           {
             "command": "EVENT_TEXT_SET_SOUND_EFFECT",
@@ -93,7 +93,7 @@
               "duration": 0.03,
               "units": "time"
             },
-            "id": "24f2c000-53a0-5e14-aebc-833ab1d3d3b1"
+            "id": "2ff96a8d-d21f-504e-a502-15dfbe8e25cf"
           },
           {
             "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -104,7 +104,7 @@
                 "value": 16
               }
             },
-            "id": "56cc83d9-8a25-5d10-8f4f-6c48ee7acca7"
+            "id": "a26a6a90-afa3-598a-aca3-fc258d4fc516"
           },
           {
             "command": "EVENT_OVERLAY_SHOW",
@@ -113,27 +113,27 @@
               "x": 0,
               "y": 0
             },
-            "id": "d7302863-d296-55dc-ac3a-31b0924c8659"
+            "id": "8690819d-56dc-570d-bea9-d020354e501c"
           },
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "LINES %D1$22$/2 HOME %D1$11$/1",
+              "text": "LINES %D1$22$/5 HOME %D1$11$/1",
               "x": 0,
               "y": 0,
               "location": "overlay"
             },
-            "id": "2fb31194-f605-5557-84c6-9b65d3492c94"
+            "id": "041f7178-5d41-54f9-9ac5-7582d79b7fd3"
           },
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.15.0-dev",
+              "text": "v0.17.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"
             },
-            "id": "d0a071c2-21a2-5f0e-9a82-95b95d332f53"
+            "id": "f985ed5f-e6f2-5607-bb81-772e23767901"
           }
         ],
         "false": [
@@ -148,11 +148,11 @@
                 },
                 "valueB": {
                   "type": "number",
-                  "value": 2
+                  "value": 5
                 }
               }
             },
-            "id": "d7a1093f-5145-5290-a449-ac2aec132dd5",
+            "id": "d90dba53-993d-51e6-bab7-ed07434e5b5b",
             "children": {
               "true": [
                 {
@@ -163,7 +163,7 @@
                     "duration": 0.03,
                     "units": "time"
                   },
-                  "id": "bf1b0978-7d09-5037-9bf0-51da3b967da7"
+                  "id": "284b352e-a40d-5dc6-9b5b-ea53a5ea7105"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -174,13 +174,13 @@
                       "value": 150
                     }
                   },
-                  "id": "4bc5f31d-91a5-5d44-8c6f-1e59d9394023"
+                  "id": "42923768-3960-54d1-9873-e5e4012e792d"
                 },
                 {
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Priya:\nLines are live!\nTry my door."
+                      "Priya:\nFive lines live!\nTry my door."
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -199,7 +199,7 @@
                     "closeDelayTime": 0.5,
                     "closeDelayFrames": 30
                   },
-                  "id": "6fcc111a-0780-5fbc-9879-746c7062553c"
+                  "id": "9fcf4a27-ca51-5dab-a345-2d260f049b17"
                 },
                 {
                   "command": "EVENT_TEXT_SET_SOUND_EFFECT",
@@ -209,7 +209,7 @@
                     "duration": 0.03,
                     "units": "time"
                   },
-                  "id": "714b925c-ea99-5ba9-b33d-019cdedf5fac"
+                  "id": "48b42cac-66a6-55ea-93ec-9bc17d0d2e3c"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -220,7 +220,7 @@
                       "value": 16
                     }
                   },
-                  "id": "521fcfe9-9335-583f-bc71-66c088816cd7"
+                  "id": "56ea2e45-60ff-59d7-ac2d-85ec8fd8ef67"
                 },
                 {
                   "command": "EVENT_OVERLAY_SHOW",
@@ -229,27 +229,27 @@
                     "x": 0,
                     "y": 0
                   },
-                  "id": "5aadf4c8-e824-5a01-917b-77e3c8357b9e"
+                  "id": "a6feaece-2f5d-5a24-96b5-db8fa91c0ad5"
                 },
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINES %D1$22$/2 HOME %D1$11$/1",
+                    "text": "LINES %D1$22$/5 HOME %D1$11$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
                   },
-                  "id": "11b679d3-7e1a-573d-8fb8-1c9cac2e8145"
+                  "id": "cf26351d-6713-56a8-81ef-faa96eac5f1e"
                 },
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "v0.15.0-dev",
+                    "text": "v0.17.0-dev",
                     "x": 9,
                     "y": 1,
                     "location": "overlay"
                   },
-                  "id": "5e213839-b4ef-5fdc-b744-81e4d5d27364"
+                  "id": "70949f3b-7074-5bc4-a20e-16710f390354"
                 }
               ],
               "false": [
@@ -261,7 +261,7 @@
                     "duration": 0.03,
                     "units": "time"
                   },
-                  "id": "7e652643-0d08-5d6d-b082-e62a2665ad60"
+                  "id": "b77dfddd-701e-5dc9-a812-e23162f1cbf1"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -272,13 +272,13 @@
                       "value": 150
                     }
                   },
-                  "id": "876a6a0e-5fe5-5520-be1f-713a1bc28ef2"
+                  "id": "41cca4fe-e469-53f1-ba4a-aac8de90c190"
                 },
                 {
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Priya:\nNo internet...\nI can't work."
+                      "Priya:\nNo wifi, no work.\nSend help!"
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -297,7 +297,7 @@
                     "closeDelayTime": 0.5,
                     "closeDelayFrames": 30
                   },
-                  "id": "1fe4ec68-0753-56da-b6e4-2ecfad964c5d"
+                  "id": "75a98db3-8c0e-571c-902f-7ccfb48de887"
                 },
                 {
                   "command": "EVENT_TEXT_SET_SOUND_EFFECT",
@@ -307,7 +307,7 @@
                     "duration": 0.03,
                     "units": "time"
                   },
-                  "id": "3cd48def-1f73-598f-ba8b-44dd1349d1fc"
+                  "id": "a230840f-0b53-5d5b-b0eb-9190448206cb"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -318,7 +318,7 @@
                       "value": 16
                     }
                   },
-                  "id": "561110c0-2b1c-5471-99f8-c663f4cec24d"
+                  "id": "f8d5f61a-13dc-56b5-a5f7-aebfd0c73094"
                 },
                 {
                   "command": "EVENT_OVERLAY_SHOW",
@@ -327,27 +327,27 @@
                     "x": 0,
                     "y": 0
                   },
-                  "id": "dab68012-7e25-59cb-b9c8-a12ad0b374f9"
+                  "id": "7b0ee421-8c87-5a15-ab3f-a0dc36e04433"
                 },
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINES %D1$22$/2 HOME %D1$11$/1",
+                    "text": "LINES %D1$22$/5 HOME %D1$11$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
                   },
-                  "id": "aa6363da-f475-506f-b843-7775483ab468"
+                  "id": "9ecccd02-779a-5039-a12e-f4c694f6519f"
                 },
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "v0.15.0-dev",
+                    "text": "v0.17.0-dev",
                     "x": 9,
                     "y": 1,
                     "location": "overlay"
                   },
-                  "id": "25547c95-c111-599a-a307-4bb307a162e2"
+                  "id": "9d285bd9-8f35-5248-b70d-a1ae7dbce48b"
                 }
               ]
             }

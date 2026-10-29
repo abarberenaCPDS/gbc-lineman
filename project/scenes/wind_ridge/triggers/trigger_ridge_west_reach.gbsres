@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "781b95e2-0764-53f9-bae4-7dfdf015f2f1",
+  "name": "Box Zone Transformer (west)",
+  "prefabId": "",
+  "x": 35,
+  "y": 24,
+  "symbol": "trigger_ridge_west_reach",
+  "prefabScriptOverrides": {},
+  "width": 5,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 102
+        }
+      },
+      "id": "cbb60150-9c61-5758-9a68-0c416a5226a8"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 102
+          }
+        }
+      },
+      "id": "8b0d525a-6081-53e4-bdc3-2bafa76ae018",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "29c9999a-23aa-5ad6-a264-2c5ae3bc051e"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 4
+}

@@ -1,13 +1,13 @@
 {
   "_resourceType": "trigger",
-  "id": "0c6e323f-004c-5703-8e24-f726cbb2bba3",
-  "name": "Priya Zone",
+  "id": "d2faaa21-37ea-525a-98ad-7688b16ac053",
+  "name": "Box Zone Transformer (east)",
   "prefabId": "",
-  "x": 33,
-  "y": 9,
-  "symbol": "trigger_signal_rosa_zone",
+  "x": 67,
+  "y": 6,
+  "symbol": "trigger_pine_east_reach",
   "prefabScriptOverrides": {},
-  "width": 2,
+  "width": 5,
   "height": 3,
   "script": [
     {
@@ -16,10 +16,10 @@
         "variable": "27",
         "value": {
           "type": "number",
-          "value": 200
+          "value": 104
         }
       },
-      "id": "22b19736-49d6-5de0-9148-494757f7fcaf"
+      "id": "daf5f3a4-9a52-58a4-a834-a31075b9c6fb"
     }
   ],
   "leaveScript": [
@@ -34,11 +34,11 @@
           },
           "valueB": {
             "type": "number",
-            "value": 200
+            "value": 104
           }
         }
       },
-      "id": "96ad306f-3d9b-57e0-95e9-d24bc09efd9a",
+      "id": "b06e938a-5046-5e2d-b305-7393e6a9ef2b",
       "children": {
         "true": [
           {
@@ -50,7 +50,7 @@
                 "value": 0
               }
             },
-            "id": "acd00ba2-4dea-5b97-9fbf-0f5e0abc5358"
+            "id": "82cce811-bb4a-5ec5-9959-baf75cc176ef"
           }
         ],
         "false": []

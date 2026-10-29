@@ -6,7 +6,7 @@
   "prefabId": "",
   "name": "Emil (Pine Hollow)",
   "coordinateType": "tiles",
-  "x": 34,
+  "x": 95,
   "y": 11,
   "frame": 0,
   "animate": true,
@@ -36,7 +36,7 @@
           }
         }
       },
-      "id": "897b009a-331f-5ee5-9241-2d340318ae46",
+      "id": "a5b794ce-6b6f-5996-a1e9-571f5a107a07",
       "children": {
         "true": [
           {
@@ -47,7 +47,7 @@
               "duration": 0.03,
               "units": "time"
             },
-            "id": "e1d0aab2-bc4c-5366-8ba5-cb312cb0eeef"
+            "id": "6246318c-f988-5ca9-9021-8bcfd7503a0b"
           },
           {
             "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -58,7 +58,7 @@
                 "value": 150
               }
             },
-            "id": "7b6e1417-3dec-5573-98e0-65acc5117de9"
+            "id": "df654b62-0683-5727-921b-4ed2896eff71"
           },
           {
             "command": "EVENT_TEXT",
@@ -83,7 +83,7 @@
               "closeDelayTime": 0.5,
               "closeDelayFrames": 30
             },
-            "id": "25e12084-f5ce-5c43-869a-cf85348cfd89"
+            "id": "03088ba9-5cc5-5f3f-9b7b-3ed07946bd3c"
           },
           {
             "command": "EVENT_TEXT_SET_SOUND_EFFECT",
@@ -93,7 +93,7 @@
               "duration": 0.03,
               "units": "time"
             },
-            "id": "97bccb92-2719-5a24-a8ea-8c02aed9d410"
+            "id": "db545d0e-f15d-5f7f-88db-f6109a947045"
           },
           {
             "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -104,7 +104,7 @@
                 "value": 16
               }
             },
-            "id": "cb1f8891-6146-5fcc-b52d-ffe5792121a2"
+            "id": "31c310f5-6dd8-5639-80c0-212f75b1ae26"
           },
           {
             "command": "EVENT_OVERLAY_SHOW",
@@ -113,27 +113,27 @@
               "x": 0,
               "y": 0
             },
-            "id": "f038c803-93d5-5c94-8262-f47d7e77393f"
+            "id": "b66fd4c6-3e75-5c07-91f3-a0e50fbdb274"
           },
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "LINES %D1$25$/2 HOME %D1$13$/1",
+              "text": "LINES %D1$25$/5 HOME %D1$13$/1",
               "x": 0,
               "y": 0,
               "location": "overlay"
             },
-            "id": "34c3ebc1-7170-5eff-af5c-3a0cdf402d82"
+            "id": "0d5140e8-7096-5ec5-a718-9ce66d083c4a"
           },
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.15.0-dev",
+              "text": "v0.17.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"
             },
-            "id": "48ddeb20-09e7-592a-a4ad-4ffdbf36e25a"
+            "id": "847e4848-d596-51aa-8eff-37cd46cd8476"
           }
         ],
         "false": [
@@ -148,11 +148,11 @@
                 },
                 "valueB": {
                   "type": "number",
-                  "value": 2
+                  "value": 5
                 }
               }
             },
-            "id": "eba1713a-18ba-5cfd-9deb-fdf493d4a397",
+            "id": "2e299570-1a2c-56d4-95df-9311d4911a76",
             "children": {
               "true": [
                 {
@@ -163,7 +163,7 @@
                     "duration": 0.03,
                     "units": "time"
                   },
-                  "id": "d97db711-d7a8-5c27-8848-4d3276b09a02"
+                  "id": "fdab5835-15ff-574e-af3a-5004f1a84ef0"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -174,13 +174,13 @@
                       "value": 150
                     }
                   },
-                  "id": "41f00af9-5cc6-5b4d-b522-17ede04f1118"
+                  "id": "181d9440-f443-5387-9c50-04a1381678c8"
                 },
                 {
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Emil:\nBoth lines live!\nTry our door."
+                      "Emil:\nAll 5 lines live!\nTry our door."
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -199,7 +199,7 @@
                     "closeDelayTime": 0.5,
                     "closeDelayFrames": 30
                   },
-                  "id": "3440c873-ebaa-5336-a58e-083f01a17a6a"
+                  "id": "e55992ec-15e1-578c-a7fd-8f6a7c8a0743"
                 },
                 {
                   "command": "EVENT_TEXT_SET_SOUND_EFFECT",
@@ -209,7 +209,7 @@
                     "duration": 0.03,
                     "units": "time"
                   },
-                  "id": "bdc782da-bc25-5f31-acab-10cd3de3870f"
+                  "id": "37569a79-b864-523a-af0d-7203f6562732"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -220,7 +220,7 @@
                       "value": 16
                     }
                   },
-                  "id": "9f3d830c-263a-52fd-b0ec-b86ff2b2ccda"
+                  "id": "30884cae-3806-506e-95a1-b701d9821871"
                 },
                 {
                   "command": "EVENT_OVERLAY_SHOW",
@@ -229,27 +229,27 @@
                     "x": 0,
                     "y": 0
                   },
-                  "id": "6e4cd1b8-584e-5323-bce6-5236be687dab"
+                  "id": "eccf54a0-4f4a-5317-8e1f-f8d7c6d7ed37"
                 },
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINES %D1$25$/2 HOME %D1$13$/1",
+                    "text": "LINES %D1$25$/5 HOME %D1$13$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
                   },
-                  "id": "63bc335a-80f7-5258-8cde-303f431385ed"
+                  "id": "d210ec8f-ad2e-59f1-8dff-e28c24821f85"
                 },
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "v0.15.0-dev",
+                    "text": "v0.17.0-dev",
                     "x": 9,
                     "y": 1,
                     "location": "overlay"
                   },
-                  "id": "61cdebb5-cff2-5c9f-abb4-1f8d5ddfeaf4"
+                  "id": "16e29c01-8b45-5770-95b5-3b2934278175"
                 }
               ],
               "false": [
@@ -261,7 +261,7 @@
                     "duration": 0.03,
                     "units": "time"
                   },
-                  "id": "99f056b4-d9ad-5b19-ab18-d56cc315309a"
+                  "id": "ddcd3072-db10-59b0-81da-98a8e79954e5"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -272,13 +272,13 @@
                       "value": 150
                     }
                   },
-                  "id": "6d313689-e63d-559c-9732-54972331706a"
+                  "id": "1a815f3d-36df-5ffb-83ba-615d14021221"
                 },
                 {
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Emil:\nOur stove's dead.\nI'm so hungry!"
+                      "Emil:\nStove's dead.\nMy tummy growls!"
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -297,7 +297,7 @@
                     "closeDelayTime": 0.5,
                     "closeDelayFrames": 30
                   },
-                  "id": "39c6b9b0-5295-5e33-bbf1-1b69fa140527"
+                  "id": "cb28965d-2ed5-5b28-8444-6cc4321af074"
                 },
                 {
                   "command": "EVENT_TEXT_SET_SOUND_EFFECT",
@@ -307,7 +307,7 @@
                     "duration": 0.03,
                     "units": "time"
                   },
-                  "id": "377ae4b3-4a1d-584f-9813-4aad59fab250"
+                  "id": "c5c5d1c1-fa3c-50a3-a052-a9f64a258486"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -318,7 +318,7 @@
                       "value": 16
                     }
                   },
-                  "id": "95e7a812-cdb1-5e0c-86a7-521685edc31a"
+                  "id": "cf7315df-60d9-525e-a600-f7165a34428b"
                 },
                 {
                   "command": "EVENT_OVERLAY_SHOW",
@@ -327,27 +327,27 @@
                     "x": 0,
                     "y": 0
                   },
-                  "id": "15aff537-c6b3-531f-ace4-b67970933d23"
+                  "id": "5d10a7fc-6f9a-5483-a47e-bdc681157820"
                 },
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINES %D1$25$/2 HOME %D1$13$/1",
+                    "text": "LINES %D1$25$/5 HOME %D1$13$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
                   },
-                  "id": "0edeba03-4976-5cd6-80a9-4019e5f56e18"
+                  "id": "a38d50b3-3212-50f4-8cac-cebcea6f4866"
                 },
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "v0.15.0-dev",
+                    "text": "v0.17.0-dev",
                     "x": 9,
                     "y": 1,
                     "location": "overlay"
                   },
-                  "id": "1b5f7faa-76a5-5524-a78e-eefc7feb491c"
+                  "id": "10e0a88b-9dfa-5886-a939-d8a2e4caefbb"
                 }
               ]
             }

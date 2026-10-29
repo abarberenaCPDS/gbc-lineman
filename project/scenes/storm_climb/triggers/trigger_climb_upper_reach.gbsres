@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "a4d8fefc-4e42-5c95-8940-dc223edeb4de",
+  "name": "Box Zone Transformer (upper)",
+  "prefabId": "",
+  "x": 14,
+  "y": 6,
+  "symbol": "trigger_climb_upper_reach",
+  "prefabScriptOverrides": {},
+  "width": 5,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 104
+        }
+      },
+      "id": "50fb62ca-b3f4-5c6e-a760-cb2fdef0f6ff"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 104
+          }
+        }
+      },
+      "id": "b72090b4-f8fd-5a04-810e-d7c2d4497a66",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "b7c2a8d4-4c98-538a-92fb-6a3f93572ac9"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 9
+}

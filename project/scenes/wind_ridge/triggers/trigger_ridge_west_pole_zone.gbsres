@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "21cd5c3f-1592-5db9-8978-ccb28ad56776",
+  "name": "Pole Zone (west)",
+  "prefabId": "",
+  "x": 27,
+  "y": 18,
+  "symbol": "trigger_ridge_west_pole_zone",
+  "prefabScriptOverrides": {},
+  "width": 3,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 2
+        }
+      },
+      "id": "b37ed5f0-eb43-5a51-a920-58084d002d91"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 2
+          }
+        }
+      },
+      "id": "c7390b05-5ce6-5712-bc17-b2af23919c7e",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "57b82d7a-dda1-5f39-b2fd-3d90eb8aef96"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 9
+}

@@ -3,7 +3,7 @@
   "id": "c9be5b00-2440-5e9b-80a9-b866f80fec19",
   "name": "Report Exit (to Storm Report)",
   "prefabId": "",
-  "x": 38,
+  "x": 98,
   "y": 9,
   "symbol": "trigger_pine_report_exit",
   "prefabScriptOverrides": {},
@@ -122,7 +122,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "LINES %D1$25$/2 HOME %D1$13$/1",
+              "text": "LINES %D1$25$/5 HOME %D1$13$/1",
               "x": 0,
               "y": 0,
               "location": "overlay"
@@ -132,7 +132,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.15.0-dev",
+              "text": "v0.17.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"

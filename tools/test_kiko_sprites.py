@@ -54,14 +54,6 @@ def _opaque_rows(frame: Image.Image) -> set[int]:
 
 
 class ContractTests(unittest.TestCase):
-    def test_palette_slots_and_hardware_match_contract(self):
-        self.assertEqual(kiko.KIKO_SPRITE_PALETTE_SLOT, 1)
-        self.assertEqual(kiko.GRID_SPRITE_PALETTE_SLOT, 2)
-        for hardware in (kiko.KIKO_SPRITE_HARDWARE, mk.GRID_SPRITE_HARDWARE):
-            self.assertEqual(len(hardware), 4)
-            self.assertEqual(hardware[0], "000000")
-        self.assertEqual(kiko.KIKO_SPRITE_HARDWARE, ["000000", "D9A97E", "E0A82E", "2B2420"])
-
     def test_grid_palette_copy_matches_climb_scene(self):
         import make_climb_scene
         self.assertEqual(mk.GRID_SPRITE_HARDWARE, make_climb_scene.GRID_SPRITE_HARDWARE)

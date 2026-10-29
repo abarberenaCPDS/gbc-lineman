@@ -3,7 +3,7 @@
   "id": "01e44a3f-8ba2-514d-9a3d-f0ab7f01f811",
   "_index": 10,
   "name": "LAB_Hazard Gallery",
-  "backgroundId": "f3edeaa2-968b-5478-9464-7c2962538e3e",
+  "backgroundId": "b7d25bf8-1a63-58e7-82c8-008b956e19d0",
   "tilesetId": "",
   "width": 40,
   "height": 18,
@@ -115,6 +115,62 @@
         "effect": 0
       },
       "id": "ac2bf209-743b-5f5b-bc67-ed3cbbf66f2a"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "player",
+        "spriteStateId": "Shock",
+        "loopAnim": true
+      },
+      "id": "eaf18851-9cf3-5a99-b62f-4bd90c8e6542"
+    },
+    {
+      "command": "EVENT_SOUND_PLAY_EFFECT",
+      "args": {
+        "units": "time",
+        "type": "6262153d-bc4a-50ed-ba26-13c2f3bf5e57",
+        "priority": "high",
+        "pitch": 4,
+        "frequency": 200,
+        "duration": 0.5,
+        "wait": false,
+        "effect": 0
+      },
+      "id": "c45b7a41-ab21-5e53-ad7d-5f246c7ebf1a"
+    },
+    {
+      "command": "EVENT_CAMERA_SHAKE",
+      "args": {
+        "units": "frames",
+        "frames": 12,
+        "shakeDirection": "horizontal",
+        "magnitude": {
+          "type": "number",
+          "value": 2
+        }
+      },
+      "id": "6027c79b-7a1c-5b70-b9ad-ce224bf98489"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 12
+        }
+      },
+      "id": "93a88b53-8774-5ea6-b533-318555a56c23"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "player",
+        "spriteStateId": "",
+        "loopAnim": true
+      },
+      "id": "859237e3-8d76-59ca-92d0-40fc62ac4591"
     },
     {
       "command": "EVENT_SET_VALUE",

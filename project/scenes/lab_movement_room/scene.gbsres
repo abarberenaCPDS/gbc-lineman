@@ -3,7 +3,7 @@
   "id": "320095fb-da57-5334-9c48-ab2c1b241afd",
   "_index": 11,
   "name": "LAB_Movement Room",
-  "backgroundId": "f3edeaa2-968b-5478-9464-7c2962538e3e",
+  "backgroundId": "b7d25bf8-1a63-58e7-82c8-008b956e19d0",
   "tilesetId": "",
   "width": 40,
   "height": 18,
@@ -26,7 +26,7 @@
     "0f2244fe-574b-5f67-b459-3517db82dfe7",
     "fde09529-da93-547f-b652-6e48408dd0db",
     "b871e178-c93e-51fa-8fe6-ba32b43214cf",
-    "4196207d-829f-5923-a671-a70c35651b6e",
+    "7e11c604-d421-547d-9555-0c86a375bbaf",
     "0f42aecb-f04b-5823-8a3f-212ef9df444a"
   ],
   "collisions": "0050+0f!0026+0f2+0026+0f2+0026+0f2+0026+0f2+0026+0f2+0026+0f2+0026+0f2+00c+0f3+0017+0f2+0026+0f2+0026+0f2+007+0f3+007+013+0012+0f2+0026+0f2+0026+0f17+00!0f2+002+0f2+003+0f2+004+0f18+00!0f2+002+0f2+003+0f2+004+0f2a+",
@@ -115,6 +115,62 @@
         "effect": 0
       },
       "id": "d8308f8a-99ac-531b-b298-0cdcd055c5f7"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "player",
+        "spriteStateId": "Shock",
+        "loopAnim": true
+      },
+      "id": "1fe03cca-d7fb-5b10-98a7-7394001df8b2"
+    },
+    {
+      "command": "EVENT_SOUND_PLAY_EFFECT",
+      "args": {
+        "units": "time",
+        "type": "6262153d-bc4a-50ed-ba26-13c2f3bf5e57",
+        "priority": "high",
+        "pitch": 4,
+        "frequency": 200,
+        "duration": 0.5,
+        "wait": false,
+        "effect": 0
+      },
+      "id": "19e070cd-d3fd-56c4-9bc1-f2faf0ec5bd8"
+    },
+    {
+      "command": "EVENT_CAMERA_SHAKE",
+      "args": {
+        "units": "frames",
+        "frames": 12,
+        "shakeDirection": "horizontal",
+        "magnitude": {
+          "type": "number",
+          "value": 2
+        }
+      },
+      "id": "965ab8be-bf0e-5fd7-8f09-54d35fd07cab"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 12
+        }
+      },
+      "id": "ba5b5932-76ef-5b21-b532-b5b3e270cef0"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "player",
+        "spriteStateId": "",
+        "loopAnim": true
+      },
+      "id": "0af03ff3-58d3-51ab-b7c0-61652e3d7250"
     },
     {
       "command": "EVENT_SET_VALUE",

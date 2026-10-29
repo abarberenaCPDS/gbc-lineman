@@ -1,16 +1,16 @@
 {
   "_resourceType": "actor",
-  "id": "bf5a517e-7e68-5ada-adb8-c512f3526365",
-  "_index": 6,
-  "symbol": "pine_arc_01",
+  "id": "a10e47f0-11cf-59d8-9d66-c618adb6e1bc",
+  "_index": 7,
+  "symbol": "gust_02",
   "prefabId": "",
-  "name": "Live Arc 1",
+  "name": "Telegraphed Gust 2",
   "coordinateType": "tiles",
-  "x": 27,
-  "y": 13,
+  "x": 8,
+  "y": 7,
   "frame": 0,
   "animate": true,
-  "spriteSheetId": "cbcda85c-3b91-52e5-9bfd-2d979f5b6ad5",
+  "spriteSheetId": "31b39167-ad7a-5152-8387-976ca2d50655",
   "paletteId": "",
   "direction": "down",
   "moveSpeed": 1,
@@ -27,50 +27,16 @@
       "args": {
         "actorId": "$self$"
       },
-      "id": "7e4651f9-99b3-5b87-b7e1-385b8a7a96b6"
+      "id": "0f24c828-ada8-5f35-acb5-ed04f261f9db"
     }
   ],
   "updateScript": [
-    {
-      "command": "EVENT_IF_ACTOR_DIRECTION",
-      "args": {
-        "actorId": "$self$",
-        "direction": {
-          "type": "direction",
-          "value": "down"
-        }
-      },
-      "id": "1c1e0a16-3f8c-5f08-81bf-78e1c70527ec",
-      "children": {
-        "true": [
-          {
-            "command": "EVENT_ACTOR_SET_DIRECTION",
-            "args": {
-              "actorId": "$self$",
-              "direction": {
-                "type": "direction",
-                "value": "up"
-              }
-            },
-            "id": "30f3a415-34ce-5ae0-a1a0-147e2104c349"
-          },
-          {
-            "command": "EVENT_ACTOR_HIDE",
-            "args": {
-              "actorId": "$self$"
-            },
-            "id": "b0351761-6e9b-5abe-b288-1c64823e1cce"
-          }
-        ],
-        "false": []
-      }
-    },
     {
       "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
       "args": {
         "actorId": "$self$"
       },
-      "id": "92882c0d-70c8-56d3-a85a-42f0df3748a2"
+      "id": "3c1e8f3f-fd90-5039-9a5f-d0b676f3572a"
     },
     {
       "command": "EVENT_ACTOR_SET_STATE",
@@ -79,14 +45,14 @@
         "spriteStateId": "Warning",
         "loopAnim": true
       },
-      "id": "be332897-8b8e-5d15-8d64-f9d3509cc1f9"
+      "id": "5570d8e9-0d0d-535a-a26d-696fe1bf81ce"
     },
     {
       "command": "EVENT_ACTOR_SHOW",
       "args": {
         "actorId": "$self$"
       },
-      "id": "ad48af45-41dc-504e-afec-861f07452681"
+      "id": "56ce64d3-9bf5-5362-8ba7-f80ebda7f47d"
     },
     {
       "command": "EVENT_WAIT",
@@ -94,26 +60,26 @@
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 48
+          "value": 54
         }
       },
-      "id": "ca73ee39-5986-572e-9f41-edd05d82904f"
+      "id": "d53d3002-8e54-5f5f-baad-4db36cd30372"
     },
     {
       "command": "EVENT_ACTOR_SET_STATE",
       "args": {
         "actorId": "$self$",
-        "spriteStateId": "Arc",
+        "spriteStateId": "Burst",
         "loopAnim": true
       },
-      "id": "e6a7c8a3-b0a5-5c40-b605-95634cc2f7fd"
+      "id": "673bcdb7-1cb7-5ac6-8c90-c930ae6a927b"
     },
     {
       "command": "EVENT_ACTOR_COLLISIONS_ENABLE",
       "args": {
         "actorId": "$self$"
       },
-      "id": "0288751b-a886-52a6-90b6-a2caa2405fc7"
+      "id": "6330abe8-5a62-55dd-a3c5-6ff7d5879c99"
     },
     {
       "command": "EVENT_WAIT",
@@ -121,24 +87,24 @@
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 24
+          "value": 20
         }
       },
-      "id": "d2c77a2c-9a57-5564-a7e8-6ee4b8d15084"
+      "id": "44d1fe45-47c3-51ae-95d0-e4fb4ad9c7b0"
     },
     {
       "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
       "args": {
         "actorId": "$self$"
       },
-      "id": "4443adee-1c6e-52d7-ab20-07cf5e09940e"
+      "id": "f79e50d9-70d6-519f-9bc0-4ed6f5587ec9"
     },
     {
       "command": "EVENT_ACTOR_HIDE",
       "args": {
         "actorId": "$self$"
       },
-      "id": "921b303b-70e3-5021-9bd5-02a3f316ef25"
+      "id": "c5fe0e2f-1e03-5d7c-a7ca-7ff6cf7db311"
     },
     {
       "command": "EVENT_WAIT",
@@ -146,10 +112,10 @@
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 80
+          "value": 90
         }
       },
-      "id": "0eb326c0-b3aa-5975-a6ff-b3d193fbf398"
+      "id": "3c06f3e4-8230-5a84-b660-0e5cfb8b34bd"
     }
   ],
   "hit1Script": [],

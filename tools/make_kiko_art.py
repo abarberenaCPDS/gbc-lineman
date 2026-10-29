@@ -27,29 +27,27 @@ WIDTH, HEIGHT = kiko.MAP_W * TILE, kiko.MAP_H * TILE
 PALETTES = [[tuple(bytes.fromhex(color)) for color in colors]
             for _, colors in opening.BG_PALETTES]
 NATIVE_PROXY_BY_INDEX = (255, 170, 85, 0)
-MAX_UNIQUE_TILES = 192
+MAX_UNIQUE_TILES = 256
 
 # BG palette families (opening.BG_PALETTES order). Slot 7 is the editor UI.
-SKY, STONE, TIMBER, WINDOW, FOLIAGE, METAL, EARTH = range(7)
+SKY, STONE, TIMBER, WINDOW, FOLIAGE, METAL, WIRE_2 = range(7)
+PALETTES[WIRE_2] = PALETTES[METAL][:]
 LINE = climb.LINE_BG_SLOT
 assert LINE == METAL, "cable slot must be the metal family"
 assert kiko.WINDOW_BG_SLOT == WINDOW, "window slot must be the window family"
 
 # Night hollow: a low forest hill behind the route. It stops at the floor top
 # and never reaches the HUD rows (0-1).
-HILL_LINE = [(0, 70), (20, 62), (40, 66), (64, 58), (88, 64), (112, 60),
-             (136, 68), (160, 62), (184, 58), (208, 66), (232, 60), (256, 68),
-             (280, 64), (304, 58), (320, 66)]
-HILL_HIGHLIGHTS = [[(64, 58), (68, 64)], [(184, 58), (180, 64)],
-                   [(304, 58), (300, 64)]]
+HILL_LINE = [(x, 58 + ((x // 24 * 11 + x // 96 * 3) % 4) * 4)
+             for x in range(0, WIDTH + 1, 24)] + [(WIDTH, 66)]
+HILL_HIGHLIGHTS = [[(x, y), (x + 4, y + 6)] for x, y in HILL_LINE[2:-1:5]]
 # Stars above the cable run (pixel rows 16-27 only).
 STARS = [(24, 20), (64, 26), (120, 20), (176, 24), (226, 20), (262, 26)]
 # Pine silhouettes (x, top, w, bottom) in pixels, standing on the hill. Their
 # tips rise above the hill line into open sky. They are drawn in the sky
 # family, so they clip against the cable, mesa and cabin.
-PINES = [(14, 40, 14, 79), (30, 52, 10, 79), (46, 40, 16, 79),
-         (102, 48, 12, 79), (196, 40, 14, 79), (214, 52, 10, 79),
-         (240, 44, 14, 79)]
+PINES = [(x, 38 + (i % 3) * 6, 12 + (i % 2) * 4, 80)
+         for i, x in enumerate(range(14, WIDTH - 30, 34))]
 
 # The snapped utility pole (contract: kiko.DAMAGED_POLE, kiko.HOUSE_POLE) is the
 # animated intro_pole actor (see make_kiko_scene); the background draws no pole.
@@ -65,6 +63,9 @@ ARC_POST_TILES = [(tx, ty) for tx, top in ARC_POST_TOPS for ty in (top, top + 1)
 # Lane cells (arcs): no art may sit on them.
 LANE_CELLS = {(row, x) for row, x0, x1 in kiko.hazard_lanes()
               for x in range(x0, x1 + 1)}
+BRACKET_CELLS = {(row + dr, x) for row, x0, x1 in kiko.WHIP_LANES
+                 for x in range(x0 - 1, x1 + 2) for dr in (-3, -2)}
+PLACARD_CELLS = LANE_CELLS | BRACKET_CELLS
 
 
 def _mask_pixels(draw) -> frozenset[tuple[int, int]]:
@@ -91,7 +92,25 @@ def stage_pixels(stage: int) -> frozenset[tuple[int, int]]:
     for s, route in kiko.WIRE_ROUTES:
         if s == stage:
             out |= _polyline_pixels(route)
+    for span in kiko.FALLEN_SPANS:
+        if span["live_after"] == stage:
+            out |= _span_pixels(span)
     return frozenset(out)
+
+
+def _span_pixels(span) -> frozenset[tuple[int, int]]:
+    x0, x1 = span["columns"]
+    y = (kiko.GROUND_ROW - 1) * TILE
+    pts = [(x, y + (3 if (x // 6) % 2 else 5))
+           for x in range(x0 * TILE + 1, (x1 + 1) * TILE - 1, 6)]
+    pts.append(((x1 + 1) * TILE - 2, y + 4))
+    def draw(d):
+        d.line(pts, fill=1, width=2)
+    return _mask_pixels(draw)
+
+
+def stage_slot(stage: int) -> int:
+    return LINE if stage <= 3 else WIRE_2
 
 
 @functools.lru_cache(maxsize=None)
@@ -114,7 +133,7 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     for ty, row in enumerate(grid):
         for tx, cell in enumerate(row):
             if cell == climb.COL_SOLID:
-                slots[ty][tx] = EARTH if ty > kiko.GROUND_ROW else STONE
+                slots[ty][tx] = STONE
             elif cell == climb.COL_TOP:
                 slots[ty][tx] = TIMBER
 
@@ -142,20 +161,24 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
             raise AssertionError(f"arc post overlaps collision or lane at {tx},{ty}")
         slots[ty][tx] = STONE
 
+    for row, tx in PLACARD_CELLS:
+        if grid[row][tx] != climb.COL_EMPTY:
+            raise AssertionError(f"hazard placard overlaps collision at {tx},{row}")
+        slots[row][tx] = STONE
+
     # Wire tiles take the metal slot last. They may never hit collision (power
     # enters through the left cliff wall), a lane, the cabin, a post or a placard.
     hx0, hx1, hy0, hy1 = kiko.HOUSE_RECT
     house = {(tx, ty) for ty in range(hy0, hy1 + 1) for tx in range(hx0, hx1 + 1)}
     posts = set(ARC_POST_TILES)
-    for tx, ty in sorted(wire_tiles()):
-        if grid[ty][tx] != climb.COL_EMPTY:
-            assert tx == 0, f"wire tile {tx},{ty} inside collision"
-            continue
-        if (ty, tx) in LANE_CELLS or (tx, ty) in house or (tx, ty) in posts:
-            raise AssertionError(f"wire tile {tx},{ty} collides with other art")
-        if slots[ty][tx] != SKY:
-            raise AssertionError(f"wire tile {tx},{ty} is not open sky")
-        slots[ty][tx] = LINE
+    for stage in range(1, kiko.STAGE_COUNT + 1):
+        for tx, ty in sorted({(x // TILE, y // TILE) for x, y in stage_pixels(stage)}):
+            if grid[ty][tx] != climb.COL_EMPTY:
+                assert tx == 0, f"wire tile {tx},{ty} inside collision"
+                continue
+            if (ty, tx) in PLACARD_CELLS or (tx, ty) in house or (tx, ty) in posts:
+                raise AssertionError(f"wire tile {tx},{ty} collides with other art")
+            slots[ty][tx] = stage_slot(stage)
 
     assert all(0 <= slot < 7 for row in slots for slot in row), "UI slot 7 reserved"
     assert all(slots[ty][tx] == STONE for tx, ty in ARC_POST_TILES)
@@ -236,7 +259,7 @@ def _draw_rock(c: _Canvas, grid: list[list[int]]) -> None:
         for tx, cell in enumerate(row):
             if cell != climb.COL_SOLID:
                 continue
-            slot = EARTH if ty > kiko.GROUND_ROW else STONE
+            slot = STONE
             ramp = PALETTES[slot]
             x, y = tx * TILE, ty * TILE
             c.rect(slot, (x, y, x + 7, y + 7), ramp[1])
@@ -252,6 +275,15 @@ def _draw_rock(c: _Canvas, grid: list[list[int]]) -> None:
             c.line(slot, [(x + 5, y + 1), (x + 6, y + 3)], ramp[2])
             if (tx * 3 + ty) % 4 == 0:
                 c.point(slot, (x + 6, y + 6), ramp[3])
+
+
+def _draw_ledges(c: _Canvas) -> None:
+    p = PALETTES[TIMBER]
+    for row, x0, x1 in kiko.LEDGES:
+        left, right, y = x0 * TILE, (x1 + 1) * TILE - 1, row * TILE
+        c.line(TIMBER, [(left, y), (right, y)], p[3])
+        c.rect(TIMBER, (left, y + 1, right, y + 4), p[1])
+        c.line(TIMBER, [(left, y + 5), (right, y + 5)], p[0])
 
 
 def _draw_cabin(c: _Canvas) -> None:
@@ -299,18 +331,34 @@ def _draw_arc_posts(c: _Canvas) -> None:
         c.rect(STONE, (x - 1, y0, x + 3, y0 + 1), p[3])
 
 
+def _draw_warnings(c: _Canvas) -> None:
+    p = PALETTES[STONE]
+    for row, x0, x1 in kiko.hazard_lanes():
+        left, right, y = x0 * TILE, (x1 + 1) * TILE - 1, row * TILE
+        c.rect(STONE, (left + 2, y + 2, right - 2, y + 5), p[0])
+        c.line(STONE, [(left + 3, y + 2), (right - 3, y + 5)], p[3])
+        c.line(STONE, [(right - 3, y + 2), (left + 3, y + 5)], p[3])
+    for row, x0, x1 in kiko.WHIP_LANES:
+        left, right, y = (x0 - 1) * TILE + 1, (x1 + 2) * TILE - 2, (row - 3) * TILE
+        c.rect(STONE, (left, y + 10, right, y + 13), p[2])
+        c.line(STONE, [(left, y + 10), (right, y + 10)], p[3])
+        for x in (left + 2, right - 3):
+            c.rect(STONE, (x, y + 3, x + 1, y + 9), p[2])
+
+
 def _draw_cable(c: _Canvas, slots: list[list[int]]) -> None:
     """Paint each stage's wire pixels in its metal colour index, on claimed wire tiles only."""
     px = c.image.load()
     for stage in range(1, kiko.STAGE_COUNT + 1):
-        color = PALETTES[LINE][kiko.STAGE_COLOR_INDEX[stage - 1]]
+        slot = stage_slot(stage)
+        color = PALETTES[slot][kiko.STAGE_COLOR_INDEX[stage - 1]]
         for x, y in sorted(stage_pixels(stage)):
-            if x < WIDTH and y < HEIGHT and slots[y // TILE][x // TILE] == LINE:
+            if x < WIDTH and y < HEIGHT and slots[y // TILE][x // TILE] == slot:
                 px[x, y] = color
 
 
 def make_background() -> tuple[Image.Image, list[list[int]]]:
-    """Return authored 320x144 RGB art and its 40x18 tile-palette map."""
+    """Return authored art and the contract-sized tile-palette map."""
     grid = kiko.collision_grid()
     slots = _slots(grid)
     image = Image.new("RGB", (WIDTH, HEIGHT))
@@ -325,9 +373,11 @@ def make_background() -> tuple[Image.Image, list[list[int]]]:
     _draw_sky(canvas)
     _draw_pines(canvas)
     _draw_rock(canvas, grid)
+    _draw_ledges(canvas)
     _draw_cabin(canvas)
     _draw_windows(canvas)
     _draw_arc_posts(canvas)
+    _draw_warnings(canvas)
     _draw_cable(canvas, slots)
 
     allowed = [set(colors) for colors in PALETTES]
@@ -348,14 +398,15 @@ def _check_geometry_art(image: Image.Image, grid: list[list[int]],
             if cell == climb.COL_SOLID:
                 color = image.getpixel((tx * TILE + 3, ty * TILE + 3))
                 assert color in PALETTES[slots[ty][tx]], f"rock miss at {tx},{ty}"
-                assert slots[ty][tx] in (STONE, EARTH), f"solid not rock at {tx},{ty}"
+                assert slots[ty][tx] == STONE, f"solid not rock at {tx},{ty}"
     # Metal-slot pixels of each stage's index belong to that stage's wire only.
     for stage in range(1, kiko.STAGE_COUNT + 1):
-        color = PALETTES[LINE][kiko.STAGE_COLOR_INDEX[stage - 1]]
+        wire_slot = stage_slot(stage)
+        color = PALETTES[wire_slot][kiko.STAGE_COLOR_INDEX[stage - 1]]
         owner = stage_pixels(stage)
         for ty, row in enumerate(slots):
             for tx, slot in enumerate(row):
-                if slot != LINE:
+                if slot != wire_slot:
                     continue
                 for y in range(ty * TILE, ty * TILE + TILE):
                     for x in range(tx * TILE, tx * TILE + TILE):

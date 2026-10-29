@@ -6,8 +6,8 @@
   "prefabId": "",
   "name": "Amara (Summit Checkpoint)",
   "coordinateType": "tiles",
-  "x": 8,
-  "y": 5,
+  "x": 7,
+  "y": 4,
   "frame": 0,
   "animate": true,
   "spriteSheetId": "4d94cf88-57ad-5c70-81b1-83ac39af0b3f",
@@ -46,115 +46,17 @@
                 "type": "eq",
                 "valueA": {
                   "type": "variable",
-                  "value": "7"
+                  "value": "44"
                 },
                 "valueB": {
                   "type": "number",
-                  "value": 0
+                  "value": 5
                 }
               }
             },
             "id": "e5af677b-5cf3-5c1a-8731-490ad3a93fa4",
             "children": {
               "true": [
-                {
-                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
-                  "args": {
-                    "type": "tone",
-                    "frequency": 660,
-                    "duration": 0.03,
-                    "units": "time"
-                  },
-                  "id": "74f9a43c-f152-586f-8e37-e3915c3aefe5"
-                },
-                {
-                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
-                  "args": {
-                    "units": "pixels",
-                    "y": {
-                      "type": "number",
-                      "value": 150
-                    }
-                  },
-                  "id": "a2e2e213-907c-5f8b-94eb-eb5522a133d5"
-                },
-                {
-                  "command": "EVENT_TEXT",
-                  "args": {
-                    "text": [
-                      "Amara:\nStorm broke the\nline below."
-                    ],
-                    "avatarId": "",
-                    "minHeight": 4,
-                    "maxHeight": 7,
-                    "textX": 1,
-                    "textY": 1,
-                    "textHeight": 5,
-                    "position": "bottom",
-                    "clearPrevious": true,
-                    "showFrame": true,
-                    "speedIn": -1,
-                    "speedOut": -1,
-                    "closeWhen": "key",
-                    "closeButton": "a",
-                    "closeDelayUnits": "time",
-                    "closeDelayTime": 0.5,
-                    "closeDelayFrames": 30
-                  },
-                  "id": "fcb78f74-f444-5709-8547-d9d332630e45"
-                },
-                {
-                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
-                  "args": {
-                    "type": "tone",
-                    "frequency": 880,
-                    "duration": 0.03,
-                    "units": "time"
-                  },
-                  "id": "6fd18929-ed54-5668-9207-0c10d39d594f"
-                },
-                {
-                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
-                  "args": {
-                    "units": "pixels",
-                    "y": {
-                      "type": "number",
-                      "value": 16
-                    }
-                  },
-                  "id": "be947fc6-bb2c-5130-af6e-6b0060a12bb8"
-                },
-                {
-                  "command": "EVENT_OVERLAY_SHOW",
-                  "args": {
-                    "color": "black",
-                    "x": 0,
-                    "y": 0
-                  },
-                  "id": "39cb64be-55de-55d2-a257-41892cb8b889"
-                },
-                {
-                  "command": "EVENT_TEXT_DRAW",
-                  "args": {
-                    "text": "LINE %D1$07$/1 HOME %D1$00$/1",
-                    "x": 0,
-                    "y": 0,
-                    "location": "overlay"
-                  },
-                  "id": "b2318571-8264-55e3-815d-ab7fa68ff6cb"
-                },
-                {
-                  "command": "EVENT_TEXT_DRAW",
-                  "args": {
-                    "text": "v0.15.0-dev",
-                    "x": 9,
-                    "y": 1,
-                    "location": "overlay"
-                  },
-                  "id": "678075ef-2aef-54ad-af7b-4c7fd71ded4c"
-                }
-              ],
-              "false": [
                 {
                   "command": "EVENT_TEXT_SET_SOUND_EFFECT",
                   "args": {
@@ -180,7 +82,7 @@
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Amara:\nLine's live!\nGo to my door."
+                      "Amara:\nPower's up here!\nTry my door."
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -234,7 +136,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$07$/1 HOME %D1$00$/1",
+                    "text": "LINE %D1$45$/5 HOME %D1$00$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
@@ -244,12 +146,110 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "v0.15.0-dev",
+                    "text": "v0.17.0-dev",
                     "x": 9,
                     "y": 1,
                     "location": "overlay"
                   },
                   "id": "a5cd33e0-ebb6-5a19-b048-8461d40cc0a9"
+                }
+              ],
+              "false": [
+                {
+                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+                  "args": {
+                    "type": "tone",
+                    "frequency": 660,
+                    "duration": 0.03,
+                    "units": "time"
+                  },
+                  "id": "74f9a43c-f152-586f-8e37-e3915c3aefe5"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 150
+                    }
+                  },
+                  "id": "a2e2e213-907c-5f8b-94eb-eb5522a133d5"
+                },
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": [
+                      "Amara:\nStorm cut five\nlines below me!"
+                    ],
+                    "avatarId": "",
+                    "minHeight": 4,
+                    "maxHeight": 7,
+                    "textX": 1,
+                    "textY": 1,
+                    "textHeight": 5,
+                    "position": "bottom",
+                    "clearPrevious": true,
+                    "showFrame": true,
+                    "speedIn": -1,
+                    "speedOut": -1,
+                    "closeWhen": "key",
+                    "closeButton": "a",
+                    "closeDelayUnits": "time",
+                    "closeDelayTime": 0.5,
+                    "closeDelayFrames": 30
+                  },
+                  "id": "fcb78f74-f444-5709-8547-d9d332630e45"
+                },
+                {
+                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+                  "args": {
+                    "type": "tone",
+                    "frequency": 880,
+                    "duration": 0.03,
+                    "units": "time"
+                  },
+                  "id": "6fd18929-ed54-5668-9207-0c10d39d594f"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 16
+                    }
+                  },
+                  "id": "be947fc6-bb2c-5130-af6e-6b0060a12bb8"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SHOW",
+                  "args": {
+                    "color": "black",
+                    "x": 0,
+                    "y": 0
+                  },
+                  "id": "39cb64be-55de-55d2-a257-41892cb8b889"
+                },
+                {
+                  "command": "EVENT_TEXT_DRAW",
+                  "args": {
+                    "text": "LINE %D1$45$/5 HOME %D1$00$/1",
+                    "x": 0,
+                    "y": 0,
+                    "location": "overlay"
+                  },
+                  "id": "b2318571-8264-55e3-815d-ab7fa68ff6cb"
+                },
+                {
+                  "command": "EVENT_TEXT_DRAW",
+                  "args": {
+                    "text": "v0.17.0-dev",
+                    "x": 9,
+                    "y": 1,
+                    "location": "overlay"
+                  },
+                  "id": "678075ef-2aef-54ad-af7b-4c7fd71ded4c"
                 }
               ]
             }
@@ -335,7 +335,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "LINE %D1$07$/1 HOME %D1$00$/1",
+              "text": "LINE %D1$45$/5 HOME %D1$00$/1",
               "x": 0,
               "y": 0,
               "location": "overlay"
@@ -345,7 +345,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.15.0-dev",
+              "text": "v0.17.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"

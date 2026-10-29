@@ -70,22 +70,26 @@ CABLE_ARC_FRAMES = 24       # arc: hits (group 1)
 # exactly like rosa.ARC_LANES (two tiles, hero's chest row = surface row - 2).
 # ---------------------------------------------------------------------------
 BOARDS = {
-    "storm_climb": [(30, 5, 7), (27, 14, 16), (9, 8, 10)],
-    "wind_ridge": [(27, 26, 28)],   # floor, between T1 and the step to plateau B
-    "pine_hollow": [],
+    "storm_climb": [(27, 7, 9), (15, 9, 11), (9, 11, 13)],
+    "wind_ridge": [(27, 21, 23)],
+    "signal_hill": [(15, 20, 22)],
+    "pine_hollow": [(9, 45, 47)],
     # LAB_Hazard Gallery (make_lab_scene.py): one board on a one-tile shelf.
     "lab_hazard_gallery": [(12, 6, 8)],
     "lab_movement_room": [],
 }
 HIDDEN_CABLES = {
-    "storm_climb": [(16, 11, 12)],
-    "wind_ridge": [],
+    "storm_climb": [(28, 9, 10)],
+    "wind_ridge": [(25, 34, 35)],
+    "signal_hill": [(7, 35, 36)],
     "pine_hollow": [(7, 11, 12)],
     "lab_hazard_gallery": [(13, 14, 15)],
     "lab_movement_room": [],
 }
 CABLE_START_DELAYS = {
     "storm_climb": [40],
+    "wind_ridge": [60],
+    "signal_hill": [50],
     "pine_hollow": [90],
     "lab_hazard_gallery": [40],
     "lab_movement_room": [],

@@ -1,0 +1,166 @@
+{
+  "_resourceType": "actor",
+  "id": "d7efaa7c-57d8-5d79-8a3b-7fb5702f3b88",
+  "_index": 10,
+  "symbol": "climb_whip_02",
+  "prefabId": "",
+  "name": "Whipping Cut Cable 2",
+  "coordinateType": "tiles",
+  "x": 8,
+  "y": 11,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "a44718b5-97ba-5d0e-88db-18455b018bed",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 8,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "1",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "f61b6344-7a20-5a48-8935-40b4c50659ec"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Hang",
+        "loopAnim": true
+      },
+      "id": "4e884173-350e-55da-8494-eba6f7dce6c7"
+    }
+  ],
+  "updateScript": [
+    {
+      "command": "EVENT_IF_ACTOR_DIRECTION",
+      "args": {
+        "actorId": "$self$",
+        "direction": {
+          "type": "direction",
+          "value": "down"
+        }
+      },
+      "id": "0dfb3f0c-563b-5504-8fb8-ea2416ce5006",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_ACTOR_SET_DIRECTION",
+            "args": {
+              "actorId": "$self$",
+              "direction": {
+                "type": "direction",
+                "value": "up"
+              }
+            },
+            "id": "326cac6b-85ea-5702-abc9-a5f1b3466150"
+          },
+          {
+            "command": "EVENT_WAIT",
+            "args": {
+              "units": "frames",
+              "frames": {
+                "type": "number",
+                "value": 30
+              }
+            },
+            "id": "e750942d-94dc-5960-bf81-82857dabd4b2"
+          }
+        ],
+        "false": []
+      }
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "e238cba1-5650-5224-82ff-602e7e131b8e"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Sway",
+        "loopAnim": true
+      },
+      "id": "e68eec1a-6333-5767-8899-46bc0122eb13"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 40
+        }
+      },
+      "id": "0d9f3636-fe01-5ced-beee-e8c1b2c24cd7"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Swing",
+        "loopAnim": true
+      },
+      "id": "95bfdfd8-909d-5258-b981-16eb80022702"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_ENABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "f002b2a3-1bb5-5e95-a554-0442d39e3193"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 22
+        }
+      },
+      "id": "69e867b9-76bb-5298-a135-09762470e94c"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "f8e1d2e1-4c9d-533d-a53f-e47a627ce7ed"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Hang",
+        "loopAnim": true
+      },
+      "id": "7bffbc9e-f83c-5e49-a1f2-06782a9bc296"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 62
+        }
+      },
+      "id": "0c8263b7-8d8d-5c93-ac45-6d2187d8279d"
+    }
+  ],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

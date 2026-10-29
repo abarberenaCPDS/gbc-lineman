@@ -6,7 +6,7 @@
   "prefabId": "",
   "name": "Hiroshi (Wind Ridge)",
   "coordinateType": "tiles",
-  "x": 94,
+  "x": 95,
   "y": 23,
   "frame": 0,
   "animate": true,
@@ -36,7 +36,7 @@
           }
         }
       },
-      "id": "e6ceb55f-2726-5407-a054-d22d2d7fee2e",
+      "id": "d18ce098-d84d-5621-a0b4-fe5d6cc26004",
       "children": {
         "true": [
           {
@@ -47,7 +47,7 @@
               "duration": 0.03,
               "units": "time"
             },
-            "id": "a0895ba0-a514-5bd9-ae6d-8077cc8bea79"
+            "id": "0d4ebaaa-07c8-58d0-ad05-f511722cb99e"
           },
           {
             "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -58,13 +58,13 @@
                 "value": 150
               }
             },
-            "id": "9834cf01-d030-5ea5-8c45-dc978e9eaaf9"
+            "id": "eda91c32-9564-5491-bdba-7ce597364de0"
           },
           {
             "command": "EVENT_TEXT",
             "args": {
               "text": [
-                "Hiroshi:\nThanks, friend!\nBreathing easy."
+                "Hiroshi:\nAhh, fresh air.\nNice work."
               ],
               "avatarId": "",
               "minHeight": 4,
@@ -83,7 +83,7 @@
               "closeDelayTime": 0.5,
               "closeDelayFrames": 30
             },
-            "id": "83c358f3-d30e-5d31-a519-6d8e07dcabcb"
+            "id": "d0accce5-d68d-5c88-822d-0f6c7e1a7d52"
           },
           {
             "command": "EVENT_TEXT_SET_SOUND_EFFECT",
@@ -93,7 +93,7 @@
               "duration": 0.03,
               "units": "time"
             },
-            "id": "9fff46c8-a5af-555f-94e4-fb1ad0ddfbbb"
+            "id": "a126d58e-d908-5b5d-aff7-3c17afc19a9b"
           },
           {
             "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -104,7 +104,7 @@
                 "value": 16
               }
             },
-            "id": "404029bf-c9a1-57b4-a78d-9153c0a48505"
+            "id": "be349184-4a5f-50e1-b555-71d6365fe54f"
           },
           {
             "command": "EVENT_OVERLAY_SHOW",
@@ -113,27 +113,27 @@
               "x": 0,
               "y": 0
             },
-            "id": "c4e065b0-dec7-5645-8ba5-62a36ed34611"
+            "id": "6bd3803d-a0aa-57cc-9e16-7b329b6079d8"
           },
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "LINE %D1$18$/3 HOME %D1$09$/1",
+              "text": "LINE %D1$18$/5 HOME %D1$09$/1",
               "x": 0,
               "y": 0,
               "location": "overlay"
             },
-            "id": "14b95364-a26e-5630-97d9-c51c0f7a327a"
+            "id": "c81858ca-e547-5b9d-afcf-3bf120af8c36"
           },
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.15.0-dev",
+              "text": "v0.17.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"
             },
-            "id": "80ee5110-a070-59fd-9268-8778ef036a08"
+            "id": "d00cb822-ad44-51ca-84c2-958b89bded14"
           }
         ],
         "false": [
@@ -148,11 +148,11 @@
                 },
                 "valueB": {
                   "type": "number",
-                  "value": 3
+                  "value": 5
                 }
               }
             },
-            "id": "0d0b950d-246e-5bce-a885-3782b336b4a8",
+            "id": "78c0afd3-ec1d-5253-9074-c272b9f85833",
             "children": {
               "true": [
                 {
@@ -163,7 +163,7 @@
                     "duration": 0.03,
                     "units": "time"
                   },
-                  "id": "14170ad5-6304-535d-9e14-33e11bc92d2c"
+                  "id": "d00db3cb-129b-5d8c-8d12-439ad5e8bcf2"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -174,13 +174,13 @@
                       "value": 150
                     }
                   },
-                  "id": "7acb023e-d511-57d3-ac3d-7119d773ee5e"
+                  "id": "89dd21fa-db39-52f1-bf89-f34b2fa44152"
                 },
                 {
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Hiroshi:\nLine's live!\nTry my door."
+                      "Hiroshi:\nFive lines live!\nTry my door."
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -199,7 +199,7 @@
                     "closeDelayTime": 0.5,
                     "closeDelayFrames": 30
                   },
-                  "id": "f1bd7d6c-3f1e-532f-acb5-c21adbd48132"
+                  "id": "1c01d408-a116-5538-92a8-2ed0f030d974"
                 },
                 {
                   "command": "EVENT_TEXT_SET_SOUND_EFFECT",
@@ -209,7 +209,7 @@
                     "duration": 0.03,
                     "units": "time"
                   },
-                  "id": "da3afc08-16c1-5b9a-a94f-dbd0da8c4bf6"
+                  "id": "c66b02de-6807-5070-976c-cca1ce4506f2"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -220,7 +220,7 @@
                       "value": 16
                     }
                   },
-                  "id": "a013d3ac-5fe8-52a3-9329-d3b46bf04c94"
+                  "id": "c9649db0-0733-55ee-82f2-adda520c662b"
                 },
                 {
                   "command": "EVENT_OVERLAY_SHOW",
@@ -229,27 +229,27 @@
                     "x": 0,
                     "y": 0
                   },
-                  "id": "dbc8a4af-4a4e-549c-af77-4d20780bfc9b"
+                  "id": "ea9797ee-314a-5343-b9e0-a237528be9e1"
                 },
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$18$/3 HOME %D1$09$/1",
+                    "text": "LINE %D1$18$/5 HOME %D1$09$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
                   },
-                  "id": "a9cc9030-695f-5e41-9a59-7fba4d671537"
+                  "id": "2cb82354-a148-51e6-82cb-a1a107c35135"
                 },
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "v0.15.0-dev",
+                    "text": "v0.17.0-dev",
                     "x": 9,
                     "y": 1,
                     "location": "overlay"
                   },
-                  "id": "7e6d948e-55b1-59ed-8427-d64ac8961712"
+                  "id": "2b261a43-5b19-5577-ac01-22f09e0da0ae"
                 }
               ],
               "false": [
@@ -261,7 +261,7 @@
                     "duration": 0.03,
                     "units": "time"
                   },
-                  "id": "dd99b6f7-a369-5d6f-ae28-a6311f81e33f"
+                  "id": "67c51105-89e9-5866-b54d-cdcf5836da02"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -272,13 +272,13 @@
                       "value": 150
                     }
                   },
-                  "id": "791e5d4a-8711-524f-9962-9a8349503555"
+                  "id": "5f37e414-e796-57b3-a6f0-605d6b8b792e"
                 },
                 {
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Hiroshi:\nThe line's dead!\nMy machine's off."
+                      "Hiroshi:\nDead line. Dry\nas my jokes."
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -297,7 +297,7 @@
                     "closeDelayTime": 0.5,
                     "closeDelayFrames": 30
                   },
-                  "id": "e5c838ea-a34d-5353-917b-2fa791ab6db4"
+                  "id": "21fc3846-68dc-5ad1-a36b-5ff234ce434d"
                 },
                 {
                   "command": "EVENT_TEXT_SET_SOUND_EFFECT",
@@ -307,7 +307,7 @@
                     "duration": 0.03,
                     "units": "time"
                   },
-                  "id": "b422acfb-980c-5b4c-80a8-bdab8e6ccc32"
+                  "id": "a7758b25-bb1c-5844-b871-367bdb81b828"
                 },
                 {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -318,7 +318,7 @@
                       "value": 16
                     }
                   },
-                  "id": "cf8e7fed-09a6-5426-997c-71da17c61cea"
+                  "id": "15bc6463-8d6f-59e5-a6f8-5f37935872e4"
                 },
                 {
                   "command": "EVENT_OVERLAY_SHOW",
@@ -327,27 +327,27 @@
                     "x": 0,
                     "y": 0
                   },
-                  "id": "77f0c5ce-80f4-50dd-b7d3-78adf31b8273"
+                  "id": "bef0584c-8043-5e95-8464-37e2e4692cde"
                 },
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$18$/3 HOME %D1$09$/1",
+                    "text": "LINE %D1$18$/5 HOME %D1$09$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
                   },
-                  "id": "e4b5bccc-1fb4-5ac0-98e0-fa440d11b095"
+                  "id": "d41f6eed-c2be-5d35-a93c-815292bba237"
                 },
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "v0.15.0-dev",
+                    "text": "v0.17.0-dev",
                     "x": 9,
                     "y": 1,
                     "location": "overlay"
                   },
-                  "id": "06b69438-7eb7-509f-a0bd-d66a50795770"
+                  "id": "e88e7960-ffe6-58b4-b575-f5f6b45f0e8d"
                 }
               ]
             }

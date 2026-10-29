@@ -1,12 +1,12 @@
 {
   "_resourceType": "actor",
   "id": "cef52b44-3eba-529d-97e7-246635d512d6",
-  "_index": 8,
+  "_index": 12,
   "symbol": "ridge_gust_01",
   "prefabId": "",
   "name": "Telegraphed Gust 1",
   "coordinateType": "tiles",
-  "x": 16,
+  "x": 65,
   "y": 25,
   "frame": 0,
   "animate": true,
@@ -60,6 +60,17 @@
               "actorId": "$self$"
             },
             "id": "044c2305-d6e1-50e2-8127-bfc95565abc7"
+          },
+          {
+            "command": "EVENT_WAIT",
+            "args": {
+              "units": "frames",
+              "frames": {
+                "type": "number",
+                "value": 30
+              }
+            },
+            "id": "0bf8d790-5fee-5a64-949d-d329148de6e0"
           }
         ],
         "false": []
@@ -94,7 +105,7 @@
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 54
+          "value": 48
         }
       },
       "id": "ee9f7715-a589-568c-8615-38da71c9528a"
@@ -121,7 +132,7 @@
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 20
+          "value": 22
         }
       },
       "id": "abecc675-215c-5334-97a0-96d14a1068b6"
@@ -146,7 +157,7 @@
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 90
+          "value": 70
         }
       },
       "id": "37eda76c-1885-5aef-929f-613b531dceea"

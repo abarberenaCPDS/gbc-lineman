@@ -27,26 +27,25 @@ WIDTH, HEIGHT = rosa.MAP_W * TILE, rosa.MAP_H * TILE
 PALETTES = [[tuple(bytes.fromhex(color)) for color in colors]
             for _, colors in opening.BG_PALETTES]
 NATIVE_PROXY_BY_INDEX = (255, 170, 85, 0)
-MAX_UNIQUE_TILES = 192
+MAX_UNIQUE_TILES = 256
 
 # BG palette families (opening.BG_PALETTES order). Slot 7 is the editor UI.
-SKY, STONE, TIMBER, WINDOW, FOLIAGE, METAL, EARTH = range(7)
+SKY, STONE, TIMBER, WINDOW, FOLIAGE, METAL, WIRE_2 = range(7)
+PALETTES[WIRE_2] = PALETTES[METAL][:]
 LINE = climb.LINE_BG_SLOT
 assert LINE == METAL, "wire slot must be the metal family"
 assert rosa.WINDOW_BG_SLOT == WINDOW, "window slot must be the window family"
 
 # Distant night hill behind the route. It stops at the floor top and never
 # reaches the HUD rows (0-1).
-HILL_LINE = [(0, 74), (20, 64), (40, 70), (64, 60), (88, 72), (112, 66),
-             (136, 78), (160, 70), (184, 62), (208, 72), (232, 66), (256, 76),
-             (280, 68), (304, 62), (320, 70)]
-HILL_HIGHLIGHTS = [[(64, 60), (68, 66)], [(184, 62), (180, 68)],
-                   [(304, 62), (300, 68)]]
+HILL_LINE = [(x, 63 + ((x // 24 * 7 + x // 96 * 3) % 5) * 4)
+             for x in range(0, WIDTH + 1, 24)] + [(WIDTH, 70)]
+HILL_HIGHLIGHTS = [[(x, y), (x + 4, y + 6)] for x, y in HILL_LINE[2:-1:5]]
 # Stars above the cable run (pixel rows 16-27 only).
 STARS = [(24, 20), (64, 26), (120, 18), (176, 24), (226, 20), (262, 26)]
 # Distant radio mast on the hill. Tile column 37 keeps it clear of the cable
 # run (columns 13-35); the house roof hides its foot.
-MAST_X = 300
+MAST_X = rosa.LINES[2]["box"][0] * TILE - 8
 MAST_TOP, MAST_BOTTOM = 18, 46
 
 # The utility poles (rosa.LINES pole tiles) are the animated intro_pole actors
@@ -59,9 +58,12 @@ ARC_POST_TOPS = [(tx, row) for row, x0, x1 in rosa.ARC_LANES
                  for tx in (x0 - 1, x1 + 1)]
 ARC_POST_TILES = [(tx, ty) for tx, top in ARC_POST_TOPS for ty in (top, top + 1)]
 
-# Lane cells, arc and gust alike: no art may sit on them.
+# Lane placards and whip brackets use stone, never a wire palette.
 LANE_CELLS = {(row, x) for row, x0, x1 in rosa.hazard_lanes()
               for x in range(x0, x1 + 1)}
+BRACKET_CELLS = {(row + dr, x) for row, x0, x1 in rosa.WHIP_LANES
+                 for x in range(x0 - 1, x1 + 2) for dr in (-3, -2)}
+PLACARD_CELLS = LANE_CELLS | BRACKET_CELLS
 
 
 def _mask_pixels(draw) -> frozenset[tuple[int, int]]:
@@ -88,7 +90,25 @@ def stage_pixels(stage: int) -> frozenset[tuple[int, int]]:
     for s, route in rosa.WIRE_ROUTES:
         if s == stage:
             out |= _polyline_pixels(route)
+    for span in rosa.FALLEN_SPANS:
+        if span["live_after"] == stage:
+            out |= _span_pixels(span)
     return frozenset(out)
+
+
+def _span_pixels(span) -> frozenset[tuple[int, int]]:
+    x0, x1 = span["columns"]
+    y = (rosa.GROUND_ROW - 1) * TILE
+    pts = [(x, y + (3 if (x // 6) % 2 else 5))
+           for x in range(x0 * TILE + 1, (x1 + 1) * TILE - 1, 6)]
+    pts.append(((x1 + 1) * TILE - 2, y + 4))
+    def draw(d):
+        d.line(pts, fill=1, width=2)
+    return _mask_pixels(draw)
+
+
+def stage_slot(stage: int) -> int:
+    return LINE if stage <= 3 else WIRE_2
 
 
 @functools.lru_cache(maxsize=None)
@@ -111,7 +131,7 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     for ty, row in enumerate(grid):
         for tx, cell in enumerate(row):
             if cell == climb.COL_SOLID:
-                slots[ty][tx] = EARTH if ty > rosa.GROUND_ROW else STONE
+                slots[ty][tx] = STONE
             elif cell == climb.COL_TOP:
                 slots[ty][tx] = TIMBER
 
@@ -134,25 +154,25 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
         slots[ty][tx] = STONE
 
     # Gust lanes get a stone hazard placard.
-    for row, x0, x1 in rosa.GUST_LANES:
-        for tx in range(x0, x1 + 1):
-            if grid[row][tx] != climb.COL_EMPTY:
-                raise AssertionError(f"gust placard overlaps collision at {tx},{row}")
-            slots[row][tx] = STONE
+    for row, tx in PLACARD_CELLS:
+        if grid[row][tx] != climb.COL_EMPTY:
+            raise AssertionError(f"hazard placard overlaps collision at {tx},{row}")
+        slots[row][tx] = STONE
 
     # Wire tiles take the metal slot last; they may never hit collision, a lane,
     # the cabin, a post or a placard. Power enters through the left cliff wall.
     hx0, hx1, hy0, hy1 = rosa.HOUSE_RECT
     house = {(tx, ty) for ty in range(hy0, hy1 + 1) for tx in range(hx0, hx1 + 1)}
-    placards = {(row, tx) for row, x0, x1 in rosa.GUST_LANES for tx in range(x0, x1 + 1)}
+    placards = PLACARD_CELLS
     posts = set(ARC_POST_TILES)
-    for tx, ty in sorted(wire_tiles()):
-        if grid[ty][tx] != climb.COL_EMPTY:
-            assert tx == 0, f"wire tile {tx},{ty} inside collision"
-            continue
-        if (ty, tx) in LANE_CELLS or (ty, tx) in placards or (tx, ty) in house or (tx, ty) in posts:
-            raise AssertionError(f"wire tile {tx},{ty} collides with other art")
-        slots[ty][tx] = LINE
+    for stage in range(1, rosa.LINE_COUNT + 1):
+        for tx, ty in sorted({(x // TILE, y // TILE) for x, y in stage_pixels(stage)}):
+            if grid[ty][tx] != climb.COL_EMPTY:
+                assert tx == 0, f"wire tile {tx},{ty} inside collision"
+                continue
+            if (ty, tx) in placards or (tx, ty) in house or (tx, ty) in posts:
+                raise AssertionError(f"wire tile {tx},{ty} collides with other art")
+            slots[ty][tx] = stage_slot(stage)
 
     assert all(0 <= slot < 7 for row in slots for slot in row), "UI slot 7 reserved"
     assert all(slots[ty][tx] == STONE for tx, ty in ARC_POST_TILES)
@@ -223,7 +243,7 @@ def _draw_rock(c: _Canvas, grid: list[list[int]]) -> None:
         for tx, cell in enumerate(row):
             if cell != climb.COL_SOLID:
                 continue
-            slot = EARTH if ty > rosa.GROUND_ROW else STONE
+            slot = STONE
             ramp = PALETTES[slot]
             x, y = tx * TILE, ty * TILE
             c.rect(slot, (x, y, x + 7, y + 7), ramp[1])
@@ -239,6 +259,15 @@ def _draw_rock(c: _Canvas, grid: list[list[int]]) -> None:
             c.line(slot, [(x + 5, y + 1), (x + 6, y + 3)], ramp[2])
             if (tx * 3 + ty) % 4 == 0:
                 c.point(slot, (x + 6, y + 6), ramp[3])
+
+
+def _draw_ledges(c: _Canvas) -> None:
+    p = PALETTES[TIMBER]
+    for row, x0, x1 in rosa.LEDGES:
+        left, right, y = x0 * TILE, (x1 + 1) * TILE - 1, row * TILE
+        c.line(TIMBER, [(left, y), (right, y)], p[3])
+        c.rect(TIMBER, (left, y + 1, right, y + 4), p[1])
+        c.line(TIMBER, [(left, y + 5), (right, y + 5)], p[0])
 
 
 def _draw_cabin(c: _Canvas) -> None:
@@ -289,7 +318,7 @@ def _draw_arc_posts(c: _Canvas) -> None:
 def _draw_warnings(c: _Canvas) -> None:
     # Placards are stone (the metal slot is wire only).
     p = PALETTES[STONE]
-    for row, x0, x1 in rosa.GUST_LANES:
+    for row, x0, x1 in rosa.hazard_lanes():
         left, right = x0 * TILE, x1 * TILE + 7
         y = row * TILE
         c.rect(STONE, (left + 2, y + 2, right - 2, y + 5), p[0])
@@ -298,20 +327,27 @@ def _draw_warnings(c: _Canvas) -> None:
         center = (left + right) // 2
         c.line(STONE, [(center - 2, y + 3), (center + 2, y + 3)], p[3])
         c.line(STONE, [(center, y + 1), (center, y + 6)], p[3])
+    for row, x0, x1 in rosa.WHIP_LANES:
+        left, right, y = (x0 - 1) * TILE + 1, (x1 + 2) * TILE - 2, (row - 3) * TILE
+        c.rect(STONE, (left, y + 10, right, y + 13), p[2])
+        c.line(STONE, [(left, y + 10), (right, y + 10)], p[3])
+        for x in (left + 2, right - 3):
+            c.rect(STONE, (x, y + 3, x + 1, y + 9), p[2])
 
 
 def _draw_cable(c: _Canvas, slots: list[list[int]]) -> None:
     """Paint each stage's wire pixels in its metal colour index, on wire tiles only."""
     px = c.image.load()
     for stage in range(1, rosa.LINE_COUNT + 1):
-        color = PALETTES[LINE][rosa.STAGE_COLOR_INDEX[stage - 1]]
+        slot = stage_slot(stage)
+        color = PALETTES[slot][rosa.STAGE_COLOR_INDEX[stage - 1]]
         for x, y in sorted(stage_pixels(stage)):
-            if x < WIDTH and y < HEIGHT and slots[y // TILE][x // TILE] == LINE:
+            if x < WIDTH and y < HEIGHT and slots[y // TILE][x // TILE] == slot:
                 px[x, y] = color
 
 
 def make_background() -> tuple[Image.Image, list[list[int]]]:
-    """Return authored 320x144 RGB art and its 40x18 tile-palette map."""
+    """Return authored art and the contract-sized tile-palette map."""
     grid = rosa.collision_grid()
     slots = _slots(grid)
     image = Image.new("RGB", (WIDTH, HEIGHT))
@@ -325,6 +361,7 @@ def make_background() -> tuple[Image.Image, list[list[int]]]:
     canvas = _Canvas(image, slots)
     _draw_sky(canvas)
     _draw_rock(canvas, grid)
+    _draw_ledges(canvas)
     _draw_cabin(canvas)
     _draw_windows(canvas)
     _draw_arc_posts(canvas)
@@ -349,14 +386,15 @@ def _check_geometry_art(image: Image.Image, grid: list[list[int]],
             if cell == climb.COL_SOLID:
                 color = image.getpixel((tx * TILE + 3, ty * TILE + 3))
                 assert color in PALETTES[slots[ty][tx]], f"rock miss at {tx},{ty}"
-                assert slots[ty][tx] in (STONE, EARTH), f"solid not rock at {tx},{ty}"
+                assert slots[ty][tx] == STONE, f"solid not rock at {tx},{ty}"
     # Metal-slot pixels of each stage's index belong to that stage's wire only.
     for stage in range(1, rosa.LINE_COUNT + 1):
-        color = PALETTES[LINE][rosa.STAGE_COLOR_INDEX[stage - 1]]
+        wire_slot = stage_slot(stage)
+        color = PALETTES[wire_slot][rosa.STAGE_COLOR_INDEX[stage - 1]]
         owner = stage_pixels(stage)
         for ty, row in enumerate(slots):
             for tx, slot in enumerate(row):
-                if slot != LINE:
+                if slot != wire_slot:
                     continue
                 for y in range(ty * TILE, ty * TILE + TILE):
                     for x in range(tx * TILE, tx * TILE + TILE):

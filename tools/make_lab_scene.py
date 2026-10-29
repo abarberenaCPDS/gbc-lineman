@@ -11,8 +11,8 @@ hazards.py; the live arc and timed gust reuse rosa's and climb's timings. The
 whipping live wire uses hazards.py's whip scripts (the same ones Wind Ridge
 runs), under its own lab palette. Event and actor IDs come from make_climb_scene's
 helpers under ``lab_*`` keys, so they never collide with storm_climb's or Wind
-Ridge's. The background is Pine Hollow's existing 40x18 art (no new art), so both
-rooms are exactly that wide.
+Ridge's. A separately owned 40x18 crop of Pine Hollow's art keeps these rooms
+independent of the wider gameplay map (the reference art is not collision-aligned).
 """
 
 from __future__ import annotations
@@ -46,19 +46,22 @@ sys.path.insert(0, str(TOOLS_DIR))
 try:
     import climb  # noqa: E402  (collision bytes, line palette slot)
     import hazards  # noqa: E402  (cracked board / hidden cable placement, timings, VAR_ON_BOARD)
-    import kiko  # noqa: E402  (Pine Hollow's 40x18 background, the only one that fits)
+    from level import decode_rle  # noqa: E402
     import make_climb_scene as shared  # noqa: E402  (generic GB Studio helpers only)
     import opening  # noqa: E402  (worker sprite, shared background palettes)
+    import shock  # noqa: E402  (electrocution beat before the respawn)
     import rosa  # noqa: E402  (live arc sprite and palette)
     import scenes  # noqa: E402  (registry: ids, names, editor positions)
 except ModuleNotFoundError as error:
-    if error.name in {"climb", "hazards", "kiko", "make_climb_scene", "opening", "rosa", "scenes"}:
+    if error.name in {"climb", "hazards", "level", "make_climb_scene", "opening", "rosa", "scenes"}:
         raise SystemExit(f"cannot generate lab scenes: tools/{error.name}.py is missing") from error
     raise
 
 COL_EMPTY = climb.COL_EMPTY
 COL_TOP = climb.COL_TOP      # one-way: land from above, drop through with Down+A
 COL_SOLID = climb.COL_SOLID
+BACKGROUND_NAME = "lab_pine_reference"
+BACKGROUND_ID = hazards.resource_id("background:" + BACKGROUND_NAME)
 # Wind Ridge's whip timings: the climb gust's warning, burst and rest.
 WHIP_SWAY_FRAMES = climb.GUST_WARNING_FRAMES
 WHIP_SWING_FRAMES = climb.GUST_ACTIVE_FRAMES
@@ -128,7 +131,7 @@ def hazard_lanes(folder: str) -> list[tuple[int, int, int]]:
 def check_layout(folder: str) -> None:
     """Fail before writing if a layout cannot be played as described."""
     grid = collision_grid(folder)
-    assert (WIDTH, HEIGHT) == (40, 18), "lab rooms share the 40x18 Pine Hollow background"
+    assert (WIDTH, HEIGHT) == (40, 18), "lab rooms use a fixed 40x18 reference crop"
     assert grid[START[1] + 1][START[0]] == COL_SOLID and grid[START[1]][START[0]] == COL_EMPTY
     for row, x0, x1 in hazards.BOARDS[folder]:
         assert all(grid[row][x] != COL_EMPTY and grid[row - 1][x] == COL_EMPTY
@@ -263,6 +266,7 @@ def respawn_events(folder: str, death_sound_id: str) -> list[dict[str, Any]]:
     key = f"{folder}:respawn"
     return [
         shared.sound_event(death_sound_id, f"{key}:death-sfx"),
+        *shock.shock_events(key),
         # The respawn teleports the hero without a leave event: forget the board.
         shared.set_value(hazards.VAR_ON_BOARD, 0, f"{key}:clear-board"),
         shared.set_position(*START, f"{key}:start"),
@@ -305,7 +309,7 @@ def build_scene(folder: str, death_sound_id: str) -> dict[str, Any]:
         "y": editor_y,
         "collisions": shared.collision_rle(collision_grid(folder), WIDTH, HEIGHT),
         "symbol": f"scene_{folder}",
-        "backgroundId": kiko.BACKGROUND_ID,
+        "backgroundId": BACKGROUND_ID,
         "paletteIds": background_palette_ids(),
         "spritePaletteIds": sprite_palette_ids,
         "script": scene_script(folder),
@@ -323,6 +327,31 @@ def build_triggers(folder: str) -> list[dict[str, Any]]:
 # ---------------------------------------------------------------------------
 # Writing
 # ---------------------------------------------------------------------------
+def write_reference_background() -> None:
+    """Crop the compiler proxy and its palette map together, without changing Pine Hollow."""
+    from PIL import Image
+
+    source = PROJECT_DIR / "assets/backgrounds/pine_hollow.png"
+    metadata = shared.load_json(Path(str(source) + ".gbsres"))
+    source_width, source_height = metadata["width"], metadata["height"]
+    if source_width < WIDTH or source_height < HEIGHT:
+        raise ValueError("Pine Hollow reference is smaller than the lab rooms")
+    flat = decode_rle(metadata["tileColors"])
+    if len(flat) != source_width * source_height:
+        raise ValueError("Pine Hollow reference palette map has the wrong size")
+    slots = [flat[row * source_width:row * source_width + WIDTH] for row in range(HEIGHT)]
+    target = source.with_name(BACKGROUND_NAME + ".png")
+    with Image.open(source) as image:
+        image.crop((0, 0, WIDTH * 8, HEIGHT * 8)).save(target)
+    metadata.update({
+        "id": BACKGROUND_ID, "name": BACKGROUND_NAME, "symbol": "bg_" + BACKGROUND_NAME,
+        "filename": target.name, "width": WIDTH, "height": HEIGHT,
+        "imageWidth": WIDTH * 8, "imageHeight": HEIGHT * 8,
+        "tileColors": shared.collision_rle(slots, WIDTH, HEIGHT),
+    })
+    shared.write_json(Path(str(target) + ".gbsres"), metadata)
+
+
 def warn_if_missing_asset(resource_id: str, folder: str, label: str) -> None:
     """Other workers produce these art files; this generator only references their IDs."""
     for path in sorted((PROJECT_DIR / "assets" / folder).glob("*.gbsres")):
@@ -347,7 +376,7 @@ def main() -> None:
     death_sound_id = shared.sidecar_id(DEATH_SOUND, "sound")
     gust_sprite_id = shared.sidecar_id(GUST_SPRITE, "sprite")
     whip_sprite_id = shared.sidecar_id(WHIP_SPRITE, "sprite")
-    warn_if_missing_asset(kiko.BACKGROUND_ID, "backgrounds", "pine_hollow background (lab rooms)")
+    write_reference_background()
     warn_if_missing_asset(hazards.BOARD_SPRITE_ID, "sprites", "cracked board sprite")
     warn_if_missing_asset(rosa.ARC_SPRITE_ID, "sprites", "live arc sprite")
     for folder in ROOMS:

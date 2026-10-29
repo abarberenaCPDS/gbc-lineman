@@ -1,13 +1,13 @@
 {
   "_resourceType": "actor",
   "id": "1e459de0-38d4-5531-8891-d1a4d4230440",
-  "_index": 13,
+  "_index": 16,
   "symbol": "ridge_whip_02",
   "prefabId": "",
   "name": "Whipping Live Wire 2",
   "coordinateType": "tiles",
-  "x": 78,
-  "y": 26,
+  "x": 50,
+  "y": 20,
   "frame": 0,
   "animate": true,
   "spriteSheetId": "a44718b5-97ba-5d0e-88db-18455b018bed",
@@ -62,6 +62,17 @@
               }
             },
             "id": "ff635039-6e31-5b5f-a23d-3c590e29b379"
+          },
+          {
+            "command": "EVENT_WAIT",
+            "args": {
+              "units": "frames",
+              "frames": {
+                "type": "number",
+                "value": 30
+              }
+            },
+            "id": "78526f68-978c-50a0-92a5-474d20c8e684"
           }
         ],
         "false": []
@@ -89,7 +100,7 @@
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 54
+          "value": 40
         }
       },
       "id": "af53d861-717f-5499-993b-ef9de3e9729a"
@@ -116,7 +127,7 @@
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 20
+          "value": 22
         }
       },
       "id": "425ffb27-0f86-58a4-a32d-d0c496f8eb74"
@@ -143,7 +154,7 @@
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 90
+          "value": 62
         }
       },
       "id": "02db3ecd-a721-5f9e-8e82-3145e2b088fa"

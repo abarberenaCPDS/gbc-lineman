@@ -3,7 +3,7 @@
   "id": "74bcbcf7-d34a-52ca-90ca-0687e1f36fae",
   "name": "Emil Door Checkpoint",
   "prefabId": "",
-  "x": 35,
+  "x": 95,
   "y": 9,
   "symbol": "trigger_pine_home_door",
   "prefabScriptOverrides": {},
@@ -21,7 +21,7 @@
           },
           "valueB": {
             "type": "number",
-            "value": 2
+            "value": 5
           }
         }
       },
@@ -128,7 +128,7 @@
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Emil:\nStove's on!\nSoup is cooking!"
+                      "Emil:\nStove's on!\nSoup party!"
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -182,7 +182,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINES %D1$25$/2 HOME %D1$13$/1",
+                    "text": "LINES %D1$25$/5 HOME %D1$13$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
@@ -192,7 +192,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "v0.15.0-dev",
+                    "text": "v0.17.0-dev",
                     "x": 9,
                     "y": 1,
                     "location": "overlay"
@@ -258,7 +258,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINES %D1$25$/2 HOME %D1$13$/1",
+                    "text": "LINES %D1$25$/5 HOME %D1$13$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
@@ -268,7 +268,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "v0.15.0-dev",
+                    "text": "v0.17.0-dev",
                     "x": 9,
                     "y": 1,
                     "location": "overlay"
@@ -296,7 +296,7 @@
             "command": "EVENT_TEXT",
             "args": {
               "text": [
-                "Still no power.\nFix both lines!"
+                "Still no power.\nFix all 5 lines!"
               ],
               "avatarId": "",
               "minHeight": 4,
@@ -340,7 +340,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "LINES %D1$25$/2 HOME %D1$13$/1",
+              "text": "LINES %D1$25$/5 HOME %D1$13$/1",
               "x": 0,
               "y": 0,
               "location": "overlay"
@@ -350,7 +350,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.15.0-dev",
+              "text": "v0.17.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"

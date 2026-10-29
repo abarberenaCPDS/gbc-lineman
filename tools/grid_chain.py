@@ -60,8 +60,7 @@ hero stands in one project variable, ``near_var`` (climb.VAR_NEAR):
   0                 no zone (a carried cable drops back to its pole on B)
   line number       pole zone (pole_zone_rect): the cable-end pickup
   BOX_ZONE + number box zone (reach_rect, or the line's own "reach"): plug in
-  NPC_ZONE          a neighbour's zone: B does nothing here, so the neighbour's
-                    own B talk (native actor interaction) keeps working
+  NPC_ZONE          a neighbour's zone: explicit scene-side talk dispatch
 
 ``pole_zone_trigger``, ``box_zone_trigger`` and ``npc_zone_trigger`` return the
 zone triggers (call once each, after the job's own triggers; box zones first, so
@@ -69,8 +68,9 @@ where zones overlap a box wins over a pole and a pole over a neighbour). The ent
 script sets the value; the leave script clears it only while it still holds this
 zone's value, so the order of enter and leave in a same-frame hand-over does not
 matter. ``input_script_event`` is the one B input script: it runs the zone's pickup,
-plug-in or drop. It is attached with override off, so native B still reaches the
-neighbours' talk; the pole, cable and box actors have no B script of their own.
+drop, or explicit neighbour-talk branch. Box plug-in branches call canonical
+project custom scripts instead of inlining their large refresh bodies in the
+shared B input script; each box remains individually gated by its own zone.
 
 Palette resources: chain_palettes() gives {stages: colours} for up to three lines,
 or {stages: {slot: colours}} for four to six. chain_palette_resources() turns
@@ -276,6 +276,16 @@ class GridChain:
             key, true_events, false_events,
         )
 
+    def if_actor_distance(self, actor_id: str, other_actor_id: str, distance: int, key: str,
+                          true_events: list[Event], false_events: list[Event] | None = None) -> Event:
+        """GB Studio's native actor-distance predicate; no scratch variables required."""
+        return self.branch_event(
+            "EVENT_IF_ACTOR_DISTANCE_FROM_ACTOR",
+            {"actorId": actor_id, "operator": "<=", "distance": number(distance),
+             "otherActorId": other_actor_id},
+            key, true_events, false_events,
+        )
+
     def set_value(self, variable_id: str, value: int, key: str) -> Event:
         return self.event("EVENT_SET_VALUE", {"variable": variable_id, "value": number(value)}, key)
 
@@ -451,7 +461,7 @@ class GridChain:
         ])]
 
     def box_press_events(self, line: dict[str, Any], key: str, connect_sound_id: str) -> list[Event]:
-        """B in a box zone: plug the carried cable in, or say why not (already live, no cable, wrong cable)."""
+        """A box actor's invoked script: plug in the cable or report why it cannot."""
         return [self.if_value(line["live_var"], 1, f"{key}:live", [
             *self.say([self.text["already"]], f"{key}:already-live"),
         ], [
@@ -466,26 +476,35 @@ class GridChain:
             ]),
         ])]
 
-    def input_script_event(self, *, connect_sound_id: str, pickup_sound_id: str, key: str = "b-press") -> Event:
+    def input_script_event(self, *, pickup_sound_id: str, key: str = "b-press",
+                           npc_events: list[Event] | None = None,
+                           npc_actor_id: str | None = None, npc_distance: int = 1,
+                           override: bool = False) -> Event:
         """The B input script, attached once per scene at init.
 
-        Acts on ``near_var``: a pole zone picks up, a box zone plugs in, the
-        neighbour zone does nothing (native talk), and any other place drops a
-        carried cable back to its pole. Attached with override off (the default
-        B action keeps running), so the neighbours' B talk is unchanged; the
-        cable, pole and box actors carry no script of their own.
+        Box and pole zones take priority. Outside those zones, a nearby
+        ``npc_actor_id`` runs ``npc_events`` before NPC_ZONE/drop fallback.
+        Without an actor ID, NPC_ZONE may dispatch talk. Any other place drops
+        a carried cable. Set
+        ``override=True`` with explicit NPC dispatch to suppress native actor B
+        interaction. Distance tests use GB Studio's actor predicate and require
+        no scratch/project variables.
         """
         drop = self.if_at_least(self.carrying_var, 1, f"{key}:drop",
                                 self.cable_drop_events(f"{key}:drop", CARRY_TEXT_DROPPED), [])
-        body: list[Event] = [self.if_value(self.near_var, NPC_ZONE, f"{key}:npc", [], [drop])]
+        npc_zone_events = [] if npc_actor_id else (npc_events or [])
+        body: list[Event] = [self.if_value(self.near_var, NPC_ZONE, f"{key}:npc", npc_zone_events, [drop])]
+        if npc_actor_id and npc_events:
+            body = [self.if_actor_distance("player", npc_actor_id, npc_distance, f"{key}:npc-near",
+                                           npc_events, body)]
         for line in reversed(self.lines):
             prefix = f"{key}:{line['key']}"
             body = [self.if_value(self.near_var, BOX_ZONE + line["number"], f"{prefix}:box",
-                                  self.box_press_events(line, f"{prefix}:box", connect_sound_id), body)]
+                                  [self.box_script_call_event(line, f"{prefix}:call-box")], body)]
             body = [self.if_value(self.near_var, line["number"], f"{prefix}:pole",
                                   self.pickup_press_events(line, f"{prefix}:pole", pickup_sound_id), body)]
         return {
-            **self.event("EVENT_SET_INPUT_SCRIPT", {"input": ["b"], "override": False}, key),
+            **self.event("EVENT_SET_INPUT_SCRIPT", {"input": ["b"], "override": override}, key),
             "children": {"true": body},
         }
 
@@ -521,8 +540,8 @@ class GridChain:
     def box_connect_events(self, line: dict[str, Any], key: str, connect_sound_id: str) -> list[Event]:
         """Plug the carried cable in: the line goes live, the chain refreshes, the box reports.
 
-        Called only from the B input script's box zone (``box_press_events``);
-        ``key`` namespaces the event IDs of that caller.
+        Called only from the box actor's ``box_press_events`` script; ``key``
+        namespaces the event IDs of that caller.
         """
         # After chain_refresh_events, the chain variable says how far power reaches.
         done = [self.if_value(self.chain_var, len(self.lines), f"{key}:all", [
@@ -545,11 +564,67 @@ class GridChain:
             *done,
         ]
 
+    def box_script_id(self, line: dict[str, Any]) -> str:
+        return self.rid(f"script:box:{line['key']}")
+
+    def box_script_actor_bindings(self, line: dict[str, Any]) -> list[tuple[str, str]]:
+        """Actor references needed by this box's script, in stable positional order."""
+        bindings = [(self.actor_id(other["box"]), other["box_name"]) for other in self.lines]
+        bindings.append((self.actor_id(line["pole"]), line["pole_name"]))
+        unique: dict[str, str] = {}
+        for actor_id, name in bindings:
+            unique.setdefault(actor_id, name)
+        return list(unique.items())
+
+    def box_script_call_event(self, line: dict[str, Any], key: str) -> Event:
+        """Call the canonical per-box custom script synchronously."""
+        args: dict[str, Any] = {"customEventId": self.box_script_id(line)}
+        for index, (actor_id, _name) in enumerate(self.box_script_actor_bindings(line)):
+            args[f"$actor[{index}]$"] = actor_id
+        return self.event("EVENT_CALL_CUSTOM_EVENT", args, key)
+
+    def box_script_resources(self, *, label: str, file_prefix: str, connect_sound_id: str
+                              ) -> list[tuple[str, dict[str, Any]]]:
+        """Separate project script resources, one compiled bank object per box handler."""
+        resources = []
+        for line in self.lines:
+            name = f"{label} Box {line['key'].title()}"
+            bindings = self.box_script_actor_bindings(line)
+            actor_args = {actor_id: str(index) for index, (actor_id, _name) in enumerate(bindings)}
+            script_events = self.box_press_events(line, f"box-script:{line['key']}", connect_sound_id)
+
+            def bind_actor_args(events: list[Event]) -> None:
+                for event in events:
+                    args = event.get("args", {})
+                    for field in ("actorId", "otherActorId"):
+                        if args.get(field) in actor_args:
+                            args[field] = actor_args[args[field]]
+                    for children in event.get("children", {}).values():
+                        bind_actor_args(children)
+
+            bind_actor_args(script_events)
+            script = {
+                "_resourceType": "script",
+                "id": self.box_script_id(line),
+                "name": name,
+                "symbol": f"script_{file_prefix}_{line['key']}",
+                "description": f"Plug in the {line['key']} cable and refresh the grid chain.",
+                "variables": {},
+                "actors": {
+                    str(index): {"id": str(index), "name": actor_name}
+                    for index, (_actor_id, actor_name) in enumerate(bindings)
+                },
+                "script": script_events,
+            }
+            resources.append((f"project/scripts/{file_prefix}_box_{line['key']}.gbsres", script))
+        return resources
+
     def box_actor(self, line: dict[str, Any], index: int, sprite_id: str) -> dict[str, Any]:
-        """A box (transformer or junction). No script: its box zone's B press plugs the cable in.
+        """A visual box actor; its B handler is a separate project script resource.
 
         Plugging in repairs the line and stands its pole up; whether power reaches
-        it depends on the lines upstream (chain_refresh_events).
+        it depends on the lines upstream (chain_refresh_events). The external
+        script object keeps all box branches out of the shared input bank.
         """
         key = line["box"]
         x, y = line["box_at"]

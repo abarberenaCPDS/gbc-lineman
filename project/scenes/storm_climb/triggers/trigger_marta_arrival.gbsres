@@ -3,8 +3,8 @@
   "id": "b02fc406-5513-54f5-abd9-25c1adb2da51",
   "name": "Amara Arrival Checkpoint",
   "prefabId": "",
-  "x": 11,
-  "y": 3,
+  "x": 10,
+  "y": 2,
   "symbol": "trigger_marta_arrival",
   "prefabScriptOverrides": {},
   "width": 3,
@@ -17,11 +17,11 @@
           "type": "eq",
           "valueA": {
             "type": "variable",
-            "value": "7"
+            "value": "44"
           },
           "valueB": {
             "type": "number",
-            "value": 1
+            "value": 5
           }
         }
       },
@@ -154,7 +154,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "LINE %D1$07$/1 HOME %D1$00$/1",
+                    "text": "LINE %D1$45$/5 HOME %D1$00$/1",
                     "x": 0,
                     "y": 0,
                     "location": "overlay"
@@ -164,7 +164,7 @@
                 {
                   "command": "EVENT_TEXT_DRAW",
                   "args": {
-                    "text": "v0.15.0-dev",
+                    "text": "v0.17.0-dev",
                     "x": 9,
                     "y": 1,
                     "location": "overlay"
@@ -178,85 +178,107 @@
         ],
         "false": [
           {
-            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "command": "EVENT_IF",
             "args": {
-              "units": "pixels",
-              "y": {
-                "type": "number",
-                "value": 150
+              "condition": {
+                "type": "eq",
+                "valueA": {
+                  "type": "variable",
+                  "value": "6"
+                },
+                "valueB": {
+                  "type": "number",
+                  "value": 0
+                }
               }
             },
-            "id": "632d6040-d486-5c38-92c6-38eec1e1b2c5"
-          },
-          {
-            "command": "EVENT_TEXT",
-            "args": {
-              "text": [
-                "Still no power.\nFix the line!"
+            "id": "fcec6a89-7f53-54b6-a5c7-73dde0a326c9",
+            "children": {
+              "true": [
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 150
+                    }
+                  },
+                  "id": "632d6040-d486-5c38-92c6-38eec1e1b2c5"
+                },
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": [
+                      "Still no power.\nFix all 5 lines!"
+                    ],
+                    "avatarId": "",
+                    "minHeight": 4,
+                    "maxHeight": 7,
+                    "textX": 1,
+                    "textY": 1,
+                    "textHeight": 5,
+                    "position": "bottom",
+                    "clearPrevious": true,
+                    "showFrame": true,
+                    "speedIn": -1,
+                    "speedOut": -1,
+                    "closeWhen": "key",
+                    "closeButton": "a",
+                    "closeDelayUnits": "time",
+                    "closeDelayTime": 0.5,
+                    "closeDelayFrames": 30
+                  },
+                  "id": "f136d0e5-56cf-57db-82ec-7ab0a7b7b1ae"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 16
+                    }
+                  },
+                  "id": "f9fba14c-0d8f-5d31-b41c-f6d785cb8006"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SHOW",
+                  "args": {
+                    "color": "black",
+                    "x": 0,
+                    "y": 0
+                  },
+                  "id": "91ff046d-9079-56db-ac35-369fbf32e498"
+                },
+                {
+                  "command": "EVENT_TEXT_DRAW",
+                  "args": {
+                    "text": "LINE %D1$45$/5 HOME %D1$00$/1",
+                    "x": 0,
+                    "y": 0,
+                    "location": "overlay"
+                  },
+                  "id": "144da1fb-44c2-572c-aada-7be302b506d9"
+                },
+                {
+                  "command": "EVENT_TEXT_DRAW",
+                  "args": {
+                    "text": "v0.17.0-dev",
+                    "x": 9,
+                    "y": 1,
+                    "location": "overlay"
+                  },
+                  "id": "17f33fa4-62da-5841-aab4-a4e822bde180"
+                }
               ],
-              "avatarId": "",
-              "minHeight": 4,
-              "maxHeight": 7,
-              "textX": 1,
-              "textY": 1,
-              "textHeight": 5,
-              "position": "bottom",
-              "clearPrevious": true,
-              "showFrame": true,
-              "speedIn": -1,
-              "speedOut": -1,
-              "closeWhen": "key",
-              "closeButton": "a",
-              "closeDelayUnits": "time",
-              "closeDelayTime": 0.5,
-              "closeDelayFrames": 30
-            },
-            "id": "f136d0e5-56cf-57db-82ec-7ab0a7b7b1ae"
-          },
-          {
-            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
-            "args": {
-              "units": "pixels",
-              "y": {
-                "type": "number",
-                "value": 16
-              }
-            },
-            "id": "f9fba14c-0d8f-5d31-b41c-f6d785cb8006"
-          },
-          {
-            "command": "EVENT_OVERLAY_SHOW",
-            "args": {
-              "color": "black",
-              "x": 0,
-              "y": 0
-            },
-            "id": "91ff046d-9079-56db-ac35-369fbf32e498"
-          },
-          {
-            "command": "EVENT_TEXT_DRAW",
-            "args": {
-              "text": "LINE %D1$07$/1 HOME %D1$00$/1",
-              "x": 0,
-              "y": 0,
-              "location": "overlay"
-            },
-            "id": "144da1fb-44c2-572c-aada-7be302b506d9"
-          },
-          {
-            "command": "EVENT_TEXT_DRAW",
-            "args": {
-              "text": "v0.15.0-dev",
-              "x": 9,
-              "y": 1,
-              "location": "overlay"
-            },
-            "id": "17f33fa4-62da-5841-aab4-a4e822bde180"
+              "false": []
+            }
           }
         ]
       }
     }
   ],
   "leaveScript": [],
-  "_index": 99
+  "_index": 2
 }

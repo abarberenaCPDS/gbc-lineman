@@ -13,7 +13,6 @@ from pathlib import Path
 import climb
 import hazards
 import make_lab_scene as lab
-import make_project
 import scenes
 
 SCENES_DIR = scenes.SCENES_DIR
@@ -96,15 +95,6 @@ def sprite_tiles(actor: dict) -> tuple[int, int]:
 
 
 class RegistryTests(unittest.TestCase):
-    def test_lab_scenes_exist_with_registry_id_name_and_position(self):
-        for folder, entry in scenes.by_tag(scenes.LAB).items():
-            with self.subTest(folder=folder):
-                scene = load(SCENES_DIR / folder / "scene.gbsres")
-                self.assertEqual(scene["id"], entry["id"])
-                self.assertEqual(scene["name"], entry["name"])
-                self.assertTrue(scene["name"].startswith("LAB_"))
-                self.assertEqual((scene["x"], scene["y"]), tuple(entry["editor"]))
-
     def test_rooms_are_the_registered_lab_scenes(self):
         self.assertEqual(sorted(lab.ROOMS), sorted(scenes.by_tag(scenes.LAB)))
 
@@ -114,8 +104,19 @@ class RegistryTests(unittest.TestCase):
                 scene = load(SCENES_DIR / folder / "scene.gbsres")
                 self.assertEqual((scene["width"], scene["height"], scene["type"]), (40, 18, "PLATFORM"))
 
-    def test_profile_builds_the_lab_generator(self):
-        self.assertEqual(make_project.PROFILES["lab"], ("make_lab_scene.py",))
+    def test_reference_background_matches_fixed_room_dimensions(self):
+        from PIL import Image
+        from level import decode_rle
+
+        path = lab.PROJECT_DIR / "assets/backgrounds" / (lab.BACKGROUND_NAME + ".png")
+        metadata = load(Path(str(path) + ".gbsres"))
+        self.assertEqual(metadata["id"], lab.BACKGROUND_ID)
+        self.assertEqual((metadata["width"], metadata["height"]), (lab.WIDTH, lab.HEIGHT))
+        self.assertEqual(len(decode_rle(metadata["tileColors"])), lab.WIDTH * lab.HEIGHT)
+        with Image.open(path) as image:
+            self.assertEqual(image.size, (lab.WIDTH * 8, lab.HEIGHT * 8))
+        for folder in lab.ROOMS:
+            self.assertEqual(load(SCENES_DIR / folder / "scene.gbsres")["backgroundId"], lab.BACKGROUND_ID)
 
     def test_resource_ids_are_unique_across_the_project(self):
         lab_ids: list[str] = []

@@ -77,19 +77,19 @@ TICKETS = {
         "number": "WO-0413",
         "scene_id": ridge.SCENE_ID,
         "start": ridge.START,
-        "pages": ["WORK ORDER\nWO-0413", "Hiroshi, ridge:\noxygen machine\nhas no power.", "Fix: run the\nline to his box."],
+        "pages": ["WORK ORDER\nWO-0413", "Hiroshi, ridge:\noxygen machine\nhas no power.", "Fix: reconnect\nall five lines."],
     },
     3: {
         "number": "WO-0414",
         "scene_id": rosa.SCENE_ID,
         "start": rosa.START,
-        "pages": ["WORK ORDER\nWO-0414", "Priya, hill:\nno internet,\nwork is due.", "Fix: reconnect.\nMind live wires."],
+        "pages": ["WORK ORDER\nWO-0414", "Priya, hill:\nno internet,\nwork is due.", "Fix: five lines.\nMind live wires."],
     },
     4: {
         "number": "WO-0415",
         "scene_id": kiko.SCENE_ID,
         "start": kiko.START,
-        "pages": ["WORK ORDER\nWO-0415", "Emil, hollow:\nstove is dead,\ndinner's cold.", "Fix: reconnect\nthe mesa line."],
+        "pages": ["WORK ORDER\nWO-0415", "Emil, hollow:\nstove is dead,\ndinner's cold.", "Fix: reconnect\nall five lines."],
     },
 }
 LAST_TICKET = 4
@@ -113,7 +113,7 @@ REPORT_PAGES = [
 
 # Pine Hollow porch exit to the report, gated on Emil's house (var 13).
 # Same shape as Signal Hill's porch exit; it sorts before the door (BUGS B-05).
-REPORT_EXIT = (38, 9, 1, 3)
+REPORT_EXIT = (kiko.MAP_W - 2, 9, 1, 3)
 REPORT_EXIT_GATE_VAR = kiko.VAR_HOME_POWERED
 TITLE_SCENE_ID = intro.TITLE_SCENE_ID
 

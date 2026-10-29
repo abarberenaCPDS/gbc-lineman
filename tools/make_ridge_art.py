@@ -5,8 +5,8 @@ Modelled on ``make_climb_art.py``: the RGB image returned by
 PNG is a grayscale index proxy that uses GB Studio's native index thresholds.
 This generator owns only ``wind_ridge.png`` and its background sidecar.
 
-The metal BG slot holds wire pixels only (colour indices 1, 3, 2 belong to
-chain stages 1, 2, 3); placards and whip brackets live in the stone slot.
+Both metal BG slots hold wire pixels only; placards and whip brackets live in
+the stone slot. Shared junction tiles use the downstream stage's slot.
 """
 from __future__ import annotations
 
@@ -35,7 +35,8 @@ NATIVE_PROXY_BY_INDEX = (255, 170, 85, 0)
 MAX_UNIQUE_TILES = 300
 
 # BG palette families (opening.BG_PALETTES order). Slot 7 is the editor UI.
-SKY, STONE, TIMBER, WINDOW, FOLIAGE, METAL, EARTH = range(7)
+SKY, STONE, TIMBER, WINDOW, FOLIAGE, METAL, WIRE_2 = range(7)
+PALETTES[WIRE_2] = PALETTES[METAL][:]
 LINE = climb.LINE_BG_SLOT
 assert LINE == METAL, "cable slot must be the metal family"
 assert ridge.WINDOW_BG_SLOT == WINDOW, "window slot must be the window family"
@@ -178,8 +179,12 @@ def stage_pixels(stage: int) -> frozenset[tuple[int, int]]:
 @functools.lru_cache(maxsize=None)
 def wire_tiles() -> frozenset[tuple[int, int]]:
     """(tx, ty) tiles any wire pixel touches."""
-    return frozenset((x // TILE, y // TILE) for stage in (1, 2, 3)
+    return frozenset((x // TILE, y // TILE) for stage in range(1, ridge.LINE_COUNT + 1)
                      for x, y in stage_pixels(stage))
+
+
+def stage_slot(stage: int) -> int:
+    return LINE if stage <= 3 else WIRE_2
 
 
 def _set_rect(slots: list[list[int]], slot: int, x0: int, x1: int,
@@ -195,7 +200,7 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     for ty, row in enumerate(grid):
         for tx, cell in enumerate(row):
             if cell == climb.COL_SOLID:
-                slots[ty][tx] = EARTH if ty > ridge.GROUND_ROW else STONE
+                slots[ty][tx] = STONE
             elif cell == climb.COL_TOP:
                 slots[ty][tx] = TIMBER
 
@@ -227,14 +232,15 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     # Wire tiles take the metal slot last; they may never hit collision,
     # hazard art, the cabin or a post.
     house = {(tx, ty) for ty in range(y0, y1 + 1) for tx in range(x0, x1 + 1)}
-    for tx, ty in sorted(wire_tiles()):
-        if grid[ty][tx] != climb.COL_EMPTY:
-            # Power enters through the left cliff wall; nothing else may hit rock.
-            assert tx == 0, f"wire tile {tx},{ty} inside collision"
-            continue
-        if (ty, tx) in PLACARD_CELLS or (tx, ty) in house or (tx, ty) in posts:
-            raise AssertionError(f"wire tile {tx},{ty} collides with other art")
-        slots[ty][tx] = LINE
+    for stage in range(1, ridge.LINE_COUNT + 1):
+        for tx, ty in sorted({(x // TILE, y // TILE) for x, y in stage_pixels(stage)}):
+            if grid[ty][tx] != climb.COL_EMPTY:
+                # Power enters through the left cliff wall; nothing else may hit rock.
+                assert tx == 0, f"wire tile {tx},{ty} inside collision"
+                continue
+            if (ty, tx) in PLACARD_CELLS or (tx, ty) in house or (tx, ty) in posts:
+                raise AssertionError(f"wire tile {tx},{ty} collides with other art")
+            slots[ty][tx] = stage_slot(stage)
 
     assert all(0 <= slot < 7 for row in slots for slot in row), "UI slot 7 reserved"
     assert all(slots[ty][tx] == WINDOW for tx, ty in ridge.HOUSE_WINDOWS)
@@ -322,7 +328,7 @@ def _draw_rock(c: _Canvas, grid: list[list[int]]) -> None:
         for tx, cell in enumerate(row):
             if cell != climb.COL_SOLID:
                 continue
-            slot = EARTH if ty > ridge.GROUND_ROW else STONE
+            slot = STONE
             ramp = PALETTES[slot]
             x, y = tx * TILE, ty * TILE
             c.rect(slot, (x, y, x + 7, y + 7), ramp[1])
@@ -415,10 +421,11 @@ def _draw_warnings(c: _Canvas) -> None:
 def _draw_cable(c: _Canvas, slots: list[list[int]]) -> None:
     """Paint each stage's wire pixels in its metal colour index."""
     px = c.image.load()
-    for stage in (1, 2, 3):
-        color = PALETTES[LINE][ridge.STAGE_COLOR_INDEX[stage - 1]]
+    for stage in range(1, ridge.LINE_COUNT + 1):
+        slot = stage_slot(stage)
+        color = PALETTES[slot][ridge.STAGE_COLOR_INDEX[stage - 1]]
         for x, y in sorted(stage_pixels(stage)):
-            if x < WIDTH and y < HEIGHT and slots[y // TILE][x // TILE] == LINE:
+            if x < WIDTH and y < HEIGHT and slots[y // TILE][x // TILE] == slot:
                 px[x, y] = color
 
 
@@ -468,14 +475,15 @@ def _check_geometry_art(image: Image.Image, grid: list[list[int]],
             if cell == climb.COL_SOLID:
                 color = image.getpixel((tx * TILE + 3, ty * TILE + 3))
                 assert color in PALETTES[slots[ty][tx]], f"rock miss at {tx},{ty}"
-                assert slots[ty][tx] in (STONE, EARTH), f"solid not rock at {tx},{ty}"
+                assert slots[ty][tx] == STONE, f"solid not rock at {tx},{ty}"
     # Metal-slot pixels of indices 1-3 belong to their stage's wire only.
-    for stage in (1, 2, 3):
-        color = PALETTES[LINE][ridge.STAGE_COLOR_INDEX[stage - 1]]
+    for stage in range(1, ridge.LINE_COUNT + 1):
+        wire_slot = stage_slot(stage)
+        color = PALETTES[wire_slot][ridge.STAGE_COLOR_INDEX[stage - 1]]
         owner = stage_pixels(stage)
         for ty, row in enumerate(slots):
             for tx, slot in enumerate(row):
-                if slot != LINE:
+                if slot != wire_slot:
                     continue
                 for y in range(ty * TILE, ty * TILE + TILE):
                     for x in range(tx * TILE, tx * TILE + TILE):

@@ -1,0 +1,39 @@
+{
+  "_resourceType": "trigger",
+  "id": "3b3e3db0-4814-5a59-b04b-97f191d893e6",
+  "name": "Cracked Board 1 Stand",
+  "prefabId": "",
+  "x": 45,
+  "y": 8,
+  "symbol": "trigger_pine_cracked_board_01",
+  "prefabScriptOverrides": {},
+  "width": 3,
+  "height": 1,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "15",
+        "value": {
+          "type": "number",
+          "value": 1
+        }
+      },
+      "id": "4c83714e-f58a-5a6c-801b-a58820da7cc5"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "15",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "0d7528f7-6925-5398-a400-9cc148aff62a"
+    }
+  ],
+  "_index": 2
+}
