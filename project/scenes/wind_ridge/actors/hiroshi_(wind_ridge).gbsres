@@ -1,0 +1,344 @@
+{
+  "_resourceType": "actor",
+  "id": "a60f5f40-94c8-5d38-9a55-cf552ad15165",
+  "_index": 0,
+  "symbol": "ridge_tomas",
+  "prefabId": "",
+  "name": "Hiroshi (Wind Ridge)",
+  "coordinateType": "tiles",
+  "x": 34,
+  "y": 11,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "636d3ec5-10a4-5cff-a04a-a7f982b02266",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "9"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "e6ceb55f-2726-5407-a054-d22d2d7fee2e",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+            "args": {
+              "type": "tone",
+              "frequency": 440,
+              "duration": 0.03,
+              "units": "time"
+            },
+            "id": "a0895ba0-a514-5bd9-ae6d-8077cc8bea79"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "9834cf01-d030-5ea5-8c45-dc978e9eaaf9"
+          },
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "Hiroshi:\nThanks, friend!\nBreathing easy."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 7,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 5,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "time",
+              "closeDelayTime": 0.5,
+              "closeDelayFrames": 30
+            },
+            "id": "83c358f3-d30e-5d31-a519-6d8e07dcabcb"
+          },
+          {
+            "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+            "args": {
+              "type": "tone",
+              "frequency": 880,
+              "duration": 0.03,
+              "units": "time"
+            },
+            "id": "9fff46c8-a5af-555f-94e4-fb1ad0ddfbbb"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 16
+              }
+            },
+            "id": "404029bf-c9a1-57b4-a78d-9153c0a48505"
+          },
+          {
+            "command": "EVENT_OVERLAY_SHOW",
+            "args": {
+              "color": "black",
+              "x": 0,
+              "y": 0
+            },
+            "id": "c4e065b0-dec7-5645-8ba5-62a36ed34611"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "LINE %D1$08$/1 HOME %D1$09$/1",
+              "x": 0,
+              "y": 0,
+              "location": "overlay"
+            },
+            "id": "14b95364-a26e-5630-97d9-c51c0f7a327a"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_IF",
+            "args": {
+              "condition": {
+                "type": "eq",
+                "valueA": {
+                  "type": "variable",
+                  "value": "8"
+                },
+                "valueB": {
+                  "type": "number",
+                  "value": 1
+                }
+              }
+            },
+            "id": "0d0b950d-246e-5bce-a885-3782b336b4a8",
+            "children": {
+              "true": [
+                {
+                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+                  "args": {
+                    "type": "tone",
+                    "frequency": 440,
+                    "duration": 0.03,
+                    "units": "time"
+                  },
+                  "id": "14170ad5-6304-535d-9e14-33e11bc92d2c"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 150
+                    }
+                  },
+                  "id": "7acb023e-d511-57d3-ac3d-7119d773ee5e"
+                },
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": [
+                      "Hiroshi:\nLine's live!\nTry my door."
+                    ],
+                    "avatarId": "",
+                    "minHeight": 4,
+                    "maxHeight": 7,
+                    "textX": 1,
+                    "textY": 1,
+                    "textHeight": 5,
+                    "position": "bottom",
+                    "clearPrevious": true,
+                    "showFrame": true,
+                    "speedIn": -1,
+                    "speedOut": -1,
+                    "closeWhen": "key",
+                    "closeButton": "a",
+                    "closeDelayUnits": "time",
+                    "closeDelayTime": 0.5,
+                    "closeDelayFrames": 30
+                  },
+                  "id": "f1bd7d6c-3f1e-532f-acb5-c21adbd48132"
+                },
+                {
+                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+                  "args": {
+                    "type": "tone",
+                    "frequency": 880,
+                    "duration": 0.03,
+                    "units": "time"
+                  },
+                  "id": "da3afc08-16c1-5b9a-a94f-dbd0da8c4bf6"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 16
+                    }
+                  },
+                  "id": "a013d3ac-5fe8-52a3-9329-d3b46bf04c94"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SHOW",
+                  "args": {
+                    "color": "black",
+                    "x": 0,
+                    "y": 0
+                  },
+                  "id": "dbc8a4af-4a4e-549c-af77-4d20780bfc9b"
+                },
+                {
+                  "command": "EVENT_TEXT_DRAW",
+                  "args": {
+                    "text": "LINE %D1$08$/1 HOME %D1$09$/1",
+                    "x": 0,
+                    "y": 0,
+                    "location": "overlay"
+                  },
+                  "id": "a9cc9030-695f-5e41-9a59-7fba4d671537"
+                }
+              ],
+              "false": [
+                {
+                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+                  "args": {
+                    "type": "tone",
+                    "frequency": 440,
+                    "duration": 0.03,
+                    "units": "time"
+                  },
+                  "id": "dd99b6f7-a369-5d6f-ae28-a6311f81e33f"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 150
+                    }
+                  },
+                  "id": "791e5d4a-8711-524f-9962-9a8349503555"
+                },
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": [
+                      "Hiroshi:\nThe line's dead!\nMy machine's off."
+                    ],
+                    "avatarId": "",
+                    "minHeight": 4,
+                    "maxHeight": 7,
+                    "textX": 1,
+                    "textY": 1,
+                    "textHeight": 5,
+                    "position": "bottom",
+                    "clearPrevious": true,
+                    "showFrame": true,
+                    "speedIn": -1,
+                    "speedOut": -1,
+                    "closeWhen": "key",
+                    "closeButton": "a",
+                    "closeDelayUnits": "time",
+                    "closeDelayTime": 0.5,
+                    "closeDelayFrames": 30
+                  },
+                  "id": "e5c838ea-a34d-5353-917b-2fa791ab6db4"
+                },
+                {
+                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+                  "args": {
+                    "type": "tone",
+                    "frequency": 880,
+                    "duration": 0.03,
+                    "units": "time"
+                  },
+                  "id": "b422acfb-980c-5b4c-80a8-bdab8e6ccc32"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 16
+                    }
+                  },
+                  "id": "cf8e7fed-09a6-5426-997c-71da17c61cea"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SHOW",
+                  "args": {
+                    "color": "black",
+                    "x": 0,
+                    "y": 0
+                  },
+                  "id": "77f0c5ce-80f4-50dd-b7d3-78adf31b8273"
+                },
+                {
+                  "command": "EVENT_TEXT_DRAW",
+                  "args": {
+                    "text": "LINE %D1$08$/1 HOME %D1$09$/1",
+                    "x": 0,
+                    "y": 0,
+                    "location": "overlay"
+                  },
+                  "id": "e4b5bccc-1fb4-5ac0-98e0-fa440d11b095"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Waiting",
+        "loopAnim": true
+      },
+      "id": "233ce320-d08d-5f71-b038-e4e9e1b0e4d5"
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

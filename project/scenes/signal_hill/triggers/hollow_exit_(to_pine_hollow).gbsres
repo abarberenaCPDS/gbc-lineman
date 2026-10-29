@@ -1,0 +1,149 @@
+{
+  "_resourceType": "trigger",
+  "id": "bebe2860-9677-5eb2-8b47-e8a34c0ca5e8",
+  "name": "Hollow Exit (to Pine Hollow)",
+  "prefabId": "",
+  "x": 38,
+  "y": 9,
+  "symbol": "trigger_signal_hollow_exit",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "11"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "3b36426c-ad88-5b68-99ef-871a6f3e6907",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "3de04802-3b97-5e36-92dc-f53d70955036"
+          },
+          {
+            "command": "EVENT_OVERLAY_HIDE",
+            "args": {},
+            "id": "f9cea7ed-31fa-5bf5-8d65-06b1ac1a01b5"
+          },
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "16",
+              "value": {
+                "type": "number",
+                "value": 4
+              }
+            },
+            "id": "4f44df1d-c480-5269-bb8d-d73e9733605f"
+          },
+          {
+            "command": "EVENT_SWITCH_SCENE",
+            "args": {
+              "x": {
+                "type": "number",
+                "value": 0
+              },
+              "y": {
+                "type": "number",
+                "value": 0
+              },
+              "direction": "down",
+              "sceneId": "6d76ca16-f510-5fd7-bb1c-c915a1367045",
+              "fadeSpeed": "2"
+            },
+            "id": "eba4d2fb-ee76-5790-b35d-83e44c7a2b41"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "15ba5fcd-caa5-54e3-b709-1fd2cd16748f"
+          },
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "Power Priya's\nhouse first."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 7,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 5,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "time",
+              "closeDelayTime": 0.5,
+              "closeDelayFrames": 30
+            },
+            "id": "a4da6047-a731-572b-8e3d-1a2390ebcadf"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 16
+              }
+            },
+            "id": "7b1e24aa-2565-56aa-90e6-6f726232579f"
+          },
+          {
+            "command": "EVENT_OVERLAY_SHOW",
+            "args": {
+              "color": "black",
+              "x": 0,
+              "y": 0
+            },
+            "id": "f748168e-95e1-538d-9297-9273b71c810d"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "LINE %D1$10$/1 HOME %D1$11$/1",
+              "x": 0,
+              "y": 0,
+              "location": "overlay"
+            },
+            "id": "2864188b-cf14-5057-b1bc-01f4ca0e80d5"
+          }
+        ]
+      }
+    }
+  ],
+  "leaveScript": [],
+  "_index": 0
+}

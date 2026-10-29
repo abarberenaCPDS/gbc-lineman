@@ -1,0 +1,165 @@
+{
+  "_resourceType": "trigger",
+  "id": "c4b983a9-b29b-5825-8551-ac290b3c8518",
+  "name": "Summit Exit (to Wind Ridge)",
+  "prefabId": "",
+  "x": 17,
+  "y": 3,
+  "symbol": "trigger_summit_exit",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "0"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "48fcf288-2bc8-5f7d-a95f-f21e953d7a6f",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "7513441c-b74d-5757-aac9-a8fbf79aa7d4"
+          },
+          {
+            "command": "EVENT_OVERLAY_HIDE",
+            "args": {},
+            "id": "0cfa6341-db8d-5c1d-8124-06a65e1bd7e7"
+          },
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "16",
+              "value": {
+                "type": "number",
+                "value": 2
+              }
+            },
+            "id": "3474d544-2b53-5a10-a547-8b1783bedb6b"
+          },
+          {
+            "command": "EVENT_SWITCH_SCENE",
+            "args": {
+              "x": {
+                "type": "number",
+                "value": 0
+              },
+              "y": {
+                "type": "number",
+                "value": 0
+              },
+              "direction": "down",
+              "sceneId": "6d76ca16-f510-5fd7-bb1c-c915a1367045",
+              "fadeSpeed": "2"
+            },
+            "id": "d9118166-3bc1-531f-af94-891fcd31dfb4"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_ACTOR_SET_POSITION",
+            "args": {
+              "units": "tiles",
+              "actorId": "player",
+              "x": {
+                "type": "number",
+                "value": 14
+              },
+              "y": {
+                "type": "number",
+                "value": 5
+              }
+            },
+            "id": "ac0fdb72-baca-5a87-a0a3-f0d6cb3399a9"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "ff3cffb2-1785-5af0-83b7-135bcce31d39"
+          },
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "Amara needs\npower first."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 7,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 5,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "time",
+              "closeDelayTime": 0.5,
+              "closeDelayFrames": 30
+            },
+            "id": "5920b582-d5f6-5932-bc30-d48e0eebb5f3"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 16
+              }
+            },
+            "id": "fbfbec5c-13e8-5631-8b7a-2311429be933"
+          },
+          {
+            "command": "EVENT_OVERLAY_SHOW",
+            "args": {
+              "color": "black",
+              "x": 0,
+              "y": 0
+            },
+            "id": "cd1a6e51-1b3e-53f7-bbed-32a9e58c7b68"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "LINE %D1$07$/1 HOME %D1$00$/1",
+              "x": 0,
+              "y": 0,
+              "location": "overlay"
+            },
+            "id": "72c2812b-e526-56c9-adb3-c5b3ad63fd61"
+          }
+        ]
+      }
+    }
+  ],
+  "leaveScript": [],
+  "_index": 10
+}
