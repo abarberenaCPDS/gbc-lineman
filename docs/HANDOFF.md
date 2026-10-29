@@ -13,6 +13,50 @@ Commits, no AI attribution. `project/settings.gbsres` starts at the logo (`8f0de
 
 ## State
 
+- **Phase 3 resumed, uncommitted:** five lines and 20 actors per horizontal job, full obstacle kit,
+  dual wire slots, widened 100-tile maps, updated work orders/exits. All profiles regenerated;
+  474 tests now pass. VERSION is now `0.16.0-dev` in the working tree; the paused accepted preview
+  still serves `0.15.0-dev`. Terra artwork and two Luna scene/test workers completed their first
+  pass. Background analysis after a strong refresh: 267/81/174 effective tiles (Ridge/Hill/Pine),
+  all within 384; no authored graphics diagnostics. This is not runtime OAM verification.
+- **Build/runtime blockers found:** first debug build failed BankPack (`script_input_3.o`
+  16438 > 16384). Splitting box scripts made debug ROM `build/rom/phase3-ridge.gbc` build
+  (524288 bytes, SHA256 `af32e5a5168e185fbd70e55f2423f5e116bd714f585ed2d8285f3b954ccf7325`).
+  However, native B at the feeder box did nothing: carrying var6=1, near27=101, feeder17=0
+  remained unchanged. Managed GB Studio's deprecated `EVENT_ACTOR_INVOKE` resolves its call
+  using `scene.actors[this.actorIndex]`, despite the player occupying index0; the target is
+  shifted. **Authored fix now built:** 15 supported synchronous custom-script resources in
+  `project/scripts/`, called with the five box actor bindings plus that line's pole. No actor-invoke
+  events remain in the new dispatcher. Managed CLI fallback built the logo-start ROM
+  `build/rom/phase3-custom-scripts.gbc`, 524288 bytes, SHA256
+  `474657afb2d0b4e4a72fcc75181e22ed9332edd96c975c1113914d23d147556f`; header checksum valid.
+  All eight profiles regenerated and all 474 tests pass. This exact fixed ROM has **not** been
+  run or previewed; B-17 remains pending runtime verification.
+  Do not compensate by passing a previous actor or patching vendor/engine code.
+- **MCP disconnected during native testing:** Chromatic tools disappeared from the catalog;
+  Abe needs `/mcp` to reconnect before further MCP gameplay/preview work. Last native session
+  paused at frame1252 with B held. No new preview was installed. Launch settings restored to
+  logo after the attempt. Recording quota refused; native checks were unrecorded (no old
+  recordings removed). Confirmed pickup (var6=1), gust contact clears cable/respawns, and one
+  sampled OAM peak7 / zero over-limit scanlines; not a full route or sustained OAM verdict.
+- Neighbours now stand at x95, clear of box x93–94 and appliance x97–98; test talk from x96.
+  Full five-column box reach must remain intact. NPC talk uses the native actor-distance
+  predicate after box/pole priority, without another NPC trigger (13 triggers per scene).
+- Labs now own `lab_pine_reference.png`, a fixed 40×18 crop, rather than referencing the widened
+  Pine Hollow map directly. Reference scenery remains cosmetic/not collision-aligned.
+
+### Immediate next steps after reconnecting MCP
+
+1. Select this worktree project again and rediscover signatures. Preserve the accepted preview
+   and old recordings. Inspect existing emulator/preview status before changing anything.
+2. Strong refresh. Build a fresh debug test-start ROM for Wind Ridge (2,26) with the custom-script
+   fix. Verify B pickup, then B plug-in (var17=1, var18=1, var20=1, var6=0). The deprecated invoke
+   attempt failed here despite passing unit tests, so do not infer runtime success from build.
+3. Check all-five completion gate, neighbour talk from x96, hazard respawn/checkpoints and native
+   OAM on the routes, then test Signal Hill and Pine Hollow. Recording quota is full: use
+   unrecorded checks unless Abe authorizes archival; do not remove old evidence.
+4. Restore logo start, rerun full tests, then safely update the owned preview for Abe. No Phase 3
+   changes have been committed and no new preview has been installed.
 - Branch `feat/wind-ridge-lines`, VERSION **0.15.0-dev** (`a26d8cb`), not merged; main is v0.10.3 = `stable`.
   `.mcp.json` is copied into the worktree (gitignored); `project_select` the worktree's `mr-cfe.gbsproj` first.
   If the MCP is missing, Abe runs `/mcp` to reconnect.
@@ -59,7 +103,13 @@ Commits, no AI attribution. `project/settings.gbsres` starts at the logo (`8f0de
   - Scene generators initialize both slots via `CHAIN.chain_palette_ids(0)` in `background_palette_ids`.
 - **Neighbour talk / B script rough edge:** route neighbour talk or ensure B in a box zone does not double-fire native talk (`override: True` or non-overlapping placement).
 
-### 2. Pre-verified 5-line coordinates (tested in Python for `scanline_load <= 10`, `actors_near <= 11`, disjoint triggers, >=5 tile landing clearance, wire continuity)
+### 2. Proposed 5-line coordinates (historical planning data; contracts are authoritative)
+
+The earlier "pre-verified" label overstated the evidence: exploratory variants were tested,
+but the final set was not verified together. Recheck generated sprite/trigger budgets and
+native routes. Current contracts differ below: plateau D starts at x69 so the x70 box has
+supported approach space; Ridge's step is x68 only to stay clear of its gust. Signal/Pine
+use step x67–68; Pine's gust is x64–66. Do not restore these historical coordinates blindly.
 
 - **Wind Ridge (`100x30`, `GROUND_ROW = 27`, `SURFACE_STEP = 24`, `SURFACE_HIGH = 21`, `PORCH_ROW = 23`):**
   - `SOLID_BLOCKS`: `(0,0,2,26)`, `(99,99,2,26)`, `ROCK_A=(5,7,24,26)`, `STEP_A=(25,26,24,26)`, `PLATEAU_A=(27,29,21,26)`, `STEP_B=(41,42,24,26)`, `PLATEAU_B=(43,46,21,26)`, `ROCK_C=(58,60,24,26)`, `STEP_D=(68,69,24,26)`, `PLATEAU_D=(70,73,21,26)`, `PORCH=(92,98,24,26)`
@@ -97,7 +147,8 @@ Commits, no AI attribution. `project/settings.gbsres` starts at the logo (`8f0de
 
 ### 3. Subagent & tokenomics plan for Phase 3 (mandatory)
 - **Main session** writes the deterministic contracts (`tools/hazards.py`, `tools/ridge.py`, `tools/rosa.py`, `tools/kiko.py`, `tools/tickets.py`) first and runs `_self_check()` so subagents never loop on geometry mistakes.
-- **Spawn up to 5 parallel subagents with balanced model pricing:**
+- **Current user cap: up to 3 parallel subagents**, balancing model pricing. Group the
+  following original file assignments into one art worker and two coding/test workers:
   - **Artwork / background design subagents** → `model: "openai/gpt-6.1-terra"` ($1/$5 per 1M tokens — strong creative/visual model at half the cost of Sol/Argon):
     1. `tools/make_ridge_art.py` + `tools/test_ridge_background.py`
     2. `tools/make_rosa_art.py` + `tools/test_rosa_background.py`
