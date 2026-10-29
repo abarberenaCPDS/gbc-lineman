@@ -183,6 +183,10 @@ def storm_report_script() -> list[dict[str, Any]]:
         victory_sound(shared.sidecar_id(VICTORY_SOUND, "sound"), "storm-report:victory"),
         overlay_hide("storm-report:hide-overlay-exit"),
         fade_out("storm-report:fade"),
+        # The title has no music of its own (the logo starts the theme), so restart
+        # the intro theme here instead of carrying the job's music onto the title.
+        ev("EVENT_MUSIC_PLAY", {"musicId": intro.THEME_IDS[intro.DEFAULT_THEME]},
+           "storm-report:title-theme"),
         switch_scene(tickets.TITLE_SCENE_ID, 0, 0, "right", "storm-report:to-title"),
     ]
 
