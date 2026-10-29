@@ -78,7 +78,6 @@ CABLE_KEY = "cable-end"
 JUNCTION_KEY = "junction-box"
 POLE_KEY = "pole"
 POLE_SYMBOL = "kiko_storm_pole"
-CABLE_SPRITE_KEY = "sprite:grid_cable_end"
 JUNCTION_SPRITE_KEY = "sprite:grid_junction_box"
 KIKO_SYMBOL = "pine_kiko"
 STOVE_SYMBOL = "pine_stove"
@@ -292,7 +291,6 @@ CHAIN = grid_chain.GridChain(
     say=say, hud=hud_events, bare_event_key="feeder",
 )
 pole_actor = CHAIN.pole_actor
-cable_end_actor = CHAIN.cable_end_actor
 box_actor = CHAIN.box_actor
 actor_resource = CHAIN.actor_resource
 
@@ -342,9 +340,9 @@ def scene_script(music_id: str, audio_ids: dict[str, str]) -> list[dict[str, Any
         set_value(VAR_CHAIN_LIVE, 0, "init-chain-live"),
         window_palette_event(False, "init-window-cold"),
         *CHAIN.chain_refresh_events("init-chain"),
-        # Pinned Snapped on every entry: each pole's own start script reads its
+        # Pinned Snapped+Cable on every entry: each pole's own start script reads its
         # line variable, and the order between the scripts is unspecified.
-        *[actor_state(actor_id(line["pole"]), "Snapped",
+        *[actor_state(actor_id(line["pole"]), "Snapped+Cable",
                       "init-pole-snapped" if line["key"] == "feeder" else f"init-{line['key']}-pole-snapped")
           for line in LINES],
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-pine-hollow-music"),
@@ -582,16 +580,14 @@ def build_scene(music_id: str, audio_ids: dict[str, str]) -> dict[str, Any]:
 
 
 def build_actors(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
-    cable_sprite = climb.grid_resource_id(CABLE_SPRITE_KEY)
     box_sprites = {"junction": climb.grid_resource_id(JUNCTION_SPRITE_KEY),
                    "transformer": kiko.TRANSFORMER_SPRITE_ID}
     actors = [kiko_actor(0), stove_actor(1, kiko.STOVE_SPRITE_ID)]
     for line in LINES:
-        # Pole before its cable end: higher indexes draw on top, so the cable
-        # stays visible over the pole on their shared tile (cart bug B-13).
+        # The snapped cable is part of the pole sprite; each line has one pole
+        # actor and one box actor.
         actors += [
             pole_actor(line, 0, intro.POLE_SPRITE_ID),
-            cable_end_actor(line, 0, cable_sprite),
             box_actor(line, 0, box_sprites[line["box_kind"]]),
         ]
     actors.extend(

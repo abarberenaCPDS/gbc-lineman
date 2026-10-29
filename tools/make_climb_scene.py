@@ -30,15 +30,14 @@ MARTA_SPRITE_PALETTE_SLOT = 1
 SUMMIT_WINDOW_BG_SLOT = 3
 # Live Wire repair job: variables 6 (carrying cable) and 7 (line live) are
 # project-global; both reset on every scene entry.
-CABLE_ACTOR_KEY = "cable-end"
 JUNCTION_ACTOR_KEY = "junction-box"
 # Grid sprite palette (OBJ slot climb.GRID_SPRITE_PALETTE_SLOT). Index 0 is the
 # transparent placeholder, as in opening.SPRITE_PALETTES.
 GRID_SPRITE_HARDWARE = ["000000", "C7DCE1", "38C8D8", "142332"]
-CABLE_ACTOR_SYMBOL = "grid_cable_end"
 JUNCTION_ACTOR_SYMBOL = "grid_junction_box"
-# The broken pole is the intro's animated pole sprite (Snapped until the line is
-# live, then Standing). Its tiles carry OBJ slot intro.SPRITE_SLOTS["pole"], so
+# The broken pole is the intro's animated pole sprite (Snapped+Cable until it is
+# picked up, Snapped while carried, Standing once live). Its tiles carry OBJ slot
+# intro.SPRITE_SLOTS["pole"], so
 # the scene uses the intro pole palette there; no climb sprite uses that slot.
 POLE_ACTOR_KEY = "pole"
 POLE_ACTOR_SYMBOL = "climb_storm_pole"
@@ -361,10 +360,6 @@ def line_palette_state(live: bool, key: str) -> dict[str, Any]:
     return background_palette_event({LINE_BG_SLOT: metal_palette_id(live)}, key)
 
 
-def cable_actor_id() -> str:
-    return resource_id(f"actor:{CABLE_ACTOR_KEY}")
-
-
 def junction_actor_id() -> str:
     return resource_id(f"actor:{JUNCTION_ACTOR_KEY}")
 
@@ -381,8 +376,7 @@ def cable_drop_events(key: str, text: str | None = None) -> list[dict[str, Any]]
     return [if_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:cable-drop", [
         set_value(VAR_CARRYING_CABLE_ID, 0, f"{key}:cable-clear"),
         actor_state("player", "", f"{key}:hero-empty-hands"),
-        event("EVENT_ACTOR_SHOW", {"actorId": cable_actor_id()}, f"{key}:cable-show"),
-        actor_state(cable_actor_id(), "Dangling", f"{key}:cable-dangling"),
+        actor_state(pole_actor_id(), "Snapped+Cable", f"{key}:pole-snapped-cable"),
         *hud_events(f"{key}:cable-hud"),
         *(say([text], f"{key}:dropped") if text else []),
     ])]
@@ -423,7 +417,7 @@ def b_press_script(connect_sound_id: str, pickup_sound_id: str) -> dict[str, Any
         if_value(VAR_LINE_LIVE_ID, 0, f"{key}:pole:line-dead", [
             set_value(VAR_CARRYING_CABLE_ID, 1, f"{key}:pole:carry"),
             actor_state("player", "Carry", f"{key}:pole:hero-carry"),
-            event("EVENT_ACTOR_HIDE", {"actorId": cable_actor_id()}, f"{key}:pole:hide"),
+            actor_state(pole_actor_id(), "Snapped", f"{key}:pole-snapped"),
             sound_event(pickup_sound_id, f"{key}:pole:sfx"),
             *say(short_lines("Got the cable!\nTake it up top."), f"{key}:pole:text"),
         ]),
@@ -680,9 +674,9 @@ def scene_script(music_id: str, audio_ids: dict[str, str]) -> list[dict[str, Any
         background_palette_state(False, "init-summit-window-cold"),
         line_palette_state(False, "init-line-dead"),
         # The pole's start script also reads var 7, and the order between it and
-        # this script is unspecified. Pin Snapped here so a stale live flag from a
-        # previous visit can never leave the pole Standing on a dead line.
-        actor_state(pole_actor_id(), "Snapped", "init-pole-snapped"),
+        # this script is unspecified. Pin Snapped+Cable here so a stale live flag
+        # from a previous visit can never leave the pole Standing on a dead line.
+        actor_state(pole_actor_id(), "Snapped+Cable", "init-pole-snapped-cable"),
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-village-music"),
         # The overlay scanline cutoff survives scene switches: lift it so the
         # intro box is visible even when a previous visit left the HUD's 16px.
@@ -775,28 +769,6 @@ def checkpoint_actor(index: int, marta_sprite_id: str) -> dict[str, Any]:
     return actor
 
 
-def cable_end_actor(index: int, sprite_id: str) -> dict[str, Any]:
-    """Dangling cable on the storm-snapped pole (shelf 21). No script: the B press in its pole zone picks it up.
-
-    The start script is unconditional, like Amara's, because scene init resets
-    var 6 and 7 on every entry.
-    """
-    key = CABLE_ACTOR_KEY
-    x, y = climb.DAMAGED_POLE
-    actor = actor_resource(
-        index=index,
-        symbol=CABLE_ACTOR_SYMBOL,
-        name="Dangling Cable End",
-        x=x,
-        y=y,
-        sprite_id=sprite_id,
-        key=key,
-        start_script=[actor_state("$self$", "Dangling", f"{key}:dangling")],
-    )
-    actor["animate"] = True
-    return actor
-
-
 def junction_box_actor(index: int, sprite_id: str) -> dict[str, Any]:
     """Dead junction box on shelf 15. No script: the B press in its zone plugs the carried cable in."""
     key = JUNCTION_ACTOR_KEY
@@ -832,12 +804,12 @@ def pole_actor(index: int, sprite_id: str) -> dict[str, Any]:
         sprite_id=sprite_id,
         key=key,
         start_script=[
-            # Off, so B finds the cable end on this tile instead of the pole.
+            # Native actor collisions stay off; the zone/input script owns B.
             event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": "$self$"}, f"{key}:no-collision"),
             if_value(VAR_LINE_LIVE_ID, 1, f"{key}:line-check", [
                 actor_state("$self$", "Standing", f"{key}:standing"),
             ], [
-                actor_state("$self$", "Snapped", f"{key}:snapped"),
+                actor_state("$self$", "Snapped+Cable", f"{key}:snapped-cable"),
             ]),
         ],
     )
@@ -1117,6 +1089,14 @@ def remove_retired_debris_actors(scene_dir: Path = SCENE_DIR, prefix: str = "") 
         print(f"removed retired {path.relative_to(PROJECT_DIR)}")
 
 
+def remove_retired_cable_end_actor(scene_dir: Path = SCENE_DIR) -> None:
+    """Remove the former separate cable actor, now part of the pole state."""
+    path = scene_dir / "actors" / "grid_cable_end.gbsres"
+    if path.exists():
+        path.unlink()
+        print(f"removed retired {path.relative_to(PROJECT_DIR)}")
+
+
 def main() -> None:
     music_id = sidecar_id("assets/music/cfe_storm_climb.uge.gbsres", "music")
     sprite_ids = {
@@ -1139,11 +1119,8 @@ def main() -> None:
         timed_gust_actor(index + 1, climb.GUST_LANES[index], sprite_ids["gust"])
         for index in climb.TIMED_GUST_LANE_INDICES
     )
-    # The pole sits on the cable end's tile. Actors draw in descending index
-    # order (higher index = lower OAM = on top), so the pole goes first and the
-    # cable stays visible above it (cart bug B-13).
+    # The cable end is incorporated into the pole's Snapped+Cable state.
     actors.append(pole_actor(len(actors), intro.POLE_SPRITE_ID))
-    actors.append(cable_end_actor(len(actors), climb.grid_resource_id("sprite:grid_cable_end")))
     actors.append(junction_box_actor(len(actors), climb.grid_resource_id("sprite:grid_junction_box")))
     # Cracked boards and hidden cables go last: the highest indexes draw on top.
     actors.extend(hazard_actors(len(actors)))
@@ -1159,6 +1136,7 @@ def main() -> None:
     for relative_path, palette in grid_palettes() + hazard_palettes():
         write_json(PROJECT_DIR / relative_path, palette)
     remove_retired_debris_actors()
+    remove_retired_cable_end_actor()
     write_json(SCENE_DIR / "scene.gbsres", scene)
     for actor in actors:
         write_json(SCENE_DIR / "actors" / f"{actor['symbol']}.gbsres", actor)

@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
-"""Cart bug B-13: the storm pole hid the cable end and stole its B press.
-
-Actors draw in descending index order (higher index = lower OAM = on top), and
-the B probe found the pole (no script) on the shared tile. Each job's cable end
-must out-rank its pole, and the pole must start with collisions off.
-"""
+"""The grid line's cable is part of its pole actor, which must not take B."""
 
 from __future__ import annotations
 
@@ -13,12 +8,12 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-# scene folder: (pole actor file, cable end actor file)
+# scene folder: pole actor resource file
 JOBS = {
-    "storm_climb": ("climb_storm_pole", "grid_cable_end"),
-    "wind_ridge": ("ridge_storm_pole", "ridge_cable_end"),
-    "signal_hill": ("rosa_storm_pole", "signal_cable_end"),
-    "pine_hollow": ("kiko_storm_pole", "pine_cable_end"),
+    "storm_climb": "climb_storm_pole",
+    "wind_ridge": "ridge_storm_pole",
+    "signal_hill": "rosa_storm_pole",
+    "pine_hollow": "kiko_storm_pole",
 }
 
 
@@ -27,17 +22,34 @@ def actor(scene: str, name: str) -> dict:
 
 
 class PoleCableTests(unittest.TestCase):
-    def test_cable_end_draws_above_the_pole(self):
-        for scene, (pole_name, cable_name) in JOBS.items():
-            pole, cable = actor(scene, pole_name), actor(scene, cable_name)
-            self.assertEqual((pole["x"], pole["y"]), (cable["x"], cable["y"]), scene)
-            self.assertGreater(cable["_index"], pole["_index"], scene)
-
     def test_pole_never_takes_the_b_press(self):
-        for scene, (pole_name, _) in JOBS.items():
+        for scene, pole_name in JOBS.items():
             pole = actor(scene, pole_name)
-            self.assertEqual(pole["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE", scene)
+            self.assertEqual(pole["startScript"][0]["command"],
+                             "EVENT_ACTOR_COLLISIONS_DISABLE", scene)
+            self.assertEqual(pole["startScript"][0]["args"]["actorId"], "$self$", scene)
             self.assertEqual(pole["script"], [], scene)
+
+    def test_scene_actor_rosters_have_no_separate_cable_end(self):
+        for scene in JOBS:
+            actor_dir = ROOT / f"project/scenes/{scene}/actors"
+            cables = [path.name for path in actor_dir.glob("*.gbsres")
+                      if "cable_end" in path.stem]
+            self.assertEqual(cables, [], scene)
+
+    def test_pole_starts_in_snapped_plus_cable_or_standing(self):
+        for scene, pole_name in JOBS.items():
+            pole = actor(scene, pole_name)
+            start = pole["startScript"]
+            self.assertEqual(start[0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE", scene)
+            self.assertEqual(start[1]["command"], "EVENT_IF", scene)
+            condition = start[1]["args"]["condition"]
+            self.assertEqual(condition["type"], "eq", scene)
+            self.assertEqual(condition["valueB"]["value"], 1, scene)
+            self.assertEqual([e["args"]["spriteStateId"] for e in start[1]["children"]["true"]],
+                             ["Standing"], scene)
+            self.assertEqual([e["args"]["spriteStateId"] for e in start[1]["children"]["false"]],
+                             ["Snapped+Cable"], scene)
 
 
 if __name__ == "__main__":

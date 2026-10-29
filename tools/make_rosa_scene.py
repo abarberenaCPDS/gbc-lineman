@@ -67,7 +67,6 @@ ROSA_KEY = "rosa"
 WORKSTATION_KEY = "workstation"
 POLE_KEY = "pole"
 POLE_SYMBOL = "rosa_storm_pole"
-CABLE_SPRITE_KEY = "sprite:grid_cable_end"
 JUNCTION_SPRITE_KEY = "sprite:grid_junction_box"
 ROSA_SYMBOL = "signal_rosa"
 WORKSTATION_SYMBOL = "signal_workstation"
@@ -219,7 +218,6 @@ actor_id = CHAIN.actor_id
 actor_resource = CHAIN.actor_resource
 chain_refresh_events = CHAIN.chain_refresh_events
 cable_drop_events = CHAIN.cable_drop_events
-cable_end_actor = CHAIN.cable_end_actor
 pole_actor = CHAIN.pole_actor
 box_actor = CHAIN.box_actor
 
@@ -272,9 +270,9 @@ def scene_script(music_id: str, audio_ids: dict[str, str]) -> list[dict[str, Any
         set_value(VAR_CHAIN_LIVE, 0, "init-chain-live"),
         window_palette_event(False, "init-window-cold"),
         *chain_refresh_events("init-chain"),
-        # Pinned Snapped on every entry: each pole's own start script reads its
+        # Pinned Snapped+Cable on every entry: each pole's own start script reads its
         # line variable, and the order between the scripts is unspecified.
-        *[actor_state(actor_id(line["pole"]), "Snapped",
+        *[actor_state(actor_id(line["pole"]), "Snapped+Cable",
                       "init-pole-snapped" if line["key"] == "house" else f"init-{line['key']}-pole-snapped")
           for line in LINES],
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-signal-hill-music"),
@@ -549,16 +547,14 @@ def build_scene(music_id: str, audio_ids: dict[str, str]) -> dict[str, Any]:
 
 
 def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[dict[str, Any]]:
-    cable_sprite = climb.grid_resource_id(CABLE_SPRITE_KEY)
     box_sprites = {"junction": climb.grid_resource_id(JUNCTION_SPRITE_KEY),
                    "transformer": ridge.TRANSFORMER_SPRITE_ID}
     actors = [rosa_actor(0), workstation_actor(1)]
     for line in LINES:
-        # Pole before its cable end: higher indexes draw on top, so the cable
-        # stays visible over the pole on their shared tile (cart bug B-13).
+        # The snapped cable is part of the pole sprite; each line has one pole
+        # actor and one box actor.
         actors += [
             pole_actor(line, 0, intro.POLE_SPRITE_ID),
-            cable_end_actor(line, 0, cable_sprite),
             box_actor(line, 0, box_sprites[line["box_kind"]]),
         ]
     actors += [
@@ -578,8 +574,10 @@ def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[
                 timings=(rosa.ARC_WARNING_FRAMES, rosa.ARC_ACTIVE_FRAMES, rosa.ARC_REST_FRAMES),
                 symbol=f"signal_span_arc_{number:02d}", name=f"Downed Span Arc {number}",
             ))
-    if len(actors) != rosa.actor_count():
-        raise ValueError(f"{len(actors)} actors built, rosa.actor_count() says {rosa.actor_count()}")
+    expected_actor_count = (2 + 2 * len(LINES) + len(rosa.ARC_LANES) + len(rosa.GUST_LANES)
+                            + sum(len(span["arcs"]) for span in rosa.FALLEN_SPANS))
+    if len(actors) != expected_actor_count:
+        raise ValueError(f"{len(actors)} actors built, expected {expected_actor_count}")
     if len(actors) > rosa.MAX_SCENE_ACTORS:
         raise ValueError(f"{len(actors)} actors exceed the engine's {rosa.MAX_SCENE_ACTORS}")
     # Editor order is list order: actors and triggers are indexed by position.
@@ -673,6 +671,12 @@ def main() -> None:
     for relative_path, palette in rosa_palettes():
         shared.write_json(PROJECT_DIR / relative_path, palette)
     shared.write_json(SCENE_DIR / "scene.gbsres", scene)
+    # The snapped cable is now part of each pole; retire only those former actors.
+    retired = {f"{line['cable_symbol']}.gbsres" for line in LINES}
+    for stale in (SCENE_DIR / "actors").glob("*.gbsres"):
+        if stale.name in retired:
+            stale.unlink()
+            print(f"removed retired actor {stale.name}")
     for actor in actors:
         shared.write_json(SCENE_DIR / "actors" / f"{actor['symbol']}.gbsres", actor)
     for trigger in triggers:

@@ -382,9 +382,10 @@ class KikoTests(unittest.TestCase):
         self.assertLess(drop, respawn)
         drop_events = hit[drop]["children"]["true"]
         self.assertTrue(any(is_set(e, kiko.VAR_CARRYING_CABLE, 0) for e in drop_events))
-        self.assertTrue(any(e["command"] == "EVENT_ACTOR_SHOW" and
-                            e["args"]["actorId"] == scene.actor_id(scene.CABLE_KEY)
-                            for e in drop_events))
+        self.assertIn((scene.actor_id(scene.POLE_KEY), "Snapped+Cable"),
+                      [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                       for e in drop_events if e["command"] == "EVENT_ACTOR_SET_STATE"])
+        self.assertFalse(any(e["command"] == "EVENT_ACTOR_SHOW" for e in drop_events))
         flat = list(walk(hit))
         first_move = next(i for i, e in enumerate(flat) if e["command"] == "EVENT_ACTOR_SET_POSITION")
         self.assertGreater(first_move, 0)
@@ -475,7 +476,7 @@ class KikoTests(unittest.TestCase):
                                  ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_HIDE"])
         hazard_indices = [a["_index"] for a in built_actors()
                           if a["symbol"].startswith("pine_arc_")]
-        self.assertEqual(hazard_indices, [8])  # after the two lines' poles, cable ends and boxes
+        self.assertEqual(hazard_indices, [6])  # after two pole-and-box line pairs
 
     def test_hidden_cable_lane_is_open_air_on_the_mesa(self):
         grid = kiko.collision_grid()
@@ -541,8 +542,9 @@ class KikoTests(unittest.TestCase):
     def test_actor_count_stays_within_the_engine_budget(self):
         actors = built_actors()
         self.assertLessEqual(len(actors), kiko.MAX_SCENE_ACTORS, "gbvm allows 20 actors besides the player")
-        self.assertEqual(len(actors), kiko.actor_count())
-        self.assertEqual(len(actors), 10)
+        self.assertEqual(len(actors), 2 + 2 * len(scene.LINES) + len(kiko.ARC_LANES)
+                         + len(hazards.HIDDEN_CABLES["pine_hollow"]))
+        self.assertEqual(len(actors), 8)
 
     def test_each_line_has_a_box_zone_that_arms_only_its_own_plug_in(self):
         triggers = built_triggers()
@@ -617,9 +619,9 @@ class KikoTests(unittest.TestCase):
         self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
                           for e in start["children"]["true"]], [("$self$", "Standing")])
         self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
-                          for e in start["children"]["false"]], [("$self$", "Snapped")])
+                          for e in start["children"]["false"]], [("$self$", "Snapped+Cable")])
         init = built_scene()["script"]
-        self.assertIn((scene.pole_actor_id(), "Snapped"),
+        self.assertIn((scene.pole_actor_id(), "Snapped+Cable"),
                       [(e["args"]["actorId"], e["args"]["spriteStateId"])
                        for e in init if e["command"] == "EVENT_ACTOR_SET_STATE"])
 
@@ -644,13 +646,13 @@ class KikoTests(unittest.TestCase):
         symbols = [a["symbol"] for a in actors]
         self.assertEqual(symbols, [
             scene.KIKO_SYMBOL, scene.STOVE_SYMBOL,
-            scene.POLE_SYMBOL, scene.CABLE_SYMBOL, "pine_feeder_box",
-            "kiko_house_pole", "pine_house_cable_end", scene.JUNCTION_SYMBOL,
+            scene.POLE_SYMBOL, "pine_feeder_box",
+            "kiko_house_pole", scene.JUNCTION_SYMBOL,
             "pine_arc_01", "pine_hidden_cable_01",
         ])
         self.assertEqual([a["_index"] for a in actors], list(range(len(actors))))
         self.assertEqual(len(set(a["id"] for a in actors)), len(actors))
-        self.assertEqual(len(actors), 10, "keep the actor count modest")
+        self.assertEqual(len(actors), 8, "keep the actor count modest")
         kiko_actor = actor_by_symbol(scene.KIKO_SYMBOL)
         self.assertEqual((kiko_actor["x"], kiko_actor["y"]), kiko.KIKO)
         self.assertEqual(kiko_actor["spriteSheetId"], kiko.KIKO_SPRITE_ID)
@@ -661,10 +663,10 @@ class KikoTests(unittest.TestCase):
         self.assertEqual((stove["x"], stove["y"]), kiko.STOVE)
         self.assertEqual(stove["spriteSheetId"], kiko.STOVE_SPRITE_ID)
         self.assertEqual(stove["startScript"][0]["args"]["spriteStateId"], "Off")
-        cable = actor_by_symbol(scene.CABLE_SYMBOL)
-        self.assertEqual((cable["x"], cable["y"]), kiko.DAMAGED_POLE)
-        self.assertEqual(cable["spriteSheetId"], climb.grid_resource_id("sprite:grid_cable_end"))
-        self.assertEqual(cable["startScript"][0]["args"]["spriteStateId"], "Dangling")
+        pole = actor_by_symbol(scene.POLE_SYMBOL)
+        self.assertEqual((pole["x"], pole["y"]), kiko.DAMAGED_POLE)
+        self.assertEqual(pole["spriteSheetId"], intro.POLE_SPRITE_ID)
+        self.assertNotIn(scene.CABLE_SYMBOL, symbols)
         junction = actor_by_symbol(scene.JUNCTION_SYMBOL)
         self.assertEqual((junction["x"], junction["y"]), kiko.JUNCTION_BOX)
         self.assertEqual(junction["spriteSheetId"], climb.grid_resource_id("sprite:grid_junction_box"))
@@ -721,7 +723,11 @@ class KikoTests(unittest.TestCase):
             dead = next(e for e in empty["children"]["true"] if is_var_if(e, live_var, 0))
             take = dead["children"]["true"]
             self.assertTrue(any(is_set(e, kiko.VAR_CARRYING_CABLE, number) for e in take))
-            self.assertTrue(any(e["command"] == "EVENT_ACTOR_HIDE" for e in take))
+            line = next(line for line in scene.LINES if line["number"] == number)
+            self.assertIn((scene.actor_id(line["pole"]), "Snapped"),
+                          [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                           for e in take if e["command"] == "EVENT_ACTOR_SET_STATE"])
+            self.assertFalse(any(e["command"] == "EVENT_ACTOR_HIDE" for e in take))
             self.assertTrue(any(e["command"] == "EVENT_SOUND_PLAY_EFFECT" and
                                 e["args"]["type"] == FAKE_AUDIO["pickup"] for e in take))
         feeder = next(e for e in zones[1][0]["children"]["true"] if is_var_if(e, kiko.VAR_FEEDER_LIVE, 0))
@@ -739,6 +745,11 @@ class KikoTests(unittest.TestCase):
         self.assertEqual(set(branches), {1, 2})
         for number in (1, 2):
             self.assertTrue(any(is_set(e, kiko.VAR_CARRYING_CABLE, 0) for e in branches[number]))
+            line = next(line for line in scene.LINES if line["number"] == number)
+            self.assertIn((scene.actor_id(line["pole"]), "Snapped+Cable"),
+                          [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                           for e in branches[number] if e["command"] == "EVENT_ACTOR_SET_STATE"])
+            self.assertFalse(any(e["command"] == "EVENT_ACTOR_SHOW" for e in branches[number]))
             self.assertEqual(walk_texts(branches[number]), [["Cable dropped."]])
 
     def test_checked_in_files_match_the_builders(self):

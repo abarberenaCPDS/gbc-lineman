@@ -34,7 +34,7 @@ Contract module (tools/<job>.py: geometry and IDs, no Pillow). It must define:
   VAR_CHAIN_LIVE                    variable: how many leading lines are repaired (0..N)
   VAR_CARRYING_CABLE                variable: which line's cable the hero carries (0 = none)
   VAR_LINES_LIVE                    variable: HUD count of repaired lines
-  LINE_BG_SLOT                      background palette slot that holds the wires
+  LINE_BG_SLOT                      primary background palette slot that holds the wires
   MAP_W, GROUND_ROW, HUD_ROWS       used by the self-check helpers only
 
 Scene module (tools/make_<job>_scene.py) builds one GridChain from the contract:
@@ -72,9 +72,9 @@ matter. ``input_script_event`` is the one B input script: it runs the zone's pic
 plug-in or drop. It is attached with override off, so native B still reaches the
 neighbours' talk; the pole, cable and box actors have no B script of their own.
 
-Palette resources: chain_palettes() gives {stages: colours}; chain_palette_resources()
-turns them into project/palettes files. The scene sets the background slot to
-chain_palette_id(0) at init and to chain_palette_id(n) as the chain lights.
+Palette resources: chain_palettes() gives {stages: colours} for up to three lines,
+or {stages: {slot: colours}} for four to six. chain_palette_resources() turns
+these into project/palettes files. chain_palette_id() accepts a slot (default 5).
 
 Test helpers: scanline_load() counts OBJ columns per tile row (SCANLINE_OBJ_LIMIT
 is the budget); the camera window is SCREEN_TILES wide and clamps at both map edges.
@@ -89,7 +89,11 @@ import climb
 Event = dict[str, Any]
 Rid = Callable[[str], str]
 
-MAX_STAGES = 3            # metal slot indexes 1..3 carry the stages; index 0 is the placeholder
+MAX_STAGES = 6            # two BG slots each carry three stages; colour 0 is a placeholder
+LINE_BG_SLOT_1 = 5
+LINE_BG_SLOT_2 = 6
+MAX_ACTORS = 20
+MAX_TRIGGERS = 30
 SCREEN_TILES = 20         # PLATFORM camera window width; the camera clamps at both map edges
 SCANLINE_OBJ_LIMIT = 10   # 8x16 OBJs per tile row the tests allow on screen at once
 
@@ -118,18 +122,36 @@ def chain_palette_name(stages_live: int) -> str:
 
 
 def check_stage_colors(stage_color_index: Sequence[int]) -> None:
-    assert 1 <= len(stage_color_index) <= MAX_STAGES, "one to three chain stages"
-    assert len(set(stage_color_index)) == len(stage_color_index), "stage colours must be distinct"
-    assert all(1 <= index <= MAX_STAGES for index in stage_color_index), "stage colours use metal indexes 1-3"
+    assert 1 <= len(stage_color_index) <= MAX_STAGES, "one to six chain stages"
+    assert all(1 <= index <= 3 for index in stage_color_index), "stage colours use indexes 1-3 per slot"
+    for start in (0, 3):
+        slot_colors = stage_color_index[start:start + 3]
+        assert len(set(slot_colors)) == len(slot_colors), "stage colours must be distinct within each slot"
 
 
 def chain_palette(stages_live: int, *, metal_dead: Sequence[str], wire_live: str, wire_dead: str,
-                  stage_color_index: Sequence[int]) -> list[str]:
-    """Metal slot colours with the first ``stages_live`` stages lit."""
-    colors = list(metal_dead)
-    for stage, index in enumerate(stage_color_index, start=1):
-        colors[index] = wire_live if stage <= stages_live else wire_dead
-    return colors
+                  stage_color_index: Sequence[int]) -> list[str] | dict[int, list[str]]:
+    """Wire-slot colours with the first ``stages_live`` stages lit.
+
+    One to three stages retain the historical single-palette list result. For
+    four to six, return {BG slot: colours} for both wire slots.
+    """
+    check_stage_colors(stage_color_index)
+    assert 0 <= stages_live <= len(stage_color_index), "live stage count is out of range"
+
+    def slot_colors(start: int, end: int) -> list[str]:
+        colors = list(metal_dead)
+        for stage in range(start + 1, end + 1):
+            index = stage_color_index[stage - 1]
+            colors[index] = wire_live if stage <= stages_live else wire_dead
+        return colors
+
+    if len(stage_color_index) <= 3:
+        return slot_colors(0, len(stage_color_index))
+    return {
+        LINE_BG_SLOT_1: slot_colors(0, 3),
+        LINE_BG_SLOT_2: slot_colors(3, len(stage_color_index)),
+    }
 
 
 def chain_palettes(*, metal_dead: Sequence[str], wire_live: str, wire_dead: str,
@@ -154,15 +176,32 @@ def palette_resource(rid: Rid, label: str, kind: str, name: str, colors: list[st
 
 
 def chain_palette_resources(rid: Rid, *, label: str, file_prefix: str,
-                            palettes: dict[int, list[str]]) -> list[tuple[str, dict[str, Any]]]:
-    """(project path, palette resource) for each chain palette."""
-    return [(f"project/palettes/{file_prefix}_bg_{chain_palette_name(stages)}.gbsres",
-             palette_resource(rid, label, "bg", chain_palette_name(stages), colors))
-            for stages, colors in palettes.items()]
+                            palettes: dict[int, list[str] | dict[int, list[str]]]
+                            ) -> list[tuple[str, dict[str, Any]]]:
+    """(project path, palette resource) for every stage count and wire slot."""
+    resources = []
+    for stages, palette in palettes.items():
+        slot_colors = ({LINE_BG_SLOT_1: palette} if isinstance(palette, list) else palette)
+        for slot, colors in slot_colors.items():
+            suffix = "" if slot == LINE_BG_SLOT_1 else f"_slot_{slot}"
+            name = f"{chain_palette_name(stages)}{suffix}"
+            resources.append((f"project/palettes/{file_prefix}_bg_{name}.gbsres",
+                              palette_resource(rid, label, "bg", name, colors)))
+    return resources
 
 
-def chain_palette_id(rid: Rid, stages_live: int) -> str:
-    return rid(f"palette:bg:{chain_palette_name(stages_live)}")
+def chain_palette_id(rid: Rid, stages_live: int, slot: int = LINE_BG_SLOT_1) -> str:
+    """Stable palette ID for a stage count and wire slot (slot 5 stays compatible)."""
+    name = chain_palette_name(stages_live)
+    if slot != LINE_BG_SLOT_1:
+        name += f"_slot_{slot}"
+    return rid(f"palette:bg:{name}")
+
+
+def chain_palette_ids(rid: Rid, stages_live: int,
+                      slots: Sequence[int] = (LINE_BG_SLOT_1, LINE_BG_SLOT_2)) -> dict[int, str]:
+    """Palette IDs by BG slot, convenient for scenes that use both wire slots."""
+    return {slot: chain_palette_id(rid, stages_live, slot) for slot in slots}
 
 
 # ---------------------------------------------------------------------------
@@ -174,14 +213,16 @@ class GridChain:
     def __init__(self, *, rid: Rid, lines: Sequence[dict[str, Any]], chain_var: str, lines_var: str,
                  carrying_var: str, near_var: str, line_bg_slot: int, text: dict[str, str],
                  say: Callable[..., list[Event]], hud: Callable[[str], list[Event]],
-                 bare_event_key: str | None = None) -> None:
+                 bare_event_key: str | None = None, line_bg_slot_2: int | None = None) -> None:
         self.rid = rid
         self.lines = list(lines)
+        assert 1 <= len(self.lines) <= MAX_STAGES, "a grid chain has one to six lines"
         self.chain_var = chain_var
         self.lines_var = lines_var
         self.carrying_var = carrying_var
         self.near_var = near_var
         self.line_bg_slot = line_bg_slot
+        self.line_bg_slot_2 = line_bg_slot_2 if line_bg_slot_2 is not None else LINE_BG_SLOT_2
         self.text = dict(text)
         self.say = say
         self.hud = hud
@@ -193,6 +234,12 @@ class GridChain:
 
     def chain_palette_id(self, stages_live: int) -> str:
         return chain_palette_id(self.rid, stages_live)
+
+    def chain_palette_ids(self, stages_live: int) -> dict[int, str]:
+        slots = [self.line_bg_slot]
+        if len(self.lines) > 3:
+            slots.append(self.line_bg_slot_2)
+        return {slot: chain_palette_id(self.rid, stages_live, slot) for slot in slots}
 
     # -- generic events --------------------------------------------------------
     def event(self, command: str, args: dict[str, Any], key: str) -> Event:
@@ -302,7 +349,7 @@ class GridChain:
         """
         def lit(stages: int) -> list[Event]:
             out = [self.set_value(self.chain_var, stages, f"{key}:stages-{stages}"),
-                   self.background_palette_event({self.line_bg_slot: self.chain_palette_id(stages)},
+                   self.background_palette_event(self.chain_palette_ids(stages),
                                                  f"{key}:palette-{stages}")]
             for line in self.lines:
                 state = "Live" if line["number"] <= stages else "Dead"
@@ -336,8 +383,7 @@ class GridChain:
             events.append(self.if_value(self.carrying_var, line["number"], f"{tag}:cable-drop", [
                 self.set_value(self.carrying_var, 0, f"{tag}:cable-clear"),
                 self.actor_state("player", "", f"{tag}:hero-empty-hands"),
-                self.event("EVENT_ACTOR_SHOW", {"actorId": self.actor_id(line["cable"])}, f"{tag}:cable-show"),
-                self.actor_state(self.actor_id(line["cable"]), "Dangling", f"{tag}:cable-dangling"),
+                self.actor_state(self.actor_id(line["pole"]), "Snapped+Cable", f"{tag}:pole-cable"),
                 *self.hud(f"{tag}:cable-hud"),
                 *(self.say([text], f"{tag}:dropped") if text else []),
             ]))
@@ -396,7 +442,7 @@ class GridChain:
             self.if_value(line["live_var"], 0, f"{key}:line-dead", [
                 self.set_value(self.carrying_var, line["number"], f"{key}:carry"),
                 self.actor_state("player", "Carry", f"{key}:hero-carry"),
-                self.event("EVENT_ACTOR_HIDE", {"actorId": self.actor_id(line["cable"])}, f"{key}:hide"),
+                self.actor_state(self.actor_id(line["pole"]), "Snapped", f"{key}:pole-snapped"),
                 self.sound_event(pickup_sound_id, f"{key}:sfx"),
                 *self.say([self.text["pickup"]], f"{key}:text"),
             ]),
@@ -445,20 +491,17 @@ class GridChain:
 
     # -- chain actors ----------------------------------------------------------
     def cable_end_actor(self, line: dict[str, Any], index: int, sprite_id: str) -> dict[str, Any]:
-        """Dangling cable on its snapped pole. No script: the B press in its pole zone picks it up."""
+        """Deprecated compatibility stub; the cable is now a pole sprite state."""
         key = line["cable"]
         x, y = line["pole_at"]
         return self.actor_resource(
             index=index, symbol=line["cable_symbol"], name=line["cable_name"],
             x=x, y=y, sprite_id=sprite_id, key=key,
-            start_script=[self.actor_state("$self$", "Dangling", f"{key}:dangling")],
+            start_script=[self.event("EVENT_ACTOR_HIDE", {"actorId": "$self$"}, f"{key}:deprecated-hide")],
         )
 
     def pole_actor(self, line: dict[str, Any], index: int, sprite_id: str) -> dict[str, Any]:
-        """A snapped pole: Standing once its line is repaired.
-
-        Non-colliding and not interactive; the cable-end pickup owns the B press.
-        """
+        """A non-colliding pole with the cable folded into its sprite states."""
         key = line["pole"]
         x, y = line["pole_at"]
         return self.actor_resource(
@@ -470,7 +513,7 @@ class GridChain:
                 self.if_value(line["live_var"], 1, f"{key}:line-check", [
                     self.actor_state("$self$", "Standing", f"{key}:standing"),
                 ], [
-                    self.actor_state("$self$", "Snapped", f"{key}:snapped"),
+                    self.actor_state("$self$", "Snapped+Cable", f"{key}:snapped-cable"),
                 ]),
             ],
         )
@@ -617,6 +660,12 @@ def check_chain_order(lines: Sequence[dict[str, Any]]) -> None:
     assert len({line["live_var"] for line in lines}) == len(lines), "one live variable per line"
 
 
+def check_scene_limits(actor_count: int, trigger_count: int) -> None:
+    """Assert scene resource counts stay within GB Studio's practical budgets."""
+    assert actor_count <= MAX_ACTORS, f"scene has {actor_count} actors; limit is {MAX_ACTORS}"
+    assert trigger_count <= MAX_TRIGGERS, f"scene has {trigger_count} triggers; limit is {MAX_TRIGGERS}"
+
+
 def check_spans(spans: Sequence[dict[str, Any]], lines: Sequence[dict[str, Any]]) -> None:
     """Each fallen span's arcs sit inside its columns, and the span lies on its line's carry path."""
     for span in spans:
@@ -643,14 +692,10 @@ def check_wire_routes(routes: Sequence[tuple[int, list[tuple[int, int]]]], stage
 # Test helpers: camera window and OBJ load per tile row
 # ---------------------------------------------------------------------------
 def chain_sprites(lines: Sequence[dict[str, Any]]) -> list[tuple[tuple[int, int], int, int]]:
-    """((feet tile), OBJ columns, OBJ tile rows) for each pole, cable end and box.
-
-    Storm pole (2x4 intro sprite) and cable end (2x2) share the pickup tile. A
-    transformer is 2x4; a junction box 2x2.
-    """
+    """((feet tile), OBJ columns, OBJ tile rows) for each pole and box."""
     sprites = []
     for line in lines:
-        sprites += [(line["pole_at"], 2, 4), (line["pole_at"], 2, 2)]
+        sprites += [(line["pole_at"], 2, 4)]
         sprites += [(line["box_at"], 2, 4 if line["box_kind"] == "transformer" else 2)]
     return sprites
 

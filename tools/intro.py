@@ -220,8 +220,8 @@ HERO_SIZE = (2, 4)              # tiles (w, h) of the 16x32 canvas
 
 RAIN_SPRITE_ID = resource_id("sprite:intro_rain")     # 16x16, state Default, loops
 BOLT_SPRITE_ID = resource_id("sprite:intro_bolt")     # 16x32, state Default
-POLE_SPRITE_ID = resource_id("sprite:intro_pole")     # 16x32, Standing / Snapped
-POLE_STATES = ["Standing", "Snapped"]
+POLE_SPRITE_ID = resource_id("sprite:intro_pole")     # 16x32, Standing / Snapped+Cable / Snapped
+POLE_STATES = ["Standing", "Snapped+Cable", "Snapped"]
 SPRITE_SIZES = {RAIN_SPRITE_ID: (2, 2), BOLT_SPRITE_ID: (2, 4),
                 POLE_SPRITE_ID: (2, 4), HERO_SPRITE_ID: HERO_SIZE}
 

@@ -318,9 +318,11 @@ class RidgeTests(unittest.TestCase):
             self.assertLess(drop, respawn)
             drop_events = hit[drop]["children"]["true"]
             self.assertTrue(any(is_set(e, ridge.VAR_CARRYING_CABLE, 0) for e in drop_events))
-            # Each cable falls back to its own pole.
-            self.assertEqual([e["args"]["actorId"] for e in drop_events if e["command"] == "EVENT_ACTOR_SHOW"],
-                             [scene.actor_id(line["cable"])])
+            # Each dropped cable returns to its pole's Snapped+Cable state.
+            self.assertIn((scene.actor_id(line["pole"]), "Snapped+Cable"),
+                          [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                           for e in drop_events if e["command"] == "EVENT_ACTOR_SET_STATE"])
+            self.assertFalse(any(e["command"] == "EVENT_ACTOR_SHOW" for e in drop_events))
 
     def test_respawn_uses_the_furthest_repaired_line(self):
         hit = built_scene()["playerHit1Script"]
@@ -457,7 +459,7 @@ class RidgeTests(unittest.TestCase):
         # within a screen plus two tiles each side of every spot.
         for hero_x, _ in self._spots():
             near = grid_chain.actors_near(self._on_screen_sprites(), ridge.MAP_W, hero_x)
-            # Pole and cable end share a tile but are two actors; count entries, not tiles.
+            # Each line has only its pole and box actors.
             self.assertLessEqual(len(near), ridge.MAX_ACTIVE_ACTORS, (hero_x, near))
 
     def test_debris_and_actor_roster(self):
@@ -465,14 +467,16 @@ class RidgeTests(unittest.TestCase):
         symbols = [a["symbol"] for a in actors]
         expected = [scene.TOMAS_SYMBOL, scene.CONCENTRATOR_SYMBOL]
         for line in LINES:
-            expected += [line["pole_symbol"], line["cable_symbol"], line["box_symbol"]]
+            expected += [line["pole_symbol"], line["box_symbol"]]
         expected += ["ridge_gust_01", "ridge_gust_02", "ridge_span_arc_01", "ridge_span_arc_02",
                      "ridge_whip_01", "ridge_whip_02", "ridge_board_01"]
         self.assertEqual(symbols, expected)
         self.assertEqual([a["_index"] for a in actors], list(range(len(actors))))
         self.assertEqual(len(set(a["id"] for a in actors)), len(actors))
         self.assertLessEqual(len(actors), ridge.MAX_SCENE_ACTORS, "gbvm allows 20 actors besides the player")
-        self.assertEqual(len(actors), ridge.actor_count())
+        self.assertEqual(len(actors), 2 + 2 * len(LINES) + len(ridge.GUST_LANES)
+                         + len(ridge.span_arc_lanes()) + len(ridge.WHIP_LANES)
+                         + len(hazards.BOARDS["wind_ridge"]))
         tomas = actor_by_symbol(scene.TOMAS_SYMBOL)
         self.assertEqual((tomas["x"], tomas["y"]), ridge.TOMAS)
         self.assertEqual(tomas["spriteSheetId"], ridge.TOMAS_SPRITE_ID)
@@ -480,19 +484,19 @@ class RidgeTests(unittest.TestCase):
         conc = actor_by_symbol(scene.CONCENTRATOR_SYMBOL)
         self.assertEqual((conc["x"], conc["y"]), ridge.CONCENTRATOR)
         self.assertEqual(conc["startScript"][0]["args"]["spriteStateId"], "Off")
+        self.assertEqual(len([symbol for symbol in symbols if symbol in {
+            line["pole_symbol"] for line in LINES} | {line["box_symbol"] for line in LINES}]),
+            2 * len(LINES))
         for line in LINES:
-            cable = actor_by_symbol(line["cable_symbol"])
             pole = actor_by_symbol(line["pole_symbol"])
             box = actor_by_symbol(line["box_symbol"])
-            self.assertEqual((cable["x"], cable["y"]), line["pole_at"])
             self.assertEqual((pole["x"], pole["y"]), line["pole_at"])
             self.assertEqual((box["x"], box["y"]), line["box_at"])
-            self.assertEqual(cable["spriteSheetId"], climb.grid_resource_id("sprite:grid_cable_end"))
+            self.assertEqual(pole["spriteSheetId"], intro.POLE_SPRITE_ID)
             self.assertEqual(box["spriteSheetId"], ridge.TRANSFORMER_SPRITE_ID if line["box_kind"] == "transformer"
                              else climb.grid_resource_id("sprite:grid_junction_box"))
             self.assertEqual(box["startScript"][0]["args"]["spriteStateId"], "Dead")
-            # Each cable end out-ranks its pole so it draws on top (B-13).
-            self.assertGreater(symbols.index(line["cable_symbol"]), symbols.index(line["pole_symbol"]))
+            self.assertNotIn(line["cable_symbol"], symbols)
         self.assertFalse([a for a in actors if "debris" in a["symbol"]])
 
     def test_cracked_board_sits_on_the_floor_with_group_one(self):
@@ -524,9 +528,9 @@ class RidgeTests(unittest.TestCase):
         self.assertTrue(all(board["_index"] > index for index in exits))
         self.assertEqual(hazards.VAR_ON_BOARD, "15")
 
-    def test_cable_end_and_box_actors_carry_no_scripts_of_their_own(self):
+    def test_pole_and_box_actors_carry_no_scripts_of_their_own(self):
         for line in LINES:
-            self.assertEqual(actor_by_symbol(line["cable_symbol"])["script"], [])
+            self.assertEqual(actor_by_symbol(line["pole_symbol"])["script"], [])
             self.assertEqual(actor_by_symbol(line["box_symbol"])["script"], [])
         tomas = actor_by_symbol(scene.TOMAS_SYMBOL)
         self.assertTrue(tomas["script"], "Hiroshi keeps his native B talk")
@@ -540,15 +544,15 @@ class RidgeTests(unittest.TestCase):
         self.assertEqual(pole["script"], [], "pole is not interactive")
         self.assertEqual(pole["collisionGroup"], "", "pole does not collide")
         self.assertEqual(pole["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE",
-                         "B must find the cable end on the pole's tile (B-13)")
+                         "pole collisions stay disabled; the zone/input script owns B")
         start = pole["startScript"][1]
         self.assertTrue(is_var_if(start, ridge.VAR_LINE_LIVE, 1))
         self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
                           for e in start["children"]["true"]], [("$self$", "Standing")])
         self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
-                          for e in start["children"]["false"]], [("$self$", "Snapped")])
+                          for e in start["children"]["false"]], [("$self$", "Snapped+Cable")])
         init = built_scene()["script"]
-        self.assertIn((scene.pole_actor_id(), "Snapped"),
+        self.assertIn((scene.pole_actor_id(), "Snapped+Cable"),
                       [(e["args"]["actorId"], e["args"]["spriteStateId"])
                        for e in init if e["command"] == "EVENT_ACTOR_SET_STATE"])
 
@@ -562,7 +566,7 @@ class RidgeTests(unittest.TestCase):
             self.assertEqual(pole["script"], [])
             self.assertEqual(pole["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
             self.assertTrue(is_var_if(pole["startScript"][1], line["live_var"], 1))
-            self.assertIn((pole["id"], "Snapped"), snapped)
+            self.assertIn((pole["id"], "Snapped+Cable"), snapped)
 
     def test_tomas_talk_tracks_power_and_every_line(self):
         script = actor_by_symbol(scene.TOMAS_SYMBOL)["script"]
@@ -666,8 +670,10 @@ class RidgeTests(unittest.TestCase):
             self.assertTrue(is_var_if(dead, line["live_var"], 0))
             take = dead["children"]["true"]
             self.assertTrue(any(is_set(e, ridge.VAR_CARRYING_CABLE, line["number"]) for e in take))
-            hide = next(e for e in take if e["command"] == "EVENT_ACTOR_HIDE")
-            self.assertEqual(hide["args"]["actorId"], scene.actor_id(line["cable"]))
+            self.assertIn((scene.actor_id(line["pole"]), "Snapped"),
+                          [(e["args"]["actorId"], e["args"]["spriteStateId"])
+                           for e in take if e["command"] == "EVENT_ACTOR_SET_STATE"])
+            self.assertFalse(any(e["command"] == "EVENT_ACTOR_HIDE" for e in take))
             self.assertTrue(any(e["command"] == "EVENT_SOUND_PLAY_EFFECT" and
                                 e["args"]["type"] == FAKE_AUDIO["pickup"] for e in take))
             self.assertEqual(texts(empty["children"]["false"]), [["Hands full!\nOne cable a trip."]])
@@ -685,9 +691,8 @@ class RidgeTests(unittest.TestCase):
             self.assertTrue(any(is_set(e, ridge.VAR_CARRYING_CABLE, 0) for e in branch))
             states = [(e["args"]["actorId"], e["args"]["spriteStateId"])
                       for e in branch if e["command"] == "EVENT_ACTOR_SET_STATE"]
-            self.assertIn((scene.actor_id(line["cable"]), "Dangling"), states)
-            self.assertTrue(any(e["command"] == "EVENT_ACTOR_SHOW" and
-                                e["args"]["actorId"] == scene.actor_id(line["cable"]) for e in branch))
+            self.assertIn((scene.actor_id(line["pole"]), "Snapped+Cable"), states)
+            self.assertFalse(any(e["command"] == "EVENT_ACTOR_SHOW" for e in branch))
             self.assertEqual(texts(branch), [["Cable dropped."]])
 
     def test_zone_triggers_set_near_on_enter_and_clear_only_their_own_value(self):

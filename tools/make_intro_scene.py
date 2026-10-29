@@ -391,7 +391,7 @@ def _shot_cues(name: str) -> list[tuple[int, list[dict[str, Any]]]]:
         connect = shared.sidecar_id(CONNECT_SOUND, "sound")
         struck_first = sorted(zip(pole_keys(), intro.POLES), key=lambda kp: kp[1] != intro.POLE)
         cues = [(SNAP_CONNECT_AT + n * intro.SNAP_GAP, [
-            actor_state(actor_id(pole_key), "Snapped", f"{key}:{pole_key}-snapped"),
+            actor_state(actor_id(pole_key), "Snapped+Cable", f"{key}:{pole_key}-snapped"),
             sound(connect, f"{key}:{pole_key}-spark"),
         ]) for n, (pole_key, _) in enumerate(struck_first)]
         for index, slot in enumerate(intro.WINDOW_SLOTS, start=1):

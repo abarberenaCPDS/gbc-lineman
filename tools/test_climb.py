@@ -92,7 +92,7 @@ class ClimbTests(unittest.TestCase):
         self.assertEqual(script[9]["command"], "EVENT_PALETTE_SET_BACKGROUND")
         self.assertEqual(script[10]["command"], "EVENT_ACTOR_SET_STATE")
         self.assertEqual((script[10]["args"]["actorId"], script[10]["args"]["spriteStateId"]),
-                         (scene.pole_actor_id(), "Snapped"))
+                         (scene.pole_actor_id(), "Snapped+Cable"))
         self.assertEqual(script[11]["args"]["musicId"], "test-music")
         self.assertEqual(script[12]["command"], "EVENT_OVERLAY_SET_SCANLINE_CUTOFF")
         self.assertEqual(script[13]["args"]["text"], ["A: jump\nDown+A: drop"])
@@ -305,18 +305,26 @@ class ClimbTests(unittest.TestCase):
             [e for e in self._flatten(scene.build_scene("test-music", CLIMB_AUDIO)["script"])
              if e["command"] == "EVENT_SET_INPUT_SCRIPT"], [attach])
 
-    def test_cable_end_and_junction_box_carry_no_scripts_of_their_own(self):
-        cable = scene.cable_end_actor(6, climb.grid_resource_id("sprite:grid_cable_end"))
-        self.assertEqual(cable["id"], scene.resource_id("actor:cable-end"))
-        self.assertEqual(cable["spriteSheetId"], climb.grid_resource_id("sprite:grid_cable_end"))
-        self.assertEqual((cable["x"], cable["y"]), climb.DAMAGED_POLE)
-        self.assertEqual(cable["startScript"][0]["args"]["spriteStateId"], "Dangling")
-        self.assertEqual(cable["script"], [], "B is owned by the input script, not the actor")
+    def test_pole_and_junction_box_are_the_two_line_actors(self):
+        pole = scene.pole_actor(6, intro.POLE_SPRITE_ID)
+        self.assertEqual(pole["id"], scene.resource_id("actor:pole"))
+        self.assertEqual(pole["spriteSheetId"], intro.POLE_SPRITE_ID)
+        self.assertEqual((pole["x"], pole["y"]), climb.DAMAGED_POLE)
+        self.assertEqual(pole["script"], [], "B is owned by the input script, not the actor")
         box = scene.junction_box_actor(7, climb.grid_resource_id("sprite:grid_junction_box"))
         self.assertEqual(box["id"], scene.resource_id("actor:junction-box"))
         self.assertEqual((box["x"], box["y"]), climb.JUNCTION_BOX)
         self.assertEqual(box["startScript"][0]["args"]["spriteStateId"], "Dead")
         self.assertEqual(box["script"], [], "B is owned by the input script, not the actor")
+
+    def test_generated_climb_line_roster_has_two_actors(self):
+        actor_dir = scene.SCENE_DIR / "actors"
+        symbols = [json.loads(path.read_text())["symbol"] for path in actor_dir.glob("*.gbsres")]
+        line_actors = [symbol for symbol in symbols
+                       if symbol in {scene.POLE_ACTOR_SYMBOL, scene.JUNCTION_ACTOR_SYMBOL}]
+        self.assertEqual(set(line_actors), {scene.POLE_ACTOR_SYMBOL, scene.JUNCTION_ACTOR_SYMBOL})
+        self.assertEqual(len(line_actors), 2)
+        self.assertNotIn("grid_cable_end", symbols)
 
     def test_init_resets_near_before_the_b_script_attaches(self):
         init = scene.build_scene("test-music", CLIMB_AUDIO)["script"]
@@ -342,8 +350,8 @@ class ClimbTests(unittest.TestCase):
                           for e in flat if e["command"] == "EVENT_SET_VALUE"], [("6", 0)])
         states = [(e["args"]["actorId"], e["args"]["spriteStateId"])
                   for e in flat if e["command"] == "EVENT_ACTOR_SET_STATE"]
-        self.assertEqual(states, [("player", ""), (scene.cable_actor_id(), "Dangling")])
-        self.assertTrue(any(e["command"] == "EVENT_ACTOR_SHOW" for e in flat), "the cable shows at its pole")
+        self.assertEqual(states, [("player", ""), (scene.pole_actor_id(), "Snapped+Cable")])
+        self.assertFalse(any(e["command"] == "EVENT_ACTOR_SHOW" for e in flat))
 
     def test_pickup_needs_pole_zone_empty_hands_and_dead_line(self):
         pole_true = self._b_branches(self._b_press())[0][0][1]
@@ -356,11 +364,10 @@ class ClimbTests(unittest.TestCase):
         flat = list(self._flatten(dead["children"]["true"]))
         self.assertEqual([(e["args"]["variable"], e["args"]["value"]["value"])
                           for e in flat if e["command"] == "EVENT_SET_VALUE"], [("6", 1)])
-        hide = next(e for e in flat if e["command"] == "EVENT_ACTOR_HIDE")
-        self.assertEqual(hide["args"]["actorId"], scene.cable_actor_id(), "the cable is hidden once carried")
         states = [(e["args"]["actorId"], e["args"]["spriteStateId"])
                   for e in flat if e["command"] == "EVENT_ACTOR_SET_STATE"]
-        self.assertEqual(states, [("player", "Carry")], "the hero shows the cable in hand")
+        self.assertEqual(states, [("player", "Carry"), (scene.pole_actor_id(), "Snapped")])
+        self.assertFalse(any(e["command"] == "EVENT_ACTOR_HIDE" for e in flat))
         sound = next(e for e in flat if e["command"] == "EVENT_SOUND_PLAY_EFFECT")
         self.assertEqual(sound["args"]["type"], "pickup-sfx")
         self.assertEqual(self._texts(flat), [["Got the cable!\nTake it up top."]])
@@ -458,17 +465,17 @@ class ClimbTests(unittest.TestCase):
         self.assertEqual(pole["collisionGroup"], "", "pole does not collide")
 
         self.assertEqual(pole["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE",
-                         "B must find the cable end on the pole's tile (B-13)")
+                         "the pole does not participate in native actor collisions")
         start = pole["startScript"][1]
         self.assertEqual(start["args"]["condition"]["valueA"], {"type": "variable", "value": "7"})
         self.assertEqual(start["args"]["condition"]["valueB"], {"type": "number", "value": 1})
         self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
                           for e in start["children"]["true"]], [("$self$", "Standing")])
         self.assertEqual([(e["args"]["actorId"], e["args"]["spriteStateId"])
-                          for e in start["children"]["false"]], [("$self$", "Snapped")])
+                          for e in start["children"]["false"]], [("$self$", "Snapped+Cable")])
 
-        # Every scene entry pins Snapped after the line reset, so a stale live flag
-        # cannot leave the pole Standing whichever of the two scripts runs first.
+        # Every scene entry pins Snapped+Cable after the line reset, so a stale live
+        # flag cannot leave the pole Standing whichever of the two scripts runs first.
 
     def test_respawn_drops_carried_cable_before_repositioning(self):
         for events in (scene.build_scene("test-music", CLIMB_AUDIO)["playerHit1Script"],
@@ -479,11 +486,10 @@ class ClimbTests(unittest.TestCase):
             flat = list(self._flatten(drop["children"]["true"]))
             self.assertEqual([(e["args"]["variable"], e["args"]["value"]["value"])
                               for e in flat if e["command"] == "EVENT_SET_VALUE"], [("6", 0)])
-            show = next(e for e in flat if e["command"] == "EVENT_ACTOR_SHOW")
-            self.assertEqual(show["args"]["actorId"], scene.cable_actor_id())
             states = [(e["args"]["actorId"], e["args"]["spriteStateId"])
                       for e in flat if e["command"] == "EVENT_ACTOR_SET_STATE"]
-            self.assertEqual(states, [("player", ""), (scene.cable_actor_id(), "Dangling")])
+            self.assertEqual(states, [("player", ""), (scene.pole_actor_id(), "Snapped+Cable")])
+            self.assertFalse(any(e["command"] == "EVENT_ACTOR_SHOW" for e in flat))
             self.assertTrue(any(e["command"] == "EVENT_TEXT_DRAW" for e in flat), "HUD redraw")
 
     def test_marta_talk_tracks_line_and_saved_food(self):
@@ -641,7 +647,7 @@ class ClimbTests(unittest.TestCase):
             scene.build_scene("test-music", CLIMB_AUDIO)["script"],
             scene.build_scene("test-music", CLIMB_AUDIO)["playerHit1Script"],
             scene.checkpoint_actor(0, "sprite")["script"],
-            scene.cable_end_actor(6, "sprite")["script"],
+            scene.pole_actor(6, "sprite")["script"],
             scene.junction_box_actor(7, "sprite")["script"],
             scene.b_press_script("connect-sfx", "pickup-sfx")["children"]["true"],
             self._checkpoint_trigger()["script"],
@@ -864,11 +870,11 @@ class ClimbTests(unittest.TestCase):
                   if e["command"] == "EVENT_ACTOR_SET_STATE"]
         self.assertEqual(states, ["Warning", "Arc"])
 
-    def test_hazard_actors_come_last_and_pole_stays_below_cable_end(self):
+    def test_climb_line_has_only_pole_and_box_before_hazards(self):
         pole = scene.pole_actor(2, "sprite")
-        cable = scene.cable_end_actor(3, "sprite")
-        self.assertLess(pole["_index"], cable["_index"])
-        self.assertTrue(all(a["_index"] > cable["_index"] for a in scene.hazard_actors(9)))
+        box = scene.junction_box_actor(3, "sprite")
+        self.assertEqual((pole["_index"], box["_index"]), (2, 3))
+        self.assertTrue(all(a["_index"] > box["_index"] for a in scene.hazard_actors(9)))
 
     def test_hidden_cable_lane_is_open_air_on_a_shelf(self):
         grid = climb.collision_grid()

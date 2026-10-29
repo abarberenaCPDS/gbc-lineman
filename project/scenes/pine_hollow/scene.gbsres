@@ -161,11 +161,13 @@
                               "id": "c2018035-10a7-5c8a-affe-3635317ebd29"
                             },
                             {
-                              "command": "EVENT_ACTOR_HIDE",
+                              "command": "EVENT_ACTOR_SET_STATE",
                               "args": {
-                                "actorId": "d184d992-462a-51a2-aa84-292bf5bf2735"
+                                "actorId": "ba300dca-0c8e-5506-a8da-1720dbcc8411",
+                                "spriteStateId": "Snapped",
+                                "loopAnim": true
                               },
-                              "id": "dd489f87-2547-56e5-a78a-bbdbcfe7e798"
+                              "id": "d1258f59-7dbc-5bcf-916a-ad063032d893"
                             },
                             {
                               "command": "EVENT_SOUND_PLAY_EFFECT",
@@ -1246,11 +1248,13 @@
                                           "id": "2486dfd0-0883-57c0-b23f-ac1b47249482"
                                         },
                                         {
-                                          "command": "EVENT_ACTOR_HIDE",
+                                          "command": "EVENT_ACTOR_SET_STATE",
                                           "args": {
-                                            "actorId": "01b70246-0a3d-5bd3-94e7-ffdd5b4c62f5"
+                                            "actorId": "95414067-7c3a-5185-86d9-0a2521ec48ce",
+                                            "spriteStateId": "Snapped",
+                                            "loopAnim": true
                                           },
-                                          "id": "c103960e-587a-57b6-8936-20967b946b31"
+                                          "id": "8df2aef3-8a3d-54d5-a8c6-5c47354ba3d5"
                                         },
                                         {
                                           "command": "EVENT_SOUND_PLAY_EFFECT",
@@ -2332,20 +2336,13 @@
                                                       "id": "10c17181-35d6-52ed-91dc-b00da8c691d1"
                                                     },
                                                     {
-                                                      "command": "EVENT_ACTOR_SHOW",
-                                                      "args": {
-                                                        "actorId": "d184d992-462a-51a2-aa84-292bf5bf2735"
-                                                      },
-                                                      "id": "95e2c751-e02e-5c37-9a5c-cfd735415783"
-                                                    },
-                                                    {
                                                       "command": "EVENT_ACTOR_SET_STATE",
                                                       "args": {
-                                                        "actorId": "d184d992-462a-51a2-aa84-292bf5bf2735",
-                                                        "spriteStateId": "Dangling",
+                                                        "actorId": "ba300dca-0c8e-5506-a8da-1720dbcc8411",
+                                                        "spriteStateId": "Snapped+Cable",
                                                         "loopAnim": true
                                                       },
-                                                      "id": "583981ac-9bcb-5962-b587-c2de73f1599d"
+                                                      "id": "d34c21ea-7917-5190-9b9d-4cc851d8872e"
                                                     },
                                                     {
                                                       "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -2506,20 +2503,13 @@
                                                       "id": "c4d19a28-946f-522d-9147-293d0319f7cc"
                                                     },
                                                     {
-                                                      "command": "EVENT_ACTOR_SHOW",
-                                                      "args": {
-                                                        "actorId": "01b70246-0a3d-5bd3-94e7-ffdd5b4c62f5"
-                                                      },
-                                                      "id": "a40c1cf8-807c-5c94-8ec7-4690aa893316"
-                                                    },
-                                                    {
                                                       "command": "EVENT_ACTOR_SET_STATE",
                                                       "args": {
-                                                        "actorId": "01b70246-0a3d-5bd3-94e7-ffdd5b4c62f5",
-                                                        "spriteStateId": "Dangling",
+                                                        "actorId": "95414067-7c3a-5185-86d9-0a2521ec48ce",
+                                                        "spriteStateId": "Snapped+Cable",
                                                         "loopAnim": true
                                                       },
-                                                      "id": "72b37ee3-99ba-5509-b4b9-52c6c5a24895"
+                                                      "id": "f6ecccbd-fbca-586e-b00f-24c8dd163b76"
                                                     },
                                                     {
                                                       "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -2911,7 +2901,7 @@
       "command": "EVENT_ACTOR_SET_STATE",
       "args": {
         "actorId": "ba300dca-0c8e-5506-a8da-1720dbcc8411",
-        "spriteStateId": "Snapped",
+        "spriteStateId": "Snapped+Cable",
         "loopAnim": true
       },
       "id": "86ce0d11-897c-5d5d-ab70-964c567594f0"
@@ -2920,7 +2910,7 @@
       "command": "EVENT_ACTOR_SET_STATE",
       "args": {
         "actorId": "95414067-7c3a-5185-86d9-0a2521ec48ce",
-        "spriteStateId": "Snapped",
+        "spriteStateId": "Snapped+Cable",
         "loopAnim": true
       },
       "id": "10642c3f-315d-5d18-9fca-aa52d19d4315"
@@ -3215,20 +3205,13 @@
             "id": "111bf0a4-4f99-5850-a513-bf5407737b0e"
           },
           {
-            "command": "EVENT_ACTOR_SHOW",
-            "args": {
-              "actorId": "d184d992-462a-51a2-aa84-292bf5bf2735"
-            },
-            "id": "11bd110b-90a8-530c-9948-14b48f9d2370"
-          },
-          {
             "command": "EVENT_ACTOR_SET_STATE",
             "args": {
-              "actorId": "d184d992-462a-51a2-aa84-292bf5bf2735",
-              "spriteStateId": "Dangling",
+              "actorId": "ba300dca-0c8e-5506-a8da-1720dbcc8411",
+              "spriteStateId": "Snapped+Cable",
               "loopAnim": true
             },
-            "id": "68956474-d0d4-5487-bd28-1bbcfcd7a159"
+            "id": "826ce745-fc5c-5841-93e8-a41490877fd6"
           },
           {
             "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -3313,20 +3296,13 @@
             "id": "907f6430-76b0-5879-bcf3-98c0d6fdac93"
           },
           {
-            "command": "EVENT_ACTOR_SHOW",
-            "args": {
-              "actorId": "01b70246-0a3d-5bd3-94e7-ffdd5b4c62f5"
-            },
-            "id": "25567ea9-44fb-5c7f-b01c-05a3d787927a"
-          },
-          {
             "command": "EVENT_ACTOR_SET_STATE",
             "args": {
-              "actorId": "01b70246-0a3d-5bd3-94e7-ffdd5b4c62f5",
-              "spriteStateId": "Dangling",
+              "actorId": "95414067-7c3a-5185-86d9-0a2521ec48ce",
+              "spriteStateId": "Snapped+Cable",
               "loopAnim": true
             },
-            "id": "e46d154d-3592-512b-94c7-30b250cfd0e9"
+            "id": "b90e4c99-61a4-5d9f-947b-9b0e54872ced"
           },
           {
             "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",

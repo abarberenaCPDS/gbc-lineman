@@ -13,7 +13,8 @@ SPR = TOOLS.parent / "assets" / "sprites"
 CASES = {
     "intro_rain": (intro.RAIN_SPRITE_ID, {"Default": 4}),
     "intro_bolt": (intro.BOLT_SPRITE_ID, {"Default": 2}),
-    "intro_pole": (intro.POLE_SPRITE_ID, {"Standing": 1, "Snapped": 3}),
+    "intro_pole": (intro.POLE_SPRITE_ID,
+                   {"Standing": 1, "Snapped+Cable": 3, "Snapped": 3}),
     "intro_hero": (intro.HERO_SPRITE_ID, {s: len(xs) for s, xs in intro.HERO_STATES.items()}),
 }
 
@@ -69,7 +70,31 @@ class IntroSpriteTests(unittest.TestCase):
         bolt = [f.tobytes() for f in _frames("intro_bolt")]
         self.assertEqual(len(set(bolt)), 2)
         pole = [f.tobytes() for f in _frames("intro_pole")]
-        self.assertEqual(len(set(pole)), 4)
+        self.assertEqual(len(set(pole)), 7)
+
+    def test_pole_cable_state_has_wire_and_plug(self):
+        meta = _meta("intro_pole")
+        frames = _frames("intro_pole")
+        offsets = {}
+        offset = 0
+        for state in meta["states"]:
+            offsets[state["name"]] = offset
+            offset += len(state["animations"][0]["frames"])
+
+        cable_start = offsets["Snapped+Cable"]
+        snapped_start = offsets["Snapped"]
+        for f in range(3):
+            cable = frames[cable_start + f]
+            snapped = frames[snapped_start + f]
+            self.assertNotEqual(cable.tobytes(), snapped.tobytes())
+            # The cable-only pixels are the dangling wire and its plug tip.
+            cable_pixels = [
+                (x, y) for y in range(7, 18) for x in range(16)
+                if cable.getpixel((x, y))[3] and not snapped.getpixel((x, y))[3]
+            ]
+            self.assertGreaterEqual(len(cable_pixels), 9)
+            self.assertTrue(any(y == 16 for _, y in cable_pixels), "missing plug tip")
+            self.assertTrue(any(y == 17 for _, y in cable_pixels), "missing plug prongs")
 
     def test_palette_slots(self):
         for name, slot in (("intro_rain", "rain"), ("intro_bolt", "bolt"), ("intro_pole", "pole")):

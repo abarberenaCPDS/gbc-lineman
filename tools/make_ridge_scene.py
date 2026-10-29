@@ -66,7 +66,6 @@ POLE_KEY = "pole"
 POLE_SYMBOL = "ridge_storm_pole"
 TOMAS_KEY = "tomas"
 CONCENTRATOR_KEY = "oxygen-concentrator"
-CABLE_SPRITE_KEY = "sprite:grid_cable_end"
 JUNCTION_SPRITE_KEY = "sprite:grid_junction_box"
 CABLE_SYMBOL = "ridge_cable_end"
 JUNCTION_SYMBOL = "ridge_junction_box"
@@ -229,7 +228,6 @@ actor_id = CHAIN.actor_id
 actor_resource = CHAIN.actor_resource
 chain_refresh_events = CHAIN.chain_refresh_events
 cable_drop_events = CHAIN.cable_drop_events
-cable_end_actor = CHAIN.cable_end_actor
 pole_actor = CHAIN.pole_actor
 box_actor = CHAIN.box_actor
 
@@ -287,9 +285,9 @@ def scene_script(music_id: str, audio_ids: dict[str, str]) -> list[dict[str, Any
         set_value(hazards.VAR_ON_BOARD, 0, "init-on-board"),
         window_palette_event(False, "init-window-cold"),
         *chain_refresh_events("init-chain"),
-        # Pinned Snapped on every entry: each pole's own start script reads its
+        # Pinned Snapped+Cable on every entry: each pole's own start script reads its
         # line variable, and the order between the scripts is unspecified.
-        *[actor_state(actor_id(line["pole"]), "Snapped",
+        *[actor_state(actor_id(line["pole"]), "Snapped+Cable",
                       "init-pole-snapped" if line["key"] == "house" else f"init-{line['key']}-pole-snapped")
           for line in LINES],
         event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-ridge-music"),
@@ -587,16 +585,14 @@ def build_scene(music_id: str, audio_ids: dict[str, str]) -> dict[str, Any]:
 
 
 def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[dict[str, Any]]:
-    cable_sprite = climb.grid_resource_id(CABLE_SPRITE_KEY)
     box_sprites = {"junction": climb.grid_resource_id(JUNCTION_SPRITE_KEY),
                    "transformer": ridge.TRANSFORMER_SPRITE_ID}
     actors = [tomas_actor(0), concentrator_actor(1)]
     for line in LINES:
-        # Pole before its cable end: higher indexes draw on top, so the cable
-        # stays visible over the pole on their shared tile (cart bug B-13).
+        # The snapped cable is part of the pole sprite; each line has one pole
+        # actor and one box actor.
         actors += [
             pole_actor(line, 0, intro.POLE_SPRITE_ID),
-            cable_end_actor(line, 0, cable_sprite),
             box_actor(line, 0, box_sprites[line["box_kind"]]),
         ]
     actors += [
