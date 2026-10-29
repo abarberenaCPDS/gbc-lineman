@@ -194,7 +194,7 @@ class StoryTests(unittest.TestCase):
         events = list(walk(self.script))
         snapped = {e["args"]["actorId"] for e in events
                    if e["command"] == "EVENT_ACTOR_SET_STATE"
-                   and e["args"]["spriteStateId"] == "Snapped"}
+                   and e["args"]["spriteStateId"] == "Snapped+Cable"}
         self.assertEqual(len(snapped), len(intro.POLES))
         crashes = sorted(e["args"]["duration"] for e in events
                          if e["command"] == "EVENT_SOUND_PLAY_EFFECT" and e["args"]["type"] == "crash")

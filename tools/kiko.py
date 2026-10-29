@@ -253,8 +253,8 @@ def _hazard_cells() -> set[tuple[int, int]]:
 
 
 def actor_count() -> int:
-    """Emil, the stove, three per line (pole, cable end, box), arcs and hidden cables."""
-    return (2 + 3 * len(LINES) + len(ARC_LANES)
+    """Emil, the stove, two per line (pole, box), arcs and hidden cables."""
+    return (2 + 2 * len(LINES) + len(ARC_LANES)
             + len(_hazards.HIDDEN_CABLES["pine_hollow"]))
 
 

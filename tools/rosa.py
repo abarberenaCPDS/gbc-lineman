@@ -249,8 +249,8 @@ def _hazard_cells() -> set[tuple[int, int]]:
 
 
 def actor_count() -> int:
-    """Priya, her workstation, three per line (pole, cable end, box), hazards."""
-    return (2 + 3 * LINE_COUNT + len(ARC_LANES) + len(GUST_LANES) + len(span_arc_lanes()))
+    """Priya, her workstation, two per line (pole, box), hazards."""
+    return (2 + 2 * LINE_COUNT + len(ARC_LANES) + len(GUST_LANES) + len(span_arc_lanes()))
 
 
 def _self_check() -> None:

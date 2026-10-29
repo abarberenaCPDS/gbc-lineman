@@ -282,9 +282,9 @@ def _hazard_cells() -> set[tuple[int, int]]:
 
 
 def actor_count() -> int:
-    """Hiroshi, concentrator, three per line (pole, cable end, box), hazards, boards."""
+    """Hiroshi, concentrator, two per line (pole, box), hazards, boards."""
     import hazards
-    return (2 + 3 * len(LINES) + len(GUST_LANES) + len(span_arc_lanes()) + len(WHIP_LANES)
+    return (2 + 2 * len(LINES) + len(GUST_LANES) + len(span_arc_lanes()) + len(WHIP_LANES)
             + len(hazards.BOARDS["wind_ridge"]))
 
 
