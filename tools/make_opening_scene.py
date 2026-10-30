@@ -282,8 +282,8 @@ def main() -> None:
         actor_state("$self$", "Waiting", "marta:waiting"),
     ], [actor_state("$self$", "Powered", "marta:powered")])]
     marta["script"] = [if_value(RESTORED, 0, "marta:talk", [
-        *spoken("marta", "The lights went\nwith the storm.", "marta:dark-talk"),
-    ], spoken("marta", "Warm again.\nThank you, CFE.", "marta:lit-talk"))]
+        *spoken("marta", "Power's out all\nover. Start here.", "marta:dark-talk"),
+    ], spoken("marta", "Panel's alive!\nNow, my hilltop.", "marta:lit-talk"))]
     terminal = actor("terminal", "Substation repair panel", opening.PANEL, "opening_terminal", 1)
     terminal["startScript"] = [if_value(RESTORED, 0, "terminal:entry", [
         actor_state("$self$", "Off", "terminal:off"),

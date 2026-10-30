@@ -127,7 +127,7 @@ def _worker_frame(
     phase: int = 0,
     variant: str | None = None,
 ) -> Image.Image:
-    """Draw a compact side-profile electrician, anchored to the same feet."""
+    """Draw a compact side-profile lineman, anchored to the same feet."""
     if body_height not in (16, 24):
         raise ValueError(f"unsupported worker body height: {body_height}")
     if pose == "shock":

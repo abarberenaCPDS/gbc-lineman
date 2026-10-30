@@ -882,7 +882,7 @@ def marta_talk_events(key: str) -> list[dict[str, Any]]:
             *say(short_lines("Storm cut five\nlines below me!"), f"{key}:talk-dead", "marta"),
         ]),
     ], [
-        *say(short_lines("Food is saved.\nThank you, CFE!"), f"{key}:talk-after", "marta"),
+        *say(short_lines("Food is saved.\nThanks, lineman!"), f"{key}:talk-after", "marta"),
     ])]
 
 

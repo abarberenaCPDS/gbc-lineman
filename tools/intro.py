@@ -249,9 +249,9 @@ SHOTS = [
     ("lightning", ["Lightning struck.", "Ferocious winds."], 210),
     ("snap", ["Poles snapped.", "The lines fell."], 240),
     ("morning", ["The storm passed.", "The power didn't."], 210),
-    ("dark", ["No fridge. No AC.", "No fan. No stove."], 210),
-    ("offline", ["No WiFi or modem.", "No internet!"], 210),
-    ("hero", ["One electrician.", "One mission:"], 240),
+    ("dark", ["Without power:", "no hot meals,"], 210),
+    ("offline", ["no medical gear,", "no internet."], 210),
+    ("hero", ["One lineman.", "One mission:"], 240),
     ("mission", ["Bring the power", "back home."], 210),
 ]
 FLASH_FRAMES = 6                # each lightning flash

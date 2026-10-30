@@ -71,25 +71,25 @@ TICKETS = {
         "number": "WO-0412",
         "scene_id": CLIMB_SCENE_ID,
         "start": climb.START,
-        "pages": ["WORK ORDER\nWO-0412", "Amara, hilltop:\nfridge is out.", "Fix: reconnect\nthe snapped line."],
+        "pages": ["WORK ORDER\nWO-0412", "Amara, hilltop:\nfridge is out.", "Climb the hill,\nrestore the line."],
     },
     2: {
         "number": "WO-0413",
         "scene_id": ridge.SCENE_ID,
         "start": ridge.START,
-        "pages": ["WORK ORDER\nWO-0413", "Hiroshi, ridge:\noxygen machine\nhas no power.", "Fix: reconnect\nall five lines."],
+        "pages": ["WORK ORDER\nWO-0413", "Hiroshi, ridge:\noxygen machine\nhas no power.", "Urgent: medical.\nWatch the wind."],
     },
     3: {
         "number": "WO-0414",
         "scene_id": rosa.SCENE_ID,
         "start": rosa.START,
-        "pages": ["WORK ORDER\nWO-0414", "Priya, hill:\nno internet,\nwork is due.", "Fix: five lines.\nMind live wires."],
+        "pages": ["WORK ORDER\nWO-0414", "Priya, hill:\nno internet,\nwork is due.", "Live wires down.\nStep carefully."],
     },
     4: {
         "number": "WO-0415",
         "scene_id": kiko.SCENE_ID,
         "start": kiko.START,
-        "pages": ["WORK ORDER\nWO-0415", "Emil, hollow:\nstove is dead,\ndinner's cold.", "Fix: reconnect\nall five lines."],
+        "pages": ["WORK ORDER\nWO-0415", "Emil, hollow:\nstove is dead,\ndinner's cold.", "Worst damage yet.\nStay sharp."],
     },
 }
 LAST_TICKET = 4
@@ -108,7 +108,7 @@ REPORT_PAGES = [
     "Hiroshi breathes\neasy again.",
     "Priya is back\nonline.",
     "Emil's soup is\nhot.",
-    "Thank you,\nMister CFE!",
+    "Thank you,\nLineman!",
     "A game by\nAbe's Games",
 ]
 

@@ -309,7 +309,7 @@ class ClimbSceneTests(unittest.TestCase):
         self.assertEqual(line["args"]["condition"]["valueA"]["value"], climb.VAR_CHAIN_LIVE)
         self.assertEqual(texts(line["children"]["true"]), [["Amara:\nPower's up here!\nTry my door."]])
         self.assertEqual(texts(line["children"]["false"]), [["Amara:\nStorm cut five\nlines below me!"]])
-        self.assertEqual(texts(talk["children"]["false"]), [["Amara:\nFood is saved.\nThank you, CFE!"]])
+        self.assertEqual(texts(talk["children"]["false"]), [["Amara:\nFood is saved.\nThanks, lineman!"]])
 
     def test_respawn_drops_the_cable_then_returns_to_the_furthest_repaired_line(self):
         hit = Fixture.resource["playerHit1Script"]
