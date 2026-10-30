@@ -8,26 +8,6 @@
   "actors": {
     "0": {
       "id": "0",
-      "name": "Transformer (feeder)"
-    },
-    "1": {
-      "id": "1",
-      "name": "Transformer (west)"
-    },
-    "2": {
-      "id": "2",
-      "name": "Transformer (middle)"
-    },
-    "3": {
-      "id": "3",
-      "name": "Transformer (east)"
-    },
-    "4": {
-      "id": "4",
-      "name": "Junction Box (Ridge House)"
-    },
-    "5": {
-      "id": "5",
       "name": "Storm Pole (west)"
     }
   },
@@ -119,7 +99,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.17.0-dev",
+              "text": "v0.18.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"
@@ -187,7 +167,7 @@
                 {
                   "command": "EVENT_ACTOR_SET_STATE",
                   "args": {
-                    "actorId": "5",
+                    "actorId": "0",
                     "spriteStateId": "Standing",
                     "loopAnim": true
                   },
@@ -307,51 +287,6 @@
                                                   "palette7": "keep"
                                                 },
                                                 "id": "bd62b960-3737-5b9c-a351-5693fe42d593"
-                                              },
-                                              {
-                                                "command": "EVENT_ACTOR_SET_STATE",
-                                                "args": {
-                                                  "actorId": "0",
-                                                  "spriteStateId": "Live",
-                                                  "loopAnim": true
-                                                },
-                                                "id": "5e37c201-19c6-5578-87f4-f7f3abe7423d"
-                                              },
-                                              {
-                                                "command": "EVENT_ACTOR_SET_STATE",
-                                                "args": {
-                                                  "actorId": "1",
-                                                  "spriteStateId": "Live",
-                                                  "loopAnim": true
-                                                },
-                                                "id": "bb011fe3-464e-5a3d-831d-121f5ee45114"
-                                              },
-                                              {
-                                                "command": "EVENT_ACTOR_SET_STATE",
-                                                "args": {
-                                                  "actorId": "2",
-                                                  "spriteStateId": "Live",
-                                                  "loopAnim": true
-                                                },
-                                                "id": "57baff87-a5de-5354-8668-330f08a08fcf"
-                                              },
-                                              {
-                                                "command": "EVENT_ACTOR_SET_STATE",
-                                                "args": {
-                                                  "actorId": "3",
-                                                  "spriteStateId": "Live",
-                                                  "loopAnim": true
-                                                },
-                                                "id": "279b9664-6dd7-5d55-b261-a022ac770cbe"
-                                              },
-                                              {
-                                                "command": "EVENT_ACTOR_SET_STATE",
-                                                "args": {
-                                                  "actorId": "4",
-                                                  "spriteStateId": "Live",
-                                                  "loopAnim": true
-                                                },
-                                                "id": "07766d56-1b55-5643-8d58-9973d8629f3a"
                                               }
                                             ],
                                             "false": [
@@ -379,51 +314,6 @@
                                                   "palette7": "keep"
                                                 },
                                                 "id": "a33e6aa5-9310-52b4-a248-e2c7d0df7a48"
-                                              },
-                                              {
-                                                "command": "EVENT_ACTOR_SET_STATE",
-                                                "args": {
-                                                  "actorId": "0",
-                                                  "spriteStateId": "Live",
-                                                  "loopAnim": true
-                                                },
-                                                "id": "64f1eb2c-1d23-5c90-95db-1267a1ef2c05"
-                                              },
-                                              {
-                                                "command": "EVENT_ACTOR_SET_STATE",
-                                                "args": {
-                                                  "actorId": "1",
-                                                  "spriteStateId": "Live",
-                                                  "loopAnim": true
-                                                },
-                                                "id": "273b4052-e728-52b4-9d5b-642222cf5aa7"
-                                              },
-                                              {
-                                                "command": "EVENT_ACTOR_SET_STATE",
-                                                "args": {
-                                                  "actorId": "2",
-                                                  "spriteStateId": "Live",
-                                                  "loopAnim": true
-                                                },
-                                                "id": "436f58df-c639-5be1-967c-a7f3083e5843"
-                                              },
-                                              {
-                                                "command": "EVENT_ACTOR_SET_STATE",
-                                                "args": {
-                                                  "actorId": "3",
-                                                  "spriteStateId": "Live",
-                                                  "loopAnim": true
-                                                },
-                                                "id": "6c374317-9559-5e48-96b0-cba1a37eb918"
-                                              },
-                                              {
-                                                "command": "EVENT_ACTOR_SET_STATE",
-                                                "args": {
-                                                  "actorId": "4",
-                                                  "spriteStateId": "Dead",
-                                                  "loopAnim": true
-                                                },
-                                                "id": "094c6c2e-48c3-590c-9b4d-7b1796e28b15"
                                               }
                                             ]
                                           }
@@ -454,51 +344,6 @@
                                             "palette7": "keep"
                                           },
                                           "id": "e7182aa5-a7bb-5d47-aa43-2a525a6da823"
-                                        },
-                                        {
-                                          "command": "EVENT_ACTOR_SET_STATE",
-                                          "args": {
-                                            "actorId": "0",
-                                            "spriteStateId": "Live",
-                                            "loopAnim": true
-                                          },
-                                          "id": "3362c279-54d7-5c34-a3c1-66f035d8fafb"
-                                        },
-                                        {
-                                          "command": "EVENT_ACTOR_SET_STATE",
-                                          "args": {
-                                            "actorId": "1",
-                                            "spriteStateId": "Live",
-                                            "loopAnim": true
-                                          },
-                                          "id": "812dd096-139a-52f4-b133-49dfe693b56e"
-                                        },
-                                        {
-                                          "command": "EVENT_ACTOR_SET_STATE",
-                                          "args": {
-                                            "actorId": "2",
-                                            "spriteStateId": "Live",
-                                            "loopAnim": true
-                                          },
-                                          "id": "09b1f403-185c-5416-a1da-3c99b1bf03b5"
-                                        },
-                                        {
-                                          "command": "EVENT_ACTOR_SET_STATE",
-                                          "args": {
-                                            "actorId": "3",
-                                            "spriteStateId": "Dead",
-                                            "loopAnim": true
-                                          },
-                                          "id": "043e04c9-0b93-5a5c-bbb4-a2f4c9159acf"
-                                        },
-                                        {
-                                          "command": "EVENT_ACTOR_SET_STATE",
-                                          "args": {
-                                            "actorId": "4",
-                                            "spriteStateId": "Dead",
-                                            "loopAnim": true
-                                          },
-                                          "id": "6e6f9b9f-25cf-5268-8801-5b0af8ef1b6b"
                                         }
                                       ]
                                     }
@@ -529,51 +374,6 @@
                                       "palette7": "keep"
                                     },
                                     "id": "0fdf82cb-014b-58a7-81b5-87393afcae01"
-                                  },
-                                  {
-                                    "command": "EVENT_ACTOR_SET_STATE",
-                                    "args": {
-                                      "actorId": "0",
-                                      "spriteStateId": "Live",
-                                      "loopAnim": true
-                                    },
-                                    "id": "8505c6f3-e03c-51a3-b832-6c4e1391c5a3"
-                                  },
-                                  {
-                                    "command": "EVENT_ACTOR_SET_STATE",
-                                    "args": {
-                                      "actorId": "1",
-                                      "spriteStateId": "Live",
-                                      "loopAnim": true
-                                    },
-                                    "id": "e7f02890-9fdc-5927-81d6-3fba3c822434"
-                                  },
-                                  {
-                                    "command": "EVENT_ACTOR_SET_STATE",
-                                    "args": {
-                                      "actorId": "2",
-                                      "spriteStateId": "Dead",
-                                      "loopAnim": true
-                                    },
-                                    "id": "aa608db0-ed5d-59cc-aa03-98a0a23d02c1"
-                                  },
-                                  {
-                                    "command": "EVENT_ACTOR_SET_STATE",
-                                    "args": {
-                                      "actorId": "3",
-                                      "spriteStateId": "Dead",
-                                      "loopAnim": true
-                                    },
-                                    "id": "b1db5d01-22d5-58e4-828a-7ba41b03b649"
-                                  },
-                                  {
-                                    "command": "EVENT_ACTOR_SET_STATE",
-                                    "args": {
-                                      "actorId": "4",
-                                      "spriteStateId": "Dead",
-                                      "loopAnim": true
-                                    },
-                                    "id": "43be8390-66e3-53ba-b5d7-c69bc9c14874"
                                   }
                                 ]
                               }
@@ -604,51 +404,6 @@
                                 "palette7": "keep"
                               },
                               "id": "bc1677fb-7fe2-5e92-997e-900c44c0d5aa"
-                            },
-                            {
-                              "command": "EVENT_ACTOR_SET_STATE",
-                              "args": {
-                                "actorId": "0",
-                                "spriteStateId": "Live",
-                                "loopAnim": true
-                              },
-                              "id": "0b03067f-1fab-5331-bac4-cece01b93abb"
-                            },
-                            {
-                              "command": "EVENT_ACTOR_SET_STATE",
-                              "args": {
-                                "actorId": "1",
-                                "spriteStateId": "Dead",
-                                "loopAnim": true
-                              },
-                              "id": "cb119a41-67be-5714-b241-7b4759910790"
-                            },
-                            {
-                              "command": "EVENT_ACTOR_SET_STATE",
-                              "args": {
-                                "actorId": "2",
-                                "spriteStateId": "Dead",
-                                "loopAnim": true
-                              },
-                              "id": "e1b4f89c-07ef-59c3-ab8d-85c95b530df8"
-                            },
-                            {
-                              "command": "EVENT_ACTOR_SET_STATE",
-                              "args": {
-                                "actorId": "3",
-                                "spriteStateId": "Dead",
-                                "loopAnim": true
-                              },
-                              "id": "bd6aa652-a87d-5128-8218-4101eb251c30"
-                            },
-                            {
-                              "command": "EVENT_ACTOR_SET_STATE",
-                              "args": {
-                                "actorId": "4",
-                                "spriteStateId": "Dead",
-                                "loopAnim": true
-                              },
-                              "id": "d92e4727-5c88-5a42-89d5-4f39a5cbb77d"
                             }
                           ]
                         }
@@ -679,51 +434,6 @@
                           "palette7": "keep"
                         },
                         "id": "2e327ee0-8e02-52b7-a732-7cc195636f4b"
-                      },
-                      {
-                        "command": "EVENT_ACTOR_SET_STATE",
-                        "args": {
-                          "actorId": "0",
-                          "spriteStateId": "Dead",
-                          "loopAnim": true
-                        },
-                        "id": "23ac42dc-bc1a-5aa4-8da5-8ebeb15fcd85"
-                      },
-                      {
-                        "command": "EVENT_ACTOR_SET_STATE",
-                        "args": {
-                          "actorId": "1",
-                          "spriteStateId": "Dead",
-                          "loopAnim": true
-                        },
-                        "id": "ac7cdf25-c7b3-5007-951a-d38d2e0b749d"
-                      },
-                      {
-                        "command": "EVENT_ACTOR_SET_STATE",
-                        "args": {
-                          "actorId": "2",
-                          "spriteStateId": "Dead",
-                          "loopAnim": true
-                        },
-                        "id": "240f22c1-338a-56b1-aaeb-c3e56faf818d"
-                      },
-                      {
-                        "command": "EVENT_ACTOR_SET_STATE",
-                        "args": {
-                          "actorId": "3",
-                          "spriteStateId": "Dead",
-                          "loopAnim": true
-                        },
-                        "id": "c2da1e52-1ee5-52f3-a58d-c7af350f86a4"
-                      },
-                      {
-                        "command": "EVENT_ACTOR_SET_STATE",
-                        "args": {
-                          "actorId": "4",
-                          "spriteStateId": "Dead",
-                          "loopAnim": true
-                        },
-                        "id": "3ea33550-74c9-56e1-bc76-a792170eb03b"
                       }
                     ]
                   }
@@ -829,7 +539,7 @@
                       {
                         "command": "EVENT_TEXT_DRAW",
                         "args": {
-                          "text": "v0.17.0-dev",
+                          "text": "v0.18.0-dev",
                           "x": 9,
                           "y": 1,
                           "location": "overlay"
@@ -925,7 +635,7 @@
                             {
                               "command": "EVENT_TEXT_DRAW",
                               "args": {
-                                "text": "v0.17.0-dev",
+                                "text": "v0.18.0-dev",
                                 "x": 9,
                                 "y": 1,
                                 "location": "overlay"
@@ -1003,7 +713,7 @@
                             {
                               "command": "EVENT_TEXT_DRAW",
                               "args": {
-                                "text": "v0.17.0-dev",
+                                "text": "v0.18.0-dev",
                                 "x": 9,
                                 "y": 1,
                                 "location": "overlay"
@@ -1105,7 +815,7 @@
                       {
                         "command": "EVENT_TEXT_DRAW",
                         "args": {
-                          "text": "v0.17.0-dev",
+                          "text": "v0.18.0-dev",
                           "x": 9,
                           "y": 1,
                           "location": "overlay"
@@ -1183,7 +893,7 @@
                       {
                         "command": "EVENT_TEXT_DRAW",
                         "args": {
-                          "text": "v0.17.0-dev",
+                          "text": "v0.18.0-dev",
                           "x": 9,
                           "y": 1,
                           "location": "overlay"

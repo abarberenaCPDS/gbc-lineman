@@ -214,6 +214,7 @@ CHAIN = grid_chain.GridChain(
     rid=ridge.resource_id, lines=LINES, chain_var=ridge.VAR_CHAIN_LIVE, lines_var=ridge.VAR_LINES_LIVE,
     carrying_var=VAR_CARRYING_CABLE, near_var=climb.VAR_NEAR, line_bg_slot=ridge.LINE_BG_SLOT,
     text=RIDGE_TEXT, say=say, hud=hud_events, bare_event_key="house",
+    background_boxes=ridge.BACKGROUND_BOXES,
 )
 event = CHAIN.event
 branch_event = CHAIN.branch_event
@@ -230,7 +231,6 @@ actor_resource = CHAIN.actor_resource
 chain_refresh_events = CHAIN.chain_refresh_events
 cable_drop_events = CHAIN.cable_drop_events
 pole_actor = CHAIN.pole_actor
-box_actor = CHAIN.box_actor
 
 
 def box_script_resources(audio_ids: dict[str, str]) -> list[tuple[str, dict[str, Any]]]:
@@ -436,17 +436,45 @@ BOARD_TRIGGER_BASE_INDEX = 2
 
 
 def board_actor(number: int, board: tuple[int, int, int], index: int) -> dict[str, Any]:
+    """Cracked board whose idle plank is background art: the actor only shows while it creaks.
+
+    The climb's board (make_climb_scene.climb_board_actor) with Wind Ridge's IDs:
+    hazards.py timings and trigger, hidden when idle so boards cost no OBJs until
+    the hero stands on one.
+    """
     key = f"board:{number}"
     x, y = hazards.board_actor_position(board)
+
+    def own(command: str, suffix: str, **args: Any) -> dict[str, Any]:
+        return event(command, {"actorId": "$self$", **args}, f"{key}:{suffix}")
+
+    give_way = [
+        own("EVENT_ACTOR_SET_STATE", "break-state", spriteStateId="Break", loopAnim=False),
+        own("EVENT_ACTOR_COLLISIONS_ENABLE", "break-hit"),
+        wait_event(hazards.BREAK_FRAMES, f"{key}:break-time"),
+        own("EVENT_ACTOR_COLLISIONS_DISABLE", "break-safe"),
+        # The respawn teleports the hero without a leave event; clear it here.
+        set_value(hazards.VAR_ON_BOARD, 0, f"{key}:clear"),
+        wait_event(hazards.BOARD_REST_FRAMES, f"{key}:rest-time"),
+    ]
+    creak = [
+        own("EVENT_ACTOR_COLLISIONS_DISABLE", "creak-safe"),
+        own("EVENT_ACTOR_SET_STATE", "creak-state", spriteStateId="Creak", loopAnim=True),
+        own("EVENT_ACTOR_SHOW", "creak-visible"),
+        wait_event(hazards.CREAK_FRAMES, f"{key}:creak-time"),
+        if_value(hazards.VAR_ON_BOARD, number, f"{key}:still-on", give_way, []),
+        own("EVENT_ACTOR_SET_STATE", "idle-state", spriteStateId="Idle", loopAnim=True),
+        own("EVENT_ACTOR_HIDE", "idle-hidden"),
+    ]
     actor = actor_resource(
         index=index, symbol=f"ridge_board_{number:02d}", name=f"Cracked Board {number}",
         x=x, y=y, sprite_id=hazards.BOARD_SPRITE_ID, key=key,
-        start_script=hazards.board_start_script(key, event),
+        start_script=[*hazards.board_start_script(key, event), own("EVENT_ACTOR_HIDE", "init-hidden")],
+        update_script=[if_value(hazards.VAR_ON_BOARD, number, f"{key}:on-check", creak,
+                                [wait_event(1, f"{key}:idle-tick")])],
+        collision_group="1",
     )
-    actor["collisionGroup"] = "1"
     actor["animate"] = True
-    actor["updateScript"] = hazards.board_update_script(
-        number, key, event, wait_event, if_value, set_value)
     return actor
 
 
@@ -617,16 +645,10 @@ def build_scene(music_id: str, audio_ids: dict[str, str]) -> dict[str, Any]:
 
 
 def build_actors(sprite_ids: dict[str, str], audio_ids: dict[str, str]) -> list[dict[str, Any]]:
-    box_sprites = {"junction": climb.grid_resource_id(JUNCTION_SPRITE_KEY),
-                   "transformer": ridge.TRANSFORMER_SPRITE_ID}
     actors = [tomas_actor(0), concentrator_actor(1)]
-    for line in LINES:
-        # The snapped cable is part of the pole sprite; each line has one pole
-        # actor and one box actor.
-        actors += [
-            pole_actor(line, 0, intro.POLE_SPRITE_ID),
-            box_actor(line, 0, box_sprites[line["box_kind"]]),
-        ]
+    # The snapped cable is part of the pole sprite; the boxes are background
+    # transformers (ridge.BACKGROUND_BOXES), so each line has one pole actor.
+    actors += [pole_actor(line, 0, intro.POLE_SPRITE_ID) for line in LINES]
     actors += [
         gust_actor(number, lane, delay, sprite_ids["gust"])
         for number, (lane, delay) in enumerate(zip(ridge.GUST_LANES, ridge.GUST_START_DELAYS), start=1)
@@ -731,7 +753,6 @@ def main() -> None:
         "arc": shared.sidecar_id(ARC_SPRITE, "sprite"),
     }
     warn_if_missing_asset(ridge.WHIP_SPRITE_ID, "sprites", "whipping wire sprite")
-    warn_if_missing_asset(ridge.TRANSFORMER_SPRITE_ID, "sprites", "transformer sprite")
     warn_if_missing_asset(hazards.BOARD_SPRITE_ID, "sprites", "cracked board sprite")
     warn_if_missing_asset(ridge.BACKGROUND_ID, "backgrounds", "wind_ridge background")
     warn_if_missing_asset(ridge.TOMAS_SPRITE_ID, "sprites", "Hiroshi sprite")
@@ -761,8 +782,8 @@ def main() -> None:
         f"generated wind_ridge: {ridge.MAP_W}x{ridge.MAP_H} PLATFORM, "
         f"{len(actors)} actors, {len(triggers)} triggers; "
         f"{ridge.LINE_COUNT} lines, {len(ridge.GUST_LANES)} gusts, {len(ridge.span_arc_lanes())} span arcs, "
-        f"{len(ridge.WHIP_LANES)} whip; "
-        f"{len(hazards.BOARDS['wind_ridge'])} cracked board"
+        f"{len(ridge.WHIP_LANES)} whips, {len(hazards.HIDDEN_CABLES['wind_ridge'])} hidden cable, "
+        f"{len(hazards.BOARDS['wind_ridge'])} cracked boards"
     )
 
 

@@ -5,8 +5,12 @@ Modelled on ``make_climb_art.py``: the RGB image returned by
 PNG is a grayscale index proxy that uses GB Studio's native index thresholds.
 This generator owns only ``wind_ridge.png`` and its background sidecar.
 
-Both metal BG slots hold wire pixels only; placards and whip brackets live in
-the stone slot. Shared junction tiles use the downstream stage's slot.
+Both metal BG slots hold wire pixels and the transformers' stage rows only;
+placards and whip brackets live in the stone slot. Shared junction tiles use the
+downstream stage's slot. The five boxes are the shared background transformer
+(``transformer_art.py``): the top tile row in its stage's wire slot, the can and
+post in the stone slot (``ridge.TRANSFORMER_BODY_SLOT``). Cracked boards are drawn
+as cracked planks on their catwalk; the board actor only shows while it creaks.
 """
 from __future__ import annotations
 
@@ -19,8 +23,10 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 import climb
+import hazards
 import opening
 import ridge
+import transformer_art
 from make_climb_scene import collision_rle
 
 
@@ -32,7 +38,9 @@ WIDTH, HEIGHT = ridge.MAP_W * TILE, ridge.MAP_H * TILE
 PALETTES = [[tuple(bytes.fromhex(color)) for color in colors]
             for _, colors in opening.BG_PALETTES]
 NATIVE_PROXY_BY_INDEX = (255, 170, 85, 0)
-MAX_UNIQUE_TILES = 300
+# Unique (slot, pattern) tiles before GB Studio's flip dedupe; the CGB limit is
+# 384. 0.18's tiers, five background transformers and board planks need ~315.
+MAX_UNIQUE_TILES = 330
 
 # BG palette families (opening.BG_PALETTES order). Slot 7 is the editor UI.
 SKY, STONE, TIMBER, WINDOW, FOLIAGE, METAL, WIRE_2 = range(7)
@@ -40,6 +48,7 @@ PALETTES[WIRE_2] = PALETTES[METAL][:]
 LINE = climb.LINE_BG_SLOT
 assert LINE == METAL, "cable slot must be the metal family"
 assert ridge.WINDOW_BG_SLOT == WINDOW, "window slot must be the window family"
+assert ridge.TRANSFORMER_BODY_SLOT == STONE, "transformer cans use the stone ramp"
 
 LANE_CELLS = {(row, x) for row, x0, x1 in ridge.hazard_lanes()
               for x in range(x0, x1 + 1)}
@@ -49,9 +58,10 @@ BRACKET_CELLS = {(row + dr, x) for row, x0, x1 in ridge.WHIP_LANES
                  for x in range(x0 - 1, x1 + 2) for dr in (-3, -2)}
 PLACARD_CELLS = LANE_CELLS | BRACKET_CELLS
 
-# Pines (tile-aligned, two widths of tops) behind the route.
-PINE_COLUMNS = [2, 12, 19, 29, 74, 90]
-PINE_TOPS = [152, 128, 144, 136, 152, 136]
+# Pines (tile-aligned, two widths of tops) behind the route, clear of the
+# transformers, poles and hazard art.
+PINE_COLUMNS = [2, 28, 46, 67, 92]
+PINE_TOPS = [152, 136, 104, 144, 136]
 PINES = [(tx * TILE, top, 16, ridge.GROUND_ROW * TILE)
          for tx, top in zip(PINE_COLUMNS, PINE_TOPS)]
 
@@ -96,32 +106,41 @@ def _decor():
 RAIN_SLASHES, SPARKS = _decor()
 
 
-def _post_columns() -> list[int]:
-    """Catwalk support columns: ends plus one inboard, clear of spans and lanes."""
+TRANSFORMER_TILES = {cell for line in ridge.LINES for cell in transformer_art.all_tiles(line["box"])}
+
+
+def _post_run(grid: list[list[int]], row: int, tx: int) -> list[tuple[int, int]]:
+    """Tiles of a post under catwalk ``row`` at column ``tx`` down to the floor."""
     out = []
-    for _, x0, x1 in ridge.LEDGES:
+    for ty in range(row + 1, ridge.MAP_H):
+        if grid[ty][tx] != climb.COL_EMPTY:
+            break
+        out.append((tx, ty))
+    return out
+
+
+def _post_columns() -> list[tuple[int, int]]:
+    """(catwalk row, column) of each support: ends plus one inboard, whose run
+    down to the floor stays clear of spans, hazard art and transformers."""
+    grid = ridge.collision_grid()
+    spans = [s["columns"] for s in ridge.FALLEN_SPANS]
+    out = []
+    for row, x0, x1 in ridge.LEDGES:
         for x in (x0, x0 + 3, x1):
-            if any(c0 <= x <= c1 for c0, c1 in
-                   (s["columns"] for s in ridge.FALLEN_SPANS)):
+            if any(c0 <= x <= c1 for c0, c1 in spans):
                 continue
-            if any(lx0 - 1 <= x <= lx1 + 1 for _, lx0, lx1 in ridge.hazard_lanes()):
+            run = _post_run(grid, row, x)
+            if any((ty, tx) in PLACARD_CELLS or (tx, ty) in TRANSFORMER_TILES for tx, ty in run):
                 continue
-            out.append(x)
+            if any(lrow > row and lx0 - 1 <= x <= lx1 + 1 for lrow, lx0, lx1 in ridge._all_hazard_lanes()):
+                continue          # no post right beside a lane below the catwalk
+            out.append((row, x))
     return out
 
 
 def _post_tiles(grid: list[list[int]]) -> list[tuple[int, int]]:
     """Catwalk posts: vertical timber from each ledge down to the floor."""
-    posts: list[tuple[int, int]] = []
-    for row, _, _ in ridge.LEDGES:
-        for tx in _post_columns():
-            for ty in range(row + 1, ridge.MAP_H):
-                if grid[ty][tx] != climb.COL_EMPTY:
-                    break
-                if (ty, tx) in PLACARD_CELLS:
-                    raise AssertionError(f"post crosses hazard cell {tx},{ty}")
-                posts.append((tx, ty))
-    return posts
+    return [tile for row, tx in _post_columns() for tile in _post_run(grid, row, tx)]
 
 
 def _mask_pixels(draw) -> frozenset[tuple[int, int]]:
@@ -173,6 +192,8 @@ def stage_pixels(stage: int) -> frozenset[tuple[int, int]]:
     for span in ridge.FALLEN_SPANS:
         if span["live_after"] == stage:
             out |= _span_pixels(span)
+    # The transformer's cap, bushing, clamp, collar and lid light with its stage.
+    out |= transformer_art.stage_pixels(ridge.LINES[stage - 1]["box"])
     return frozenset(out)
 
 
@@ -227,7 +248,22 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     for row, tx in sorted(PLACARD_CELLS):
         if grid[row][tx] != climb.COL_EMPTY:
             raise AssertionError(f"hazard art overlaps collision at {tx},{row}")
+        if (tx, row) in TRANSFORMER_TILES:
+            raise AssertionError(f"hazard art overlaps a transformer at {tx},{row}")
         slots[row][tx] = STONE
+
+    # Background transformers: the top row in the stage's wire slot, the can in stone.
+    bodies = set()
+    for line in ridge.LINES:
+        top, body = transformer_art.tiles(line["box"])
+        for tx, ty in top + body:
+            if grid[ty][tx] != climb.COL_EMPTY or (tx, ty) in posts:
+                raise AssertionError(f"transformer {line['key']} overlaps terrain at {tx},{ty}")
+        for tx, ty in body:
+            slots[ty][tx] = ridge.TRANSFORMER_BODY_SLOT
+            bodies.add((tx, ty))
+        for tx, ty in top:
+            slots[ty][tx] = stage_slot(line["number"])
 
     # Wire tiles take the metal slot last; they may never hit collision,
     # hazard art, the cabin or a post.
@@ -238,7 +274,7 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
                 # Power enters through the left cliff wall; nothing else may hit rock.
                 assert tx == 0, f"wire tile {tx},{ty} inside collision"
                 continue
-            if (ty, tx) in PLACARD_CELLS or (tx, ty) in house or (tx, ty) in posts:
+            if (ty, tx) in PLACARD_CELLS or (tx, ty) in house or (tx, ty) in posts or (tx, ty) in bodies:
                 raise AssertionError(f"wire tile {tx},{ty} collides with other art")
             slots[ty][tx] = stage_slot(stage)
 
@@ -418,6 +454,27 @@ def _draw_warnings(c: _Canvas) -> None:
         c.rect(STONE, (mid, y + 14, mid + 1, y + 15), p[3])      # wire hook
 
 
+def _draw_boards(c: _Canvas) -> None:
+    """Cracked planks on their catwalk (the board actor only shows while it creaks)."""
+    p = PALETTES[TIMBER]
+    for row, x0, x1 in hazards.BOARDS["wind_ridge"]:
+        y = row * TILE
+        for tx in range(x0, x1 + 1):
+            x = tx * TILE
+            c.line(TIMBER, [(x + 1, y + 2), (x + 3, y + 4), (x + 5, y + 3)], p[0])
+            c.point(TIMBER, (x + 6, y + 4), p[0])
+
+
+def _draw_transformers(c: _Canvas) -> None:
+    body_rgb = {code: PALETTES[ridge.TRANSFORMER_BODY_SLOT][index]
+                for code, index in ridge.TRANSFORMER_BODY_INDEX.items()}
+    for line in ridge.LINES:
+        stage = line["number"]
+        transformer_art.paint(c.image.load(), line["box"],
+                              stage_rgb=PALETTES[stage_slot(stage)][ridge.STAGE_COLOR_INDEX[stage - 1]],
+                              body_rgb=body_rgb)
+
+
 def _draw_cable(c: _Canvas, slots: list[list[int]]) -> None:
     """Paint each stage's wire pixels in its metal colour index."""
     px = c.image.load()
@@ -450,6 +507,8 @@ def make_background() -> tuple[Image.Image, list[list[int]]]:
     _draw_cabin(canvas)
     _draw_windows(canvas)
     _draw_warnings(canvas)
+    _draw_boards(canvas)
+    _draw_transformers(canvas)
     _draw_cable(canvas, slots)
 
     allowed = [set(colors) for colors in PALETTES]

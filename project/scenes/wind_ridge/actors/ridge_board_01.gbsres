@@ -1,13 +1,13 @@
 {
   "_resourceType": "actor",
   "id": "c5f1edea-4a60-5df9-91c4-38e788cb1e23",
-  "_index": 19,
+  "_index": 15,
   "symbol": "ridge_board_01",
   "prefabId": "",
   "name": "Cracked Board 1",
   "coordinateType": "tiles",
-  "x": 21,
-  "y": 27,
+  "x": 9,
+  "y": 21,
   "frame": 0,
   "animate": true,
   "spriteSheetId": "4839c272-5615-5964-909d-b2eed524ae08",
@@ -37,6 +37,13 @@
         "loopAnim": true
       },
       "id": "7a6ac306-fadb-5e17-b0b1-6e3862dfa131"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "8bd1f8bf-2a90-56df-a880-517bd863ef79"
     }
   ],
   "updateScript": [
@@ -59,6 +66,13 @@
       "children": {
         "true": [
           {
+            "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+            "args": {
+              "actorId": "$self$"
+            },
+            "id": "39ef72e8-f7e3-5e76-9b48-7674a42ef877"
+          },
+          {
             "command": "EVENT_ACTOR_SET_STATE",
             "args": {
               "actorId": "$self$",
@@ -66,6 +80,13 @@
               "loopAnim": true
             },
             "id": "38f88c32-dc76-52a3-9d83-4f0289c7dbb7"
+          },
+          {
+            "command": "EVENT_ACTOR_SHOW",
+            "args": {
+              "actorId": "$self$"
+            },
+            "id": "8629da86-624c-5ac0-abba-3d15527161ce"
           },
           {
             "command": "EVENT_WAIT",
@@ -164,6 +185,13 @@
               "loopAnim": true
             },
             "id": "4817ac69-ce03-51b5-b703-851a83fadf2d"
+          },
+          {
+            "command": "EVENT_ACTOR_HIDE",
+            "args": {
+              "actorId": "$self$"
+            },
+            "id": "f62769ea-a505-54e0-82a9-ab51dee4ccfd"
           }
         ],
         "false": [

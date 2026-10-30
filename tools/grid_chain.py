@@ -52,6 +52,11 @@ Scene module (tools/make_<job>_scene.py) builds one GridChain from the contract:
                     and hud(key), both returning event lists
   bare_event_key    optional line key whose cable-drop events keep an un-suffixed key
                     (legacy event IDs); None for new jobs
+  background_boxes  opt-in: the boxes are background art (transformer_art.py), not actors.
+                    The chain refresh then only sets the stage count and swaps the wire
+                    palettes (a box's top tile row sits in its stage's wire slot and lights
+                    with it), and the box scripts bind only the line's pole. No box actor
+                    exists, which frees one actor per line (see "Background boxes" below).
 
 B-press model (Abe: "there should be an action, like pressing the button"): nothing
 connects, picks up or drops on contact. Walking into a zone only records where the
@@ -75,6 +80,21 @@ shared B input script; each box remains individually gated by its own zone.
 Palette resources: chain_palettes() gives {stages: colours} for up to three lines,
 or {stages: {slot: colours}} for four to six. chain_palette_resources() turns
 these into project/palettes files. chain_palette_id() accepts a slot (default 5).
+
+Background boxes (opt-in, ``background_boxes=True``; the climb and Wind Ridge use it).
+A job converts in four steps, everything else (pole actors, zones, B dispatcher,
+box custom scripts, the synchronous EVENT_CALL_CUSTOM_EVENT) stays as it is:
+
+  1. art generator: reserve ``transformer_art.tiles(box)`` for every line, the top
+     tiles in the line's stage wire slot (``stage_slot``), the body tiles in a
+     hardware-like slot, and ``transformer_art.paint`` them; count the art's stage
+     pixels as that stage's own wire pixels in any stray-colour check
+  2. contract: keep wire routes ending in one of the two top tiles (``box[1] - 2``),
+     not the sprite's pole-style top (``box[1] - 3``); drop the box actors from
+     the actor count and the OBJ budget (``chain_sprites(..., background_boxes=True)``)
+  3. scene generator: ``GridChain(..., background_boxes=True)`` and stop adding
+     ``box_actor``; the generator's stale-file sweep deletes the old box actor files
+  4. tests: boxes no longer have actor states; the refresh is checked by its palettes
 
 Test helpers: scanline_load() counts OBJ columns per tile row (SCANLINE_OBJ_LIMIT
 is the budget); the camera window is SCREEN_TILES wide and clamps at both map edges.
@@ -213,7 +233,8 @@ class GridChain:
     def __init__(self, *, rid: Rid, lines: Sequence[dict[str, Any]], chain_var: str, lines_var: str,
                  carrying_var: str, near_var: str, line_bg_slot: int, text: dict[str, str],
                  say: Callable[..., list[Event]], hud: Callable[[str], list[Event]],
-                 bare_event_key: str | None = None, line_bg_slot_2: int | None = None) -> None:
+                 bare_event_key: str | None = None, line_bg_slot_2: int | None = None,
+                 background_boxes: bool = False) -> None:
         self.rid = rid
         self.lines = list(lines)
         assert 1 <= len(self.lines) <= MAX_STAGES, "a grid chain has one to six lines"
@@ -227,6 +248,7 @@ class GridChain:
         self.say = say
         self.hud = hud
         self.bare_event_key = bare_event_key
+        self.background_boxes = background_boxes
 
     # -- IDs -----------------------------------------------------------------
     def actor_id(self, key: str) -> str:
@@ -361,6 +383,8 @@ class GridChain:
             out = [self.set_value(self.chain_var, stages, f"{key}:stages-{stages}"),
                    self.background_palette_event(self.chain_palette_ids(stages),
                                                  f"{key}:palette-{stages}")]
+            if self.background_boxes:
+                return out          # the wire palettes are the boxes' Dead/Live
             for line in self.lines:
                 state = "Live" if line["number"] <= stages else "Dead"
                 out.append(self.actor_state(self.actor_id(line["box"]), state,
@@ -569,6 +593,8 @@ class GridChain:
 
     def box_script_actor_bindings(self, line: dict[str, Any]) -> list[tuple[str, str]]:
         """Actor references needed by this box's script, in stable positional order."""
+        if self.background_boxes:
+            return [(self.actor_id(line["pole"]), line["pole_name"])]
         bindings = [(self.actor_id(other["box"]), other["box_name"]) for other in self.lines]
         bindings.append((self.actor_id(line["pole"]), line["pole_name"]))
         unique: dict[str, str] = {}
@@ -626,6 +652,8 @@ class GridChain:
         it depends on the lines upstream (chain_refresh_events). The external
         script object keeps all box branches out of the shared input bank.
         """
+        if self.background_boxes:
+            raise ValueError("this chain's boxes are background art; it has no box actors")
         key = line["box"]
         x, y = line["box_at"]
         return self.actor_resource(
@@ -766,12 +794,14 @@ def check_wire_routes(routes: Sequence[tuple[int, list[tuple[int, int]]]], stage
 # ---------------------------------------------------------------------------
 # Test helpers: camera window and OBJ load per tile row
 # ---------------------------------------------------------------------------
-def chain_sprites(lines: Sequence[dict[str, Any]]) -> list[tuple[tuple[int, int], int, int]]:
-    """((feet tile), OBJ columns, OBJ tile rows) for each pole and box."""
+def chain_sprites(lines: Sequence[dict[str, Any]], background_boxes: bool = False
+                  ) -> list[tuple[tuple[int, int], int, int]]:
+    """((feet tile), OBJ columns, OBJ tile rows) for each pole and (actor) box."""
     sprites = []
     for line in lines:
         sprites += [(line["pole_at"], 2, 4)]
-        sprites += [(line["box_at"], 2, 4 if line["box_kind"] == "transformer" else 2)]
+        if not background_boxes:
+            sprites += [(line["box_at"], 2, 4 if line["box_kind"] == "transformer" else 2)]
     return sprites
 
 

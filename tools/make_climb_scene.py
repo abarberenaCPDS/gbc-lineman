@@ -446,22 +446,7 @@ CLIMB_TEXT = {
 
 
 class ClimbChain(grid_chain.GridChain):
-    """GridChain with background transformers: no box actors to set or bind."""
-
-    def chain_refresh_events(self, key: str) -> list[dict[str, Any]]:
-        def lit(stages: int) -> list[dict[str, Any]]:
-            return [self.set_value(self.chain_var, stages, f"{key}:stages-{stages}"),
-                    self.background_palette_event(self.chain_palette_ids(stages),
-                                                  f"{key}:palette-{stages}")]
-
-        events = lit(len(self.lines))
-        for line in reversed(self.lines):
-            events = [self.if_value(line["live_var"], 1, f"{key}:{line['key']}", events,
-                                    lit(line["number"] - 1))]
-        return events
-
-    def box_script_actor_bindings(self, line: dict[str, Any]) -> list[tuple[str, str]]:
-        return [(self.actor_id(line["pole"]), line["pole_name"])]
+    """GridChain with background transformers (grid_chain ``background_boxes``)."""
 
     def span_arc_actor(self, number: int, lane: tuple[int, int, int], start_delay: int,
                        sprite_id: str, live_after: int, *, timings: tuple[int, int, int],
@@ -483,6 +468,7 @@ def _make_chain() -> ClimbChain:
         rid=resource_id, lines=LINES, chain_var=climb.VAR_CHAIN_LIVE, lines_var=climb.VAR_LINES_LIVE,
         carrying_var=VAR_CARRYING_CABLE_ID, near_var=VAR_NEAR_ID, line_bg_slot=climb.LINE_BG_SLOT,
         line_bg_slot_2=climb.LINE_BG_SLOT_2, text=CLIMB_TEXT, say=say, hud=hud_events,
+        background_boxes=True,
     )
 
 
@@ -751,7 +737,7 @@ def scene_script(music_id: str, audio_ids: dict[str, str],
         # The overlay scanline cutoff survives scene switches: lift it so the
         # intro box is visible even when a previous visit left the HUD's 16px.
         cutoff_event(150, "intro-controls:say-cutoff"),
-        text_event(short_lines("A: jump\nDown+A: drop"), "intro-controls"),
+        text_event(short_lines("A: jump\nDown+A: drop", "B: grab a cable,\nB: plug it in."), "intro-controls"),
         *say(short_lines("Fix 5 lines up\nto Amara's door!"), "intro-lines"),
         *hud_events("initial-hud"),
         *([cull_thread_event(culled_actors)] if culled_actors else []),

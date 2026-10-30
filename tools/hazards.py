@@ -71,26 +71,26 @@ CABLE_ARC_FRAMES = 24       # arc: hits (group 1)
 # ---------------------------------------------------------------------------
 BOARDS = {
     "storm_climb": [(27, 7, 9), (15, 9, 11), (9, 11, 13)],
-    "wind_ridge": [(27, 21, 23)],
-    "signal_hill": [(15, 20, 22)],
-    "pine_hollow": [(9, 45, 47)],
+    "wind_ridge": [(21, 9, 11), (21, 64, 66), (21, 83, 85)],   # C1, E1, F catwalks
+    "signal_hill": [(9, 8, 10), (9, 43, 45), (9, 77, 79)],     # C1, D1, F catwalks
+    "pine_hollow": [(9, 8, 10), (9, 62, 64), (9, 81, 83)],   # C1, E1, F catwalk landings
     # LAB_Hazard Gallery (make_lab_scene.py): one board on a one-tile shelf.
     "lab_hazard_gallery": [(12, 6, 8)],
     "lab_movement_room": [],
 }
 HIDDEN_CABLES = {
     "storm_climb": [(28, 9, 10)],
-    "wind_ridge": [(25, 34, 35)],
-    "signal_hill": [(7, 35, 36)],
-    "pine_hollow": [(7, 11, 12)],
+    "wind_ridge": [(25, 30, 31)],
+    "signal_hill": [(13, 33, 34), (7, 83, 84)],     # floor before rock C, catwalk F
+    "pine_hollow": [(7, 14, 15), (7, 86, 87)],               # C1 before the mesa, F before the porch
     "lab_hazard_gallery": [(13, 14, 15)],
     "lab_movement_room": [],
 }
 CABLE_START_DELAYS = {
     "storm_climb": [40],
     "wind_ridge": [60],
-    "signal_hill": [50],
-    "pine_hollow": [90],
+    "signal_hill": [50, 100],
+    "pine_hollow": [90, 30],
     "lab_hazard_gallery": [40],
     "lab_movement_room": [],
 }

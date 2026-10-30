@@ -4,6 +4,13 @@ Modelled on ``make_ridge_art.py``: the RGB image returned by
 :func:`make_background` is the artist-facing source, and the compiler-facing
 PNG is a grayscale index proxy that uses GB Studio's native index thresholds.
 This generator owns only ``signal_hill.png`` and its background sidecar.
+
+Both metal BG slots hold wire pixels and the transformers' stage rows only;
+placards, whip crossarms and arc posts live in the stone slot. The five boxes are
+the shared background transformer (``transformer_art.py``): the top tile row in
+its stage's wire slot, the can and post in the stone slot
+(``rosa.TRANSFORMER_BODY_SLOT``). Cracked boards are drawn as cracked planks on
+their catwalk; the board actor only shows while it creaks.
 """
 from __future__ import annotations
 
@@ -14,8 +21,10 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 import climb
+import hazards
 import opening
 import rosa
+import transformer_art
 from make_climb_scene import collision_rle
 
 
@@ -27,6 +36,8 @@ WIDTH, HEIGHT = rosa.MAP_W * TILE, rosa.MAP_H * TILE
 PALETTES = [[tuple(bytes.fromhex(color)) for color in colors]
             for _, colors in opening.BG_PALETTES]
 NATIVE_PROXY_BY_INDEX = (255, 170, 85, 0)
+# Unique (slot, pattern) tiles before GB Studio's flip dedupe (CGB limit 384);
+# 0.18's tiers, five background transformers and board planks need ~110.
 MAX_UNIQUE_TILES = 256
 
 # BG palette families (opening.BG_PALETTES order). Slot 7 is the editor UI.
@@ -35,6 +46,7 @@ PALETTES[WIRE_2] = PALETTES[METAL][:]
 LINE = climb.LINE_BG_SLOT
 assert LINE == METAL, "wire slot must be the metal family"
 assert rosa.WINDOW_BG_SLOT == WINDOW, "window slot must be the window family"
+assert rosa.TRANSFORMER_BODY_SLOT == STONE, "transformer cans use the stone ramp"
 
 # Distant night hill behind the route. It stops at the floor top and never
 # reaches the HUD rows (0-1).
@@ -43,10 +55,10 @@ HILL_LINE = [(x, 63 + ((x // 24 * 7 + x // 96 * 3) % 5) * 4)
 HILL_HIGHLIGHTS = [[(x, y), (x + 4, y + 6)] for x, y in HILL_LINE[2:-1:5]]
 # Stars above the cable run (pixel rows 16-27 only).
 STARS = [(24, 20), (64, 26), (120, 18), (176, 24), (226, 20), (262, 26)]
-# Distant radio mast on the hill. Tile column 37 keeps it clear of the cable
-# run (columns 13-35); the house roof hides its foot.
-MAST_X = rosa.LINES[2]["box"][0] * TILE - 8
-MAST_TOP, MAST_BOTTOM = 18, 46
+# Distant radio mast on the hill, over the floor run of line 2: below the
+# stage-2 wire (row 3), its foot behind the hill.
+MAST_X = 27 * TILE + 4
+MAST_TOP, MAST_BOTTOM = 34, 62
 
 # The utility poles (rosa.LINES pole tiles) are the animated intro_pole actors
 # (see make_rosa_scene); the background draws no pole. Each wire starts at the
@@ -64,6 +76,43 @@ LANE_CELLS = {(row, x) for row, x0, x1 in rosa.hazard_lanes()
 BRACKET_CELLS = {(row + dr, x) for row, x0, x1 in rosa.WHIP_LANES
                  for x in range(x0 - 1, x1 + 2) for dr in (-3, -2)}
 PLACARD_CELLS = LANE_CELLS | BRACKET_CELLS
+
+TRANSFORMER_TILES = {cell for line in rosa.LINES for cell in transformer_art.all_tiles(line["box"])}
+
+
+def _post_run(grid: list[list[int]], row: int, tx: int) -> list[tuple[int, int]]:
+    """Tiles of a post under catwalk ``row`` at column ``tx`` down to the floor."""
+    out = []
+    for ty in range(row + 1, rosa.MAP_H):
+        if grid[ty][tx] != climb.COL_EMPTY:
+            break
+        out.append((tx, ty))
+    return out
+
+
+def _post_columns() -> list[tuple[int, int]]:
+    """(catwalk row, column) of each support: ends plus one inboard, whose run
+    down to the floor stays clear of spans, hazard art, arc posts and transformers."""
+    grid = rosa.collision_grid()
+    spans = [s["columns"] for s in rosa.FALLEN_SPANS]
+    out = []
+    for row, x0, x1 in rosa.LEDGES:
+        for x in (x0, x0 + 3, x1):
+            if any(c0 <= x <= c1 for c0, c1 in spans):
+                continue
+            run = _post_run(grid, row, x)
+            if any((ty, tx) in PLACARD_CELLS or (tx, ty) in TRANSFORMER_TILES
+                   or (tx, ty) in ARC_POST_TILES for tx, ty in run):
+                continue
+            if any(lrow > row and lx0 - 1 <= x <= lx1 + 1 for lrow, lx0, lx1 in rosa._all_hazard_lanes()):
+                continue          # no post right beside a lane below the catwalk
+            out.append((row, x))
+    return out
+
+
+def _post_tiles(grid: list[list[int]]) -> list[tuple[int, int]]:
+    """Catwalk posts: vertical timber from each ledge down to the floor."""
+    return [tile for row, tx in _post_columns() for tile in _post_run(grid, row, tx)]
 
 
 def _mask_pixels(draw) -> frozenset[tuple[int, int]]:
@@ -93,6 +142,8 @@ def stage_pixels(stage: int) -> frozenset[tuple[int, int]]:
     for span in rosa.FALLEN_SPANS:
         if span["live_after"] == stage:
             out |= _span_pixels(span)
+    # The transformer's cap, bushing, clamp, collar and lid light with its stage.
+    out |= transformer_art.stage_pixels(rosa.LINES[stage - 1]["box"])
     return frozenset(out)
 
 
@@ -135,6 +186,10 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
             elif cell == climb.COL_TOP:
                 slots[ty][tx] = TIMBER
 
+    posts = set(_post_tiles(grid))
+    for tx, ty in posts:
+        slots[ty][tx] = TIMBER
+
     # Priya's house: timber body over the floor, two lit windows, one door.
     x0, x1, y0, y1 = rosa.HOUSE_RECT
     for ty in range(y0, y1 + 1):
@@ -149,28 +204,44 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     # Downed-wire posts: stone family, open air, never on a lane. The metal
     # slot holds wire only (the chain palette recolours all of it).
     for tx, ty in ARC_POST_TILES:
-        if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in LANE_CELLS:
-            raise AssertionError(f"arc post overlaps collision or lane at {tx},{ty}")
+        if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in LANE_CELLS or (tx, ty) in TRANSFORMER_TILES:
+            raise AssertionError(f"arc post overlaps collision, a lane or a transformer at {tx},{ty}")
         slots[ty][tx] = STONE
 
-    # Gust lanes get a stone hazard placard.
-    for row, tx in PLACARD_CELLS:
+    # Lanes get a stone hazard placard, whips a stone crossarm.
+    for row, tx in sorted(PLACARD_CELLS):
         if grid[row][tx] != climb.COL_EMPTY:
             raise AssertionError(f"hazard placard overlaps collision at {tx},{row}")
+        if (tx, row) in TRANSFORMER_TILES:
+            raise AssertionError(f"hazard art overlaps a transformer at {tx},{row}")
         slots[row][tx] = STONE
+
+    # Background transformers: the top row in the stage's wire slot, the can in stone.
+    bodies = set()
+    for line in rosa.LINES:
+        top, body = transformer_art.tiles(line["box"])
+        for tx, ty in top + body:
+            if grid[ty][tx] != climb.COL_EMPTY or (tx, ty) in posts:
+                raise AssertionError(f"transformer {line['key']} overlaps terrain at {tx},{ty}")
+        for tx, ty in body:
+            slots[ty][tx] = rosa.TRANSFORMER_BODY_SLOT
+            bodies.add((tx, ty))
+        for tx, ty in top:
+            slots[ty][tx] = stage_slot(line["number"])
 
     # Wire tiles take the metal slot last; they may never hit collision, a lane,
     # the cabin, a post or a placard. Power enters through the left cliff wall.
     hx0, hx1, hy0, hy1 = rosa.HOUSE_RECT
     house = {(tx, ty) for ty in range(hy0, hy1 + 1) for tx in range(hx0, hx1 + 1)}
     placards = PLACARD_CELLS
-    posts = set(ARC_POST_TILES)
+    arc_posts = set(ARC_POST_TILES)
     for stage in range(1, rosa.LINE_COUNT + 1):
         for tx, ty in sorted({(x // TILE, y // TILE) for x, y in stage_pixels(stage)}):
             if grid[ty][tx] != climb.COL_EMPTY:
                 assert tx == 0, f"wire tile {tx},{ty} inside collision"
                 continue
-            if (ty, tx) in placards or (tx, ty) in house or (tx, ty) in posts:
+            if ((ty, tx) in placards or (tx, ty) in house or (tx, ty) in posts
+                    or (tx, ty) in arc_posts or (tx, ty) in bodies):
                 raise AssertionError(f"wire tile {tx},{ty} collides with other art")
             slots[ty][tx] = stage_slot(stage)
 
@@ -270,6 +341,35 @@ def _draw_ledges(c: _Canvas) -> None:
         c.line(TIMBER, [(left, y + 5), (right, y + 5)], p[0])
 
 
+def _draw_posts(c: _Canvas, grid: list[list[int]]) -> None:
+    p = PALETTES[TIMBER]
+    for tx, ty in _post_tiles(grid):
+        x, y = tx * TILE + 3, ty * TILE
+        c.line(TIMBER, [(x, y), (x, y + 7)], p[0], 2)
+        c.line(TIMBER, [(x + 2, y), (x + 2, y + 7)], p[2])
+
+
+def _draw_boards(c: _Canvas) -> None:
+    """Cracked planks on their catwalk (the board actor only shows while it creaks)."""
+    p = PALETTES[TIMBER]
+    for row, x0, x1 in hazards.BOARDS["signal_hill"]:
+        y = row * TILE
+        for tx in range(x0, x1 + 1):
+            x = tx * TILE
+            c.line(TIMBER, [(x + 1, y + 2), (x + 3, y + 4), (x + 5, y + 3)], p[0])
+            c.point(TIMBER, (x + 6, y + 4), p[0])
+
+
+def _draw_transformers(c: _Canvas) -> None:
+    body_rgb = {code: PALETTES[rosa.TRANSFORMER_BODY_SLOT][index]
+                for code, index in rosa.TRANSFORMER_BODY_INDEX.items()}
+    for line in rosa.LINES:
+        stage = line["number"]
+        transformer_art.paint(c.image.load(), line["box"],
+                              stage_rgb=PALETTES[stage_slot(stage)][rosa.STAGE_COLOR_INDEX[stage - 1]],
+                              body_rgb=body_rgb)
+
+
 def _draw_cabin(c: _Canvas) -> None:
     p = PALETTES[TIMBER]
     x0, x1, y0, y1 = rosa.HOUSE_RECT
@@ -362,10 +462,13 @@ def make_background() -> tuple[Image.Image, list[list[int]]]:
     _draw_sky(canvas)
     _draw_rock(canvas, grid)
     _draw_ledges(canvas)
+    _draw_posts(canvas, grid)
     _draw_cabin(canvas)
     _draw_windows(canvas)
     _draw_arc_posts(canvas)
     _draw_warnings(canvas)
+    _draw_boards(canvas)
+    _draw_transformers(canvas)
     _draw_cable(canvas, slots)
 
     allowed = [set(colors) for colors in PALETTES]

@@ -39,6 +39,8 @@ from __future__ import annotations
 
 import uuid as _uuid
 
+import transformer_art
+
 TILE = 8
 MAP_W, MAP_H = 20, 36
 
@@ -135,19 +137,17 @@ for _number, _line in enumerate(LINES, start=1):
     _line["box_kind"] = "transformer"
 LINE_COUNT = len(LINES)
 
-# Background transformers: 16x24 (two columns, three rows) standing on the box
-# tile. The top row is in the stage's wire slot (bushings light with the wire);
-# the can and post rows are in the hardware slot.
-TRANSFORMER_W, TRANSFORMER_H = 2, 3
+# Background transformers: the shared job transformer (transformer_art.py, 16x24,
+# two columns, three rows) standing on the box tile. The top row is in the
+# stage's wire slot (cap, bushing and lid light with the wire); the can and post
+# rows are in the hardware slot.
+TRANSFORMER_W, TRANSFORMER_H = transformer_art.W, transformer_art.H
 TRANSFORMERS = [line["box"] for line in LINES]
 
 
 def transformer_tiles(box: tuple[int, int]) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
     """(stage-slot tiles, hardware-slot tiles) of a background transformer."""
-    x, y = box
-    top = [(x + dx, y - TRANSFORMER_H + 1) for dx in range(TRANSFORMER_W)]
-    body = [(x + dx, y - dy) for dy in range(TRANSFORMER_H - 1) for dx in range(TRANSFORMER_W)]
-    return top, body
+    return transformer_art.tiles(box)
 
 
 # ---------------------------------------------------------------------------
@@ -261,9 +261,11 @@ GUST_LANES = [
 ]
 TIMED_GUST_LANE_INDICES = (0, 1)
 INERT_GUST_LANE_INDICES = tuple(i for i in range(len(GUST_LANES)) if i not in TIMED_GUST_LANE_INDICES)
-GUST_WARNING_FRAMES = 54
-GUST_ACTIVE_FRAMES = 20
-GUST_REST_FRAMES = 90
+# 0.18 (Abe: "can even make it a bit harder"): 0.8 s of warning (was 0.9), a
+# slightly longer burst and a shorter rest (was 54/20/90). Wind Ridge is 48/22/70.
+GUST_WARNING_FRAMES = 50
+GUST_ACTIVE_FRAMES = 22
+GUST_REST_FRAMES = 80
 
 # Fallen span on the L4 walk: dark until power reaches transformer 2.
 FALLEN_SPANS = [{"live_after": 2, "arcs": [(19, 7, 8)], "delays": [0]}]

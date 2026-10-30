@@ -245,24 +245,53 @@ class RosaTests(unittest.TestCase):
                          "editor index and position must be free")
         self.assertNotIn(resource["_index"], [t[0] for t in taken], "scene index must be unique")
 
-    def test_five_line_route_and_full_hazard_kit(self):
+    def test_five_line_tiers_and_complete_hazard_kit(self):
         self.assertEqual((rosa.MAP_W, rosa.MAP_H), (100, 18))
-        self.assertEqual([(line["key"], line["pole"], line["box"], line["checkpoint"], line["live_var"])
-                          for line in rosa.LINES], [
-            ("feeder", (7, 8), (9, 14), (14, 14), "21"),
-            ("west", (12, 11), (26, 14), (27, 14), "30"),
-            ("middle", (31, 8), (55, 8), (56, 8), "31"),
-            ("east", (59, 11), (70, 8), (71, 8), "32"),
-            ("house", (73, 8), (89, 11), (88, 11), "10"),
-        ])
+        self.assertEqual([line["key"] for line in rosa.LINES], ["feeder", "west", "middle", "east", "house"])
+        self.assertEqual([line["live_var"] for line in rosa.LINES], ["21", "30", "31", "32", "10"])
         self.assertEqual(rosa.STAGE_COLOR_INDEX, [1, 3, 2, 1, 3])
-        self.assertEqual(rosa.ARC_LANES, [(13, 17, 18)])
-        self.assertEqual(rosa.GUST_LANES, [])
-        self.assertEqual(rosa.span_arc_lanes(), [(13, 43, 44), (13, 83, 84)])
-        self.assertEqual(rosa.WHIP_LANES, [(13, 48, 49), (13, 64, 65), (13, 78, 79)])
-        self.assertEqual(hazards.HIDDEN_CABLES["signal_hill"], [(7, 35, 36)])
-        self.assertEqual(hazards.BOARDS["signal_hill"], [(15, 20, 22)])
-        self.assertEqual(rosa.actor_count(), rosa.MAX_SCENE_ACTORS)
+        # Climb-style tiers (Abe, 0.17: "too easy ... same as Hiroshi's"): the route rises to every tier.
+        feet = {line["pole"][1] for line in rosa.LINES} | {line["box"][1] for line in rosa.LINES}
+        self.assertEqual(feet, {rosa.SURFACE_STEP - 1, rosa.SURFACE_HIGH - 1, rosa.SURFACE_TOP - 1})
+        # Every obstacle type, more of them than Wind Ridge (11), on the 20-actor budget.
+        self.assertGreaterEqual(len(rosa.ARC_LANES), 1)
+        self.assertGreaterEqual(len(rosa.GUST_LANES), 2)
+        self.assertGreaterEqual(len(rosa.span_arc_lanes()), 2)
+        self.assertGreaterEqual(len(rosa.WHIP_LANES), 3)
+        self.assertGreaterEqual(len(hazards.HIDDEN_CABLES["signal_hill"]), 2)
+        self.assertGreaterEqual(len(hazards.BOARDS["signal_hill"]), 3)
+        self.assertGreaterEqual(rosa.hazard_count(), 12)
+        self.assertLessEqual(rosa.actor_count(), rosa.MAX_SCENE_ACTORS)
+        # Hazards sit on the catwalks too, not only on the floor; boards lie on catwalks.
+        self.assertTrue(any(row == rosa.CHEST_HIGH for row, _, _ in rosa.hazard_lanes()))
+        self.assertTrue(all(row == rosa.SURFACE_HIGH for row, _, _ in hazards.BOARDS["signal_hill"]))
+
+    def test_harder_than_wind_ridge(self):
+        """More hazards and shorter safe windows than Hiroshi's job."""
+        self.assertGreater(rosa.hazard_count(), ridge.actor_count() - 2 - ridge.LINE_COUNT)
+        self.assertLess(rosa.GUST_REST_FRAMES, ridge.GUST_REST_FRAMES)
+        self.assertLessEqual(rosa.GUST_WARNING_FRAMES, ridge.GUST_WARNING_FRAMES)
+        self.assertLess(rosa.WHIP_HANG_FRAMES, ridge.WHIP_HANG_FRAMES)
+        self.assertLessEqual(rosa.WHIP_SWAY_FRAMES, ridge.WHIP_SWAY_FRAMES)
+        self.assertLess(rosa.JOB_ARC_REST_FRAMES, ridge.JOB_ARC_REST_FRAMES)
+
+    def test_every_carry_crosses_a_hazard(self):
+        """Each line's carry (pole to box) passes over at least one hazard lane or board."""
+        cells = [(x0, x1) for _, x0, x1 in rosa._all_hazard_lanes()]
+        cells += [(x0, x1) for _, x0, x1 in hazards.BOARDS["signal_hill"]]
+        for line in rosa.LINES:
+            px, bx = line["pole"][0], line["box"][0]
+            self.assertTrue(any(px < x0 and x1 < bx for x0, x1 in cells), line["key"])
+
+    def test_boxes_are_background_transformers(self):
+        self.assertTrue(rosa.BACKGROUND_BOXES)
+        self.assertTrue(scene.CHAIN.background_boxes)
+        grid = rosa.collision_grid()
+        for line in rosa.LINES:
+            top, body = rosa.transformer_tiles(line["box"])
+            self.assertTrue(all(grid[y][x] == rosa.COL_EMPTY for x, y in top + body), line["key"])
+            with self.assertRaises(ValueError):
+                scene.CHAIN.box_actor(line, 0, ridge.TRANSFORMER_SPRITE_ID)
 
     def test_collisions_match_contract(self):
         resource = built_scene()
@@ -490,7 +519,7 @@ class RosaTests(unittest.TestCase):
                           ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_HIDE"])
         hazard_indices = [a["_index"] for a in built_actors()
                           if a["symbol"].startswith(("signal_arc_", "signal_gust_"))]
-        first_hazard = 2 + 2 * rosa.LINE_COUNT   # Priya, her workstation, then pole-and-box pairs
+        first_hazard = 2 + rosa.LINE_COUNT   # Priya, her workstation, then one pole per line
         self.assertEqual(hazard_indices, list(range(first_hazard, first_hazard + len(arcs) + len(gusts))))
 
     def test_hidden_cable_starts_dark_and_has_one_timed_arc_window(self):
@@ -506,7 +535,7 @@ class RosaTests(unittest.TestCase):
         first = next(e for e in update if e["command"] == "EVENT_IF_ACTOR_DIRECTION")
         self.assertEqual([e["args"]["frames"]["value"] for e in first["children"]["true"]
                           if e["command"] == "EVENT_WAIT"],
-                         hazards.CABLE_START_DELAYS["signal_hill"])
+                         hazards.CABLE_START_DELAYS["signal_hill"][:1])
         self.assertEqual([e["args"]["spriteStateId"] for e in update
                           if e["command"] == "EVENT_ACTOR_SET_STATE"], ["Warning", "Arc"])
         commands = [e["command"] for e in update]
@@ -540,6 +569,20 @@ class RosaTests(unittest.TestCase):
                                     profiles=profiles)
             self.assertLessEqual(len(near), rosa.MAX_ACTIVE_ACTORS, (spot, near))
 
+    def test_every_view_stays_within_the_oam(self):
+        # 40 hardware sprites: the hero plus every actor near the view at its largest frame.
+        actors = {a["symbol"]: a for a in built_actors()}
+        profiles = sprite_profiles(PROJECT_DIR)
+        from test_grid_chain import actor_profile
+        worst = 0
+        for spot in spots():
+            _, near = sprite_budget(PROJECT_DIR, list(actors.values()), spot, rosa.MAP_W, rosa.MAP_H,
+                                    profiles=profiles)
+            total = 4 + sum(max(len(frame) for frame in actor_profile(actors[symbol], profiles)["frames"])
+                            for symbol in near)
+            worst = max(worst, total)
+        self.assertLessEqual(worst, 40)
+
     def test_storm_pole_uses_intro_sprite_and_starts_snapped_unless_live(self):
         house = LINES[-1]
         pole = actor_by_symbol(scene.POLE_SYMBOL)
@@ -572,24 +615,33 @@ class RosaTests(unittest.TestCase):
             self.assertEqual([e["args"]["spriteStateId"] for e in start["children"]["false"]],
                              ["Snapped+Cable"])
 
-    def test_feeder_pole_stands_on_the_upper_step(self):
-        feeder = LINES[0]
-        self.assertEqual(feeder["pole_at"], (7, 8))
-        self.assertEqual(rosa.collision_grid()[feeder["pole_at"][1] + 1][feeder["pole_at"][0]],
-                         climb.COL_SOLID)
-
-    def test_b16_feeder_pit_ledge_and_reach_trigger_are_preserved(self):
-        self.assertIn((4, 8, 12, 14), rosa.SOLID_BLOCKS)
-        self.assertIn((6, 8, 9, 11), rosa.SOLID_BLOCKS)
-        self.assertEqual(rosa.LEDGES, [(13, 10, 10)])
-        trigger = trigger_by_symbol("trigger_signal_feeder_reach")
-        self.assertEqual((trigger["x"], trigger["y"], trigger["width"], trigger["height"]),
-                         (9, 12, 2, 3))
+    def test_cracked_boards_lie_on_catwalks_hidden_until_they_creak(self):
         grid = rosa.collision_grid()
-        self.assertTrue(all(grid[row][x] == climb.COL_EMPTY
-                            for row in (12, 14) for x in (9, 10)))
-        self.assertEqual(grid[13][9], climb.COL_EMPTY)
-        self.assertEqual(grid[13][10], climb.COL_TOP)
+        for number, board in enumerate(hazards.BOARDS["signal_hill"], start=1):
+            actor = actor_by_symbol(f"signal_board_{number:02d}")
+            self.assertEqual((actor["x"], actor["y"]), hazards.board_actor_position(board))
+            self.assertEqual(actor["spriteSheetId"], hazards.BOARD_SPRITE_ID)
+            self.assertEqual(actor["collisionGroup"], "1")
+            self.assertEqual([e["command"] for e in actor["startScript"]],
+                             ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_SET_STATE", "EVENT_ACTOR_HIDE"])
+            [gate] = actor["updateScript"]
+            self.assertTrue(is_var_if(gate, hazards.VAR_ON_BOARD, number))
+            creak = gate["children"]["true"]
+            commands = [e["command"] for e in creak]
+            self.assertLess(commands.index("EVENT_ACTOR_SHOW"), commands.index("EVENT_WAIT"))
+            self.assertEqual(commands[-1], "EVENT_ACTOR_HIDE", "back to the background plank")
+            self.assertEqual([e["args"]["frames"]["value"] for e in walk(creak) if e["command"] == "EVENT_WAIT"],
+                             [hazards.CREAK_FRAMES, hazards.BREAK_FRAMES, hazards.BOARD_REST_FRAMES])
+            # The plank is a one-way catwalk tile and the standing row above it is clear.
+            row, x0, x1 = board
+            self.assertTrue(all(grid[row][x] == rosa.COL_TOP for x in range(x0, x1 + 1)))
+            self.assertTrue(all(grid[row - 1][x] == rosa.COL_EMPTY for x in range(x0, x1 + 1)))
+            trigger = trigger_by_symbol(f"trigger_signal_cracked_board_{number:02d}")
+            self.assertEqual((trigger["x"], trigger["y"], trigger["width"], trigger["height"]),
+                             hazards.board_trigger_rect(board))
+        # The boards draw last.
+        self.assertEqual(built_actors()[-1]["symbol"],
+                         f"signal_board_{len(hazards.BOARDS['signal_hill']):02d}")
 
     def test_storm_pole_palette_has_its_own_slot(self):
         sprites = built_scene()["spritePaletteIds"]
@@ -600,8 +652,7 @@ class RosaTests(unittest.TestCase):
         actors = built_actors()
         symbols = [a["symbol"] for a in actors]
         expected = [scene.ROSA_SYMBOL, scene.WORKSTATION_SYMBOL]
-        for line in LINES:
-            expected.extend((line["pole_symbol"], line["box_symbol"]))
+        expected += [line["pole_symbol"] for line in LINES]
         expected += [f"signal_arc_{n:02d}" for n in range(1, len(rosa.ARC_LANES) + 1)]
         expected += [f"signal_gust_{n:02d}" for n in range(1, len(rosa.GUST_LANES) + 1)]
         expected += [f"signal_span_arc_{n:02d}" for n in range(1, len(rosa.span_arc_lanes()) + 1)]
@@ -615,8 +666,7 @@ class RosaTests(unittest.TestCase):
         self.assertEqual([a["_index"] for a in actors], list(range(len(actors))))
         self.assertEqual(len(set(a["id"] for a in actors)), len(actors))
         self.assertEqual(len(actors), rosa.actor_count())
-        self.assertEqual(len(actors), rosa.MAX_SCENE_ACTORS, "full hazard kit fits the 20-actor budget")
-        self.assertLessEqual(len(actors), rosa.MAX_SCENE_ACTORS)
+        self.assertLessEqual(len(actors), rosa.MAX_SCENE_ACTORS, "gbvm allows 20 actors besides the player")
         rosa_actor = actor_by_symbol(scene.ROSA_SYMBOL)
         self.assertEqual((rosa_actor["x"], rosa_actor["y"]), rosa.ROSA)
         self.assertEqual(rosa_actor["spriteSheetId"], rosa.ROSA_SPRITE_ID)
@@ -632,14 +682,8 @@ class RosaTests(unittest.TestCase):
             self.assertEqual((pole["x"], pole["y"]), line["pole_at"])
             self.assertEqual(pole["spriteSheetId"], intro.POLE_SPRITE_ID)
             self.assertNotIn(line["cable_symbol"], symbols)
-            box = actor_by_symbol(line["box_symbol"])
-            self.assertEqual((box["x"], box["y"]), line["box_at"])
-            self.assertEqual(box["startScript"][0]["args"]["spriteStateId"], "Dead")
-        transformer = actor_by_symbol("signal_feeder_transformer")
-        self.assertEqual(transformer["spriteSheetId"], ridge.TRANSFORMER_SPRITE_ID,
-                         "the Wind Ridge transformer asset, reused")
-        junction = actor_by_symbol("signal_junction_box")
-        self.assertEqual(junction["spriteSheetId"], ridge.TRANSFORMER_SPRITE_ID)  # house box matches every transformer
+            self.assertNotIn(line["box_symbol"], symbols, "boxes are background art")
+        self.assertNotIn(ridge.TRANSFORMER_SPRITE_ID, {a["spriteSheetId"] for a in actors})
         arc = actor_by_symbol("signal_arc_01")
         self.assertEqual(arc["spriteSheetId"], rosa.ARC_SPRITE_ID)
         self.assertEqual(arc["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
@@ -668,7 +712,8 @@ class RosaTests(unittest.TestCase):
             }
             self.assertEqual({key: value for key, value in invoke["args"].items()
                               if key.startswith("$actor[")}, expected_actor_args)
-            self.assertEqual(actor_by_symbol(line["box_symbol"])["script"], [])
+            self.assertEqual(expected_actor_args, {"$actor[0]$": scene.actor_id(line["pole"])},
+                             "background boxes: the box script binds only its pole")
             [live] = script["script"]
             self.assertTrue(is_var_if(live, line["live_var"], 1))
             self.assertEqual(texts(live["children"]["true"]), [["Already fixed."]])
@@ -748,9 +793,8 @@ class RosaTests(unittest.TestCase):
                                                                  rosa.LINE_BG_SLOT_2),
             }, bits)
             self.assertEqual(stages_set, stages, bits)
-            for line in LINES:
-                self.assertEqual(boxes[scene.actor_id(line["box"])],
-                                 "Live" if line["number"] <= stages else "Dead", (bits, line["key"]))
+            # Background boxes: the wire palettes are the boxes' Dead/Live.
+            self.assertEqual(boxes, {}, bits)
 
     def test_chain_palettes_light_stages_in_order(self):
         palettes = {p["id"]: p["colors"] for _, p in scene.rosa_palettes()}
@@ -834,7 +878,7 @@ class RosaTests(unittest.TestCase):
     def test_zones_fit_the_trigger_budget_and_clear_the_exit_and_door(self):
         triggers = built_triggers()
         self.assertEqual(len(triggers), 2 + len(hazards.BOARDS["signal_hill"]) + 2 * len(LINES),
-                         "five lines, full hazards and exits use 13 triggers; talk uses a position test")
+                         "five lines, three boards and the exits use 15 triggers; talk uses a position test")
         self.assertLessEqual(len(triggers), grid_chain.MAX_TRIGGERS)
 
         def rect(t):
@@ -924,8 +968,7 @@ class RosaTests(unittest.TestCase):
 
     def test_each_box_has_a_zone_on_open_air_that_arms_its_own_plug_in(self):
         # B-06: walking up to a box arms its B press (the zone sets var 27); the press
-        # plugs the cable in. T1 sits in the pit between the step and the storm-pole rock,
-        # so its zone is the pit.
+        # plugs the cable in. Every zone is the standard reach rectangle.
         grid = rosa.collision_grid()
         for line in scene.LINES:
             trigger = trigger_by_symbol(f"trigger_signal_{line['key']}_reach")
@@ -937,7 +980,7 @@ class RosaTests(unittest.TestCase):
                             f"{line['key']} trigger in rock")
             [enter] = trigger["script"]
             self.assertTrue(is_set(enter, climb.VAR_NEAR, grid_chain.BOX_ZONE + line["number"]))
-        self.assertEqual(trigger_by_symbol("trigger_signal_feeder_reach")["x"], rosa.LINES[0]["box"][0])
+        self.assertFalse(any("reach" in line for line in rosa.LINES), "no pit override any more")
 
     def test_hollow_exit_leads_to_pine_hollow_only_after_rosa_is_powered(self):
         trigger = trigger_by_symbol("trigger_signal_hollow_exit")

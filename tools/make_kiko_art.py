@@ -4,6 +4,13 @@ Modelled on ``make_rosa_art.py``: the RGB image returned by
 :func:`make_background` is the artist-facing source, and the compiler-facing
 PNG is a grayscale index proxy that uses GB Studio's native index thresholds.
 This generator owns only ``pine_hollow.png`` and its background sidecar.
+
+Both metal BG slots hold wire pixels and the transformers' stage rows only;
+placards and whip brackets live in the stone slot. The five boxes are the shared
+background transformer (``transformer_art.py``): the top tile row in its stage's
+wire slot, the can and post in the stone slot (``kiko.TRANSFORMER_BODY_SLOT``).
+Cracked boards are drawn as cracked planks on their catwalk; the board actor
+only shows while it creaks.
 """
 from __future__ import annotations
 
@@ -14,8 +21,10 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 import climb
+import hazards
 import kiko
 import opening
+import transformer_art
 from make_climb_scene import collision_rle
 
 
@@ -27,7 +36,10 @@ WIDTH, HEIGHT = kiko.MAP_W * TILE, kiko.MAP_H * TILE
 PALETTES = [[tuple(bytes.fromhex(color)) for color in colors]
             for _, colors in opening.BG_PALETTES]
 NATIVE_PROXY_BY_INDEX = (255, 170, 85, 0)
-MAX_UNIQUE_TILES = 256
+# Unique (slot, pattern) tiles before GB Studio's flip dedupe; the CGB limit is
+# 384. 0.18's tiers, five background transformers and board planks need more
+# than the old flat hollow.
+MAX_UNIQUE_TILES = 330
 
 # BG palette families (opening.BG_PALETTES order). Slot 7 is the editor UI.
 SKY, STONE, TIMBER, WINDOW, FOLIAGE, METAL, WIRE_2 = range(7)
@@ -35,6 +47,7 @@ PALETTES[WIRE_2] = PALETTES[METAL][:]
 LINE = climb.LINE_BG_SLOT
 assert LINE == METAL, "cable slot must be the metal family"
 assert kiko.WINDOW_BG_SLOT == WINDOW, "window slot must be the window family"
+assert kiko.TRANSFORMER_BODY_SLOT == STONE, "transformer cans use the stone ramp"
 
 # Night hollow: a low forest hill behind the route. It stops at the floor top
 # and never reaches the HUD rows (0-1).
@@ -66,6 +79,7 @@ LANE_CELLS = {(row, x) for row, x0, x1 in kiko.hazard_lanes()
 BRACKET_CELLS = {(row + dr, x) for row, x0, x1 in kiko.WHIP_LANES
                  for x in range(x0 - 1, x1 + 2) for dr in (-3, -2)}
 PLACARD_CELLS = LANE_CELLS | BRACKET_CELLS
+TRANSFORMER_TILES = {cell for line in kiko.LINES for cell in transformer_art.all_tiles(line["box"])}
 
 
 def _mask_pixels(draw) -> frozenset[tuple[int, int]]:
@@ -95,6 +109,8 @@ def stage_pixels(stage: int) -> frozenset[tuple[int, int]]:
     for span in kiko.FALLEN_SPANS:
         if span["live_after"] == stage:
             out |= _span_pixels(span)
+    # The transformer's cap, bushing, clamp, collar and lid light with its stage.
+    out |= transformer_art.stage_pixels(kiko.LINES[stage - 1]["box"])
     return frozenset(out)
 
 
@@ -118,6 +134,11 @@ def wire_tiles() -> frozenset[tuple[int, int]]:
     """(tx, ty) tiles any wire pixel touches."""
     return frozenset((x // TILE, y // TILE) for stage in range(1, kiko.STAGE_COUNT + 1)
                      for x, y in stage_pixels(stage))
+
+
+def house_tiles() -> set[tuple[int, int]]:
+    hx0, hx1, hy0, hy1 = kiko.HOUSE_RECT
+    return {(tx, ty) for ty in range(hy0, hy1 + 1) for tx in range(hx0, hx1 + 1)}
 
 
 def _set_rect(slots: list[list[int]], slot: int, x0: int, x1: int,
@@ -155,28 +176,45 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     for tx, ty in kiko.HOUSE_WINDOWS:
         slots[ty][tx] = WINDOW
 
-    # Downed-wire posts: stone family, open air, never on a lane.
+    # Downed-wire posts: stone family, open air, never on a lane or a transformer.
     for tx, ty in ARC_POST_TILES:
-        if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in LANE_CELLS:
-            raise AssertionError(f"arc post overlaps collision or lane at {tx},{ty}")
+        if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in LANE_CELLS or (tx, ty) in TRANSFORMER_TILES:
+            raise AssertionError(f"arc post overlaps collision, lane or transformer at {tx},{ty}")
         slots[ty][tx] = STONE
 
-    for row, tx in PLACARD_CELLS:
+    for row, tx in sorted(PLACARD_CELLS):
         if grid[row][tx] != climb.COL_EMPTY:
             raise AssertionError(f"hazard placard overlaps collision at {tx},{row}")
+        if (tx, row) in TRANSFORMER_TILES:
+            raise AssertionError(f"hazard placard overlaps a transformer at {tx},{row}")
         slots[row][tx] = STONE
 
+    # Background transformers: the top row in the stage's wire slot, the can in stone.
+    bodies = set()
+    for line in kiko.LINES:
+        top, body = transformer_art.tiles(line["box"])
+        for tx, ty in top + body:
+            if grid[ty][tx] != climb.COL_EMPTY or (tx, ty) in set(ARC_POST_TILES):
+                raise AssertionError(f"transformer {line['key']} overlaps terrain at {tx},{ty}")
+            if (tx, ty) in house_tiles():
+                raise AssertionError(f"transformer {line['key']} overlaps the house at {tx},{ty}")
+        for tx, ty in body:
+            slots[ty][tx] = kiko.TRANSFORMER_BODY_SLOT
+            bodies.add((tx, ty))
+        for tx, ty in top:
+            slots[ty][tx] = stage_slot(line["number"])
+
     # Wire tiles take the metal slot last. They may never hit collision (power
-    # enters through the left cliff wall), a lane, the cabin, a post or a placard.
-    hx0, hx1, hy0, hy1 = kiko.HOUSE_RECT
-    house = {(tx, ty) for ty in range(hy0, hy1 + 1) for tx in range(hx0, hx1 + 1)}
+    # enters through the left cliff wall), a lane, the cabin, a post, a placard
+    # or a transformer's can.
+    house = house_tiles()
     posts = set(ARC_POST_TILES)
     for stage in range(1, kiko.STAGE_COUNT + 1):
         for tx, ty in sorted({(x // TILE, y // TILE) for x, y in stage_pixels(stage)}):
             if grid[ty][tx] != climb.COL_EMPTY:
                 assert tx == 0, f"wire tile {tx},{ty} inside collision"
                 continue
-            if (ty, tx) in PLACARD_CELLS or (tx, ty) in house or (tx, ty) in posts:
+            if (ty, tx) in PLACARD_CELLS or (tx, ty) in house or (tx, ty) in posts or (tx, ty) in bodies:
                 raise AssertionError(f"wire tile {tx},{ty} collides with other art")
             slots[ty][tx] = stage_slot(stage)
 
@@ -346,6 +384,27 @@ def _draw_warnings(c: _Canvas) -> None:
             c.rect(STONE, (x, y + 3, x + 1, y + 9), p[2])
 
 
+def _draw_boards(c: _Canvas) -> None:
+    """Cracked planks on their catwalk (the board actor only shows while it creaks)."""
+    p = PALETTES[TIMBER]
+    for row, x0, x1 in hazards.BOARDS["pine_hollow"]:
+        y = row * TILE
+        for tx in range(x0, x1 + 1):
+            x = tx * TILE
+            c.line(TIMBER, [(x + 1, y + 2), (x + 3, y + 4), (x + 5, y + 3)], p[0])
+            c.point(TIMBER, (x + 6, y + 4), p[0])
+
+
+def _draw_transformers(c: _Canvas) -> None:
+    body_rgb = {code: PALETTES[kiko.TRANSFORMER_BODY_SLOT][index]
+                for code, index in kiko.TRANSFORMER_BODY_INDEX.items()}
+    for line in kiko.LINES:
+        stage = line["number"]
+        transformer_art.paint(c.image.load(), line["box"],
+                              stage_rgb=PALETTES[stage_slot(stage)][kiko.STAGE_COLOR_INDEX[stage - 1]],
+                              body_rgb=body_rgb)
+
+
 def _draw_cable(c: _Canvas, slots: list[list[int]]) -> None:
     """Paint each stage's wire pixels in its metal colour index, on claimed wire tiles only."""
     px = c.image.load()
@@ -378,6 +437,8 @@ def make_background() -> tuple[Image.Image, list[list[int]]]:
     _draw_windows(canvas)
     _draw_arc_posts(canvas)
     _draw_warnings(canvas)
+    _draw_boards(canvas)
+    _draw_transformers(canvas)
     _draw_cable(canvas, slots)
 
     allowed = [set(colors) for colors in PALETTES]

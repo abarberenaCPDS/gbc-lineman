@@ -23,6 +23,7 @@ from PIL import Image, ImageDraw
 import climb
 import hazards
 import opening
+import transformer_art
 from make_climb_scene import collision_rle, resource_id
 
 
@@ -48,37 +49,11 @@ PALETTES[WIRE_1] = _rgb(climb.WIRE_SLOT_DEAD)
 PALETTES[WIRE_2] = _rgb(climb.WIRE_SLOT_DEAD)
 SUMMIT_WINDOW_TILES = climb.SUMMIT_WINDOW_TILES
 
-# Background transformer, 16x24 on its two columns: the top row of tiles is in
-# its stage's wire slot ("W" = the stage colour: bushings and lid glow when the
-# stage is live), the can and post are hardware ("L" light, "G" grey, "D" dark).
-# Modelled on the transformer sprite Abe picked (Signal Hill): dark outline,
-# light can, banded body, short post.
-TRANSFORMER_ART = [
-    "................",
-    "...WW......WW...",
-    "...WW......WW...",
-    "..WWWW....WWWW..",
-    "...WW......WW...",
-    "..WWWW....WWWW..",
-    "...WW......WW...",
-    ".WWWWWWWWWWWWWW.",
-    ".DDDDDDDDDDDDDD.",
-    ".DLLLLLLLLLLLLD.",
-    ".DLLGGLLLLGGLLD.",
-    ".DLLGGLLLLGGLLD.",
-    ".DLLLLLLLLLLLLD.",
-    ".DGGGGGGGGGGGGD.",
-    ".DLLLLLLLLLLLLD.",
-    ".DDDDDDDDDDDDDD.",
-    "..DLLLLLLLLLLD..",
-    "..DDDDDDDDDDDD..",
-    "......DLLD......",
-    "......DLLD......",
-    "......DLLD......",
-    "......DLLD......",
-    "....DDDDDDDD....",
-    "....DLLLLLLD....",
-]
+# Background transformer: the shared job transformer (transformer_art.py), a
+# 16x24 condensation of the transformer sprite's Live frame. Its top tile row is
+# in the stage's wire slot ("W": cap, bushing, clamp, collar and lid glow when
+# the stage is live); the can and post are hardware ("L" light, "G" grey, "D" dark).
+TRANSFORMER_ART = transformer_art.ART
 ART_INDEX = {"L": 1, "G": 2, "D": 3}
 assert len(TRANSFORMER_ART) == climb.TRANSFORMER_H * TILE
 assert all(len(row) == climb.TRANSFORMER_W * TILE for row in TRANSFORMER_ART)
@@ -322,21 +297,13 @@ def _draw_substation(c: _Canvas) -> None:
 
 
 def _draw_transformers(c: _Canvas) -> None:
-    px = c.image.load()
+    body_rgb = {code: PALETTES[HARDWARE][index] for code, index in ART_INDEX.items()}
     for line in climb.LINES:
-        bx, by = line["box"]
-        left, top = bx * TILE, (by - climb.TRANSFORMER_H + 1) * TILE
-        stage_rgb = stage_color(line["number"])
-        for dy, row in enumerate(TRANSFORMER_ART):
-            for dx, code in enumerate(row):
-                x, y = left + dx, top + dy
-                slot = c.slots[y // TILE][x // TILE]
-                if code == "W":
-                    assert slot == climb.stage_slot(line["number"])
-                    px[x, y] = stage_rgb
-                elif code in ART_INDEX:
-                    assert slot == HARDWARE
-                    px[x, y] = PALETTES[HARDWARE][ART_INDEX[code]]
+        top, body = climb.transformer_tiles(line["box"])
+        assert all(c.slots[ty][tx] == climb.stage_slot(line["number"]) for tx, ty in top)
+        assert all(c.slots[ty][tx] == HARDWARE for tx, ty in body)
+        transformer_art.paint(c.image.load(), line["box"], stage_rgb=stage_color(line["number"]),
+                              body_rgb=body_rgb)
 
 
 def _draw_wires(c: _Canvas) -> None:

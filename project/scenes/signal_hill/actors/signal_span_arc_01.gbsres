@@ -1,12 +1,12 @@
 {
   "_resourceType": "actor",
   "id": "2220e90e-5606-573d-babb-1397d6b36a0d",
-  "_index": 13,
+  "_index": 10,
   "symbol": "signal_span_arc_01",
   "prefabId": "",
   "name": "Downed Span Arc 1",
   "coordinateType": "tiles",
-  "x": 43,
+  "x": 28,
   "y": 13,
   "frame": 0,
   "animate": true,
@@ -49,7 +49,7 @@
           },
           "valueB": {
             "type": "number",
-            "value": 2
+            "value": 1
           }
         }
       },
@@ -78,6 +78,17 @@
                     }
                   },
                   "id": "37c05a72-f538-5025-bf0b-83f1a52b79b5"
+                },
+                {
+                  "command": "EVENT_WAIT",
+                  "args": {
+                    "units": "frames",
+                    "frames": {
+                      "type": "number",
+                      "value": 30
+                    }
+                  },
+                  "id": "5bb79da8-8869-573d-84a9-595e826bab5e"
                 }
               ],
               "false": []
@@ -105,7 +116,7 @@
               "units": "frames",
               "frames": {
                 "type": "number",
-                "value": 42
+                "value": 40
               }
             },
             "id": "7b292e3b-68fe-5ecb-a2b2-7d030b30d2ea"
@@ -157,7 +168,7 @@
               "units": "frames",
               "frames": {
                 "type": "number",
-                "value": 54
+                "value": 52
               }
             },
             "id": "8dca93ae-b49c-55f2-bc2a-579c3139ba81"

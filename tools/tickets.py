@@ -103,6 +103,7 @@ def closed_lines(ticket: int) -> list[str]:
 REPORT_PAGES = [
     "STORM REPORT",
     "Tickets closed:\n4 of 4.",
+    "Lines fixed:\n20 of 20.",
     "Amara's food is\nsafe and cold.",
     "Hiroshi breathes\neasy again.",
     "Priya is back\nonline.",

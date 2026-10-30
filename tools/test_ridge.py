@@ -231,23 +231,42 @@ class RidgeTests(unittest.TestCase):
         self.assertNotIn((resource["_index"], resource["x"], resource["y"]), taken,
                          "editor index and position must be free")
 
-    def test_five_line_geometry_and_complete_hazard_kit(self):
+    def test_five_line_tiers_and_complete_hazard_kit(self):
         self.assertEqual((ridge.MAP_W, ridge.MAP_H), (100, 30))
-        self.assertEqual([(line["key"], line["pole"], line["box"], line["checkpoint"], line["live_var"])
-                          for line in ridge.LINES], [
-            ("feeder", (6, 23), (18, 26), (19, 26), "17"),
-            ("west", (28, 20), (38, 26), (39, 26), "28"),
-            ("middle", (44, 20), (55, 26), (56, 26), "19"),
-            ("east", (59, 23), (70, 20), (71, 20), "29"),
-            ("house", (73, 20), (89, 23), (88, 23), "8"),
-        ])
+        self.assertEqual([line["key"] for line in ridge.LINES], ["feeder", "west", "middle", "east", "house"])
+        self.assertEqual([line["live_var"] for line in ridge.LINES], ["17", "28", "19", "29", "8"])
         self.assertEqual(ridge.STAGE_COLOR_INDEX, [1, 3, 2, 1, 3])
-        self.assertEqual(ridge.GUST_LANES, [(25, 65, 67)])
-        self.assertEqual(ridge.span_arc_lanes(), [(25, 51, 52), (25, 83, 84)])
-        self.assertEqual(ridge.WHIP_LANES, [(25, 12, 13), (19, 50, 51), (25, 78, 79)])
-        self.assertEqual(hazards.HIDDEN_CABLES["wind_ridge"], [(25, 34, 35)])
-        self.assertEqual(hazards.BOARDS["wind_ridge"], [(27, 21, 23)])
-        self.assertEqual(ridge.actor_count(), ridge.MAX_SCENE_ACTORS)
+        # Climb-style tiers (Abe, 0.17: "too easy"): the route rises to every tier.
+        feet = {line["pole"][1] for line in ridge.LINES} | {line["box"][1] for line in ridge.LINES}
+        self.assertEqual(feet, {ridge.SURFACE_STEP - 1, ridge.SURFACE_HIGH - 1, ridge.SURFACE_TOP - 1})
+        # Every obstacle type, with the freed box actors spent on more of them.
+        self.assertGreaterEqual(len(ridge.GUST_LANES), 2)
+        self.assertGreaterEqual(len(ridge.span_arc_lanes()), 2)
+        self.assertGreaterEqual(len(ridge.WHIP_LANES), 3)
+        self.assertGreaterEqual(len(hazards.HIDDEN_CABLES["wind_ridge"]), 1)
+        self.assertGreaterEqual(len(hazards.BOARDS["wind_ridge"]), 3)
+        self.assertLessEqual(ridge.actor_count(), ridge.MAX_SCENE_ACTORS)
+        # Some hazards sit on the catwalks, not only on the floor.
+        self.assertTrue(any(row == ridge.CHEST_HIGH for row, _, _ in ridge.hazard_lanes()))
+        self.assertTrue(all(row == ridge.SURFACE_HIGH for row, _, _ in hazards.BOARDS["wind_ridge"]))
+
+    def test_every_carry_crosses_a_hazard(self):
+        """Each line's carry (pole to box) passes over at least one hazard lane or board."""
+        cells = [(x0, x1) for _, x0, x1 in ridge._all_hazard_lanes()]
+        cells += [(x0, x1) for _, x0, x1 in hazards.BOARDS["wind_ridge"]]
+        for line in ridge.LINES:
+            px, bx = line["pole"][0], line["box"][0]
+            self.assertTrue(any(px < x0 and x1 < bx for x0, x1 in cells), line["key"])
+
+    def test_boxes_are_background_transformers(self):
+        self.assertTrue(ridge.BACKGROUND_BOXES)
+        self.assertTrue(scene.CHAIN.background_boxes)
+        grid = ridge.collision_grid()
+        for line in ridge.LINES:
+            top, body = ridge.transformer_tiles(line["box"])
+            self.assertTrue(all(grid[y][x] == ridge.COL_EMPTY for x, y in top + body), line["key"])
+            with self.assertRaises(ValueError):
+                scene.CHAIN.box_actor(line, 0, ridge.TRANSFORMER_SPRITE_ID)
 
     def test_collisions_match_contract(self):
         resource = built_scene()
@@ -455,8 +474,9 @@ class RidgeTests(unittest.TestCase):
             self.assertFalse(any(e["command"] == "EVENT_ACTOR_COLLISIONS_ENABLE"
                                  for e in walk(guard["children"]["true"])),
                              "start delay must not enable the hazard early")
-        # The board draws last.
-        self.assertEqual(built_actors()[-1]["symbol"], "ridge_board_01")
+        # The boards draw last.
+        self.assertEqual(built_actors()[-1]["symbol"],
+                         f"ridge_board_{len(hazards.BOARDS['wind_ridge']):02d}")
 
     def test_hill_exit_leads_to_signal_hill_only_after_tomas_is_powered(self):
         trigger = trigger_by_symbol("trigger_ridge_hill_exit")
@@ -514,12 +534,25 @@ class RidgeTests(unittest.TestCase):
                                     profiles=profiles)
             self.assertLessEqual(len(near), ridge.MAX_ACTIVE_ACTORS, (spot, near))
 
+    def test_every_view_stays_within_the_oam(self):
+        # 40 hardware sprites: the hero plus every actor near the view at its largest frame.
+        actors = {a["symbol"]: a for a in built_actors()}
+        profiles = sprite_profiles(PROJECT_DIR)
+        from test_grid_chain import actor_profile
+        worst = 0
+        for spot in self._spots():
+            _, near = sprite_budget(PROJECT_DIR, list(actors.values()), spot, ridge.MAP_W, ridge.MAP_H,
+                                    profiles=profiles)
+            total = 4 + sum(max(len(frame) for frame in actor_profile(actors[symbol], profiles)["frames"])
+                            for symbol in near)
+            worst = max(worst, total)
+        self.assertLessEqual(worst, 40)
+
     def test_debris_and_actor_roster(self):
         actors = built_actors()
         symbols = [a["symbol"] for a in actors]
         expected = [scene.TOMAS_SYMBOL, scene.CONCENTRATOR_SYMBOL]
-        for line in LINES:
-            expected += [line["pole_symbol"], line["box_symbol"]]
+        expected += [line["pole_symbol"] for line in LINES]
         expected += [f"ridge_gust_{n:02d}" for n in range(1, len(ridge.GUST_LANES) + 1)]
         expected += [f"ridge_span_arc_{n:02d}" for n in range(1, len(ridge.span_arc_lanes()) + 1)]
         expected += [f"ridge_whip_{n:02d}" for n in range(1, len(ridge.WHIP_LANES) + 1)]
@@ -532,7 +565,6 @@ class RidgeTests(unittest.TestCase):
         self.assertEqual(len(set(a["id"] for a in actors)), len(actors))
         self.assertLessEqual(len(actors), ridge.MAX_SCENE_ACTORS, "gbvm allows 20 actors besides the player")
         self.assertEqual(len(actors), ridge.actor_count())
-        self.assertEqual(len(actors), ridge.MAX_SCENE_ACTORS, "full hazard kit fits the 20-actor budget")
         tomas = actor_by_symbol(scene.TOMAS_SYMBOL)
         self.assertEqual((tomas["x"], tomas["y"]), ridge.TOMAS)
         self.assertEqual(tomas["spriteSheetId"], ridge.TOMAS_SPRITE_ID)
@@ -540,36 +572,36 @@ class RidgeTests(unittest.TestCase):
         conc = actor_by_symbol(scene.CONCENTRATOR_SYMBOL)
         self.assertEqual((conc["x"], conc["y"]), ridge.CONCENTRATOR)
         self.assertEqual(conc["startScript"][0]["args"]["spriteStateId"], "Off")
-        self.assertEqual(len([symbol for symbol in symbols if symbol in {
-            line["pole_symbol"] for line in LINES} | {line["box_symbol"] for line in LINES}]),
-            2 * len(LINES))
         for line in LINES:
             pole = actor_by_symbol(line["pole_symbol"])
-            box = actor_by_symbol(line["box_symbol"])
             self.assertEqual((pole["x"], pole["y"]), line["pole_at"])
-            self.assertEqual((box["x"], box["y"]), line["box_at"])
             self.assertEqual(pole["spriteSheetId"], intro.POLE_SPRITE_ID)
-            self.assertEqual(box["spriteSheetId"], ridge.TRANSFORMER_SPRITE_ID if line["box_kind"] == "transformer"
-                             else climb.grid_resource_id("sprite:grid_junction_box"))
-            self.assertEqual(box["startScript"][0]["args"]["spriteStateId"], "Dead")
+            self.assertNotIn(line["box_symbol"], symbols, "boxes are background art")
             self.assertNotIn(line["cable_symbol"], symbols)
+        self.assertNotIn(ridge.TRANSFORMER_SPRITE_ID, {a["spriteSheetId"] for a in actors})
         self.assertFalse([a for a in actors if "debris" in a["symbol"]])
 
-    def test_cracked_board_sits_on_the_floor_with_group_one(self):
-        board = hazards.BOARDS["wind_ridge"][0]
-        actor = actor_by_symbol("ridge_board_01")
-        self.assertEqual((actor["x"], actor["y"]), hazards.board_actor_position(board))
-        self.assertEqual(actor["spriteSheetId"], hazards.BOARD_SPRITE_ID)
-        self.assertEqual(actor["collisionGroup"], "1")
-        self.assertEqual(actor["startScript"][0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
-        self.assertEqual(actor["startScript"][1]["args"]["spriteStateId"], "Idle")
-        ifs = [e for e in actor["updateScript"] if e["command"] == "EVENT_IF"]
-        self.assertEqual(ifs[0]["args"]["condition"]["valueB"]["value"], 1)
-        # Floor boards: the plank row is ground and the standing row above it is clear.
+    def test_cracked_boards_lie_on_catwalks_hidden_until_they_creak(self):
         grid = ridge.collision_grid()
-        row, x0, x1 = board
-        self.assertTrue(all(grid[row][x] == ridge.COL_SOLID for x in range(x0, x1 + 1)))
-        self.assertTrue(all(grid[row - 1][x] == ridge.COL_EMPTY for x in range(x0, x1 + 1)))
+        for number, board in enumerate(hazards.BOARDS["wind_ridge"], start=1):
+            actor = actor_by_symbol(f"ridge_board_{number:02d}")
+            self.assertEqual((actor["x"], actor["y"]), hazards.board_actor_position(board))
+            self.assertEqual(actor["spriteSheetId"], hazards.BOARD_SPRITE_ID)
+            self.assertEqual(actor["collisionGroup"], "1")
+            self.assertEqual([e["command"] for e in actor["startScript"]],
+                             ["EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_SET_STATE", "EVENT_ACTOR_HIDE"])
+            [gate] = actor["updateScript"]
+            self.assertTrue(is_var_if(gate, hazards.VAR_ON_BOARD, number))
+            creak = gate["children"]["true"]
+            commands = [e["command"] for e in creak]
+            self.assertLess(commands.index("EVENT_ACTOR_SHOW"), commands.index("EVENT_WAIT"))
+            self.assertEqual(commands[-1], "EVENT_ACTOR_HIDE", "back to the background plank")
+            self.assertEqual([e["args"]["frames"]["value"] for e in walk(creak) if e["command"] == "EVENT_WAIT"],
+                             [hazards.CREAK_FRAMES, hazards.BREAK_FRAMES, hazards.BOARD_REST_FRAMES])
+            # The plank is a one-way catwalk tile and the standing row above it is clear.
+            row, x0, x1 = board
+            self.assertTrue(all(grid[row][x] == ridge.COL_TOP for x in range(x0, x1 + 1)))
+            self.assertTrue(all(grid[row - 1][x] == ridge.COL_EMPTY for x in range(x0, x1 + 1)))
 
     def test_hidden_cable_starts_dark_and_has_one_timed_arc_window(self):
         actor = actor_by_symbol("ridge_hidden_cable_01")
@@ -617,7 +649,8 @@ class RidgeTests(unittest.TestCase):
             }
             self.assertEqual({key: value for key, value in invoke["args"].items()
                               if key.startswith("$actor[")}, expected_actor_args)
-            self.assertEqual(actor_by_symbol(line["box_symbol"])["script"], [])
+            self.assertEqual(expected_actor_args, {"$actor[0]$": scene.actor_id(line["pole"])},
+                             "background boxes: the box script binds only its pole")
             self.assertTrue(is_var_if(script["script"][0], line["live_var"], 1))
         tomas = actor_by_symbol(scene.TOMAS_SYMBOL)
         self.assertTrue(tomas["script"], "Hiroshi's talk tree remains available to the B dispatcher")
@@ -753,9 +786,8 @@ class RidgeTests(unittest.TestCase):
                                                                   ridge.LINE_BG_SLOT_2),
             }, bits)
             self.assertEqual(stages_set, stages, bits)
-            for line in LINES:
-                self.assertEqual(boxes[scene.actor_id(line["box"])],
-                                 "Live" if line["number"] <= stages else "Dead", (bits, line["key"]))
+            # Background boxes: the wire palettes are the boxes' Dead/Live.
+            self.assertEqual(boxes, {}, bits)
 
     def test_chain_palettes_light_stages_in_order(self):
         palettes = {p["id"]: p["colors"] for _, p in scene.tomas_palettes()}

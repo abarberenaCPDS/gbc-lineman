@@ -14,7 +14,9 @@ is folded into its pole sprite, with no separate cable actor.
 The live arc reuses Signal Hill's arc sprite and arc palette resource (written
 by ``make_rosa_scene.py``); this generator only references that palette ID.
 The hidden cable, gust, live arcs, fallen spans, whipping wire and cracked board
-complete Pine Hollow's obstacle kit. The transformer reuses Wind Ridge's sprite.
+complete Pine Hollow's obstacle kit. The boxes are background transformers
+(``kiko.BACKGROUND_BOXES``, ``transformer_art.py``): no box actors, the wire
+palettes light them, and the freed actors are spent on hazards.
 
 Generic GB Studio helpers (collision RLE, sidecar lookup, JSON writing, the
 dialogue length check) are reused from ``make_climb_scene``. Event builders are
@@ -290,9 +292,9 @@ CHAIN = grid_chain.GridChain(
     carrying_var=VAR_CARRYING_CABLE, near_var=climb.VAR_NEAR, line_bg_slot=kiko.LINE_BG_SLOT,
     text=kiko.CHAIN_TEXT,
     say=say, hud=hud_events, bare_event_key="feeder",
+    background_boxes=kiko.BACKGROUND_BOXES,
 )
 pole_actor = CHAIN.pole_actor
-box_actor = CHAIN.box_actor
 actor_resource = CHAIN.actor_resource
 
 
@@ -607,17 +609,45 @@ def whip_actor(number: int, lane: tuple[int, int, int], start_delay: int) -> dic
 
 
 def board_actor(number: int, board: tuple[int, int, int], index: int) -> dict[str, Any]:
+    """Cracked board whose idle plank is background art: the actor only shows while it creaks.
+
+    Wind Ridge's board (make_ridge_scene.board_actor) with Pine Hollow's IDs:
+    hazards.py timings and trigger, hidden when idle so boards cost no OBJs until
+    the hero stands on one.
+    """
     key = f"board:{number}"
     x, y = hazards.board_actor_position(board)
+
+    def own(command: str, suffix: str, **args: Any) -> dict[str, Any]:
+        return event(command, {"actorId": "$self$", **args}, f"{key}:{suffix}")
+
+    give_way = [
+        own("EVENT_ACTOR_SET_STATE", "break-state", spriteStateId="Break", loopAnim=False),
+        own("EVENT_ACTOR_COLLISIONS_ENABLE", "break-hit"),
+        wait_event(hazards.BREAK_FRAMES, f"{key}:break-time"),
+        own("EVENT_ACTOR_COLLISIONS_DISABLE", "break-safe"),
+        # The respawn teleports the hero without a leave event; clear it here.
+        set_value(hazards.VAR_ON_BOARD, 0, f"{key}:clear"),
+        wait_event(hazards.BOARD_REST_FRAMES, f"{key}:rest-time"),
+    ]
+    creak = [
+        own("EVENT_ACTOR_COLLISIONS_DISABLE", "creak-safe"),
+        own("EVENT_ACTOR_SET_STATE", "creak-state", spriteStateId="Creak", loopAnim=True),
+        own("EVENT_ACTOR_SHOW", "creak-visible"),
+        wait_event(hazards.CREAK_FRAMES, f"{key}:creak-time"),
+        if_value(hazards.VAR_ON_BOARD, number, f"{key}:still-on", give_way, []),
+        own("EVENT_ACTOR_SET_STATE", "idle-state", spriteStateId="Idle", loopAnim=True),
+        own("EVENT_ACTOR_HIDE", "idle-hidden"),
+    ]
     actor = actor_resource(
         index=index, symbol=f"pine_board_{number:02d}", name=f"Cracked Board {number}",
         x=x, y=y, sprite_id=hazards.BOARD_SPRITE_ID, key=key,
-        start_script=hazards.board_start_script(key, event),
+        start_script=[*hazards.board_start_script(key, event), own("EVENT_ACTOR_HIDE", "init-hidden")],
+        update_script=[if_value(hazards.VAR_ON_BOARD, number, f"{key}:on-check", creak,
+                                [wait_event(1, f"{key}:idle-tick")])],
+        collision_group="1",
     )
-    actor["collisionGroup"] = "1"
     actor["animate"] = True
-    actor["updateScript"] = hazards.board_update_script(
-        number, key, event, wait_event, if_value, set_value)
     return actor
 
 
@@ -690,16 +720,10 @@ def build_scene(music_id: str, audio_ids: dict[str, str]) -> dict[str, Any]:
 def build_actors(audio_ids: dict[str, str], sprite_ids: dict[str, str] | None = None) -> list[dict[str, Any]]:
     if sprite_ids is None:
         sprite_ids = {"gust": shared.sidecar_id(GUST_SPRITE, "sprite")}
-    box_sprites = {"junction": climb.grid_resource_id(JUNCTION_SPRITE_KEY),
-                   "transformer": kiko.TRANSFORMER_SPRITE_ID}
     actors = [kiko_actor(0), stove_actor(1, kiko.STOVE_SPRITE_ID)]
-    for line in LINES:
-        # The snapped cable is part of the pole sprite; each line has one pole
-        # actor and one box actor.
-        actors += [
-            pole_actor(line, 0, intro.POLE_SPRITE_ID),
-            box_actor(line, 0, box_sprites[line["box_kind"]]),
-        ]
+    # The snapped cable is part of the pole sprite; the boxes are background
+    # transformers (kiko.BACKGROUND_BOXES), so each line has one pole actor.
+    actors += [pole_actor(line, 0, intro.POLE_SPRITE_ID) for line in LINES]
     actors.extend(
         arc_actor(index, lane, kiko.ARC_START_DELAYS[index - 1], kiko.ARC_SPRITE_ID)
         for index, lane in enumerate(kiko.ARC_LANES, start=1)
@@ -808,7 +832,6 @@ def main() -> None:
     warn_if_missing_asset(kiko.KIKO_SPRITE_ID, "sprites", "Emil sprite")
     warn_if_missing_asset(kiko.STOVE_SPRITE_ID, "sprites", "electric stove sprite")
     warn_if_missing_asset(kiko.ARC_SPRITE_ID, "sprites", "live arc sprite")
-    warn_if_missing_asset(kiko.TRANSFORMER_SPRITE_ID, "sprites", "transformer sprite")
     warn_if_missing_asset(kiko.WHIP_SPRITE_ID, "sprites", "whipping wire sprite")
     warn_if_missing_asset(hazards.BOARD_SPRITE_ID, "sprites", "cracked board sprite")
 
@@ -835,8 +858,9 @@ def main() -> None:
     print(
         f"generated pine_hollow: {kiko.MAP_W}x{kiko.MAP_H} PLATFORM, "
         f"{len(actors)} actors, {len(triggers)} triggers; "
-        f"{len(kiko.LINES)} lines, {len(hazards.HIDDEN_CABLES['pine_hollow'])} hidden cable, "
-        f"{len(kiko.ARC_LANES)} live arc, delays {kiko.ARC_START_DELAYS}"
+        f"{len(kiko.LINES)} lines, {len(kiko.GUST_LANES)} gusts, {len(kiko.span_arc_lanes())} span arcs, "
+        f"{len(kiko.WHIP_LANES)} whips, {len(hazards.HIDDEN_CABLES['pine_hollow'])} hidden cables, "
+        f"{len(hazards.BOARDS['pine_hollow'])} cracked boards"
     )
 
 
