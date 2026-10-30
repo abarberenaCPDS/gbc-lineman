@@ -36,7 +36,7 @@ def line(number=1, *, box_kind="transformer", live=0):
     }
 
 
-def chain(lines):
+def chain(lines, **options):
     return grid_chain.GridChain(
         rid=rid,
         lines=lines,
@@ -52,6 +52,7 @@ def chain(lines):
         },
         say=lambda *_args, **_kwargs: [],
         hud=lambda _key: [],
+        **options,
     )
 
 
@@ -352,6 +353,149 @@ class BoxScriptDispatchTests(unittest.TestCase):
                                  if e["command"] == "EVENT_ACTOR_SET_STATE"
                                  and e["args"]["actorId"] != "player"}
                 self.assertTrue(actor_targets <= actor_params)
+
+
+def two_scene_lines():
+    """Five lines over two scenes: lines 1-4 in "shaft"; line 5's pole in "shaft", its box in "crest"."""
+    lines = [line(i) for i in range(1, 6)]
+    for item in lines:
+        item.update(pole_scene="shaft", box_scene="shaft")
+    lines[4]["box_scene"] = "crest"
+    return lines
+
+
+def conditions(events, variable):
+    return [e for e in walk_events(events) if e["command"] == "EVENT_IF"
+            and e["args"]["condition"]["valueA"] == {"type": "variable", "value": variable}]
+
+
+class MultiSceneTests(unittest.TestCase):
+    """docs/LEVEL_REDESIGN.md §3 rules 1-5: lines global, actors local."""
+
+    def setUp(self):
+        self.lines = two_scene_lines()
+        self.shaft = chain(self.lines, scene="shaft", background_boxes=True)
+        self.crest = chain(self.lines, scene="crest", background_boxes=True)
+
+    def test_defaults_keep_every_line_local(self):
+        plain = chain([line(i) for i in range(1, 6)])
+        self.assertEqual(len(plain.pole_lines()), 5)
+        self.assertEqual(len(plain.box_lines()), 5)
+        # Scene fields without a scene argument change nothing either.
+        self.assertEqual(chain(self.lines).input_script_event(pickup_sound_id="p"),
+                         chain([line(i) for i in range(1, 6)]).input_script_event(pickup_sound_id="p"))
+
+    def test_actors_zones_and_box_scripts_only_for_this_scene(self):
+        self.assertEqual([i["number"] for i in self.shaft.pole_lines()], [1, 2, 3, 4, 5])
+        self.assertEqual([i["number"] for i in self.shaft.box_lines()], [1, 2, 3, 4])
+        self.assertEqual(self.crest.pole_lines(), [])
+        self.assertEqual([i["number"] for i in self.crest.box_lines()], [5])
+        self.assertEqual([path for path, _ in self.crest.box_script_resources(
+            label="Crest", file_prefix="crest", connect_sound_id="c")], ["project/scripts/crest_box_line-5.gbsres"])
+        with self.assertRaises(ValueError):
+            self.crest.pole_actor(self.lines[4], 0, "pole-sprite")
+        with self.assertRaises(ValueError):
+            self.shaft.box_zone_trigger(self.lines[4], symbol="t", index=0)
+        self.crest.box_zone_trigger(self.lines[4], symbol="t", index=0)
+        self.shaft.pole_zone_trigger(self.lines[4], symbol="t", index=0)
+
+    def test_input_script_dispatches_only_local_zones(self):
+        def zone_values(chain_):
+            body = chain_.input_script_event(pickup_sound_id="p")["children"]["true"]
+            return sorted(e["args"]["condition"]["valueB"]["value"] for e in conditions(body, "near"))
+
+        self.assertEqual(zone_values(self.crest), [5 + grid_chain.BOX_ZONE, grid_chain.NPC_ZONE])
+        shaft_values = zone_values(self.shaft)
+        self.assertIn(5, shaft_values)
+        self.assertNotIn(5 + grid_chain.BOX_ZONE, shaft_values)
+
+    def test_connect_in_another_scene_leaves_the_far_pole_alone(self):
+        far = self.lines[4]
+        self.assertEqual(self.crest.box_script_actor_bindings(far), [])
+        events = self.crest.box_connect_events(far, "connect", "c")
+        self.assertFalse(any(e["command"] == "EVENT_ACTOR_SET_STATE" and e["args"]["actorId"] != "player"
+                             for e in walk_events(events)))
+        self.assertTrue(any(e["command"] == "EVENT_SET_VALUE" and e["args"]["variable"] == far["live_var"]
+                            for e in walk_events(events)))
+
+    def test_chain_refresh_is_global(self):
+        self.assertEqual(self.crest.chain_refresh_events("r"), self.shaft.chain_refresh_events("r"))
+        self.assertEqual(len(conditions(self.crest.chain_refresh_events("r"), "live-5")), 1)
+
+    def test_cable_drop_clears_any_line_but_sets_only_local_poles(self):
+        events = self.crest.cable_drop_events("drop")
+        self.assertEqual(len(events), 5, "a hit drops whichever cable is carried")
+        self.assertFalse([e for e in walk_events(events) if e["command"] == "EVENT_ACTOR_SET_STATE"
+                          and e["args"]["actorId"] != "player"])
+        shaft_events = self.shaft.cable_drop_events("drop")
+        self.assertIn("Snapped+Cable", actor_states(shaft_events, rid("actor:pole-5")))
+
+    def test_respawn_uses_this_scenes_checkpoints(self):
+        crest = self.crest.checkpoint_chain("respawn", (3, 8))
+        self.assertEqual([e["args"]["condition"]["valueA"]["value"] for e in walk_events(crest)
+                          if e["command"] == "EVENT_IF"], ["live-5"])
+        shaft = self.shaft.checkpoint_chain("respawn", (2, 32))
+        self.assertEqual(len([e for e in walk_events(shaft) if e["command"] == "EVENT_IF"]), 4)
+
+    def test_pole_init_is_deterministic(self):
+        events = self.shaft.pole_init_events()
+        self.assertEqual(len(events), 5)
+        first = events[0]
+        self.assertEqual(first["args"]["condition"]["valueA"]["value"], "live-1")
+        self.assertEqual(first["children"]["true"][0]["args"]["spriteStateId"], "Standing")
+        carried = first["children"]["false"][0]
+        self.assertEqual((carried["args"]["condition"]["valueA"]["value"],
+                          carried["args"]["condition"]["valueB"]["value"]), ("carrying", 1))
+        self.assertEqual(carried["children"]["true"][0]["args"]["spriteStateId"], "Snapped")
+        self.assertEqual(carried["children"]["false"][0]["args"]["spriteStateId"], "Snapped+Cable")
+        self.assertEqual(self.crest.pole_init_events(), [])
+
+    def test_carry_restore(self):
+        [restore] = self.crest.carry_restore_events()
+        self.assertEqual(restore["args"]["condition"]["type"], "ne")
+        self.assertEqual(restore["args"]["condition"]["valueA"]["value"], "carrying")
+        self.assertEqual(restore["children"]["true"][0]["args"],
+                         {"actorId": "player", "spriteStateId": "Carry", "loopAnim": True})
+
+    def test_job_reset_and_fresh_start_gate_on_the_ticket(self):
+        [reset] = self.shaft.job_reset_events(1, extra=[self.shaft.set_value("home", 0, "home")])
+        self.assertEqual(reset["args"]["condition"]["valueA"]["value"], grid_chain.VAR_TICKET)
+        self.assertEqual(reset["args"]["condition"]["valueB"]["value"], 1)
+        cleared = {e["args"]["variable"] for e in reset["children"]["true"]}
+        self.assertEqual(cleared, {"carrying", "lines-live", "chain-live", "home",
+                                   *[f"live-{i}" for i in range(1, 6)]})
+        [fresh] = self.shaft.fresh_start_events(1, [self.shaft.music_event("song")])
+        self.assertEqual([e["command"] for e in fresh["children"]["true"]],
+                         ["EVENT_MUSIC_PLAY", "EVENT_SET_VALUE"])
+        self.assertEqual(fresh["children"]["true"][-1]["args"]["variable"], grid_chain.VAR_TICKET)
+
+    def test_scene_lines(self):
+        contract = [{"key": "a", "number": 1, "live_var": "1", "pole": (5, 32), "box": (2, 26),
+                     "checkpoint": (4, 26), "pole_scene": "shaft", "box_scene": "shaft"},
+                    {"key": "b", "number": 2, "live_var": "2", "pole": (2, 8), "box": (39, 11),
+                     "reach": (36, 9, 5, 3), "checkpoint": (41, 11), "pole_scene": "shaft", "box_scene": "crest"}]
+        crest = grid_chain.scene_lines(contract, "crest")
+        self.assertEqual([(i["key"], "pole" in i, "box" in i, "reach" in i, "checkpoint" in i) for i in crest],
+                         [("b", False, True, True, True)])
+        shaft = grid_chain.scene_lines(contract, "shaft")
+        self.assertEqual([(i["key"], "box" in i, "checkpoint" in i) for i in shaft],
+                         [("a", True, True), ("b", False, False)])
+
+    def test_chain_order_by_scene(self):
+        contract = [
+            {"number": 1, "live_var": "1", "pole": (5, 32), "box": (2, 26), "pole_scene": "s", "box_scene": "s"},
+            {"number": 2, "live_var": "2", "pole": (16, 26), "box": (16, 20), "pole_scene": "s", "box_scene": "s"},
+            {"number": 3, "live_var": "3", "pole": (2, 8), "box": (39, 11), "pole_scene": "s", "box_scene": "c"},
+        ]
+        grid_chain.check_chain_order(contract, scene_order=["s", "c"], axes={"s": "up"})
+        with self.assertRaises(AssertionError):
+            grid_chain.check_chain_order(contract, scene_order=["c", "s"], axes={"s": "up"})
+        with self.assertRaises(AssertionError):
+            grid_chain.check_chain_order(contract, scene_order=["s", "c"])      # x serpentines in the shaft
+        grid_chain.check_chain_order([{"number": 1, "live_var": "1", "pole": (2, 9), "box": (8, 9)},
+                                      {"number": 2, "live_var": "2", "pole": (10, 9), "box": (20, 9)}])
+        with self.assertRaises(AssertionError):
+            grid_chain.check_chain_order([{"number": 1, "live_var": "1", "pole": (9, 9), "box": (8, 9)}])
 
 
 class SceneLimitTests(unittest.TestCase):

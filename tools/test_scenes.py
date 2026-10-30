@@ -76,6 +76,8 @@ class RegistryTests(unittest.TestCase):
 
     def test_game_generators_exist(self):
         for folder, entry in scenes.by_tag(scenes.GAME).items():
+            if not scenes.active(folder):
+                continue        # planned: its work package adds the generator
             with self.subTest(folder=folder):
                 self.assertTrue((TOOLS_DIR / entry["generator"]).is_file())
 
@@ -83,7 +85,36 @@ class RegistryTests(unittest.TestCase):
         for folder, entry in scenes.REGISTRY.items():
             if entry["tag"] != scenes.LAB:
                 with self.subTest(folder=folder):
-                    self.assertTrue(scenes.present(folder), f"{folder} is registered but missing")
+                    self.assertTrue(scenes.present(folder) or scenes.planned(folder),
+                                    f"{folder} is registered but missing")
+
+    def test_planned_scenes_are_game_scenes_with_job_ids(self):
+        import climb  # noqa: F401  (import order: climb before hazards)
+        import kiko
+        import make_climb_scene
+        import ridge
+        import rosa
+        rid = {"climb_crest": make_climb_scene.resource_id, "ridge_saddle": ridge.resource_id,
+               "signal_gully": rosa.resource_id, "signal_porch": rosa.resource_id,
+               "pine_ladder": kiko.resource_id, "pine_rim": kiko.resource_id}
+        planned = {folder for folder in scenes.REGISTRY if scenes.planned(folder)}
+        self.assertEqual(planned, set(rid))
+        for folder in sorted(planned):
+            entry = scenes.REGISTRY[folder]
+            with self.subTest(folder=folder):
+                self.assertEqual(entry["tag"], scenes.GAME)
+                self.assertEqual(entry["id"], rid[folder](f"scene:{folder}"))
+
+    def test_job_scenes_cover_the_redesign(self):
+        flat = [folder for folders in scenes.JOB_SCENES.values() for folder in folders]
+        self.assertEqual(len(flat), 10)
+        self.assertEqual(len(set(flat)), len(flat))
+        for folder in flat:
+            self.assertEqual(scenes.REGISTRY[folder]["tag"], scenes.GAME)
+
+    def test_editor_positions_do_not_collide(self):
+        positions = [tuple(entry["editor"]) for entry in scenes.REGISTRY.values()]
+        self.assertEqual(len(positions), len(set(positions)))
 
     def test_lab_names_start_with_lab_prefix(self):
         labs = scenes.by_tag(scenes.LAB)

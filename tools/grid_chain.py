@@ -98,6 +98,42 @@ box custom scripts, the synchronous EVENT_CALL_CUSTOM_EVENT) stays as it is:
 
 Test helpers: scanline_load() counts OBJ columns per tile row (SCANLINE_OBJ_LIMIT
 is the budget); the camera window is SCREEN_TILES wide and clamps at both map edges.
+
+Multi-scene jobs (docs/LEVEL_REDESIGN.md §3). A single-scene job needs none of this:
+every default below reproduces the single-scene chain byte for byte.
+
+  Lines are global, actors are local. Each contract line may name the scene folders
+  of its pole and box (``pole_scene``, ``box_scene``; ``checkpoint_scene`` defaults
+  to ``box_scene``). Each scene of the job builds its own chain from the SAME full
+  LINES list with ``GridChain(..., scene="<folder>")``:
+
+    pole actors, pole zones, pickup branches          only for lines whose pole is here
+    box zones, box scripts, plug-in branches          only for lines whose box is here
+    chain refresh, HUD, chain palettes                global (every line, every scene)
+    cable_drop_events                                 clears var 6 for any line; sets a
+                                                      pole state only for a pole here
+    checkpoint_chain (respawn, rule 4)                furthest repaired line whose
+                                                      checkpoint is here, else ``start``
+
+  A line without ``pole_scene``/``box_scene``, or a chain with ``scene=None``, is local.
+  ``pole_lines()`` / ``box_lines()`` list the local lines for the scene's triggers.
+
+  Scene init, rules 1, 2 and 6 (events in this order; a job's other scenes skip 1 and 6):
+
+    EVENT_PLAYER_SET_SPRITE, direction
+    *chain.job_reset_events(job, extra=[...])       entry scene only: zero the job's
+                                                    variables when var 16 == job
+    near var = 0, chain.input_script_event(...), on-board = 0, ...
+    *chain.chain_refresh_events("init-chain")
+    *chain.pole_init_events()                       Standing / Snapped / Snapped+Cable
+    *chain.carry_restore_events()                   var 6 != 0 -> hero Carry state
+    *chain.fresh_start_events(job, [chain.music_event(id), *intro say()])
+                                                    entry scene only: music and intro
+                                                    lines on a fresh start; var 16 = 0
+
+  Scene order: check_chain_order(lines, scene_order=[...], axes={folder: "x"|"up"|"down"})
+  compares (scene rank, position); shafts serpentine, so "up"/"down" only check rows.
+  Links between the scenes are in scene_links.py; hazards per scene in hazards.py.
 """
 
 from __future__ import annotations
@@ -108,6 +144,11 @@ import climb
 
 Event = dict[str, Any]
 Rid = Callable[[str], str]
+
+# tickets.VAR_TICKET (a literal here: tickets imports the job contracts, which import
+# this module). The work order card leaves it at the job number; the job's entry
+# scene resets the job once and clears it (job_reset_events / fresh_start_events).
+VAR_TICKET = "16"
 
 MAX_STAGES = 6            # two BG slots each carry three stages; colour 0 is a placeholder
 LINE_BG_SLOT_1 = 5
@@ -234,7 +275,8 @@ class GridChain:
                  carrying_var: str, near_var: str, line_bg_slot: int, text: dict[str, str],
                  say: Callable[..., list[Event]], hud: Callable[[str], list[Event]],
                  bare_event_key: str | None = None, line_bg_slot_2: int | None = None,
-                 background_boxes: bool = False) -> None:
+                 background_boxes: bool = False, scene: str | None = None) -> None:
+        """``scene`` is this chain's scene folder (multi-scene jobs); None means every line is local."""
         self.rid = rid
         self.lines = list(lines)
         assert 1 <= len(self.lines) <= MAX_STAGES, "a grid chain has one to six lines"
@@ -249,6 +291,37 @@ class GridChain:
         self.hud = hud
         self.bare_event_key = bare_event_key
         self.background_boxes = background_boxes
+        self.scene = scene
+
+    # -- scene locality (module docstring, "Multi-scene jobs") -----------------
+    def _here(self, line: dict[str, Any], field: str) -> bool:
+        if self.scene is None:
+            return True
+        return line.get(field) in (None, self.scene)
+
+    def pole_here(self, line: dict[str, Any]) -> bool:
+        """The line's pole actor (and its pole zone) is in this chain's scene."""
+        return self._here(line, "pole_scene")
+
+    def box_here(self, line: dict[str, Any]) -> bool:
+        """The line's box (zone, script, plug-in) is in this chain's scene."""
+        return self._here(line, "box_scene")
+
+    def checkpoint_here(self, line: dict[str, Any]) -> bool:
+        """The line's respawn checkpoint is in this scene (``checkpoint_scene``, else ``box_scene``)."""
+        if self.scene is None:
+            return True
+        return line.get("checkpoint_scene", line.get("box_scene")) in (None, self.scene)
+
+    def pole_lines(self) -> list[dict[str, Any]]:
+        return [line for line in self.lines if self.pole_here(line)]
+
+    def box_lines(self) -> list[dict[str, Any]]:
+        return [line for line in self.lines if self.box_here(line)]
+
+    def _require(self, here: bool, what: str, line: dict[str, Any]) -> None:
+        if not here:
+            raise ValueError(f"line {line['key']}'s {what} is not in scene {self.scene}")
 
     # -- IDs -----------------------------------------------------------------
     def actor_id(self, key: str) -> str:
@@ -385,7 +458,7 @@ class GridChain:
                                                  f"{key}:palette-{stages}")]
             if self.background_boxes:
                 return out          # the wire palettes are the boxes' Dead/Live
-            for line in self.lines:
+            for line in self.box_lines():
                 state = "Live" if line["number"] <= stages else "Dead"
                 out.append(self.actor_state(self.actor_id(line["box"]), state,
                                             f"{key}:box-{stages}-{line['key']}"))
@@ -398,9 +471,15 @@ class GridChain:
         return events
 
     def checkpoint_chain(self, key: str, start: tuple[int, int]) -> list[Event]:
-        """Respawn target: the furthest repaired line's checkpoint, else ``start``."""
+        """Respawn target: the furthest repaired line's checkpoint, else ``start``.
+
+        Multi-scene (rule 4): only lines whose checkpoint is in this scene count;
+        ``start`` is this scene's upstream entry tile.
+        """
         chosen = [self.set_position(*start, f"{key}:respawn-start")]
         for line in self.lines:
+            if not self.checkpoint_here(line):
+                continue
             chosen = [self.if_value(line["live_var"], 1, f"{key}:respawn-{line['key']}-check", [
                 self.set_position(*line["checkpoint"], f"{key}:respawn-{line['key']}"),
             ], chosen)]
@@ -410,18 +489,103 @@ class GridChain:
         """A carried cable falls back to its own pole: when the carrier is hit, or on B away from every zone.
 
         ``text`` adds one line of dialogue after the drop (the B press says so).
+        Every line's cable drops, wherever its pole stands (Abe: a hit in another
+        scene sends the cable home); only a pole in this scene changes state here,
+        the others show Snapped+Cable through pole_init_events on their next entry.
         """
         events = []
         for line in self.lines:
             tag = key if line["key"] == self.bare_event_key else f"{key}:{line['key']}"
+            pole_state = ([self.actor_state(self.actor_id(line["pole"]), "Snapped+Cable", f"{tag}:pole-cable")]
+                          if self.pole_here(line) else [])
             events.append(self.if_value(self.carrying_var, line["number"], f"{tag}:cable-drop", [
                 self.set_value(self.carrying_var, 0, f"{tag}:cable-clear"),
                 self.actor_state("player", "", f"{tag}:hero-empty-hands"),
-                self.actor_state(self.actor_id(line["pole"]), "Snapped+Cable", f"{tag}:pole-cable"),
+                *pole_state,
                 *self.hud(f"{tag}:cable-hud"),
                 *(self.say([text], f"{tag}:dropped") if text else []),
             ]))
         return events
+
+    # -- multi-scene scene init (module docstring, rules 1, 2 and 6) ------------
+    def if_not_value(self, variable_id: str, value: int, key: str,
+                     true_events: list[Event], false_events: list[Event] | None = None) -> Event:
+        return self.branch_event(
+            "EVENT_IF",
+            {"condition": {
+                "type": "ne",
+                "valueA": {"type": "variable", "value": variable_id},
+                "valueB": number(value),
+            }},
+            key, true_events, false_events,
+        )
+
+    def line_reset_events(self, key: str = "job-reset") -> list[Event]:
+        """Empty hands and every line of the job dead (all scenes' lines, not only local ones)."""
+        return [
+            self.set_value(self.carrying_var, 0, f"{key}:carrying"),
+            *[self.set_value(line["live_var"], 0, f"{key}:{line['key']}-live") for line in self.lines],
+            self.set_value(self.lines_var, 0, f"{key}:lines-live"),
+            self.set_value(self.chain_var, 0, f"{key}:chain-live"),
+        ]
+
+    def job_reset_events(self, job: int, *, extra: Sequence[Event] = (), key: str = "job-reset") -> list[Event]:
+        """Rule 1: the job's entry scene zeroes its variables once, when var 16 == ``job``.
+
+        ``extra`` adds the job's own variables (home powered, door reached...).
+        Call before chain_refresh_events / pole_init_events, which read the
+        variables. var 16 is cleared by fresh_start_events at the end of the init,
+        so both see the same fresh start. The job's other scenes never reset.
+        """
+        return [self.if_value(VAR_TICKET, job, f"{key}:fresh",
+                              [*self.line_reset_events(key), *extra])]
+
+    def fresh_start_events(self, job: int, events: Sequence[Event], *, key: str = "fresh-start") -> list[Event]:
+        """Rule 6: ``events`` (the job's music and intro lines) run only on a fresh start; then var 16 = 0.
+
+        Put it last in the entry scene's init. Other scenes never call
+        EVENT_MUSIC_PLAY, so an internal edge does not restart the track.
+        A test start straight into the scene (var 16 = 0) skips them.
+        """
+        return [self.if_value(VAR_TICKET, job, f"{key}:fresh", [
+            *events,
+            self.set_value(VAR_TICKET, 0, f"{key}:ticket-clear"),
+        ])]
+
+    def music_event(self, music_id: str, key: str = "fresh-start:music") -> Event:
+        """EVENT_MUSIC_PLAY for fresh_start_events."""
+        return self.event("EVENT_MUSIC_PLAY", {"musicId": music_id}, key)
+
+    def pole_init_events(self, key: str = "pole-init") -> list[Event]:
+        """Rule 2: each pole here, from the variables: live -> Standing;
+        carried (var 6 == line) -> Snapped; else Snapped+Cable.
+
+        Replaces pinning Snapped+Cable on every entry (pole start scripts run in
+        an unspecified order against the scene init, so the init has the last word).
+        """
+        events = []
+        for line in self.pole_lines():
+            pole = self.actor_id(line["pole"])
+            tag = f"{key}:{line['key']}"
+            events.append(self.if_value(line["live_var"], 1, f"{tag}:live", [
+                self.actor_state(pole, "Standing", f"{tag}:standing"),
+            ], [
+                self.if_value(self.carrying_var, line["number"], f"{tag}:carried", [
+                    self.actor_state(pole, "Snapped", f"{tag}:snapped"),
+                ], [
+                    self.actor_state(pole, "Snapped+Cable", f"{tag}:snapped-cable"),
+                ]),
+            ]))
+        return events
+
+    def carry_restore_events(self, key: str = "carry-restore") -> list[Event]:
+        """Rule 2: a cable carried across an edge stays in hand (var 6 survives the switch).
+
+        Put it after EVENT_PLAYER_SET_SPRITE, which resets the hero's state.
+        """
+        return [self.if_not_value(self.carrying_var, 0, f"{key}:carrying", [
+            self.actor_state("player", "Carry", f"{key}:hero-carry"),
+        ])]
 
     # -- B press: zones, and the one input script that acts on them -----------
     def zone_trigger(self, *, name: str, symbol: str, index: int, rect: tuple[int, int, int, int],
@@ -449,6 +613,7 @@ class GridChain:
 
     def pole_zone_trigger(self, line: dict[str, Any], *, symbol: str, index: int) -> dict[str, Any]:
         """Standing at a pole arms its cable end's pickup (value: the line number)."""
+        self._require(self.pole_here(line), "pole", line)
         return self.zone_trigger(name=f"Pole Zone ({line['key']})", symbol=symbol, index=index,
                                  rect=pole_zone_rect(line["pole_at"]), value=line["number"],
                                  trigger_key=f"pole-zone:{line['key']}")
@@ -459,6 +624,7 @@ class GridChain:
         The zone is ``reach_rect`` (three tiles before the box), or the line's own
         ``reach`` rect when the tiles before the box are rock.
         """
+        self._require(self.box_here(line), "box", line)
         rect = tuple(line.get("reach") or reach_rect(line["box_at"]))
         return self.zone_trigger(name=f"Box Zone {line['box_name']}", symbol=symbol, index=index,
                                  rect=rect, value=BOX_ZONE + line["number"],
@@ -523,10 +689,12 @@ class GridChain:
                                            npc_events, body)]
         for line in reversed(self.lines):
             prefix = f"{key}:{line['key']}"
-            body = [self.if_value(self.near_var, BOX_ZONE + line["number"], f"{prefix}:box",
-                                  [self.box_script_call_event(line, f"{prefix}:call-box")], body)]
-            body = [self.if_value(self.near_var, line["number"], f"{prefix}:pole",
-                                  self.pickup_press_events(line, f"{prefix}:pole", pickup_sound_id), body)]
+            if self.box_here(line):
+                body = [self.if_value(self.near_var, BOX_ZONE + line["number"], f"{prefix}:box",
+                                      [self.box_script_call_event(line, f"{prefix}:call-box")], body)]
+            if self.pole_here(line):
+                body = [self.if_value(self.near_var, line["number"], f"{prefix}:pole",
+                                      self.pickup_press_events(line, f"{prefix}:pole", pickup_sound_id), body)]
         return {
             **self.event("EVENT_SET_INPUT_SCRIPT", {"input": ["b"], "override": override}, key),
             "children": {"true": body},
@@ -545,6 +713,7 @@ class GridChain:
 
     def pole_actor(self, line: dict[str, Any], index: int, sprite_id: str) -> dict[str, Any]:
         """A non-colliding pole with the cable folded into its sprite states."""
+        self._require(self.pole_here(line), "pole", line)
         key = line["pole"]
         x, y = line["pole_at"]
         return self.actor_resource(
@@ -582,7 +751,8 @@ class GridChain:
             self.actor_state("player", "", f"{key}:hero-empty-hands"),
             self.set_value(line["live_var"], 1, f"{key}:set-live"),
             self.event("EVENT_INC_VALUE", {"variable": self.lines_var}, f"{key}:count"),
-            self.actor_state(self.actor_id(line["pole"]), "Standing", f"{key}:pole-standing"),
+            *([self.actor_state(self.actor_id(line["pole"]), "Standing", f"{key}:pole-standing")]
+              if self.pole_here(line) else []),
             *self.chain_refresh_events(f"{key}:chain"),
             self.sound_event(connect_sound_id, f"{key}:sfx"),
             *done,
@@ -592,11 +762,15 @@ class GridChain:
         return self.rid(f"script:box:{line['key']}")
 
     def box_script_actor_bindings(self, line: dict[str, Any]) -> list[tuple[str, str]]:
-        """Actor references needed by this box's script, in stable positional order."""
+        """Actor references needed by this box's script, in stable positional order.
+
+        Only actors in this scene: box actors whose box is here, the line's pole if it is here.
+        """
+        pole = [(self.actor_id(line["pole"]), line["pole_name"])] if self.pole_here(line) else []
         if self.background_boxes:
-            return [(self.actor_id(line["pole"]), line["pole_name"])]
-        bindings = [(self.actor_id(other["box"]), other["box_name"]) for other in self.lines]
-        bindings.append((self.actor_id(line["pole"]), line["pole_name"]))
+            return pole
+        bindings = [(self.actor_id(other["box"]), other["box_name"]) for other in self.box_lines()]
+        bindings += pole
         unique: dict[str, str] = {}
         for actor_id, name in bindings:
             unique.setdefault(actor_id, name)
@@ -613,7 +787,7 @@ class GridChain:
                               ) -> list[tuple[str, dict[str, Any]]]:
         """Separate project script resources, one compiled bank object per box handler."""
         resources = []
-        for line in self.lines:
+        for line in self.box_lines():
             name = f"{label} Box {line['key'].title()}"
             bindings = self.box_script_actor_bindings(line)
             actor_args = {actor_id: str(index) for index, (actor_id, _name) in enumerate(bindings)}
@@ -654,6 +828,7 @@ class GridChain:
         """
         if self.background_boxes:
             raise ValueError("this chain's boxes are background art; it has no box actors")
+        self._require(self.box_here(line), "box", line)
         key = line["box"]
         x, y = line["box_at"]
         return self.actor_resource(
@@ -753,14 +928,61 @@ def check_props(grid: list[list[int]], props: Iterable[tuple[int, int]],
             f"prop {(x, y)} too close to a hazard")
 
 
-def check_chain_order(lines: Sequence[dict[str, Any]]) -> None:
-    """Contract LINES: pole k < box k < pole k+1, numbered 1..N, one live variable each."""
-    xs = []
+def check_chain_order(lines: Sequence[dict[str, Any]], scene_order: Sequence[str] = (),
+                      axes: dict[str, str] | None = None) -> None:
+    """Contract LINES: pole k < box k < pole k+1, numbered 1..N, one live variable each.
+
+    Single scene (defaults): strictly increasing x. Multi-scene: each point is
+    keyed (rank of its scene in ``scene_order``, position) using the line's
+    ``pole_scene`` / ``box_scene``. ``axes`` gives each scene's direction:
+    "x" (default, strictly increasing x), "up" (rows never increase: climbing
+    shafts) or "down" (rows never decrease); shafts serpentine, so they do not
+    check x.
+    """
+    axes = axes or {}
+    rank = {folder: index for index, folder in enumerate(scene_order)}
+    keys = []
     for line in lines:
-        xs += [line["pole"][0], line["box"][0]]
-    assert xs == sorted(xs) and len(set(xs)) == len(xs), "chain order"
+        for point, field in ((line["pole"], "pole_scene"), (line["box"], "box_scene")):
+            folder = line.get(field)
+            if scene_order:
+                assert folder in rank, f"line {line.get('key')}: {field} {folder!r} not in scene_order"
+            axis = axes.get(folder, "x")
+            assert axis in ("x", "up", "down"), axis
+            position = {"x": point[0], "up": -point[1], "down": point[1]}[axis]
+            keys.append((rank.get(folder, 0), axis, position))
+    for a, b in zip(keys, keys[1:]):
+        assert a[0] <= b[0], "chain order: a line runs back to an earlier scene"
+        if a[0] == b[0]:
+            if a[1] == "x":
+                assert a[2] < b[2], "chain order"
+            else:
+                assert a[2] <= b[2], "chain order (shaft rows)"
     assert [line["number"] for line in lines] == list(range(1, len(lines) + 1))
     assert len({line["live_var"] for line in lines}) == len(lines), "one live variable per line"
+
+
+def scene_lines(lines: Sequence[dict[str, Any]], folder: str) -> list[dict[str, Any]]:
+    """The parts of a job's LINES that stand in ``folder`` (test_routes ROUTE_SCENES "lines").
+
+    Each copy keeps key/number/live_var; ``pole`` is dropped unless ``pole_scene``
+    is ``folder``, ``box``/``reach`` unless ``box_scene`` is, ``checkpoint``
+    unless ``checkpoint_scene`` (default ``box_scene``) is. A line without
+    scene fields counts as local. Lines with nothing here are left out.
+    """
+    out = []
+    for line in lines:
+        copy = dict(line)
+        if line.get("pole_scene", folder) != folder:
+            copy.pop("pole", None)
+        if line.get("box_scene", folder) != folder:
+            copy.pop("box", None)
+            copy.pop("reach", None)
+        if line.get("checkpoint_scene", line.get("box_scene", folder)) != folder:
+            copy.pop("checkpoint", None)
+        if any(name in copy for name in ("pole", "box", "checkpoint")):
+            out.append(copy)
+    return out
 
 
 def check_scene_limits(actor_count: int, trigger_count: int) -> None:
@@ -780,15 +1002,22 @@ def check_spans(spans: Sequence[dict[str, Any]], lines: Sequence[dict[str, Any]]
 
 
 def check_wire_routes(routes: Sequence[tuple[int, list[tuple[int, int]]]], stage_count: int,
-                      map_w: int, top_row: int, bottom_row: int) -> None:
-    """Routes stay on the map between top_row and bottom_row, use every stage, and form one continuous chain."""
+                      map_w: int, top_row: int, bottom_row: int, *, enters_left: bool = True,
+                      stages: Iterable[int] | None = None) -> None:
+    """Routes stay on the map between top_row and bottom_row, use every stage, and form one continuous chain.
+
+    Multi-scene: a downstream scene's power enters on an ``edge_port`` row, not
+    necessarily at x 0 (``enters_left=False``), and uses only its own ``stages``.
+    """
     for stage, route in routes:
         assert 1 <= stage <= stage_count, stage
         assert all(top_row <= y < bottom_row and 0 <= x < map_w for x, y in route), route
     for (_, a), (_, b) in zip(routes, routes[1:]):
         assert set(a) & set(b), "consecutive wire routes share a cell (continuity)"
-    assert routes[0][1][0][0] == 0, "power enters at the left edge"
-    assert {stage for stage, _ in routes} == set(range(1, stage_count + 1))
+    if enters_left:
+        assert routes[0][1][0][0] == 0, "power enters at the left edge"
+    expected = set(stages) if stages is not None else set(range(1, stage_count + 1))
+    assert {stage for stage, _ in routes} == expected
 
 
 # ---------------------------------------------------------------------------

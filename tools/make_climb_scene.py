@@ -52,9 +52,10 @@ try:
     import rosa  # noqa: E402  (Signal Hill owns the live arc sprite and palette)
     import scenes  # noqa: E402  (scene registry: editor positions)
     import grid_chain  # noqa: E402  (B-press zone values and zone rects, shared with the job scenes)
+    import shaft  # noqa: E402  (shaft template: culling thread builder)
 except ModuleNotFoundError as error:
     if error.name in {"tickets", "voices", "climb", "intro", "opening", "ridge", "hazards", "rosa", "scenes",
-                      "grid_chain"}:
+                      "grid_chain", "shaft"}:
         raise SystemExit(
             f"cannot generate storm_climb: tools/{error.name}.py is missing; "
             "it must provide the climb/opening data API"
@@ -751,7 +752,7 @@ def scene_script(music_id: str, audio_ids: dict[str, str],
 # each actor active only near the camera; the engine still activates rows as
 # they scroll in, and the window always covers that refresh region.
 # ---------------------------------------------------------------------------
-CULL_THREAD_HANDLE = "T0"
+CULL_THREAD_HANDLE = shaft.CULL_THREAD_HANDLE
 
 
 def _var(variable_id: str) -> dict[str, Any]:
@@ -768,60 +769,13 @@ def actor_anchor(actor: dict[str, Any]) -> int:
 
 def cull_condition(anchor: int) -> dict[str, Any] | None:
     """Script value on the clamped camera top: true while the actor on ``anchor`` should be active."""
-    lo, hi = climb.cull_range(anchor)
-    parts = []
-    if lo > -128:
-        parts.append(_op("gte", _var(climb.VAR_CULL_TOP), number(lo)))
-    if hi < 127:
-        parts.append(_op("lte", _var(climb.VAR_CULL_TOP), number(hi)))
-    if not parts:
-        return None
-    return parts[0] if len(parts) == 1 else _op("and", parts[0], parts[1])
+    return shaft.cull_condition(anchor, climb.CAMERA_MAX_TOP)
 
 
 def cull_thread_event(actors: list[dict[str, Any]]) -> dict[str, Any]:
-    """Every CULL_WAIT_FRAMES: track the camera; only when its clamped top row
-    changed, (de)activate each actor once. Idle cost: one position read, one
-    expression and one compare per loop."""
-    key = "cull"
-    above, below = climb.CAMERA_DEADZONE_ROWS
-    hero_y = _var(climb.VAR_CULL_Y)
-
-    def get_position(suffix: str) -> dict[str, Any]:
-        return event("EVENT_ACTOR_GET_POSITION", {
-            "actorId": "player", "vectorX": climb.VAR_CULL_X, "vectorY": climb.VAR_CULL_Y, "units": "tiles",
-        }, f"{key}:{suffix}")
-
-    track = event("EVENT_SET_VALUE", {
-        "variable": climb.VAR_CULL_CAM,
-        "value": _op("max", _op("sub", hero_y, number(above)),
-                     _op("min", _var(climb.VAR_CULL_CAM), _op("sub", hero_y, number(below)))),
-    }, f"{key}:camera-track")
-    clamped = _op("max", number(0), _op("min", number(climb.CAMERA_MAX_TOP), _var(climb.VAR_CULL_CAM)))
-    apply = [event("EVENT_SET_VALUE", {"variable": climb.VAR_CULL_TOP, "value": clamped}, f"{key}:apply-top")]
-    for actor in actors:
-        condition = cull_condition(actor_anchor(actor))
-        if condition is None:
-            continue
-        name = actor["symbol"]
-        apply.append(branch_event("EVENT_IF", {"condition": condition}, f"{key}:{name}", [
-            event("EVENT_ACTOR_ACTIVATE", {"actorId": actor["id"]}, f"{key}:{name}:on"),
-        ], [
-            event("EVENT_ACTOR_DEACTIVATE", {"actorId": actor["id"]}, f"{key}:{name}:off"),
-        ]))
-    changed = branch_event("EVENT_IF", {"condition": _op("ne", clamped, _var(climb.VAR_CULL_TOP))},
-                           f"{key}:changed", apply)
-    body = [get_position("hero-position"), track, changed, wait_event(climb.CULL_WAIT_FRAMES, f"{key}:wait")]
-    start = [
-        get_position("start-position"),
-        event("EVENT_SET_VALUE", {
-            "variable": climb.VAR_CULL_CAM, "value": _op("sub", hero_y, number((above + below) // 2)),
-        }, f"{key}:camera-start"),
-        set_value(climb.VAR_CULL_TOP, -1, f"{key}:top-start"),
-        {**event("EVENT_LOOP", {}, f"{key}:loop"), "children": {"true": body}},
-    ]
-    return {**event("EVENT_THREAD_START", {"variable": CULL_THREAD_HANDLE}, f"{key}:thread"),
-            "children": {"true": start}}
+    """The climb's culling thread (shaft.cull_thread_event with this scene's builders)."""
+    return shaft.cull_thread_event(actors, event=event, branch_event=branch_event, set_value=set_value,
+                                   wait_event=wait_event, max_top=climb.CAMERA_MAX_TOP)
 
 
 def actor_resource(

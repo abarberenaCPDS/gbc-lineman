@@ -8,6 +8,16 @@ Stdlib only: generators and tests import this before any Pillow work.
 
 ``generator`` names the script that owns the scene file (``None`` for legacy
 scenes that are kept only as references and edited by hand).
+
+Planned scenes (the multi-scene redesign, docs/LEVEL_REDESIGN.md §2/§7) are
+registered ahead of their generators with ``"planned": "<work package>"``.
+A planned scene may be absent from project/scenes/ and its generator may not
+exist yet; the tests treat it like any other scene as soon as its folder is
+generated (activation is "the folder exists", nothing to edit here). Its id is
+the owning job's ``resource_id("scene:<folder>")`` (test_scenes checks it), so
+a generator writes ``"id": scenes.REGISTRY[folder]["id"]`` or the same derived
+value. ``active(folder)`` is false only for a planned scene not generated yet.
+Once a work package lands, main may drop its ``planned`` key.
 """
 
 from __future__ import annotations
@@ -73,6 +83,31 @@ REGISTRY: dict[str, dict] = {
         "id": "4d9329db-9c79-52dd-8372-d215a891bcb8", "name": "Pine Hollow",
         "tag": GAME, "editor": (1200, 360), "generator": "make_kiko_scene.py",
     },
+    # Multi-scene redesign (planned; docs/LEVEL_REDESIGN.md). Editor positions from §7.
+    "climb_crest": {
+        "id": "1e6699bd-6450-5e78-ae39-e75a00c5d127", "name": "Climb Crest",
+        "tag": GAME, "editor": (240, 0), "generator": "make_crest_scene.py", "planned": "WP1",
+    },
+    "ridge_saddle": {
+        "id": "25260587-51f0-5445-ba85-4b6373ad58a8", "name": "Ridge Saddle",
+        "tag": GAME, "editor": (400, 600), "generator": "make_ridge_scene.py", "planned": "WP2",
+    },
+    "signal_gully": {
+        "id": "6714200c-748d-50ea-9ab8-f41beb918c15", "name": "Signal Gully",
+        "tag": GAME, "editor": (800, 600), "generator": "make_gully_scene.py", "planned": "WP3",
+    },
+    "signal_porch": {
+        "id": "915170c4-cfb7-50bf-a6ab-e68f626bd6fc", "name": "Signal Porch",
+        "tag": GAME, "editor": (800, 960), "generator": "make_rosa_scene.py", "planned": "WP3",
+    },
+    "pine_ladder": {
+        "id": "260e1781-da9f-5323-bc93-5ee7f73af3c7", "name": "Pine Ladder",
+        "tag": GAME, "editor": (1200, 600), "generator": "make_ladder_scene.py", "planned": "WP4",
+    },
+    "pine_rim": {
+        "id": "c25308db-8f10-5a6a-ada8-1fa748e4541f", "name": "Pine Rim",
+        "tag": GAME, "editor": (1200, 960), "generator": "make_kiko_scene.py", "planned": "WP4",
+    },
     "lab_hazard_gallery": {
         "id": _lab_id("lab_hazard_gallery"), "name": "LAB_Hazard Gallery",
         "tag": LAB, "editor": (0, 1200), "generator": "make_lab_scene.py",
@@ -116,3 +151,22 @@ def editor_position(folder: str) -> tuple[int, int]:
 def present(folder: str) -> bool:
     """True when the scene folder exists in project/scenes/ with a scene.gbsres."""
     return (SCENES_DIR / folder / "scene.gbsres").is_file()
+
+
+def planned(folder: str) -> bool:
+    """True for a scene registered ahead of its generator (see the module docstring)."""
+    return bool(REGISTRY[folder].get("planned"))
+
+
+def active(folder: str) -> bool:
+    """A registered scene that is generated, or not planned (so it must be)."""
+    return present(folder) or not planned(folder)
+
+
+# The redesign's game scenes per job, entry scene first (docs/LEVEL_REDESIGN.md §2).
+JOB_SCENES = {
+    1: ("storm_climb", "climb_crest"),
+    2: ("wind_ridge", "ridge_saddle"),
+    3: ("signal_hill", "signal_gully", "signal_porch"),
+    4: ("pine_hollow", "pine_ladder", "pine_rim"),
+}

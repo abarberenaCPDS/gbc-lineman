@@ -23,7 +23,7 @@ import scenes
 ROOT = scenes.ROOT
 VERSION_FILE = ROOT / "VERSION"
 RELEASE_DIR = ROOT / "build" / "release-project"
-ROM_OUT = ROOT / "build" / "rom" / "mr-cfe-release.gbc"
+ROM_OUT = ROOT / "build" / "rom" / "lineman-release.gbc"
 PROJECT_FILE = "mr-cfe.gbsproj"
 COPY_FILES = (PROJECT_FILE,)
 COPY_DIRS = ("project", "assets")

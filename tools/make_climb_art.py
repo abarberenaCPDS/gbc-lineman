@@ -23,6 +23,7 @@ from PIL import Image, ImageDraw
 import climb
 import hazards
 import opening
+import shaft_art
 import transformer_art
 from make_climb_scene import collision_rle, resource_id
 
@@ -99,15 +100,7 @@ def _set_rect(slots: list[list[int]], slot: int, x0: int, x1: int, y0: int, y1: 
 
 def _post_tiles(grid: list[list[int]]) -> list[tuple[int, int]]:
     """Timber posts under each ledge end, down to the next occupied cell (at most three rows)."""
-    lanes = climb.hazard_cells()
-    posts = []
-    for row, x0, x1 in climb.LEDGES:
-        for tx in (x0, x1):
-            for ty in range(row + 1, min(row + 4, climb.MAP_H)):
-                if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in lanes:
-                    break
-                posts.append((tx, ty))
-    return posts
+    return shaft_art.post_tiles(grid, climb.LEDGES, climb.hazard_cells(), climb.MAP_H)
 
 
 def _slots(grid: list[list[int]]) -> list[list[int]]:
@@ -151,46 +144,8 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     return slots
 
 
-class _Canvas:
-    """Clip all painting to its tile's one assigned palette family."""
-
-    def __init__(self, image: Image.Image, slots: list[list[int]]):
-        self.image = image
-        self.slots = slots
-
-    def _apply(self, slot: int, painter) -> None:
-        layer = Image.new("RGBA", self.image.size, (0, 0, 0, 0))
-        painter(ImageDraw.Draw(layer))
-        bounds = layer.getbbox()
-        if not bounds:
-            return
-        px, over = self.image.load(), layer.load()
-        left, top, right, bottom = bounds
-        for y in range(top, bottom):
-            for x in range(left, right):
-                rgba = over[x, y]
-                if rgba[3] and self.slots[y // TILE][x // TILE] == slot:
-                    px[x, y] = rgba[:3]
-
-    @staticmethod
-    def _rgba(color):
-        return tuple(color) + (255,)
-
-    def rect(self, slot: int, box, color) -> None:
-        fill = self._rgba(color)
-        self._apply(slot, lambda d: d.rectangle(box, fill=fill))
-
-    def line(self, slot: int, points, color, width=1) -> None:
-        rgba = self._rgba(color)
-        self._apply(slot, lambda d: d.line(points, fill=rgba, width=width))
-
-    def polygon(self, slot: int, points, color) -> None:
-        rgba = self._rgba(color)
-        self._apply(slot, lambda d: d.polygon(points, fill=rgba))
-
-    def point(self, slot: int, xy, color) -> None:
-        rgba = self._rgba(color)
-        self._apply(slot, lambda d: d.point(xy, fill=rgba))
+# Deck/ledge/slab/post drawing lives in shaft_art.py (shared with the other shafts).
+_Canvas = shaft_art.Canvas
 
 
 def _draw_sky(c: _Canvas) -> None:
@@ -210,44 +165,15 @@ def _draw_sky(c: _Canvas) -> None:
 
 
 def _draw_stone(c: _Canvas, grid: list[list[int]]) -> None:
-    ramp = PALETTES[STONE]
-    for ty, row in enumerate(grid):
-        for tx, cell in enumerate(row):
-            if cell != climb.COL_SOLID:
-                continue
-            x, y = tx * TILE, ty * TILE
-            c.rect(STONE, (x, y, x + 7, y + 7), ramp[1])
-            if ty > 0 and grid[ty - 1][tx] == climb.COL_EMPTY:
-                c.line(STONE, [(x, y), (x + 7, y)], ramp[3])   # walkable top edge
-            if (tx + ty) % 3 == 0:
-                c.polygon(STONE, [(x, y + 3), (x + 3, y + 1), (x + 4, y + 3), (x + 2, y + 5)], ramp[0])
-            else:
-                c.line(STONE, [(x + 1, y + 2), (x + 3, y + 3), (x + 2, y + 5)], ramp[0])
-            c.line(STONE, [(x + 5, y + 2), (x + 6, y + 4)], ramp[2])
+    shaft_art.draw_stone(c, grid, PALETTES[STONE], STONE)
 
 
 def _draw_platforms(c: _Canvas) -> None:
-    p = PALETTES[TIMBER]
-    for row, x0, x1 in climb.PLATFORMS:
-        y = row * TILE
-        left, right = x0 * TILE, x1 * TILE + 7
-        # The light top edge is exactly the collision row's first pixel.
-        c.line(TIMBER, [(left, y), (right, y)], p[3])
-        c.line(TIMBER, [(left, y + 1), (right, y + 1)], p[2])
-        c.rect(TIMBER, (left, y + 2, right, y + 4), p[1])
-        c.line(TIMBER, [(left, y + 5), (right, y + 5)], p[0])
-        c.line(TIMBER, [(left, y + 6), (right, y + 6)], p[0])
-        for x in range(left + 10, right - 2, 16):
-            c.line(TIMBER, [(x, y + 2), (x, y + 4)], p[0])
-            c.point(TIMBER, (x + 3, y + 2), p[3])
+    shaft_art.draw_platforms(c, climb.PLATFORMS, PALETTES[TIMBER], TIMBER)
 
 
 def _draw_posts(c: _Canvas, grid: list[list[int]]) -> None:
-    p = PALETTES[TIMBER]
-    for tx, ty in _post_tiles(grid):
-        x, y = tx * TILE + 3, ty * TILE
-        c.line(TIMBER, [(x, y), (x, y + 7)], p[0], 2)
-        c.line(TIMBER, [(x + 2, y), (x + 2, y + 7)], p[2])
+    shaft_art.draw_posts(c, _post_tiles(grid), PALETTES[TIMBER], TIMBER)
 
 
 def _draw_boards(c: _Canvas) -> None:

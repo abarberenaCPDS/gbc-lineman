@@ -818,3 +818,15 @@ Then the web preview for Abe.
    Rename the cart header / release file names too?
 5. Job lengths grow from 1 to 2-3 scenes (total gameplay area roughly +50%).
    Is that the right size, or should Priya/Emil stay at 2 scenes?
+
+## 9. Abe's answers (2026-10-30)
+
+1. Amara's house moves to the crest scene above the climb: **yes**.
+2. A hit in another scene sends the carried cable back to its pole, **as now**.
+3. Transitions inside a job: **keep the fade** (main decided, Abe leaned fade).
+4. Rename the cart header and release file names to Lineman: **yes** (main does it).
+5. About 50% more play area: **fine**.
+
+Ownership update: the dialogue session has finished. WP1 owns the awning-exit
+gate in `make_opening_scene.py`; WP4 owns the `tickets.REPORT_EXIT` change.
+Workers run on Anthropic models only (Opus for code, Sonnet for art).

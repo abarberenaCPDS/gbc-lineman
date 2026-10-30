@@ -10,6 +10,12 @@ Use the managed Python (Pillow). Examples:
   python tools/make_project.py lab --verify
 
 Never invokes the out-of-sync legacy Storm Night generators or touches the user's live browser/emulator state.
+
+Multi-scene jobs (docs/LEVEL_REDESIGN.md §7): the profiles already list the new
+scene generators (make_crest_scene.py, make_gully_scene.py, make_ladder_scene.py).
+A listed generator that does not exist yet is skipped while scenes.py marks its
+scene ``planned``; any other missing script is an error. --verify also runs the
+shared route, link and chain tests.
 """
 from __future__ import annotations
 
@@ -19,17 +25,29 @@ import subprocess
 import sys
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "tools"))
+import scenes  # noqa: E402  (stdlib registry: planned scenes and their generators)
+
 PROFILES = {
-    "climb": ("make_climb_art.py", "make_grid_sprites.py", "make_climb_gust.py", "make_climb_scene.py", "make_engine_fields.py", "make_engine_patch.py"),
+    "climb": ("make_climb_art.py", "make_grid_sprites.py", "make_climb_gust.py", "make_climb_scene.py",
+              "make_crest_scene.py", "make_engine_fields.py", "make_engine_patch.py"),
     "ridge": ("make_ridge_art.py", "make_tomas_sprites.py", "make_whip_sprite.py", "make_transformer_sprite.py", "make_grid_sprites.py", "make_climb_gust.py", "make_ridge_scene.py", "make_climb_scene.py"),
-    "rosa": ("make_rosa_art.py", "make_rosa_sprites.py", "make_grid_sprites.py", "make_climb_gust.py", "make_rosa_scene.py", "make_ridge_scene.py"),
-    "kiko": ("make_kiko_art.py", "make_kiko_sprites.py", "make_grid_sprites.py", "make_climb_gust.py", "make_kiko_scene.py", "make_rosa_scene.py"),
+    "rosa": ("make_rosa_art.py", "make_rosa_sprites.py", "make_grid_sprites.py", "make_climb_gust.py", "make_rosa_scene.py",
+             "make_gully_scene.py", "make_ridge_scene.py"),
+    "kiko": ("make_kiko_art.py", "make_kiko_sprites.py", "make_grid_sprites.py", "make_climb_gust.py", "make_kiko_scene.py",
+             "make_ladder_scene.py", "make_rosa_scene.py"),
     "intro": ("make_intro_art.py", "make_intro_sprites.py", "make_intro_scene.py"),
     "opening": ("make_opening_art.py", "make_opening_characters.py", "make_grid_sprites.py", "make_opening_scene.py"),
     "tickets": ("make_ticket_art.py", "make_ticket_scene.py"),
     # Developer lab rooms: reuse the storm_climb template and existing art only.
     "lab": ("make_lab_scene.py",),
 }
+
+
+# Generators of scenes registered ahead of their work package (scenes.py "planned").
+PLANNED_GENERATORS = {entry["generator"] for folder, entry in scenes.REGISTRY.items()
+                      if scenes.planned(folder) and not scenes.present(folder)}
+SHARED_TESTS = ["test_routes.py", "test_scene_links.py", "test_grid_chain.py"]
 
 
 def run(*arguments: str) -> None:
@@ -56,19 +74,26 @@ def main() -> None:
     elif args.profile != "lab" and not (ROOT / "assets/music/cfe_storm_climb.uge.gbsres").exists():
         parser.error("native music is missing; use --render-music with the installed uge-builder image")
     for script in PROFILES[args.profile]:
+        if not (ROOT / "tools" / script).is_file():
+            if script in PLANNED_GENERATORS:
+                print(f"skip tools/{script} (planned scene, not written yet)", flush=True)
+                continue
+            parser.error(f"tools/{script} is missing")
         run("tools/" + script)
     if args.fixtures:
         run("tools/preview_opening.py")
     if args.verify:
-        patterns = {"climb": ["test_climb*.py", "test_engine_*.py", "test_scenes.py"],
+        patterns = {"climb": ["test_climb*.py", "test_crest*.py", "test_engine_*.py", "test_scenes.py", *SHARED_TESTS],
                     "opening": ["test_opening.py", "test_scenes.py"],
-                    "ridge": ["test_ridge*.py", "test_tomas_sprites.py", "test_climb.py", "test_scenes.py"],
-                    "rosa": ["test_rosa*.py", "test_ridge.py", "test_scenes.py"],
-                    "kiko": ["test_kiko*.py", "test_rosa.py", "test_scenes.py"],
+                    "ridge": ["test_ridge*.py", "test_tomas_sprites.py", "test_climb.py", "test_scenes.py", *SHARED_TESTS],
+                    "rosa": ["test_rosa*.py", "test_ridge.py", "test_scenes.py", *SHARED_TESTS],
+                    "kiko": ["test_kiko*.py", "test_rosa.py", "test_scenes.py", *SHARED_TESTS],
                     "intro": ["test_intro*.py", "test_opening.py", "test_scenes.py"],
                     "tickets": ["test_tickets.py", "test_scenes.py"],
                     "lab": ["test_lab*.py", "test_scenes.py"]}
         for pattern in patterns[args.profile]:
+            if not any((ROOT / "tools").glob(pattern)):
+                continue        # e.g. test_crest*.py before its work package lands
             run("-m", "unittest", "discover", "-s", "tools", "-p", pattern)
     print("Regeneration complete. Refresh, build and playtest through MCP; only the intro profile writes the launch scene.")
 

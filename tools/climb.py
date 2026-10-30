@@ -39,15 +39,17 @@ from __future__ import annotations
 
 import uuid as _uuid
 
+import shaft
 import transformer_art
+# The shaft template (shaft.py) owns the deck geometry, collision bytes and the
+# culling thread; these names are re-exported unchanged.
+from shaft import (COL_EMPTY, COL_SOLID, COL_TOP, DECK0_ROW, DECK_ROWS, DECK_WALK, LEDGE_ROWS,  # noqa: F401
+                   SLAB_LEFT, SLAB_RIGHT, CAMERA_ROWS, CAMERA_DEADZONE_ROWS, CULL_ABOVE, CULL_BELOW,
+                   CULL_WAIT_FRAMES, OAM_LIMIT, HERO_OBJ, HERO_COLUMNS, VAR_CULL_X, VAR_CULL_Y,
+                   VAR_CULL_CAM, VAR_CULL_TOP)
 
 TILE = 8
-MAP_W, MAP_H = 20, 36
-
-# Collision bytes used by GB Studio PLATFORM scenes.
-COL_EMPTY = 0x00
-COL_TOP = 0x01  # one-way surface: land from above, jump through from below
-COL_SOLID = 0x0F
+MAP_W, MAP_H = shaft.MAP_W, shaft.MAP_H
 
 # Rows 0-1 sit under the 16px HUD when the camera is at the top.
 HUD_ROWS = 2
@@ -57,13 +59,9 @@ MAX_SCENE_ACTORS = 20
 # Mountain route, bottom to summit. Rises are three rows (one short A tap)
 # except the last, four-row leap to the summit.
 # ---------------------------------------------------------------------------
-DECK0_ROW = 33
-DECK_ROWS = [27, 21, 15, 9]            # L2, L4, L6, L8: slabs + middle walk
-LEDGE_ROWS = [30, 24, 18, 12]          # L1, L3, L5, L7
+# DECK0_ROW 33; DECK_ROWS 27/21/15/9 (L2, L4, L6, L8: slabs + middle walk);
+# LEDGE_ROWS 30/24/18/12 (L1, L3, L5, L7); SLAB_LEFT, SLAB_RIGHT, DECK_WALK: shaft.py.
 SUMMIT_ROW = 5
-SLAB_LEFT = (1, 5)                     # x range of each deck's left rock slab
-SLAB_RIGHT = (14, 18)
-DECK_WALK = (6, 13)                    # one-way timber walk between the slabs
 
 # Platforms are (row, x_start, x_end), inclusive one-way surfaces.
 PLATFORMS = [
@@ -86,9 +84,7 @@ SOLID_BLOCKS = [
     (0, 0, 0, 29),                 # left cliff wall (open at the street exit, rows 30-32)
     (MAP_W - 1, MAP_W - 1, 0, 33),  # right cliff wall
 ]
-for _row in DECK_ROWS:
-    SOLID_BLOCKS.append((SLAB_LEFT[0], SLAB_LEFT[1], _row, _row + 1))
-    SOLID_BLOCKS.append((SLAB_RIGHT[0], SLAB_RIGHT[1], _row, _row + 1))
+SOLID_BLOCKS += shaft.deck_solid_blocks(DECK_ROWS)
 
 # The route the hero climbs, bottom to summit: (surface row, x0, x1).
 ROUTE = [
@@ -164,10 +160,7 @@ VAR_MIDDLE_LIVE = "42"
 VAR_UPPER_LIVE = "43"
 VAR_CHAIN_LIVE = "44"      # how many leading lines are repaired (0-5): how far power climbs
 VAR_LINES_LIVE = "45"      # HUD count of repaired lines (0-5)
-VAR_CULL_X = "46"          # culling thread scratch: hero tile x
-VAR_CULL_Y = "47"          # culling thread: hero tile y
-VAR_CULL_CAM = "48"        # culling thread: estimated camera top row (unclamped)
-VAR_CULL_TOP = "49"        # culling thread: clamped camera top last applied (-1 = none yet)
+# VAR_CULL_X/Y/CAM/TOP (46-49): the culling thread's scratch variables (shaft.py).
 VARIABLES = [
     (VAR_BASE_LIVE, "Climb Base Live", "var_climb_base_live"),
     (VAR_LOWER_LIVE, "Climb Lower Live", "var_climb_lower_live"),
@@ -276,29 +269,15 @@ WHIP_LANES = [(22, 9, 10), (10, 8, 9)]   # L3 ledge (carry 2), L7 ledge (carry 4
 WHIP_START_DELAYS = [0, 30]
 
 # ---------------------------------------------------------------------------
-# Culling thread: estimated camera top row u tracks the hero's tile y inside
-# the platform camera's 16px deadzone (u in [y-10, y-6]); an actor is active
-# only while the clamped camera top s = clamp(u, 0, 18) satisfies
-# anchor - CULL_BELOW <= s <= anchor + CULL_ABOVE. This covers GB Studio's own
-# row refresh region (s-1 .. s+19) plus one row of estimate error, so the
-# engine never re-activates an actor the thread just deactivated.
+# Culling thread (shaft.py): an actor is active only while the clamped camera
+# top s = clamp(u, 0, 18) satisfies anchor - CULL_BELOW <= s <= anchor + CULL_ABOVE.
 # ---------------------------------------------------------------------------
-CAMERA_ROWS = 18
-CAMERA_MAX_TOP = MAP_H - CAMERA_ROWS
-CAMERA_DEADZONE_ROWS = (10, 6)         # u in [y - 10, y - 6]
-CULL_ABOVE = 2                         # active while s <= anchor + 2
-CULL_BELOW = 22                        # active while s >= anchor - 22
-CULL_WAIT_FRAMES = 8                   # the loop is idle unless the clamped camera row changed
-OAM_LIMIT = 40
-HERO_OBJ = 4                           # opening_worker24: 16x32, four 8x16 OBJs
-HERO_COLUMNS = 2
+CAMERA_MAX_TOP = shaft.camera_max_top(MAP_H)
 
 
 def cull_range(anchor_row: int) -> tuple[int, int]:
     """(lo, hi) of the unclamped camera estimate u for which the actor stays active."""
-    lo = anchor_row - CULL_BELOW
-    hi = anchor_row + CULL_ABOVE
-    return (-128 if lo <= 0 else lo, 127 if hi >= CAMERA_MAX_TOP else hi)
+    return shaft.cull_range(anchor_row, CAMERA_MAX_TOP)
 
 
 _GRID_NAMESPACE = _uuid.UUID("5b0e7f1c-3c41-5f0e-9a8b-6c1d2e3f4a5b")
@@ -311,15 +290,7 @@ def grid_resource_id(key: str) -> str:
 
 def collision_grid() -> list[list[int]]:
     """Return the row-major PLATFORM collision bytes (MAP_H by MAP_W)."""
-    grid = [[COL_EMPTY for _ in range(MAP_W)] for _ in range(MAP_H)]
-    for row, x0, x1 in PLATFORMS:
-        for x in range(x0, x1 + 1):
-            grid[row][x] = COL_TOP
-    for x0, x1, row0, row1 in SOLID_BLOCKS:
-        for row in range(row0, row1 + 1):
-            for x in range(x0, x1 + 1):
-                grid[row][x] = COL_SOLID
-    return grid
+    return shaft.collision_grid(MAP_W, MAP_H, PLATFORMS, SOLID_BLOCKS)
 
 
 def span_arc_lanes() -> list[tuple[int, int, int]]:
