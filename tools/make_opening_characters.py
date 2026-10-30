@@ -52,46 +52,14 @@ def _poly(draw: ImageDraw.ImageDraw, points: list[tuple[int, int]], shade: int) 
     draw.polygon(points, fill=PROXY[shade])
 
 
-CARRY_VARIANT = "C"  # chosen from docs/carry-variants.png
+CARRY_VARIANT = "C"  # Abe's pick; "B" kept as the alternative (docs/carry-variants.png)
 SHOCK_FRAMES = 3
 
 
 def _carry_art(variant: str, pose: str, phase: int, rect, point) -> None:
     """24px carry overlay. Shades: 1 pale, 2 orange, 3 dark; rect/point are body-space."""
     dy = -1 if pose == "jump" else 0
-    if variant == "old":
-        # Forward arm held steady at chest height gripping a cable end:
-        # chunky pale plug head over the glove, dark cable drooping in
-        # front, and a slack tail trailing behind the hips.
-        dy = -1 if pose == "jump" else 0
-        # Arm reaches out past the jacket at waist height; the plug sits
-        # outside the silhouette and the cable runs down the open air
-        # in front of the legs and lies along the ground.
-        rect((9, 12 + dy, 11, 13 + dy), 3)
-        rect((10, 12 + dy, 10, 12 + dy), 2)
-        rect((12, 11 + dy, 14, 11 + dy), 3)    # plug top edge
-        rect((11, 12 + dy, 11, 14 + dy), 3)    # plug back edge / wrist
-        rect((12, 12 + dy, 14, 14 + dy), 1)    # 3x3 plug head
-        rect((12, 15 + dy, 14, 15 + dy), 3)    # plug bottom edge
-        point(15, 12 + dy, 3)                  # prongs
-        point(15, 14 + dy, 3)
-        rect((14, 16 + dy, 14, 21), 3)         # cable drops outside body
-        rect((14, 22, 15, 22), 3)              # and lies along the ground
-    elif variant == "A":
-        # Coil slung over the back shoulder, plug held up at the front shoulder.
-        rect((0, 9, 4, 17), 3)
-        rect((1, 10, 3, 16), 2)
-        for row in (11, 13, 15):
-            rect((1, row, 3, row), 3)
-        rect((1, 10 + (phase % 2), 1, 10 + (phase % 2)), 1)
-        rect((9, 10 + dy, 11, 11 + dy), 3)       # forearm up from the elbow
-        rect((11, 7 + dy, 12, 10 + dy), 3)
-        rect((11, 3 + dy, 14, 3 + dy), 3)
-        rect((11, 4 + dy, 14, 7 + dy), 1)         # plug head
-        rect((11, 8 + dy, 14, 8 + dy), 3)
-        point(15, 4 + dy, 3)
-        point(15, 6 + dy, 3)
-    elif variant == "B":
+    if variant == "B":
         # Plug in the leading hand; a bright cable drags back to the pole.
         rect((9, 11 + dy, 11, 12 + dy), 3)
         rect((11, 10 + dy, 14, 14 + dy), 3)
