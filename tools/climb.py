@@ -1,10 +1,14 @@
-"""Storm Climb - deterministic contract for Amara's vertical repair job (job 1).
+"""Storm Climb - deterministic contract for Amara's repair job (job 1, two scenes).
 
-Data only for a 20x36-tile PLATFORM scene. Power flows bottom -> top: the base
-substation feeds pole 1 on the bottom deck, and five lines climb the mountain in
-one continuous grid chain (Abe, 2026-10-29: "the hero must connect 5 lines";
-"lines must show continuity"). The fifth line powers Amara's summit house; her
-door (the checkpoint) only completes once all five are live.
+Data only. Job 1 is two PLATFORM scenes (docs/LEVEL_REDESIGN.md §2, Job 1):
+1A ``storm_climb`` (20x36, the shaft Abe loved, unchanged up to pole 5) and 1B
+``climb_crest`` (56x18, the CREST section below: the end of carry 5, Amara's
+house and transformer 5). Power flows bottom -> top: the base substation feeds
+pole 1 on the bottom deck, and five lines climb the mountain in one continuous
+grid chain (Abe, 2026-10-29: "the hero must connect 5 lines"; "lines must show
+continuity"). Line 5 is the game's first cross-scene carry: its pole stands on
+the L8 deck of 1A, its transformer on the crest's porch. Amara's door (the
+checkpoint, var 0) only completes once all five are live.
 
     deck 0 (row 33)  substation -> pole 1 (left)
     L1 ledge         carry 1 up the middle
@@ -15,7 +19,8 @@ door (the checkpoint) only completes once all five are live.
     L6 deck (15)     transformer 3 (left) ......... pole 4 (right)
     L7 ledge         carry 4
     L8 deck (9)      pole 5 (left) .......... transformer 4 (right)
-    summit (5)       Amara, her house, transformer 5 (right), exit to Wind Ridge
+    summit (5)       exit (top right) up to the crest; line 5's wire leaves there
+    1B climb_crest   carry 5 across the crest to transformer 5, Amara's porch
 
 Every deck has rock slabs at both ends (the poles and transformers stand on
 them) and a one-way timber walk in the middle, so a full-height jump at a deck
@@ -28,6 +33,10 @@ actor uses OAM even off screen, so ten 16x32 pole/box sprites plus hazards in a
 36-row map overflow the 40-sprite OAM. The background transformer's bushing
 tile sits in its stage's wire slot and lights with the wire. A culling thread
 (``CULL_*``, make_climb_scene) deactivates actors outside the camera window.
+
+Lines are global, actors are local (spec §3): each line names its
+``pole_scene`` / ``box_scene``; ``ROUTE_SCENES`` (test_routes.py) gives both
+scenes as route data.
 
 Units are 8x8-pixel tiles. Actor positions are the tile the actor stands in
 (feet row). Collision bytes follow GB Studio PLATFORM semantics: solid=0x0F,
@@ -102,12 +111,13 @@ SUBSTATION_TILES = (1, 3, 30, 32)      # (x0, x1, row0, row1)
 # (x, y, width, height) in tiles: column 0 over the 24px hero's rows 30-32.
 STREET_EXIT = (0, 30, 1, 3)
 
-# Amara's summit: her house (background) with the door checkpoint, Amara left
-# of it, transformer 5 right of it, then the summit exit (ridge.CLIMB_SUMMIT_EXIT).
-HOUSE_A = {"x": 10, "y": 4}            # door tile; the arrival trigger covers x10-12, row 2
-HOUSE_RECT = (9, 12, 0, 4)             # (x0, x1, row0, row1) background house
-SUMMIT_WINDOW_TILES = ((9, 3), (12, 3))
-AMARA = (7, 4)
+# The summit exit (top right, rows 2-4) leads up to the crest (scene_links).
+# Amara, her house, door and transformer 5 moved there (CREST section).
+CLIMB_SCENE = "storm_climb"
+CREST_SCENE = "climb_crest"
+SCENE_ORDER = (CLIMB_SCENE, CREST_SCENE)
+SUMMIT_EXIT = (17, 2, 1, 3)            # (x, y, w, h): to climb_crest (3, 8), ungated
+SUMMIT_ARRIVAL = (14, 4)               # back from the crest: on the summit timber, facing left
 
 # ---------------------------------------------------------------------------
 # The grid chain: lines upstream (bottom) first. "pole" is the pole actor's
@@ -116,29 +126,41 @@ AMARA = (7, 4)
 # (two box columns plus the walk side); "checkpoint" the respawn once repaired.
 # Var 7 keeps its meaning: Amara's line (now the fifth) is live.
 # ---------------------------------------------------------------------------
+# Line 5 ("summit") is the cross-scene carry: pole on 1A's L8 deck, transformer 5
+# and its checkpoint on the crest porch (box_scene; the checkpoint follows it).
 LINES = [
     {"key": "base", "pole": (5, 32), "box": (2, 26), "reach": (2, 24, 4, 3),
-     "checkpoint": (4, 26), "live_var": "40"},
+     "checkpoint": (4, 26), "live_var": "40", "pole_scene": CLIMB_SCENE, "box_scene": CLIMB_SCENE},
     {"key": "lower", "pole": (16, 26), "box": (16, 20), "reach": (13, 18, 5, 3),
-     "checkpoint": (14, 20), "live_var": "41"},
+     "checkpoint": (14, 20), "live_var": "41", "pole_scene": CLIMB_SCENE, "box_scene": CLIMB_SCENE},
     {"key": "middle", "pole": (2, 20), "box": (2, 14), "reach": (2, 12, 4, 3),
-     "checkpoint": (4, 14), "live_var": "42"},
+     "checkpoint": (4, 14), "live_var": "42", "pole_scene": CLIMB_SCENE, "box_scene": CLIMB_SCENE},
     {"key": "upper", "pole": (16, 14), "box": (17, 8), "reach": (14, 6, 5, 3),
-     "checkpoint": (15, 8), "live_var": "43"},
-    {"key": "summit", "pole": (2, 8), "box": (15, 4), "reach": (13, 2, 4, 3),
-     "checkpoint": (13, 4), "live_var": "7"},
+     "checkpoint": (15, 8), "live_var": "43", "pole_scene": CLIMB_SCENE, "box_scene": CLIMB_SCENE},
+    {"key": "summit", "pole": (2, 8), "box": (39, 11), "reach": (36, 9, 5, 3),
+     "checkpoint": (41, 11), "live_var": "7", "pole_scene": CLIMB_SCENE, "box_scene": CREST_SCENE},
 ]
 for _number, _line in enumerate(LINES, start=1):
     _line["number"] = _number          # also the value of VAR_CARRYING_CABLE while carrying it
     _line["box_kind"] = "transformer"
 LINE_COUNT = len(LINES)
 
+
+def poles_in(scene: str) -> list[dict]:
+    """Lines whose pole stands in ``scene``."""
+    return [line for line in LINES if line["pole_scene"] == scene]
+
+
+def boxes_in(scene: str) -> list[dict]:
+    """Lines whose transformer (and checkpoint) stands in ``scene``."""
+    return [line for line in LINES if line["box_scene"] == scene]
+
 # Background transformers: the shared job transformer (transformer_art.py, 16x24,
 # two columns, three rows) standing on the box tile. The top row is in the
 # stage's wire slot (cap, bushing and lid light with the wire); the can and post
 # rows are in the hardware slot.
 TRANSFORMER_W, TRANSFORMER_H = transformer_art.W, transformer_art.H
-TRANSFORMERS = [line["box"] for line in LINES]
+TRANSFORMERS = [line["box"] for line in boxes_in(CLIMB_SCENE)]       # 1A's background transformers
 
 
 def transformer_tiles(box: tuple[int, int]) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
@@ -147,8 +169,9 @@ def transformer_tiles(box: tuple[int, int]) -> tuple[list[tuple[int, int]], list
 
 
 # ---------------------------------------------------------------------------
-# Variables (project-global). 6, 7, 15 and 27 are shared with the other jobs
-# and reset by every scene init; 40-48 are new and climb-only.
+# Variables (project-global). 6, 7, 15 and 27 are shared with the other jobs;
+# 40-48 are climb-only. Job 1 resets them (and var 0, Amara's door) once, when
+# its work order starts the job (grid_chain.job_reset_events), not on every entry.
 # ---------------------------------------------------------------------------
 VAR_CARRYING_CABLE = "6"
 VAR_LINE_LIVE = "7"        # line 5, Amara's line
@@ -196,6 +219,8 @@ WIRE_SLOT_DEAD = ["0B101E", *METAL_DEAD[1:]]
 WIRE_DEAD = METAL_DEAD[LINE_COLOR_INDEX]
 WIRE_LIVE = METAL_LIVE[LINE_COLOR_INDEX]
 STAGE_COLOR_INDEX = [1, 3, 2, 1, 3]    # chain stage -> colour index within its slot
+# Stage 5 crosses the scene edge on this row in both scenes (spec §3 rule 5).
+EDGE_PORT_ROW = 3
 WIRE_ROUTES = [
     # stage 1: substation -> pole 1 -> up to transformer 1 -> across L2 to pole 2
     (1, [(2, 29), (5, 29), (5, 24), (2, 24)]),
@@ -209,9 +234,9 @@ WIRE_ROUTES = [
     # stage 4: pole 4 -> up past the slab -> transformer 4 -> across L8 to pole 5
     (4, [(16, 11), (16, 6), (17, 6)]),
     (4, [(16, 6), (2, 6), (2, 5)]),
-    # stage 5: pole 5 -> under the summit -> transformer 5 -> Amara's house
-    (5, [(2, 5), (2, 7), (14, 7), (14, 2), (15, 2)]),
-    (5, [(14, 2), (13, 2)]),
+    # stage 5: pole 5 -> up over the summit -> out of the top right toward the crest
+    # (EDGE_PORT_ROW; CREST_WIRE_ROUTES picks it up at the crest's left edge)
+    (5, [(2, 5), (2, EDGE_PORT_ROW), (MAP_W - 2, EDGE_PORT_ROW)]),
 ]
 
 
@@ -319,8 +344,8 @@ def sprite_footprints() -> list[dict]:
     shows while creaking (their idle plank is background art).
     """
     import hazards
-    out = [{"name": "amara", "x": AMARA[0], "anchor": AMARA[1], "cols": 2, "rows": 4, "obj": 4, "always": True}]
-    for line in LINES:
+    out = []
+    for line in poles_in(CLIMB_SCENE):
         x, y = line["pole"]
         out.append({"name": f"pole:{line['key']}", "x": x, "anchor": y, "cols": 2, "rows": 4, "obj": 4,
                     "always": True})
@@ -401,42 +426,47 @@ def _self_check() -> None:
         for x in (*range(SLAB_LEFT[0], SLAB_LEFT[1] + 1), *range(SLAB_RIGHT[0], SLAB_RIGHT[1] + 1)):
             assert grid[upper + 1][x] == COL_SOLID and grid[lower][x] == COL_SOLID
 
-    # Spawn, street exit, house and Amara.
+    # Spawn, street exit and the summit exit up to the crest.
     sx, sy = START
     assert grid[sy][sx] == COL_EMPTY and grid[sy + 1][sx] == COL_TOP, "spawn"
     ex, ey, ew, eh = STREET_EXIT
     assert all(grid[y][ex] == COL_EMPTY for y in range(ey, ey + eh)), "street exit must be open"
     assert grid[ey + eh][ex] != COL_EMPTY, "street exit stands on the bottom deck"
     assert START[0] >= ex + ew + 1, "START keeps the hero clear of the street exit"
-    hx, hy = HOUSE_A["x"], HOUSE_A["y"]
-    assert grid[hy][hx] == COL_EMPTY and grid[hy - 1][hx] == COL_EMPTY and grid[hy - 2][hx] == COL_EMPTY
-    assert grid[hy + 1][hx] == COL_TOP, "house door stands on the summit"
-    assert hy - 2 >= HUD_ROWS, "the arrival trigger stays below the HUD"
-    hx0, hx1, hr0, hr1 = HOUSE_RECT
-    assert hx0 <= hx <= hx1 and hr1 == hy and all(hx0 <= x <= hx1 and hr0 <= y <= hr1
-                                                  for x, y in SUMMIT_WINDOW_TILES)
-    assert _stands(grid, *AMARA), "Amara stands on the summit"
+    x, y, w, h = SUMMIT_EXIT
+    assert all(grid[r][x] == COL_EMPTY for r in range(y, y + h)), "summit exit must be open"
+    assert grid[y + h][x - 1] == COL_TOP and y + h == SUMMIT_ROW, "the summit timber reaches the exit"
+    assert y >= HUD_ROWS and x == MAP_W - 3
+    assert _stands(grid, *SUMMIT_ARRIVAL) and SUMMIT_ARRIVAL[0] + 2 < x, "arrival clear of the exit"
 
     # Props: poles and transformers stand clear on support, away from hazard lanes.
     cells = hazard_cells()
+    grids = {CLIMB_SCENE: grid, CREST_SCENE: crest_collision_grid()}
+    crest_cells = crest_hazard_cells()
     for line in LINES:
-        for x, y in (line["pole"], line["box"]):
-            assert _stands(grid, x, y), f"prop {(x, y)} footing"
-            assert all(abs(x - cx) > 2 or abs(y - cy) > 2 for cy, cx in cells), f"prop {(x, y)} near hazard"
+        for point, field in ((line["pole"], "pole_scene"), (line["box"], "box_scene")):
+            x, y = point
+            near = cells if line[field] == CLIMB_SCENE else crest_cells
+            assert _stands(grids[line[field]], x, y), f"prop {(x, y)} footing"
+            assert all(abs(x - cx) > 2 or abs(y - cy) > 2 for cy, cx in near), f"prop {(x, y)} near hazard"
+        box_grid = grids[line["box_scene"]]
         cx, cy = line["checkpoint"]
-        assert grid[cy][cx] == COL_EMPTY and grid[cy + 1][cx] != COL_EMPTY, "checkpoint footing"
+        assert box_grid[cy][cx] == COL_EMPTY and box_grid[cy + 1][cx] != COL_EMPTY, "checkpoint footing"
         rx, ry, rw, rh = line["reach"]
         bx, by = line["box"]
         assert rx <= bx and bx + 1 < rx + rw and ry == by - 2 and rh == 3, "reach covers the box"
     # Poles never stand under a platform: their 32px canvas stays in open air.
-    for line in LINES:
+    for line in poles_in(CLIMB_SCENE):
         x, y = line["pole"]
         assert all(grid[y - 3][c] == COL_EMPTY for c in (x, x + 1)), "pole top clear"
+    assert not poles_in(CREST_SCENE), "the crest has no pole: it ends carry 5"
     # Chain order: power climbs; each pole sits below (or level with) its box and
-    # the next pole shares its box's deck.
+    # the next pole shares its box's deck. Line 5's box is up on the crest.
     for line, nxt in zip(LINES, LINES[1:]):
+        assert line["box_scene"] == CLIMB_SCENE and nxt["pole_scene"] == CLIMB_SCENE
         assert line["pole"][1] > line["box"][1], "each line carries its cable upward"
         assert nxt["pole"][1] == line["box"][1], "the next pole stands on this box's deck"
+    assert [line["box_scene"] for line in LINES] == [CLIMB_SCENE] * 4 + [CREST_SCENE]
 
     # Hazard lanes: open air, on a surface, two-tile ascent corridor kept.
     for row, x0, x1 in play_lanes():
@@ -467,10 +497,13 @@ def _self_check() -> None:
     for line in LINES:
         stage = line["number"]
         top, _ = transformer_tiles(line["box"])
-        assert any(cell in route for s, route in WIRE_ROUTES if s == stage for cell in top), (
+        routes = WIRE_ROUTES if line["box_scene"] == CLIMB_SCENE else CREST_WIRE_ROUTES
+        assert any(cell in route for s, route in routes if s == stage for cell in top), (
             f"stage {stage} wire reaches transformer {line['box']}")
         px, py = line["pole"]
         assert any((px, py - 3) in route for s, route in WIRE_ROUTES if s == stage), "wire reaches the pole top"
+    # Stage 5 leaves 1A on the edge-port row at the right edge.
+    assert WIRE_ROUTES[-1][1][-1] == (MAP_W - 2, EDGE_PORT_ROW)
     assert len({tuple(tuple(c) for _, c in sorted(p.items())) for p in CHAIN_PALETTES.values()}) == LINE_COUNT + 1
 
     # Budgets: actors, OBJs per scanline (hero two columns), OAM per camera window.
@@ -482,6 +515,183 @@ def _self_check() -> None:
     # Variables: new IDs only, one live variable per line.
     assert len({line["live_var"] for line in LINES}) == LINE_COUNT
     assert {v for v, _, _ in VARIABLES}.isdisjoint({"0", "4", "5", "6", "7", "15", "16", "27"})
+    _crest_self_check()
+
+
+
+# ===========================================================================
+# CREST: 1B climb_crest (56x18), the end of carry 5 (docs/LEVEL_REDESIGN.md §2 1B)
+#
+# A short run scene above the summit exit. Run-scene rows: floor 15 (feet 14),
+# rock B and the porch 12 (feet 11), catwalk C 9 (feet 8). The hero arrives on
+# the ledge x0-6 (feet 8) under the back exit, drops to the floor, passes the
+# fallen span (live once lines 1-4 are repaired, so it always arcs during carry
+# 5) and a hidden cable, taps onto rock B under a gust, taps onto catwalk C
+# (a cracked board on its landing, a whip at its end) and drops onto Amara's
+# porch: transformer 5, Amara, her house and door, then the porch exit to work
+# order 2 (gated on var 0, as the summit exit was).
+# ===========================================================================
+CREST_W, CREST_H = 56, 18
+CREST_FLOOR_ROW = 15
+CREST_PORCH_ROW = 12
+CREST_CATWALK_ROW = 9
+CREST_PLATFORMS = [(CREST_CATWALK_ROW, 25, 37)]           # catwalk C, one-way timber
+CREST_SOLID_BLOCKS = [
+    (0, 0, HUD_ROWS, CREST_H - 1),                        # left cliff wall
+    (CREST_W - 1, CREST_W - 1, HUD_ROWS, CREST_H - 1),    # right cliff wall
+    (0, 6, 9, 14),                                        # arrival ledge under the back exit
+    (0, CREST_W - 1, CREST_FLOOR_ROW, CREST_H - 1),       # floor and bedrock
+    (20, 24, CREST_PORCH_ROW, 14),                        # rock B
+    (38, CREST_W - 1, CREST_PORCH_ROW, 14),               # Amara's porch
+]
+CREST_START = (3, 8)                   # upstream entry "S" (from 1A's summit exit) and respawn fallback
+CREST_BACK_EXIT = (1, 6, 1, 3)         # back down to 1A, landing on SUMMIT_ARRIVAL
+CREST_PORCH_EXIT = (54, 9, 1, 3)       # on to work order 2 once Amara's door is reached (var 0)
+CREST_EXIT_NUDGE_TILES = 3             # refused: step back three tiles, then explain (ROM 147c23be)
+CREST_AMARA = (45, 11)
+CREST_HOUSE_RECT = (46, 49, 5, 11)     # (x0, x1, row0, row1) background house at porch height
+CREST_DOOR = (47, 11)                  # door tile: Amara's checkpoint (var 0)
+CREST_WINDOW_TILES = ((46, 8), (49, 8))
+CREST_DOOR_RECT = (CREST_DOOR[0], CREST_DOOR[1] - 2, 2, 3)   # arrival trigger at the door
+
+# Hazards (boards and the hidden cable: hazards.py's climb_crest keys). Lanes are
+# (chest row, x0, x1) as in 1A. 1B pushes a little harder than the shaft: the
+# gust rests less between bursts (Abe: keep 1A, the crest may be harder).
+CREST_GUST_LANES = [(10, 21, 23)]       # on rock B, guarding the tap onto catwalk C
+CREST_GUST_TIMINGS = (GUST_WARNING_FRAMES, GUST_ACTIVE_FRAMES, 70)
+CREST_WHIP_LANES = [(7, 33, 34)]        # at catwalk C's end, hanging from line 5's wire
+CREST_WHIP_START_DELAYS = [20]
+# The fallen span on the floor goes live once lines 1-4 are repaired.
+CREST_FALLEN_SPANS = [{"live_after": 4, "arcs": [(13, 11, 12)], "delays": [0]}]
+
+# Stage 5's wire enters at the left edge on the edge-port row, runs over the
+# crest (the whip hangs below it) to transformer 5's top tile, then to the roof.
+CREST_WIRE_ROUTES = [
+    (5, [(1, EDGE_PORT_ROW), (39, EDGE_PORT_ROW), (39, 9)]),
+    (5, [(39, EDGE_PORT_ROW), (47, EDGE_PORT_ROW), (47, 4)]),
+]
+CREST_TRANSFORMERS = [line["box"] for line in boxes_in(CREST_SCENE)]
+
+
+def crest_collision_grid() -> list[list[int]]:
+    """Row-major PLATFORM collision bytes of the crest (CREST_H by CREST_W)."""
+    return shaft.collision_grid(CREST_W, CREST_H, CREST_PLATFORMS, CREST_SOLID_BLOCKS)
+
+
+def crest_span_arc_lanes() -> list[tuple[int, int, int]]:
+    return [lane for span in CREST_FALLEN_SPANS for lane in span["arcs"]]
+
+
+def crest_play_lanes() -> list[tuple[int, int, int]]:
+    """Every crest hazard lane (gust, span arc, whip, hidden cable)."""
+    import hazards
+    _, cables, _ = hazards.placement(CREST_SCENE, redesign=True)
+    return sorted(CREST_GUST_LANES + crest_span_arc_lanes() + CREST_WHIP_LANES + cables)
+
+
+def crest_hazard_cells() -> set[tuple[int, int]]:
+    return {(row, x) for row, x0, x1 in crest_play_lanes() for x in range(x0, x1 + 1)}
+
+
+def crest_sprite_footprints() -> list[dict]:
+    """The crest's actors in the climb's OBJ budget model (sprite_footprints)."""
+    import hazards
+    boards, cables, _ = hazards.placement(CREST_SCENE, redesign=True)
+    x, y = CREST_AMARA
+    out = [{"name": "amara", "x": x, "anchor": y, "cols": 2, "rows": 4, "obj": 4, "always": True}]
+    out += [{"name": "gust", "x": x0, "anchor": row, "cols": 3, "rows": 2, "obj": 3, "always": False}
+            for row, x0, _ in CREST_GUST_LANES]
+    out += [{"name": "span-arc", "x": x0, "anchor": row, "cols": 2, "rows": 2, "obj": 2, "always": False}
+            for row, x0, _ in crest_span_arc_lanes()]
+    out += [{"name": "whip", "x": x0, "anchor": row + 1, "cols": 2, "rows": 4, "obj": 4, "always": True}
+            for row, x0, _ in CREST_WHIP_LANES]
+    out += [{"name": "hidden-cable", "x": x0, "anchor": row, "cols": 2, "rows": 2, "obj": 2, "always": False}
+            for row, x0, _ in cables]
+    out += [{"name": "board", "x": x0, "anchor": row, "cols": 3, "rows": 2, "obj": 3, "always": True}
+            for row, x0, _ in boards]
+    return out
+
+
+def crest_actor_count() -> int:
+    return len(crest_sprite_footprints())
+
+
+def crest_scanline_worst() -> int:
+    """Worst OBJ columns on one tile row of any 20-column screen, hero (2) included."""
+    best = 0
+    for left in range(CREST_W - 20 + 1):
+        for row in range(CREST_H):
+            best = max(best, sum(s["cols"] for s in crest_sprite_footprints()
+                                 if s["x"] < left + 20 and s["x"] + s["cols"] > left
+                                 and s["anchor"] - s["rows"] + 1 <= row <= s["anchor"]))
+    return best + HERO_COLUMNS
+
+
+def _crest_self_check() -> None:
+    grid = crest_collision_grid()
+    assert len(grid) == CREST_H and all(len(row) == CREST_W for row in grid)
+    assert _stands(grid, *CREST_START, width=1), "crest entry"
+    for x, y, w, h in (CREST_BACK_EXIT, CREST_PORCH_EXIT):
+        assert all(grid[r][x] == COL_EMPTY for r in range(y, y + h)) and grid[y + h][x] != COL_EMPTY
+    assert CREST_START[0] >= CREST_BACK_EXIT[0] + 2, "the entry keeps clear of the back exit"
+    assert _stands(grid, *CREST_AMARA), "Amara stands on the porch"
+    assert _stands(grid, *CREST_DOOR, width=1), "the door stands on the porch"
+    hx0, hx1, hy0, hy1 = CREST_HOUSE_RECT
+    assert hx0 <= CREST_DOOR[0] < hx1 and hy1 == CREST_DOOR[1] and grid[hy1 + 1][hx0] == COL_SOLID
+    assert all(hx0 <= x <= hx1 and hy0 <= y <= hy1 for x, y in CREST_WINDOW_TILES)
+    assert all(grid[y][x] == COL_EMPTY for x in range(hx0, hx1 + 1) for y in range(hy0, hy1 + 1))
+    nx = CREST_PORCH_EXIT[0] - CREST_EXIT_NUDGE_TILES
+    assert _stands(grid, nx, CREST_DOOR[1], width=1) and nx + 2 < CREST_PORCH_EXIT[0]
+    for row, x0, x1 in crest_play_lanes():
+        assert all(grid[row][x] == COL_EMPTY for x in range(x0, x1 + 1)), "crest lane in rock"
+        assert all(grid[row + 2][x] in (COL_SOLID, COL_TOP) for x in range(x0, x1 + 1)), "crest lane floor"
+    assert all(x1 - x0 == 2 for _, x0, x1 in CREST_GUST_LANES)
+    assert all(x1 - x0 == 1 for _, x0, x1 in (*CREST_WHIP_LANES, *crest_span_arc_lanes()))
+    assert len(CREST_WHIP_START_DELAYS) == len(CREST_WHIP_LANES)
+    assert [span["live_after"] for span in CREST_FALLEN_SPANS] == [LINE_COUNT - 1], "live during carry 5"
+    # Wires: continuous, orthogonal, below the HUD, entering on 1A's edge-port row.
+    assert CREST_WIRE_ROUTES[0][1][0] == (1, EDGE_PORT_ROW)
+    for (_, a), (_, b) in zip(CREST_WIRE_ROUTES, CREST_WIRE_ROUTES[1:]):
+        assert set(a) & set(b)
+    for stage, route in CREST_WIRE_ROUTES:
+        assert stage == LINE_COUNT
+        assert all(0 <= x < CREST_W and HUD_ROWS <= y < CREST_H for x, y in route)
+        assert all(x0 == x1 or y0 == y1 for (x0, y0), (x1, y1) in zip(route, route[1:]))
+    assert crest_actor_count() <= MAX_SCENE_ACTORS
+    assert crest_scanline_worst() <= 10
+    assert sum(s["obj"] for s in crest_sprite_footprints()) + HERO_OBJ <= OAM_LIMIT
+
+
+# ---------------------------------------------------------------------------
+# Route scenes (test_routes.py schema): both scenes of the job, from this contract.
+# ---------------------------------------------------------------------------
+def route_scenes() -> list[dict]:
+    import grid_chain
+    import hazards
+    out = []
+    boards, cables, _ = hazards.placement(CLIMB_SCENE, redesign=True)
+    lanes = [("gust", *GUST_LANES[i]) for i in TIMED_GUST_LANE_INDICES]
+    lanes += [("whip", *lane) for lane in WHIP_LANES] + [("arc", *lane) for lane in span_arc_lanes()]
+    lanes += [("cable", *lane) for lane in cables]
+    out.append({"folder": CLIMB_SCENE, "grid": collision_grid(), "start": START,
+                "entries": [START, SUMMIT_ARRIVAL], "lines": grid_chain.scene_lines(LINES, CLIMB_SCENE),
+                "lanes": lanes, "boards": boards, "exit": SUMMIT_EXIT, "exits": [STREET_EXIT, SUMMIT_EXIT],
+                "npcs": [], "devices": [], "max_rise": 4, "culled": True})
+    boards, cables, _ = hazards.placement(CREST_SCENE, redesign=True)
+    lanes = [("gust", *lane) for lane in CREST_GUST_LANES] + [("whip", *lane) for lane in CREST_WHIP_LANES]
+    lanes += [("arc", *lane) for lane in crest_span_arc_lanes()] + [("cable", *lane) for lane in cables]
+    out.append({"folder": CREST_SCENE, "grid": crest_collision_grid(), "start": CREST_START,
+                "entries": [CREST_START], "lines": grid_chain.scene_lines(LINES, CREST_SCENE),
+                "lanes": lanes, "boards": boards, "exit": CREST_PORCH_EXIT,
+                "exits": [CREST_BACK_EXIT, CREST_PORCH_EXIT], "npcs": [CREST_AMARA], "devices": []})
+    return out
+
+
+def __getattr__(name: str):
+    # ROUTE_SCENES is built lazily: grid_chain and hazards import this module.
+    if name == "ROUTE_SCENES":
+        return route_scenes()
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
 _self_check()

@@ -12,7 +12,7 @@ after Emil's house a storm report thanks everyone and returns to the title.
 * Closing: right after a house's power payoff, the job's own scene shows a
   CLOSED box (``closed_lines``) with the victory jingle. It stays in-scene:
   re-entering a job scene re-runs its init and would reset its variables.
-* ``storm_report``: TOPDOWN, same card art. Pine Hollow's porch exit (gated on
+* ``storm_report``: TOPDOWN, same card art. Pine Rim's porch exit (gated on
   Emil's house) leads here; the report pages thank everyone, then the title.
 
 TOPDOWN (not LOGO) because these scenes draw text (MCP_TOOLKIT §5). All lines
@@ -112,9 +112,10 @@ REPORT_PAGES = [
     "A game by\nAbe's Games",
 ]
 
-# Pine Hollow porch exit to the report, gated on Emil's house (var 13).
-# Same shape as Signal Hill's porch exit; it sorts before the door (BUGS B-05).
-REPORT_EXIT = (kiko.MAP_W - 2, 9, 1, 3)
+# Pine Rim (4C) porch exit to the report, gated on Emil's house (var 13); the
+# trigger itself comes from scene_links (pine_rim -> storm_report). It sorts
+# before the door (BUGS B-05).
+REPORT_EXIT = (kiko.RIM_W - 2, 9, 1, 3)
 REPORT_EXIT_GATE_VAR = kiko.VAR_HOME_POWERED
 TITLE_SCENE_ID = intro.TITLE_SCENE_ID
 

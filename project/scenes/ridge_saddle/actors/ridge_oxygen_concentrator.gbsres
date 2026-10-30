@@ -1,0 +1,71 @@
+{
+  "_resourceType": "actor",
+  "id": "1c9c1d95-8e94-5726-8bb9-3c860dd56f6f",
+  "_index": 1,
+  "symbol": "ridge_oxygen_concentrator",
+  "prefabId": "",
+  "name": "Oxygen Concentrator",
+  "coordinateType": "tiles",
+  "x": 60,
+  "y": 11,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "11eaaa9f-cb3a-5677-8954-1610d1fd0360",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "9"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "041760d2-3df6-515e-9c33-c493687c5ae7",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "$self$",
+              "spriteStateId": "On",
+              "loopAnim": true
+            },
+            "id": "60e9ea01-d75a-50d3-a9e5-147050b3e840"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "$self$",
+              "spriteStateId": "Off",
+              "loopAnim": true
+            },
+            "id": "7a52d371-aaae-5d30-9e09-ff7c642dff3a"
+          }
+        ]
+      }
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

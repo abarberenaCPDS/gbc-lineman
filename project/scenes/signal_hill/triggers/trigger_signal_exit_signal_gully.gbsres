@@ -1,0 +1,49 @@
+{
+  "_resourceType": "trigger",
+  "id": "dac56896-ab25-5206-9863-6b20411ac0aa",
+  "name": "Exit to Signal Gully",
+  "prefabId": "",
+  "x": 62,
+  "y": 3,
+  "symbol": "trigger_signal_exit_signal_gully",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "4d48291f-9bca-546b-b18a-ee4251e829ed"
+    },
+    {
+      "command": "EVENT_OVERLAY_HIDE",
+      "args": {},
+      "id": "ed5929c9-e141-5cee-b85a-32d4819462eb"
+    },
+    {
+      "command": "EVENT_SWITCH_SCENE",
+      "args": {
+        "x": {
+          "type": "number",
+          "value": 2
+        },
+        "y": {
+          "type": "number",
+          "value": 4
+        },
+        "direction": "right",
+        "sceneId": "6714200c-748d-50ea-9ab8-f41beb918c15",
+        "fadeSpeed": "2"
+      },
+      "id": "7adfda69-6724-57e1-9f28-a05116d342fd"
+    }
+  ],
+  "leaveScript": [],
+  "_index": 0
+}

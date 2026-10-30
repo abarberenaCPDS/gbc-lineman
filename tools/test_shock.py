@@ -29,12 +29,19 @@ class ShockTests(unittest.TestCase):
         self.assertEqual(len(state["animations"][0]["frames"]), 3)
         self.assertTrue(all(f["tiles"] for f in state["animations"][0]["frames"]))
 
-    def test_every_scene_generator_hit_script_shocks(self):
-        for name in ("make_climb_scene", "make_ridge_scene", "make_rosa_scene",
-                     "make_kiko_scene", "make_lab_scene"):
-            text = (ROOT / f"tools/{name}.py").read_text()
-            self.assertIn("shock.shock_events(key)", text, name)
-
+    def test_every_hazard_scene_hit_script_shocks(self):
+        # Generated output, not generator source: every job and lab scene's
+        # contact hit plays the Shock state (service_opening has no hazards).
+        import scenes
+        for folder, entry in scenes.REGISTRY.items():
+            path = ROOT / "project/scenes" / folder / "scene.gbsres"
+            if entry["tag"] == "legacy" or not path.exists():
+                continue
+            scene = json.loads(path.read_text())
+            if scene["type"] != "PLATFORM" or folder == "service_opening":
+                continue
+            with self.subTest(folder=folder):
+                self.assertIn('"spriteStateId": "Shock"', json.dumps(scene["playerHit1Script"]))
 
 if __name__ == "__main__":
     unittest.main()

@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "d2faaa21-37ea-525a-98ad-7688b16ac053",
+  "name": "Box Zone Transformer (east)",
+  "prefabId": "",
+  "x": 2,
+  "y": 12,
+  "symbol": "trigger_pine_east_reach",
+  "prefabScriptOverrides": {},
+  "width": 4,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 104
+        }
+      },
+      "id": "8cf8a05e-0f1c-53f5-a414-0b43baba6c36"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 104
+          }
+        }
+      },
+      "id": "1ccbffa3-d656-5dc9-825f-e50aa7442033",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "02aa0346-510d-5293-877a-1097945cf2ca"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 6
+}

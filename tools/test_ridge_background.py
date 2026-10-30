@@ -1,4 +1,8 @@
-"""Contract, native proxy and five-stage background checks for the repair jobs."""
+"""Contract, native proxy and five-stage background checks for the repair jobs.
+
+A job scene that shows only some chain stages (a multi-scene job) declares them
+as ``contract.STAGES``; wires may cross the left or right edge wall (edge ports).
+"""
 from __future__ import annotations
 
 import json
@@ -7,7 +11,7 @@ import unittest
 from PIL import Image
 
 import climb
-import make_ridge_art as ridge_art
+import make_ridge_art
 import ridge
 from test_opening import decode_rle
 
@@ -28,7 +32,7 @@ class BackgroundChecks:
 
     def test_size_identity_and_proxy(self):
         c, a = self.contract, self.art
-        self.assertEqual(c.MAP_W, 100)
+        self.assertIn((c.MAP_W, c.MAP_H), ((100, 18), (100, 30), (64, 18)))
         self.assertEqual(self.proxy.size, (c.MAP_W * 8, c.MAP_H * 8))
         self.assertEqual((self.sidecar["width"], self.sidecar["height"]), (c.MAP_W, c.MAP_H))
         self.assertEqual((self.sidecar["imageWidth"], self.sidecar["imageHeight"]), self.proxy.size)
@@ -58,6 +62,9 @@ class BackgroundChecks:
                 self.assertEqual(palettes[slot][index], c.WIRE_LIVE if stage <= n else c.WIRE_DEAD)
                 self.assertEqual(palettes[slot][0], c.METAL_DEAD[0])
 
+    def stages(self):
+        return list(getattr(self.contract, "STAGES", range(1, 6)))
+
     def test_wire_slot_tiles_and_stage_pixels(self):
         c, a = self.contract, self.art
         owners = {s: a.stage_pixels(s) for s in range(1, 6)}
@@ -68,7 +75,8 @@ class BackgroundChecks:
                     self.assertEqual(self.grid[y][x], climb.COL_EMPTY, (x, y))
                     self.assertTrue(any((x, y) in tile_owners[s] and a.stage_slot(s) == slot
                                         for s in owners), (x, y, slot))
-        for stage, pixels in owners.items():
+        for stage in self.stages():
+            pixels = owners[stage]
             slot, index = a.stage_slot(stage), c.STAGE_COLOR_INDEX[stage - 1]
             painted = {(x, y) for x, y in pixels if 0 <= x < a.WIDTH and 0 <= y < a.HEIGHT
                        and self.slots[y // 8][x // 8] == slot
@@ -80,7 +88,7 @@ class BackgroundChecks:
                                  (stage, x, y))
             for x, y in tile_owners[stage]:
                 if self.grid[y][x] != climb.COL_EMPTY:
-                    self.assertEqual(x, 0, (stage, x, y))
+                    self.assertIn(x, (0, c.MAP_W - 1), (stage, x, y))
                 elif self.slots[y][x] != slot:
                     # A downstream slot can take only an actual shared junction tile.
                     self.assertTrue(any((x, y) in tile_owners[s] and a.stage_slot(s) == self.slots[y][x]
@@ -153,8 +161,27 @@ class BackgroundChecks:
 
 
 class RidgeBackgroundTests(BackgroundChecks, unittest.TestCase):
-    contract = ridge
-    art = ridge_art
+    """2A wind_ridge: stages 1-3, line 3 leaves through the right wall."""
+    contract = ridge.LAYOUTS[ridge.RIDGE]
+    art = make_ridge_art.ARTS[ridge.RIDGE]
+
+    def test_wind_ridge_tile_budget(self):
+        # Spec WP2: Wind Ridge's BG tiles stay below 200 (was 283 at 100x30).
+        self.assertLess(self.art._unique_indexed_tiles(self.proxy, self.slots), 200)
+        self.assertEqual(self.sidecar["id"], ridge.resource_id("background:wind-ridge"))
+
+
+class SaddleBackgroundTests(BackgroundChecks, unittest.TestCase):
+    """2B ridge_saddle: stages 3-5, line 3 enters through the left wall; Hiroshi's cabin."""
+    contract = ridge.LAYOUTS[ridge.SADDLE]
+    art = make_ridge_art.ARTS[ridge.SADDLE]
+
+    def test_edge_port_rows_match(self):
+        port = ridge.EDGE_PORTS[3]
+        left = {(x // 8, y // 8) for x, y in self.art.stage_pixels(3)}
+        right = {(x // 8, y // 8) for x, y in make_ridge_art.ARTS[ridge.RIDGE].stage_pixels(3)}
+        self.assertIn((0, port), left)
+        self.assertIn((ridge.MAP_W - 1, port), right)
 
 
 if __name__ == "__main__":

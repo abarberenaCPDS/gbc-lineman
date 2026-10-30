@@ -1,0 +1,39 @@
+{
+  "_resourceType": "trigger",
+  "id": "7be00cb8-ba6c-5c36-9d84-d77acf2a89ec",
+  "name": "Cracked Board 1 Stand",
+  "prefabId": "",
+  "x": 26,
+  "y": 8,
+  "symbol": "climb_crest_trigger_cracked_board_01",
+  "prefabScriptOverrides": {},
+  "width": 3,
+  "height": 1,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "15",
+        "value": {
+          "type": "number",
+          "value": 1
+        }
+      },
+      "id": "25540f7a-502c-5185-a489-d771eba6a2fa"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "15",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "954ef95c-efb9-5d8b-a64c-3a761af16822"
+    }
+  ],
+  "_index": 3
+}

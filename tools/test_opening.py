@@ -234,6 +234,21 @@ class OpeningTests(unittest.TestCase):
         self.assertEqual(tickets.TICKETS[1]["scene_id"], climb_id("scene:storm-climb"))
         self.assertEqual(tickets.TICKETS[1]["start"], climb.START)
 
+    def test_exit_restarts_job_one_only_while_no_line_is_live(self):
+        """Backtracking street -> awning keeps job 1's progress (LEVEL_REDESIGN §8)."""
+        import make_opening_scene as scene
+        import climb
+        import tickets
+        gate = scene.exit_trigger()["script"][0]
+        fresh, switch = gate["children"]["true"]
+        self.assertEqual(fresh["command"], "EVENT_IF")
+        self.assertEqual(fresh["args"]["condition"]["valueA"]["value"], climb.VAR_CHAIN_LIVE)
+        self.assertEqual(fresh["args"]["condition"]["valueB"]["value"], 0)
+        [ticket] = fresh["children"]["true"]
+        self.assertEqual((ticket["args"]["variable"], ticket["args"]["value"]["value"]), (tickets.VAR_TICKET, 1))
+        self.assertEqual(fresh["children"]["false"], [], "a job in progress leaves var 16 alone")
+        self.assertEqual(switch["command"], "EVENT_SWITCH_SCENE")
+
     def test_exit_false_branch_has_no_scene_switch_and_nudges_back(self):
         import make_opening_scene as scene
         gate = scene.exit_trigger()["script"][0]

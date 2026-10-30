@@ -33,8 +33,11 @@ def grids(layout: str) -> dict[str, list[list[int]]]:
     """Collision grid per folder for one layout (storm_report and the work order have none)."""
     out = {"service_opening": opening.collision_grid()}
     if layout == "today":
-        out.update({"storm_climb": climb.collision_grid(), "wind_ridge": ridge.collision_grid(),
-                    "signal_hill": rosa.collision_grid(), "pine_hollow": kiko.collision_grid()})
+        legacy = {"storm_climb": climb.collision_grid, "wind_ridge": ridge.collision_grid,
+                  "signal_hill": rosa.collision_grid, "pine_hollow": kiko.collision_grid}
+        # A migrated job's contract describes the redesign, not today's grid.
+        out.update({folder: grid() for folder, grid in legacy.items()
+                    if not scene_links.migrated(scene_links.job_of(folder))})
     else:
         out.update({folder: spec.grid for folder, spec in redesign_maps.load().items()})
     return out
@@ -95,7 +98,7 @@ class TableTests(unittest.TestCase):
             table = scene_links.table(layout)
             grid_by_folder = grids(layout)
             for link in table:
-                if link.ticket is None and link.target not in grid_by_folder:
+                if link.target not in grid_by_folder:
                     continue
                 target = link.target
                 entry = link.entry

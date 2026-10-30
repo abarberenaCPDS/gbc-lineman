@@ -1,0 +1,49 @@
+{
+  "_resourceType": "trigger",
+  "id": "43eb6f01-9e93-511d-b49c-9d66bb441e15",
+  "name": "Saddle Exit (to Ridge Saddle)",
+  "prefabId": "",
+  "x": 62,
+  "y": 6,
+  "symbol": "trigger_ridge_saddle_exit",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "2160eb51-119b-5019-90cf-01665a7c4e83"
+    },
+    {
+      "command": "EVENT_OVERLAY_HIDE",
+      "args": {},
+      "id": "fee75e55-b113-5f74-860b-d64e964e4ccb"
+    },
+    {
+      "command": "EVENT_SWITCH_SCENE",
+      "args": {
+        "x": {
+          "type": "number",
+          "value": 2
+        },
+        "y": {
+          "type": "number",
+          "value": 8
+        },
+        "direction": "right",
+        "sceneId": "25260587-51f0-5445-ba85-4b6373ad58a8",
+        "fadeSpeed": "2"
+      },
+      "id": "ec24062f-9519-58e2-ab7b-6ec0041bd8cc"
+    }
+  ],
+  "leaveScript": [],
+  "_index": 0
+}

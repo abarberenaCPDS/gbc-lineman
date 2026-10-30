@@ -224,11 +224,24 @@ def hero_speed(size: int) -> int:
     return json.loads((ROOT / f"assets/sprites/opening_worker{size}.png.gbsres").read_text()).get("animSpeed", 15)
 
 
+def work_order_events() -> list[dict]:
+    """Amara's work order; its card switches on to the climb's start.
+
+    The ticket (var 16 = 1, which makes the climb reset job 1 once) is set only
+    while no line is live yet (climb.VAR_CHAIN_LIVE == 0): walking back down
+    through the street and out of the awning again must not restart the job
+    (docs/LEVEL_REDESIGN.md §8). Otherwise var 16 stays 0 (the climb's fresh
+    start cleared it): the card still shows ticket 1 (its fallback) and the
+    climb keeps every repaired line.
+    """
+    ticket, switch = tickets.to_work_order(1, "exit", event, set_value, number)
+    return [if_value(climb.VAR_CHAIN_LIVE, 0, "exit:fresh-job", [ticket]), switch]
+
+
 def exit_trigger() -> dict:
     """Awning exit: opens Amara's work order (then Storm Climb) once Service Restored is set."""
     x, y, w, h = opening.EXIT
-    # Amara's work order first; its card switches on to the climb's start.
-    gate = if_value(RESTORED, 1, "exit:gate", tickets.to_work_order(1, "exit", event, set_value, number), [
+    gate = if_value(RESTORED, 1, "exit:gate", work_order_events(), [
         dialogue("Gate's locked.\nFix the panel.", "exit:unpowered"),
         event("EVENT_ACTOR_SET_POSITION", {
             "actorId": "player", "units": "tiles",

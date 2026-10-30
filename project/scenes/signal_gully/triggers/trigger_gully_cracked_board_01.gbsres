@@ -1,0 +1,39 @@
+{
+  "_resourceType": "trigger",
+  "id": "0e8c3db5-8fcf-504c-8dc5-77f8393b386b",
+  "name": "Cracked Board 1 Stand",
+  "prefabId": "",
+  "x": 8,
+  "y": 14,
+  "symbol": "trigger_gully_cracked_board_01",
+  "prefabScriptOverrides": {},
+  "width": 3,
+  "height": 1,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "15",
+        "value": {
+          "type": "number",
+          "value": 1
+        }
+      },
+      "id": "50b49c54-7ff5-5cb1-8c75-f9a8e284b05c"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "15",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "4959bc5b-e215-538c-80b2-ba7e1eb77c4a"
+    }
+  ],
+  "_index": 2
+}

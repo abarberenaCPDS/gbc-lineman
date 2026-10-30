@@ -1,19 +1,27 @@
-"""Pine Hollow - deterministic contract for Emil's family's repair job (job 4).
+"""Pine Hollow - deterministic contract for Emil's repair job (job 4, the hardest).
 
-Data only for a 100x18-tile PLATFORM scene reached from Priya's porch once her
-house is powered. The job mixes the hazards learned so far: a hidden cable lane
-on a long rock mesa (the feeder pole and transformer stand up there), then a
-live cable arcs, wind, whipping wire and a cracked board along the route.
-Five lines make one grid chain, from the feeder on the mesa through three
-intermediate transformers to the porch's junction box.
-Repairing all five lights the family's window and switches on their electric
-stove so dinner can cook (Blackout Grid).
+Three PLATFORM scenes (docs/LEVEL_REDESIGN.md §2, Job 4), one grid chain of
+five lines:
 
-Every generator for this job reads this module: ``make_kiko_art.py`` (art +
-collision-aligned background), ``make_kiko_sprites.py`` (Emil and the stove)
-and ``make_kiko_scene.py`` (scene, actors, triggers, scripts). The live arc
-reuses ``live_arc`` from Priya's job; the transformer reuses Wind Ridge's
-sprite.
+  4A ``pine_hollow`` (64x18, entry)  lines 1-2 and pole 3; line 3's cable leaves
+                                     through the right-hand exit
+  4B ``pine_ladder`` (20x36, up)     a climb-style shaft: box 3, line 4, pole 5;
+                                     line 5's cable rises two decks and leaves
+                                     through the top-right exit (culling thread)
+  4C ``pine_rim`` (56x18)            box 5 on Emil's porch, Emil, the stove, his
+                                     door and the storm-report exit
+
+Lines are global, actors are local (grid_chain "Multi-scene jobs"): each line
+names the scene of its pole and box. Repairing all five lights Emil's window
+and switches on his electric stove so dinner can cook.
+
+Every generator for this job reads this module: ``make_kiko_art.py`` (the three
+backgrounds), ``make_kiko_sprites.py`` (Emil and the stove),
+``make_kiko_scene.py`` (4A and 4C) and ``make_ladder_scene.py`` (4B). The live
+arc reuses Priya's ``live_arc``; boxes are background transformers
+(``transformer_art.py``). Cracked boards and hidden cables are placed by
+``hazards.py`` (``placement(folder, redesign=True)``); links come from
+``scene_links.py``.
 
 Units are 8x8-pixel tiles. Actor positions are the tile the actor stands in
 (feet row). Collision bytes follow GB Studio PLATFORM semantics:
@@ -29,134 +37,263 @@ import grid_chain
 import hazards as _hazards
 import ridge
 import rosa
+import scene_links
+import shaft
 import transformer_art
 
 TILE = 8
-MAP_W, MAP_H = 100, 18
-
 COL_EMPTY = climb.COL_EMPTY
 COL_TOP = climb.COL_TOP
 COL_SOLID = climb.COL_SOLID
 
 HUD_ROWS = 2
-
-# Engine limits (gbvm actor.h): 21 actors including the player, 12 active.
+JOB = 4
 MAX_SCENE_ACTORS = 20
-MAX_ACTIVE_ACTORS = 11
+MAX_SCENE_TRIGGERS = 30
+
+HOLLOW, LADDER, RIM = "pine_hollow", "pine_ladder", "pine_rim"
+SCENE_ORDER = (HOLLOW, LADDER, RIM)
+SCENE_AXES = {HOLLOW: "x", LADDER: "up", RIM: "x"}
 
 # ---------------------------------------------------------------------------
-# 0.18 redesign (Abe, 0.17 playtest: "Emil's: same as Hiroshi's and Priya's",
-# i.e. "reorganize the layout because it's too easy, have all of our obstacles
-# there too"). The last and hardest job, modelled on the climb Abe liked: four
-# tiers (floor 15, rocks 12, mesas and catwalks 9, the summit rock 6), short-A-tap
-# rises of three rows, every carry crosses hazards sitting on the route, and the
-# whips and gusts guard the jumps. The boxes are background transformers
-# (transformer_art.py), which frees five actors for hazards. Left to right:
-#
-#   1 feeder  rock A pole 1 -> tap onto catwalk C1: cracked board on the landing,
-#             then a hidden cable right before mesa M1, T1
-#   2 west    mesa M1 pole 2 -> drop to the floor: fallen span 1 arcs, then whip 1
-#             right before the tap onto rock C, T2
-#   3 middle  rock C pole 3 -> catwalk D1: gust 1 on the landing, whip 2 guarding
-#             the tap onto the summit rock D, T3
-#   4 east    summit pole 4 -> drop to catwalk E1 (cracked board on the landing,
-#             whip 3) or the floor under it (fallen span 2, two arcs) -> rock E, T4
-#   5 house   rock E pole 5 -> catwalk F (cracked board on the landing, hidden
-#             cable 2 at the drop onto the porch) or the floor under it (gust 2)
-#             -> Emil's porch: house box, Emil, door, stove
+# Hazard timings: the hardest tier (spec §1). Warnings and rests are never
+# longer than Priya's, active windows never shorter (test_kiko asserts it).
 # ---------------------------------------------------------------------------
-GROUND_ROW = 15
-SURFACE_LOW = GROUND_ROW          # floor
-SURFACE_STEP = GROUND_ROW - 3     # one tap up: rocks A, C, E and the porch
-SURFACE_HIGH = GROUND_ROW - 6     # mesa M1 and the catwalks
-SURFACE_TOP = GROUND_ROW - 9      # summit rock D
-
-# (x0, x1, row0, row1) inclusive solid rectangles in addition to the floor.
-SOLID_BLOCKS = [
-    (0, 0, 2, GROUND_ROW - 1),                    # left cliff wall
-    (MAP_W - 1, MAP_W - 1, 2, GROUND_ROW - 1),    # right cliff wall behind the house
-    (4, 6, SURFACE_STEP, GROUND_ROW - 1),         # rock A: pole 1 (feeder)
-    (16, 23, SURFACE_HIGH, GROUND_ROW - 1),       # mesa M1: T1, pole 2
-    (36, 41, SURFACE_STEP, GROUND_ROW - 1),       # rock C: T2, pole 3
-    (54, 59, SURFACE_TOP, GROUND_ROW - 1),        # summit rock D: T3, pole 4
-    (74, 79, SURFACE_STEP, GROUND_ROW - 1),       # rock E: T4, pole 5
-    (88, 98, SURFACE_STEP, GROUND_ROW - 1),       # the family's porch (box 4 tiles clear of Emil)
-]
-ROCK_A, MESA, ROCK_C, ROCK_D, ROCK_E, PORCH = SOLID_BLOCKS[2:]
-# One-way timber catwalks (row, x0, x1), each three rows above where it is reached from.
-LEDGES: list[tuple[int, int, int]] = [
-    (SURFACE_HIGH, 8, 15),     # C1: rock A -> mesa M1 (board on the landing, hidden cable 1)
-    (SURFACE_HIGH, 43, 52),    # D1: rock C -> summit (gust 1 on the landing, whip 2)
-    (SURFACE_HIGH, 61, 71),    # E1: summit -> rock E (board on the landing, whip 3; span 2 below)
-    (SURFACE_HIGH, 81, 87),    # F: rock E -> porch (board on the landing, hidden cable 2; gust 2 below)
-]
-C1, D1, E1, F = LEDGES
-MESA_ROW = SURFACE_HIGH - 1       # feet row on the mesa and the catwalks
-PORCH_ROW = SURFACE_STEP - 1      # porch actors stand on row 11
-
-START = (2, GROUND_ROW - 1)       # entry from Priya's porch, facing right
-DAMAGED_POLE = (5, SURFACE_STEP - 1)    # feeder pole on rock A: its cable end is picked up here
-FEEDER_BOX = (19, MESA_ROW)             # transformer T1 on mesa M1, past the board and hidden cable 1
-HOUSE_POLE = (79, SURFACE_STEP - 1)     # house pole on rock E, before catwalk F and the porch
-JUNCTION_BOX = (89, PORCH_ROW)          # house box on the porch: plug-in point (4 tiles from Emil)
-KIKO = (95, PORCH_ROW)            # clear of the box's two columns, left of the door
-STOVE = (97, PORCH_ROW)           # electric stove with a pot, on the porch: Off -> On
-HOUSE_DOOR = (96, PORCH_ROW)
-HOUSE_RECT = (95, 98, PORCH_ROW - 6, PORCH_ROW)
-HOUSE_WINDOWS = [(95, PORCH_ROW - 3), (98, PORCH_ROW - 3)]
-DOOR_TRIGGER = (95, PORCH_ROW - 2, 3, 1)
-FEEDER_CHECKPOINT = (21, MESA_ROW)      # respawn once the feeder line is repaired: on M1, past T1
-HOUSE_CHECKPOINT = (88, PORCH_ROW)      # respawn once the house line is repaired: the porch step
-
-# ---------------------------------------------------------------------------
-# Hazards. Lanes are (row, x0, x1) inclusive on the chest row of the surface
-# they cross: row 13 on the floor, row 7 on a catwalk. Cracked boards and
-# hidden cables are placed by hazards.py (its "pine_hollow" keys).
-# ---------------------------------------------------------------------------
-CHEST_LOW = SURFACE_LOW - 2
-CHEST_HIGH = SURFACE_HIGH - 2
-
-GUST_LANES: list[tuple[int, int, int]] = [(CHEST_HIGH, 44, 46), (CHEST_LOW, 84, 86)]   # D1, floor under F
-GUST_START_DELAYS = [20, 0]
-# Pine Hollow is the hardest job: shortest rests, still 0.7 s of warning.
 GUST_WARNING_FRAMES = 44
 GUST_ACTIVE_FRAMES = 24
 GUST_REST_FRAMES = 58
-
-# Free-standing arcs became whips (more swinging cut cables); only span arcs remain.
-ARC_LANES: list[tuple[int, int, int]] = []
-ARC_START_DELAYS: list[int] = []
 ARC_WARNING_FRAMES = 36     # span arcs: sparks 0.6 s
 ARC_ACTIVE_FRAMES = 26
 ARC_REST_FRAMES = 48
-ARC_SPRITE_ID = rosa.ARC_SPRITE_ID
-
-# Fallen spans: floor columns of the wire lying on the ground, the number of
-# upstream lines whose repair makes it live, and its live_arc lanes (two wide).
-FALLEN_SPANS: list[dict] = [
-    {"columns": (25, 31), "live_after": 1, "arcs": [(CHEST_LOW, 28, 29)], "delays": [0]},
-    {"columns": (62, 72), "live_after": 3, "arcs": [(CHEST_LOW, 64, 65), (CHEST_LOW, 69, 70)],
-     "delays": [0, 55]},
-]
-
-# Whip 1 hangs over the floor before rock C; whips 2 and 3 from crossarms over a
-# catwalk. None near the porch: its 32px canvas would join Emil, the house pole and
-# a creaking board on one scanline.
-WHIP_LANES = [(CHEST_LOW, 33, 34), (CHEST_HIGH, 50, 51), (CHEST_HIGH, 67, 68)]
-WHIP_START_DELAYS = [0, 45, 15]
-WHIP_SWAY_FRAMES = 36      # sparks and sways, safe: 0.6 s of warning
+WHIP_SWAY_FRAMES = 36       # sparks and sways, safe: 0.6 s of warning
 WHIP_SWING_FRAMES = 24
 WHIP_HANG_FRAMES = 46
+CABLE_TIMINGS = _hazards.CABLE_TIMINGS["kiko"]     # hidden cables: dark 120, warning 20, arc 26
+
+ARC_SPRITE_ID = rosa.ARC_SPRITE_ID
 WHIP_SPRITE_ID = ridge.WHIP_SPRITE_ID
 WHIP_PALETTE_ID = ridge.WHIP_PALETTE_ID
 WHIP_SPRITE_PALETTE_SLOT = ridge.WHIP_SPRITE_PALETTE_SLOT
+WHIP_COLUMNS = ridge.WHIP_CANVAS[0] // TILE
+
+
+# ---------------------------------------------------------------------------
+# Scene geometry. Run scenes: floor row 15 (feet 14), step 12 (11), high 9 (8),
+# top 6 (5). The shaft reuses the climb's decks (shaft.py).
+# ---------------------------------------------------------------------------
+class Scene:
+    """One scene of the job: geometry, hazards and wires (rows top-down, inclusive ranges)."""
+
+    def __init__(self, *, folder: str, size: tuple[int, int], solid_blocks: list, platforms: list,
+                 start: tuple[int, int], gusts: list, gust_delays: list, whips: list, whip_delays: list,
+                 spans: list, wire_routes: list, edge_ports: dict, shaft_scene: bool = False,
+                 house: dict | None = None) -> None:
+        self.folder = folder
+        self.map_w, self.map_h = size
+        self.solid_blocks = solid_blocks
+        self.platforms = platforms
+        self.start = start
+        self.gust_lanes = gusts
+        self.gust_delays = gust_delays
+        self.whip_lanes = whips
+        self.whip_delays = whip_delays
+        self.spans = spans
+        self.wire_routes = wire_routes
+        self.edge_ports = edge_ports          # {stage: (x, y) map-edge cell of its wire}
+        self.shaft = shaft_scene
+        self.house = house
+        self.boards, self.cables, self.cable_delays = _hazards.placement(folder, redesign=True)
+
+    # -- data views -----------------------------------------------------------
+    def collision_grid(self) -> list[list[int]]:
+        return shaft.collision_grid(self.map_w, self.map_h, self.platforms, self.solid_blocks)
+
+    def span_arc_lanes(self) -> list[tuple[int, int, int]]:
+        return [lane for span in self.spans for lane in span["arcs"]]
+
+    def hazard_lanes(self) -> list[tuple[int, int, int]]:
+        """Lanes with background warning art (gusts, span arcs, whips), by row then column."""
+        return sorted([*self.gust_lanes, *self.span_arc_lanes(), *self.whip_lanes], key=lambda lane: (lane[0], lane[1]))
+
+    def all_lanes(self) -> list[tuple[int, int, int]]:
+        return sorted([*self.hazard_lanes(), *self.cables], key=lambda lane: (lane[0], lane[1]))
+
+    def kinded_lanes(self) -> list[tuple[str, int, int, int]]:
+        """[(kind, chest row, x0, x1)] for test_routes."""
+        return ([("gust", *lane) for lane in self.gust_lanes] + [("whip", *lane) for lane in self.whip_lanes]
+                + [("arc", *lane) for lane in self.span_arc_lanes()] + [("cable", *lane) for lane in self.cables])
+
+    def hazard_cells(self) -> set[tuple[int, int]]:
+        return {(row, x) for row, x0, x1 in self.all_lanes() for x in range(x0, x1 + 1)}
+
+    def board_cells(self) -> set[tuple[int, int]]:
+        """(row, x) of each cracked board's standing row (its trigger)."""
+        return {(row - 1, x) for row, x0, x1 in self.boards for x in range(x0, x1 + 1)}
+
+    def lines(self) -> list[dict]:
+        """This scene's parts of the job's lines (grid_chain.scene_lines)."""
+        return grid_chain.scene_lines(LINES, self.folder)
+
+    def pole_lines(self) -> list[dict]:
+        return [line for line in LINES if line["pole_scene"] == self.folder]
+
+    def box_lines(self) -> list[dict]:
+        return [line for line in LINES if line["box_scene"] == self.folder]
+
+    def stages(self) -> list[int]:
+        return sorted({stage for stage, _ in self.wire_routes})
+
+    def links(self) -> list:
+        """Every link out of this scene (scene_links' redesign rows, table order)."""
+        return scene_links.from_scene(self.folder, scene_links.table("redesign"))
+
+    def entries(self) -> list[tuple[int, int]]:
+        arrivals = [link.entry for link in scene_links.into_scene(self.folder, scene_links.table("redesign"))]
+        return [self.start] + [tile for tile in arrivals if tile != self.start]
+
+    def downstream_exit(self) -> tuple[int, int, int, int]:
+        """The exit that carries the job forwards (the last link out of the scene)."""
+        return self.links()[-1].rect
+
+    def actor_count(self) -> int:
+        npcs = 2 if self.house else 0           # Emil and the stove
+        return (npcs + len(self.pole_lines()) + len(self.gust_lanes) + len(self.whip_lanes)
+                + len(self.span_arc_lanes()) + len(self.cables) + len(self.boards))
+
+    def trigger_count(self) -> int:
+        door = 1 if self.house else 0
+        return (len(self.links()) + door + len(self.boards) + len(self.box_lines()) + len(self.pole_lines()))
+
+    def route_scene(self) -> dict:
+        """test_routes.ROUTE_SCENES schema."""
+        house = self.house or {}
+        return {
+            "folder": self.folder, "grid": self.collision_grid(), "start": self.start,
+            "entries": self.entries(), "lines": self.lines(), "lanes": self.kinded_lanes(),
+            "boards": list(self.boards), "exit": self.downstream_exit(),
+            "exits": [link.rect for link in self.links()],
+            "npcs": [house["npc"]] if house else [], "devices": [house["device"]] if house else [],
+            "max_rise": 4 if self.shaft else 3, "culled": self.shaft,
+        }
+
+
+def _run_blocks(map_w: int, blocks: list) -> list[tuple[int, int, int, int]]:
+    """Floor rows 15-17 plus a run scene's own rocks."""
+    return [(0, map_w - 1, 15, 17), *blocks]
+
+
+# --- 4A pine_hollow (64x18): the entry scene --------------------------------
+MAP_W, MAP_H = 64, 18           # 4A keeps the old module names (tickets, test_scene_links)
+GROUND_ROW = 15
+SURFACE_LOW, SURFACE_STEP, SURFACE_HIGH = 15, 12, 9
+CHEST_LOW, CHEST_HIGH = SURFACE_LOW - 2, SURFACE_HIGH - 2
+ROCK_A = (4, 6, 12, 14)         # pole 1 (feeder)
+MESA = (16, 22, 9, 14)          # T1, pole 2
+ROCK_C = (36, 41, 12, 14)       # T2, pole 3
+C1 = (9, 8, 15)                 # catwalk: rock A -> mesa (board on the landing, hidden cable)
+D1 = (9, 43, 55)                # catwalk: rock C -> east (gust, whip)
+F = (12, 57, 61)                # low catwalk to the ladder exit (board)
+START = (2, 14)                 # entry from the work order card, facing right
+
+HOLLOW_SCENE = Scene(
+    folder=HOLLOW, size=(MAP_W, MAP_H),
+    solid_blocks=_run_blocks(MAP_W, [(0, 0, 2, 14), (MAP_W - 1, MAP_W - 1, 2, 14), ROCK_A, MESA, ROCK_C]),
+    platforms=[C1, D1, F], start=START,
+    gusts=[(CHEST_HIGH, 44, 46), (CHEST_LOW, 47, 49)], gust_delays=[20, 0],
+    whips=[(CHEST_LOW, 32, 33), (CHEST_HIGH, 51, 52)], whip_delays=[0, 45],
+    spans=[
+        {"columns": (25, 30), "row": CHEST_LOW + 1, "live_after": 1, "arcs": [(CHEST_LOW, 27, 28)], "delays": [0]},
+        {"columns": (51, 56), "row": CHEST_LOW + 1, "live_after": 2, "arcs": [(CHEST_LOW, 53, 54)], "delays": [30]},
+    ],
+    # Overhead rows 3 and 2 alternate per stage, under the HUD; power enters through
+    # the left wall and line 3 leaves through the right wall (edge cells are rock: a gap).
+    wire_routes=[
+        (1, [(0, 3), (5, 3), (5, 8)]),
+        (1, [(5, 8), (5, 3), (18, 3), (18, 6)]),
+        (1, [(18, 6), (18, 3), (22, 3), (22, 5)]),
+        (2, [(22, 5), (22, 2), (37, 2), (37, 9)]),
+        (2, [(37, 9), (37, 2), (41, 2), (41, 8)]),
+        (3, [(41, 8), (41, 3), (MAP_W - 1, 3)]),
+    ],
+    edge_ports={3: (MAP_W - 1, 3)},
+)
+
+# --- 4B pine_ladder (20x36): the long climb out -------------------------------
+LADDER_W, LADDER_H = shaft.MAP_W, shaft.MAP_H
+LADDER_START = (2, 32)          # entry from the hollow, facing right
+ARRIVAL_SHELF = (5, 7, 16)      # top shelf under the exit to the rim (hidden cable 2)
+LADDER_SCENE = Scene(
+    folder=LADDER, size=(LADDER_W, LADDER_H),
+    solid_blocks=[
+        (0, LADDER_W - 1, 34, 35),             # bedrock
+        (0, 0, 0, 29), (0, 0, 33, 33),          # left wall, open at the hollow exit (rows 30-32)
+        (LADDER_W - 1, LADDER_W - 1, 0, 33),    # right wall
+        *shaft.deck_solid_blocks(shaft.DECK_ROWS),
+    ],
+    platforms=[(shaft.DECK0_ROW, 1, 18), (30, 7, 13), *[(row, *shaft.DECK_WALK) for row in shaft.DECK_ROWS],
+               (24, 6, 12), (18, 7, 13), (12, 6, 12), ARRIVAL_SHELF],
+    start=LADDER_START,
+    gusts=[(16, 8, 10), (7, 8, 10)], gust_delays=[0, 30],
+    whips=[(31, 12, 13), (22, 9, 10), (10, 8, 9)], whip_delays=[0, 40, 20],
+    spans=[{"columns": (6, 11), "row": 20, "live_after": 3, "arcs": [(19, 7, 8)], "delays": [0]}],
+    # Serpentine risers at the wall columns, as in the climb: where a riser crosses a
+    # slab the wire passes behind the rock (a gap).
+    wire_routes=[
+        (3, [(0, 29), (1, 29), (1, 23), (2, 23), (2, 24)]),
+        (3, [(2, 24), (2, 23), (16, 23)]),
+        (4, [(16, 23), (18, 23), (18, 17), (1, 17), (1, 11), (2, 11), (2, 12)]),
+        (4, [(2, 12), (2, 11), (16, 11)]),
+        (5, [(16, 11), (18, 11), (18, 2), (LADDER_W - 1, 2)]),
+    ],
+    edge_ports={3: (0, 29), 5: (LADDER_W - 1, 2)},
+    shaft_scene=True,
+)
+
+# --- 4C pine_rim (56x18): the rim run to Emil's porch -------------------------
+RIM_W, RIM_H = 56, 18
+RIM_START = (3, 8)              # entry from the ladder, facing right
+PORCH_ROW = 11                  # porch actors stand on row 11 (surface 12)
+RIM_HOUSE = {
+    "rect": (47, 50, 5, PORCH_ROW),            # (x0, x1, row0, row1) background house
+    "door": (48, PORCH_ROW),
+    "windows": [(47, 8), (50, 8)],
+    "door_trigger": (47, PORCH_ROW - 2, 3, 1),
+    "npc": (47, PORCH_ROW),                     # Emil, left of his door
+    "device": (49, PORCH_ROW),                  # the electric stove
+}
+RIM_SCENE = Scene(
+    folder=RIM, size=(RIM_W, RIM_H),
+    solid_blocks=_run_blocks(RIM_W, [(0, 0, 2, 14), (RIM_W - 1, RIM_W - 1, 2, 14), (0, 5, 9, 14),
+                                     (21, 23, 12, 14),   # step out of the left pit (no softlock)
+                                     (24, 28, 6, 14), (40, RIM_W - 1, 12, 14)]),
+    platforms=[(9, 8, 22), (9, 29, 38)], start=RIM_START,
+    gusts=[(7, 20, 22), (13, 34, 36)], gust_delays=[0, 25],
+    whips=[(13, 18, 19), (7, 33, 34)], whip_delays=[10, 0],
+    spans=[{"columns": (8, 14), "row": 14, "live_after": 4, "arcs": [(13, 11, 12)], "delays": [0]}],
+    wire_routes=[
+        (5, [(0, 2), (41, 2), (41, 9)]),
+        (5, [(41, 9), (41, 2), (47, 2), (47, 4)]),
+    ],
+    edge_ports={5: (0, 2)},
+    house=RIM_HOUSE,
+)
+
+SCENES = {HOLLOW: HOLLOW_SCENE, LADDER: LADDER_SCENE, RIM: RIM_SCENE}
+
+# Legacy names for the porch (now in 4C).
+HOUSE_RECT = RIM_HOUSE["rect"]
+HOUSE_DOOR = RIM_HOUSE["door"]
+HOUSE_WINDOWS = RIM_HOUSE["windows"]
+DOOR_TRIGGER = RIM_HOUSE["door_trigger"]
+KIKO = RIM_HOUSE["npc"]
+STOVE = RIM_HOUSE["device"]
 
 # ---------------------------------------------------------------------------
 # Variables
 # ---------------------------------------------------------------------------
-VAR_CARRYING_CABLE = climb.VAR_CARRYING_CABLE   # "6"
+VAR_CARRYING_CABLE = climb.VAR_CARRYING_CABLE   # "6": survives the scene switch (rule 2)
 VAR_LINE_LIVE = "12"       # house line (line 5)
-VAR_HOME_POWERED = "13"    # Emil's checkpoint; moves respawn to the door
+VAR_HOME_POWERED = "13"    # Emil's checkpoint; moves respawn to the door, opens the report exit
 VAR_FEEDER_LIVE = "24"     # feeder line (line 1)
 VAR_LINES_LIVE = "25"      # HUD count, 0-5
 VAR_CHAIN_LIVE = "26"      # how many leading lines are repaired: how far power reaches (0-5)
@@ -176,28 +313,36 @@ VARIABLES = [
 LINE_COUNT = 5
 HUD_TEXT = f"LINES %D1${VAR_LINES_LIVE}$/{LINE_COUNT} HOME %D1$13$/1"
 
-# The grid chain, upstream first (grid_chain.GridChain). "box" is the feet tile
-# of the background transformer the cable plugs into (transformer_art.py, 16x24
-# on two columns); "checkpoint" is the respawn once the line is repaired.
+# The grid chain, upstream first. "box" is the feet tile of the background
+# transformer the cable plugs into; "checkpoint" the respawn once the line is
+# repaired (in the box's scene); "reach" a box zone on the walk side where the
+# tiles before the box are the shaft wall.
 LINES = [
-    {"key": "feeder", "pole": DAMAGED_POLE, "box": FEEDER_BOX, "box_kind": "transformer",
-     "checkpoint": FEEDER_CHECKPOINT, "live_var": VAR_FEEDER_LIVE},
-    {"key": "west", "pole": (22, MESA_ROW), "box": (38, SURFACE_STEP - 1), "box_kind": "transformer",
-     "checkpoint": (40, SURFACE_STEP - 1), "live_var": VAR_WEST_LIVE},
-    {"key": "middle", "pole": (41, SURFACE_STEP - 1), "box": (55, SURFACE_TOP - 1), "box_kind": "transformer",
-     "checkpoint": (57, SURFACE_TOP - 1), "live_var": VAR_MIDDLE_LIVE},
-    {"key": "east", "pole": (58, SURFACE_TOP - 1), "box": (76, SURFACE_STEP - 1), "box_kind": "transformer",
-     "checkpoint": (78, SURFACE_STEP - 1), "live_var": VAR_EAST_LIVE},
-    {"key": "house", "pole": HOUSE_POLE, "box": JUNCTION_BOX, "box_kind": "transformer",
-     "checkpoint": HOUSE_CHECKPOINT, "live_var": VAR_LINE_LIVE},
+    {"key": "feeder", "pole": (5, 11), "box": (18, 8), "checkpoint": (20, 8),
+     "pole_scene": HOLLOW, "box_scene": HOLLOW, "live_var": VAR_FEEDER_LIVE},
+    {"key": "west", "pole": (22, 8), "box": (37, 11), "checkpoint": (39, 11),
+     "pole_scene": HOLLOW, "box_scene": HOLLOW, "live_var": VAR_WEST_LIVE},
+    {"key": "middle", "pole": (41, 11), "box": (2, 26), "reach": (2, 24, 4, 3), "checkpoint": (4, 26),
+     "pole_scene": HOLLOW, "box_scene": LADDER, "live_var": VAR_MIDDLE_LIVE},
+    {"key": "east", "pole": (16, 26), "box": (2, 14), "reach": (2, 12, 4, 3), "checkpoint": (4, 14),
+     "pole_scene": LADDER, "box_scene": LADDER, "live_var": VAR_EAST_LIVE},
+    {"key": "house", "pole": (16, 14), "box": (41, PORCH_ROW), "checkpoint": (43, PORCH_ROW),
+     "pole_scene": LADDER, "box_scene": RIM, "live_var": VAR_LINE_LIVE},
 ]
 for _number, _line in enumerate(LINES, start=1):
     _line["number"] = _number      # also the value of VAR_CARRYING_CABLE while carrying it
+    _line["box_kind"] = "transformer"
+DAMAGED_POLE = LINES[0]["pole"]
+HOUSE_POLE = LINES[-1]["pole"]
+JUNCTION_BOX = LINES[-1]["box"]
+FALLEN_SPANS = [span for scene in SCENES.values() for span in scene.spans]
 
-# Entry from Signal Hill: the right end of Priya's porch, past her door, gated on
-# her checkpoint (var 11). Text-only refusal, never a nudge (see rosa.py).
+# Legacy entry from Signal Hill (today's layout; scene_links owns the redesign's
+# hand-off from 3C). Kept for the rosa generator until its job migrates.
 HILL_EXIT = (rosa.MAP_W - 2, 9, 1, 3)
 HILL_EXIT_GATE_VAR = rosa.VAR_HOME_POWERED     # "11"
+
+ROUTE_SCENES = [scene.route_scene() for scene in SCENES.values()]
 
 # ---------------------------------------------------------------------------
 # Palettes
@@ -214,9 +359,8 @@ WINDOW_BG_SLOT = 3
 KIKO_STATES = ["Waiting", "Relieved"]
 STOVE_STATES = ["Off", "On"]
 
-# ---------------------------------------------------------------------------
-# Wires (background art), drawn in BG slots LINE_BG_SLOT (5) and LINE_BG_SLOT_2 (6).
-# ---------------------------------------------------------------------------
+# Wires (background art), drawn in BG slots LINE_BG_SLOT (5, stages 1-3) and
+# LINE_BG_SLOT_2 (6, stages 4-5). One set of chain palettes for all three scenes.
 LINE_BG_SLOT = climb.LINE_BG_SLOT
 LINE_BG_SLOT_2 = grid_chain.LINE_BG_SLOT_2
 LINE_COLOR_INDEX = climb.LINE_COLOR_INDEX
@@ -225,43 +369,10 @@ METAL_LIVE = climb.METAL_LIVE
 WIRE_DEAD = METAL_DEAD[LINE_COLOR_INDEX]
 WIRE_LIVE = METAL_LIVE[LINE_COLOR_INDEX]
 STAGE_COLOR_INDEX = [1, 3, 2, 1, 3]        # chain stage -> metal colour index
-
-
-def _top(cell: tuple[int, int]) -> tuple[int, int]:
-    """A pole's top tile (its 32px canvas)."""
-    return (cell[0], cell[1] - 3)
-
-
-def _box_top(cell: tuple[int, int]) -> tuple[int, int]:
-    """A background transformer's hookup tile: the left one of its stage-slot top row."""
-    return transformer_art.tiles(cell)[0][0]
-
-
-_P1, _P2, _P3, _P4, _P5 = (line["pole"] for line in LINES)
-_T1, _T2, _T3, _T4, _J = (line["box"] for line in LINES)
-# Overhead rows per stage, just under the HUD: above every catwalk, whip bracket
-# and transformer; the summit pole's top (row 2) is itself overhead.
-OVERHEAD = [3, 2, 3, 2, 3]
-WIRE_ROUTES = [
-    # (stage, polyline)
-    (1, [(0, OVERHEAD[0]), (_P1[0], OVERHEAD[0]), _top(_P1)]),
-    (1, [_top(_P1), (_P1[0], OVERHEAD[0]), (_T1[0], OVERHEAD[0]), _box_top(_T1)]),
-    (1, [_box_top(_T1), (_T1[0], OVERHEAD[0]), (_P2[0], OVERHEAD[0]), _top(_P2)]),
-    (2, [_top(_P2), (_P2[0], OVERHEAD[1]), (_T2[0], OVERHEAD[1]), _box_top(_T2)]),
-    (2, [_box_top(_T2), (_T2[0], OVERHEAD[1]), (_P3[0], OVERHEAD[1]), _top(_P3)]),
-    (3, [_top(_P3), (_P3[0], OVERHEAD[2]), (_T3[0], OVERHEAD[2]), _box_top(_T3)]),
-    (3, [_box_top(_T3), (_T3[0], _top(_P4)[1]), _top(_P4)]),
-    (4, [_top(_P4), (_T4[0], OVERHEAD[3]), _box_top(_T4)]),
-    (4, [_box_top(_T4), (_T4[0], OVERHEAD[3]), (_P5[0], OVERHEAD[3]), _top(_P5)]),
-    (5, [_top(_P5), (_P5[0] + 1, _top(_P5)[1]), (_P5[0] + 1, OVERHEAD[4]),
-         (_J[0], OVERHEAD[4]), _box_top(_J),
-         (_J[0], OVERHEAD[4]), (HOUSE_RECT[0], OVERHEAD[4])]),
-]
-SPAN_STAGE = [span["live_after"] for span in FALLEN_SPANS]
 STAGE_COUNT = len(STAGE_COLOR_INDEX)
-# {stages_live: {slot: metal colours}} for the background wire slots.
 CHAIN_PALETTES = grid_chain.chain_palettes(metal_dead=METAL_DEAD, wire_live=WIRE_LIVE,
                                            wire_dead=WIRE_DEAD, stage_color_index=STAGE_COLOR_INDEX)
+WIRE_ROUTES = [route for scene in SCENES.values() for route in scene.wire_routes]
 
 # Chain dialogue (grid_chain.GridChain text keys); the scene validates the lengths.
 CHAIN_TEXT = {
@@ -285,16 +396,30 @@ def resource_id(key: str) -> str:
 
 SCENE_ID = resource_id("scene:pine-hollow")
 BACKGROUND_ID = resource_id("background:pine-hollow")
+SCENE_IDS = {HOLLOW: SCENE_ID, LADDER: resource_id(f"scene:{LADDER}"), RIM: resource_id(f"scene:{RIM}")}
+BACKGROUND_IDS = {HOLLOW: BACKGROUND_ID, LADDER: resource_id("background:pine-ladder"),
+                  RIM: resource_id("background:pine-rim")}
 KIKO_SPRITE_ID = resource_id("sprite:kiko")
 STOVE_SPRITE_ID = resource_id("sprite:kiko_stove")
-# Wind Ridge's transformer sprite (Dead/Live states, grid sprite slot).
 TRANSFORMER_SPRITE_ID = ridge.TRANSFORMER_SPRITE_ID
-# The boxes are Wind Ridge's background transformer (transformer_art.py): no box
-# actors, the wire palette lights them. The cans use the stone slot, its four
-# colours mapped to the art's codes ('.' stays index 0, the dark behind the can).
+# The boxes are background transformers (transformer_art.py): no box actors, the
+# wire palettes light them. The cans use the stone slot, its four colours mapped
+# to the art's codes ('.' stays index 0, the dark behind the can).
 BACKGROUND_BOXES = True
 TRANSFORMER_BODY_SLOT = 1
 TRANSFORMER_BODY_INDEX = {"L": 3, "G": 2, "D": 1}
+
+# Culling thread (4B, shaft.py): the clamped camera top runs 0..18.
+LADDER_CAMERA_MAX_TOP = shaft.camera_max_top(LADDER_H)
+
+
+def collision_grid() -> list[list[int]]:
+    """4A's PLATFORM collision bytes (the entry scene; see SCENES for the others)."""
+    return HOLLOW_SCENE.collision_grid()
+
+
+def hazard_lanes() -> list[tuple[int, int, int]]:
+    return HOLLOW_SCENE.hazard_lanes()
 
 
 def transformer_tiles(box: tuple[int, int]) -> tuple[list[tuple[int, int]], list[tuple[int, int]]]:
@@ -302,175 +427,156 @@ def transformer_tiles(box: tuple[int, int]) -> tuple[list[tuple[int, int]], list
     return transformer_art.tiles(box)
 
 
-def collision_grid() -> list[list[int]]:
-    """Row-major PLATFORM collision bytes (MAP_H rows by MAP_W columns)."""
-    grid = [[COL_EMPTY for _ in range(MAP_W)] for _ in range(MAP_H)]
-    for row in range(GROUND_ROW, MAP_H):
-        for x in range(MAP_W):
-            grid[row][x] = COL_SOLID
-    for row, x0, x1 in LEDGES:
-        for x in range(x0, x1 + 1):
-            grid[row][x] = COL_TOP
-    for x0, x1, row0, row1 in SOLID_BLOCKS:
-        for row in range(row0, row1 + 1):
-            for x in range(x0, x1 + 1):
-                grid[row][x] = COL_SOLID
-    return grid
+def _top(cell: tuple[int, int]) -> tuple[int, int]:
+    """A pole's top tile (its 32px canvas)."""
+    return (cell[0], cell[1] - 3)
 
 
-def span_arc_lanes() -> list[tuple[int, int, int]]:
-    return [lane for span in FALLEN_SPANS for lane in span["arcs"]]
+def _box_top(cell: tuple[int, int]) -> tuple[int, int]:
+    """A background transformer's hookup tile: the left one of its stage-slot top row."""
+    return transformer_art.tiles(cell)[0][0]
 
 
-def hazard_lanes() -> list[tuple[int, int, int]]:
-    """All floor/catwalk lanes with art (gusts, arcs, whips), by row then column."""
-    return sorted([*GUST_LANES, *ARC_LANES, *span_arc_lanes(), *WHIP_LANES], key=lambda lane: (lane[0], lane[1]))
+def ladder_sprites() -> list[dict]:
+    """4B's actors for the culling OAM model: anchor row, OBJ count, always visible or timed."""
+    scene = LADDER_SCENE
+    out = [{"name": f"pole:{line['key']}", "anchor": line["pole"][1], "obj": 4, "always": True}
+           for line in scene.pole_lines()]
+    out += [{"name": f"whip:{n}", "anchor": row + 1, "obj": 4, "always": True}
+            for n, (row, _, _) in enumerate(scene.whip_lanes, start=1)]
+    out += [{"name": f"gust:{n}", "anchor": row, "obj": 3, "always": False}
+            for n, (row, _, _) in enumerate(scene.gust_lanes, start=1)]
+    out += [{"name": f"span-arc:{n}", "anchor": row, "obj": 2, "always": False}
+            for n, (row, _, _) in enumerate(scene.span_arc_lanes(), start=1)]
+    out += [{"name": f"hidden-cable:{n}", "anchor": row, "obj": 2, "always": False}
+            for n, (row, _, _) in enumerate(scene.cables, start=1)]
+    out += [{"name": f"board:{n}", "anchor": row, "obj": 3, "always": False}
+            for n, (row, _, _) in enumerate(scene.boards, start=1)]
+    return out
 
 
-def _all_hazard_lanes() -> list[tuple[int, int, int]]:
-    return sorted([*hazard_lanes(), *_hazards.HIDDEN_CABLES["pine_hollow"]], key=lambda lane: (lane[0], lane[1]))
+def ladder_oam_load(camera_top: int, *, worst: bool = True) -> int:
+    """OBJs drawn with the clamped camera top at ``camera_top`` under the culling thread, hero included.
+
+    ``worst`` counts every timed hazard visible at once; boards are hidden until
+    they creak and the hero stands on one at a time (climb.oam_load's model).
+    """
+    total = shaft.HERO_OBJ
+    boards = []
+    for sprite in ladder_sprites():
+        lo, hi = shaft.cull_range(sprite["anchor"], LADDER_CAMERA_MAX_TOP)
+        if not lo <= camera_top <= hi:
+            continue
+        if sprite["name"].startswith("board:"):
+            boards.append(sprite["obj"])
+        elif sprite["always"] or worst:
+            total += sprite["obj"]
+    return total + (max(boards) if boards else 0)
 
 
-def _hazard_cells() -> set[tuple[int, int]]:
-    return {(row, x) for row, x0, x1 in _all_hazard_lanes() for x in range(x0, x1 + 1)}
-
-
-def actor_count() -> int:
-    """Emil, the stove, one pole per line (the boxes are background art), hazards."""
-    return (2 + len(LINES) + len(ARC_LANES) + len(GUST_LANES) + len(span_arc_lanes())
-            + len(WHIP_LANES) + len(_hazards.HIDDEN_CABLES["pine_hollow"])
-            + len(_hazards.BOARDS["pine_hollow"]))
-
-
-def surfaces() -> list[tuple[int, int, int]]:
-    """Every raised walkable surface (surface row, x0, x1): solid block tops and catwalks."""
-    out = [(row0, x0, x1) for x0, x1, row0, _ in SOLID_BLOCKS[2:]]
-    return sorted(out + list(LEDGES), key=lambda s: (s[1], s[0]))
-
-
-def board_cells() -> set[tuple[int, int]]:
-    """(row, x) of each cracked board's standing row (its trigger)."""
-    return {(row - 1, x) for row, x0, x1 in _hazards.BOARDS["pine_hollow"] for x in range(x0, x1 + 1)}
+def _check_scene(scene: Scene) -> None:
+    grid = scene.collision_grid()
+    name = scene.folder
+    assert len(grid) == scene.map_h and all(len(r) == scene.map_w for r in grid), f"{name} grid size"
+    props = [scene.start]
+    for line in scene.lines():
+        props += [line[field] for field in ("pole", "box", "checkpoint") if field in line]
+    if scene.house:
+        props += [scene.house["npc"], scene.house["device"], scene.house["door"]]
+    grid_chain.check_props(grid, props, scene.hazard_cells(), HUD_ROWS)
+    assert not {(y, x) for x, y in props} & scene.board_cells(), f"{name}: prop on a cracked board"
+    for row, x0, x1 in scene.all_lanes():
+        assert row >= HUD_ROWS, "hazards under the HUD"
+        assert all(grid[row][x] == COL_EMPTY and grid[row + 1][x] == COL_EMPTY for x in range(x0, x1 + 1)), \
+            f"{name}: lane {row} {x0}-{x1} in rock"
+        assert all(grid[row + 2][x] in (COL_SOLID, COL_TOP) for x in range(x0, x1 + 1)), \
+            f"{name}: lane {row} {x0}-{x1} has no floor"
+    for row, x0, x1 in (*scene.span_arc_lanes(), *scene.whip_lanes, *scene.cables):
+        assert x1 - x0 == 1, "arc, cable and whip lanes match the 16px width"
+    for row, x0, x1 in scene.gust_lanes:
+        assert x1 - x0 == 2, "gust lanes match the 24px gust sprite"
+    if not scene.shaft:
+        # Run whips hang from a bracket two and three rows above the chest row.
+        for row, x0, x1 in scene.whip_lanes:
+            assert row - 3 >= HUD_ROWS + 1
+            assert all(grid[r][x] == COL_EMPTY for r in (row - 3, row - 2) for x in range(x0 - 1, x1 + 2))
+    by_row: dict[int, list] = {}
+    for lane in scene.all_lanes():
+        by_row.setdefault(lane[0], []).append(lane)
+    for row_lanes in by_row.values():
+        for (_, _, a1), (_, b0, _) in zip(row_lanes, row_lanes[1:]):
+            assert b0 - a1 >= 4, f"{name}: three standing tiles between hazards"
+    for row, x0, x1 in scene.boards:
+        assert all(grid[row][x] == COL_TOP for x in range(x0, x1 + 1)), f"{name}: board on timber"
+        assert all(grid[row - 1][x] == COL_EMPTY for x in range(x0, x1 + 1))
+    assert not scene.board_cells() & {(r + 1, x) for r, x0, x1 in scene.all_lanes() for x in range(x0, x1 + 1)}
+    assert len(scene.gust_delays) == len(scene.gust_lanes) and len(scene.whip_delays) == len(scene.whip_lanes)
+    # Spans lie on their line's carry and on a surface; the arcs inside their columns.
+    for span in scene.spans:
+        c0, c1 = span["columns"]
+        assert all(c0 <= x0 and x1 <= c1 for _, x0, x1 in span["arcs"]) and len(span["delays"]) == len(span["arcs"])
+        assert all(row + 1 == span["row"] for row, _, _ in span["arcs"])
+        assert all(grid[span["row"] + 1][x] != COL_EMPTY and grid[span["row"]][x] == COL_EMPTY
+                   for x in range(c0, c1 + 1)), f"{name}: span off its surface"
+        assert span["live_after"] < LINE_COUNT
+        line = LINES[span["live_after"]]          # the span lies on line live_after + 1's carry
+        assert name in (line["pole_scene"], line["box_scene"]), f"{name}: span off its line's carry"
+    # Background transformers: open air on their two columns, support under both.
+    reserved: set[tuple[int, int]] = set()
+    for line in scene.box_lines():
+        bx, by = line["box"]
+        cells = transformer_art.all_tiles(line["box"])
+        assert all(grid[ty][tx] == COL_EMPTY and ty >= HUD_ROWS for tx, ty in cells), f"{line['key']} in rock"
+        assert all(grid[by + 1][x] != COL_EMPTY for x in (bx, bx + 1)), f"{line['key']} footing"
+        assert not reserved & set(cells)
+        reserved |= set(cells)
+        assert not {(y, x) for x, y in cells} & scene.hazard_cells(), "transformer over a lane"
+        assert line["checkpoint"] not in cells and line["pole"] not in cells
+        rx, ry, rw, rh = line.get("reach") or grid_chain.reach_rect(line["box"])
+        assert rx <= bx and bx + 1 < rx + rw and ry + rh - 1 == by, "box zone covers the box's columns"
+        assert all(0 < x < scene.map_w - 1 and grid[y][x] != COL_SOLID
+                   for x in range(rx, rx + rw) for y in range(ry, ry + rh)), "box zone clear of rock"
+        assert not {(y, x) for x in range(rx, rx + rw) for y in range(ry, ry + rh)} & scene.hazard_cells()
+    # Wires: on the map, under the HUD, continuous, one stage per line here.
+    grid_chain.check_wire_routes(scene.wire_routes, STAGE_COUNT, scene.map_w, HUD_ROWS, scene.map_h - 1,
+                                 enters_left=scene.folder == HOLLOW, stages=scene.stages())
+    for line in LINES:
+        cells = {c for stage, route in scene.wire_routes if stage == line["number"] for c in route}
+        if line["pole_scene"] == name:
+            assert _top(line["pole"]) in cells, f"{line['key']} wire reaches its pole top"
+        if line["box_scene"] == name:
+            assert _box_top(line["box"]) in cells, f"{line['key']} wire reaches its transformer"
+    for stage, (x, y) in scene.edge_ports.items():
+        assert x in (0, scene.map_w - 1) and any((x, y) in route for s, route in scene.wire_routes if s == stage)
+    # Links: exits are 1x3 edge triggers; the house and its door on the porch.
+    assert all(rect[2:] == (1, 3) for rect in (link.rect for link in scene.links()))
+    if scene.house:
+        hx0, hx1, hy0, hy1 = scene.house["rect"]
+        door = scene.house["door"]
+        assert hx0 <= door[0] <= hx1 and hy1 == door[1], "door inside house"
+        assert all(hx0 <= x <= hx1 and hy0 <= y <= hy1 for x, y in scene.house["windows"])
+        tx, ty, tw, th = scene.house["door_trigger"]
+        assert ty == door[1] - 2 and th == 1 and tx <= door[0] < tx + tw
+        assert all(line["checkpoint"][0] < tx for line in scene.box_lines())
+    assert scene.actor_count() <= MAX_SCENE_ACTORS and scene.trigger_count() <= MAX_SCENE_TRIGGERS
 
 
 def _self_check() -> None:
-    grid = collision_grid()
-    assert len(grid) == MAP_H and all(len(r) == MAP_W for r in grid), "grid size"
-    props = [START, KIKO, STOVE, HOUSE_DOOR]
+    for scene in SCENES.values():
+        _check_scene(scene)
+    grid_chain.check_chain_order(LINES, scene_order=SCENE_ORDER, axes=SCENE_AXES)
+    assert all(line["pole_scene"] in SCENE_ORDER and line["box_scene"] in SCENE_ORDER for line in LINES)
+    # Cross-scene carries leave through the edge their wire crosses (rule 5).
     for line in LINES:
-        props += [line["pole"], line["box"], line["checkpoint"]]
-    grid_chain.check_props(grid, props, _hazard_cells(), HUD_ROWS)
-    assert not {(y, x) for x, y in props} & board_cells(), "no prop or checkpoint on a cracked board"
-    assert all(r >= HUD_ROWS for r, _ in _hazard_cells()), "hazards under the HUD"
-    # Lanes sit on the chest row of the surface they cross.
-    for row, x0, x1 in _all_hazard_lanes():
-        surface = row + 2
-        assert all(grid[row][x] == COL_EMPTY for x in range(x0, x1 + 1)), "lane in rock"
-        assert all(grid[row + 1][x] == COL_EMPTY for x in range(x0, x1 + 1)), "lane feet row in rock"
-        assert all(grid[surface][x] in (COL_SOLID, COL_TOP) for x in range(x0, x1 + 1)), "lane floor"
-    for row, x0, x1 in (*ARC_LANES, *span_arc_lanes(), *WHIP_LANES):
-        assert x1 - x0 == 1, "arc and whip lanes match the 16px width"
-    for row, x0, x1 in GUST_LANES:
-        assert x1 - x0 == 2, "gust lanes match the 24px gust sprite"
-    # Whips hang from a bracket two and three rows above the chest row: open air, below the HUD.
-    for row, x0, x1 in WHIP_LANES:
-        assert row - 3 >= HUD_ROWS + 1
-        assert all(grid[r][x] == COL_EMPTY for r in (row - 3, row - 2) for x in range(x0 - 1, x1 + 2))
-    # Three standing tiles between lanes on the same surface (the hero is two tiles wide).
-    for row in {lane[0] for lane in _all_hazard_lanes()}:
-        lanes = [lane for lane in _all_hazard_lanes() if lane[0] == row]
-        for (_, _, a1), (_, b0, _) in zip(lanes, lanes[1:]):
-            assert b0 - a1 >= 4, "need a three-tile standing gap between hazards"
-    # Boards lie on catwalks (their idle plank is background art), clear of every lane.
-    for row, x0, x1 in _hazards.BOARDS["pine_hollow"]:
-        assert any(lrow == row and lx0 <= x0 and x1 <= lx1 for lrow, lx0, lx1 in LEDGES), "board on a catwalk"
-        assert all(grid[row - 1][x] == COL_EMPTY for x in range(x0, x1 + 1))
-    assert not board_cells() & {(r + 1, x) for r, x0, x1 in _all_hazard_lanes() for x in range(x0, x1 + 1)}
-    # Jumping or walking off a raised surface carries the hero ~5 tiles (Wind Ridge,
-    # exact ROMs): keep lower lanes to its right clear of the landing.
-    for srow, _, sx1 in surfaces():
-        for row, x0, _ in _all_hazard_lanes():
-            if row + 2 > srow and x0 > sx1:
-                assert x0 - sx1 >= 5, f"lane at {x0} in the landing off {sx1} (row {srow})"
-    # Floor whips stay off screen from the porch (camera clamped at MAP_W - 20):
-    # their 32px canvas reaches the porch actors' rows.
-    assert all(x1 < MAP_W - 20 for row, _, x1 in WHIP_LANES if row == CHEST_LOW)
-    assert len(ARC_START_DELAYS) == len(ARC_LANES)
-    assert len(GUST_START_DELAYS) == len(GUST_LANES)
-    assert len(WHIP_START_DELAYS) == len(WHIP_LANES)
-    # Span k lies on the floor of line k+1's carry, so that carry crosses it.
-    grid_chain.check_spans(FALLEN_SPANS, LINES)
-    assert all(row == CHEST_LOW for row, _, _ in span_arc_lanes()), "spans lie on the floor"
-    # Tiers: every raised surface is one tap (three rows) above the floor or the
-    # surface it is reached from; catwalks are never above a block.
-    assert {s[0] for s in surfaces()} <= {SURFACE_STEP, SURFACE_HIGH, SURFACE_TOP}
-    for x0, x1, row0, row1 in (ROCK_A, ROCK_C, ROCK_E, PORCH):
-        assert row1 == GROUND_ROW - 1 and GROUND_ROW - row0 == 3, "rocks are one tap high"
-    for row, x0, x1 in LEDGES:
-        assert all(grid[r][x] == COL_EMPTY for r in range(row - 3, row) for x in range(x0, x1 + 1)), \
-            "head room over every catwalk"
-    assert MESA[0] == C1[2] + 1 and MESA[2] == C1[0], "catwalk C1 runs onto the mesa"
-    # Every carry crosses at least one hazard (lane or board) between its pole and box.
-    spans = [(x0, x1) for _, x0, x1 in _all_hazard_lanes()]
-    spans += [(x0, x1) for _, x0, x1 in _hazards.BOARDS["pine_hollow"]]
-    for line in LINES:
-        px, bx = line["pole"][0], line["box"][0]
-        assert any(px < x0 and x1 < bx for x0, x1 in spans), f"{line['key']} carry crosses no hazard"
-    # The chain runs left to right: pole k < box k < pole k+1.
-    grid_chain.check_chain_order(LINES)
-    assert START[0] < DAMAGED_POLE[0] and JUNCTION_BOX[0] < HOUSE_DOOR[0]
-    # Background transformers: open air on their two columns, support under both.
-    reserved: set[tuple[int, int]] = set()
-    for line in LINES:
-        bx, by = line["box"]
-        cells = transformer_art.all_tiles(line["box"])
-        assert all(grid[ty][tx] == COL_EMPTY and ty >= HUD_ROWS for tx, ty in cells), \
-            f"transformer {line['key']} in rock"
-        assert all(grid[by + 1][x] != COL_EMPTY for x in (bx, bx + 1)), f"transformer {line['key']} footing"
-        assert not reserved & set(cells), "transformers overlap"
-        reserved |= set(cells)
-        assert not {(y, x) for x, y in cells} & _hazard_cells(), "transformer over a lane"
-        assert line["checkpoint"] not in cells and line["pole"] not in cells
-    # Each box's zone: its two columns plus the three tiles before it, on open air,
-    # clear of every lane (B there never stands the hero in a hazard).
-    for line in LINES:
-        rx, ry, rw, rh = grid_chain.reach_rect(line["box"])
-        bx, by = line["box"]
-        assert rx + rw == bx + 2 and rw == 5, "box zone covers the box's two columns and three tiles before it"
-        assert all(0 < x < MAP_W - 1 and HUD_ROWS <= y < GROUND_ROW
-                   for x in range(rx, rx + rw) for y in range(ry, ry + rh))
-        assert all(grid[y][x] == COL_EMPTY for y in range(ry, ry + rh) for x in range(bx - 1, bx + 2)), \
-            "box zone on open air"
-        assert grid[by][bx - 1] == COL_EMPTY and grid[by + 1][bx - 1] != COL_EMPTY
-        assert not {(y, x) for x in range(rx, rx + rw) for y in range(ry, ry + rh)} & _hazard_cells(), \
-            f"{line['key']} box zone over a lane"
-    hx0, hx1, hy0, hy1 = HOUSE_RECT
-    assert hx0 <= HOUSE_DOOR[0] <= hx1 and hy1 == PORCH_ROW, "door inside house"
-    assert all(hx0 <= x <= hx1 and hy0 <= y <= hy1 for x, y in HOUSE_WINDOWS)
-    tx, ty, tw, th = DOOR_TRIGGER
-    assert ty == PORCH_ROW - 2 and th == 1 and tx <= HOUSE_DOOR[0] < tx + tw
-    assert LINES[-1]["checkpoint"][0] < tx, "the house checkpoint stays off the door trigger"
-    assert KIKO[0] - (JUNCTION_BOX[0] + 2) == 4 and STOVE[0] > HOUSE_DOOR[0], \
-        "four clear tiles between the house box and Emil"
-    # Wires: every route stays on the map and below the HUD; the chain is continuous;
-    # every stage reaches its pole top and its transformer's top row.
-    grid_chain.check_wire_routes(WIRE_ROUTES, STAGE_COUNT, MAP_W, HUD_ROWS, GROUND_ROW)
-    assert WIRE_ROUTES[-1][1][-1][0] == HOUSE_RECT[0], "the chain ends at the house"
-    for line in LINES:
-        cells = {c for stage, route in WIRE_ROUTES if stage == line["number"] for c in route}
-        assert _top(line["pole"]) in cells and _box_top(line["box"]) in cells, line["key"]
+        if line["pole_scene"] != line["box_scene"]:
+            assert line["number"] in SCENES[line["pole_scene"]].edge_ports
+            assert line["number"] in SCENES[line["box_scene"]].edge_ports
     assert len({tuple(tuple(v) for _, v in sorted(c.items())) for c in CHAIN_PALETTES.values()}) == STAGE_COUNT + 1
-    ids = {SCENE_ID, BACKGROUND_ID, KIKO_SPRITE_ID, STOVE_SPRITE_ID}
-    assert len(ids) == 4, "resource ids collide"
+    ids = {*SCENE_IDS.values(), *BACKGROUND_IDS.values(), KIKO_SPRITE_ID, STOVE_SPRITE_ID}
+    assert len(ids) == 8, "resource ids collide"
     assert {v for v, _, _ in VARIABLES}.isdisjoint({str(n) for n in range(12)})
-    assert {line["live_var"] for line in LINES} == {
-        VAR_FEEDER_LIVE, VAR_WEST_LIVE, VAR_MIDDLE_LIVE, VAR_EAST_LIVE, VAR_LINE_LIVE
-    }
-    assert actor_count() <= MAX_SCENE_ACTORS
-    # Entry from Signal Hill: right end of Priya's porch, clear of her door trigger.
-    ex, ey, ew, eh = HILL_EXIT
-    rtx, rty, rtw, _ = rosa.DOOR_TRIGGER
-    assert ex >= rtx + rtw and ey + eh - 1 == rosa.PORCH_ROW and ex < rosa.MAP_W - 1
+    assert len({line["live_var"] for line in LINES}) == LINE_COUNT
+    assert max(ladder_oam_load(top) for top in range(LADDER_CAMERA_MAX_TOP + 1)) <= shaft.OAM_LIMIT
 
 
 _self_check()

@@ -11,8 +11,9 @@ ROOT = Path(__file__).resolve().parent.parent
 # scene folder: pole actor resource file
 JOBS = {
     "storm_climb": "climb_storm_pole",
-    "wind_ridge": "ridge_storm_pole",
-    "signal_hill": "rosa_storm_pole",
+    "wind_ridge": "ridge_feeder_pole",
+    "ridge_saddle": "ridge_storm_pole",
+    "signal_gully": "rosa_storm_pole",
     "pine_hollow": "kiko_storm_pole",
 }
 

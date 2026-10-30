@@ -1,0 +1,175 @@
+{
+  "_resourceType": "trigger",
+  "id": "739eb095-3bfd-5883-b18c-12984ed53c87",
+  "name": "Porch Exit (to Work Order 2)",
+  "prefabId": "",
+  "x": 54,
+  "y": 9,
+  "symbol": "trigger_crest_porch_exit",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "0"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "414035ae-da25-5a6c-ad64-dd3b6c4c9915",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "14ce95e2-1c80-5871-b411-9ef7056170c6"
+          },
+          {
+            "command": "EVENT_OVERLAY_HIDE",
+            "args": {},
+            "id": "03bc7daa-d34c-5130-92c0-8d583350ec7d"
+          },
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "16",
+              "value": {
+                "type": "number",
+                "value": 2
+              }
+            },
+            "id": "d82ed9a3-d5c0-5882-bdc4-4e89430a15f2"
+          },
+          {
+            "command": "EVENT_SWITCH_SCENE",
+            "args": {
+              "x": {
+                "type": "number",
+                "value": 0
+              },
+              "y": {
+                "type": "number",
+                "value": 0
+              },
+              "direction": "down",
+              "sceneId": "6d76ca16-f510-5fd7-bb1c-c915a1367045",
+              "fadeSpeed": "2"
+            },
+            "id": "e49666ca-2f13-5bb8-99c5-847518a8ed9f"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_ACTOR_SET_POSITION",
+            "args": {
+              "units": "tiles",
+              "actorId": "player",
+              "x": {
+                "type": "number",
+                "value": 51
+              },
+              "y": {
+                "type": "number",
+                "value": 11
+              }
+            },
+            "id": "3c2da48c-3cba-5474-a4b3-6bdd3a0eb04a"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "e0d88bb8-1df7-5d39-ae21-db697c47bf40"
+          },
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "Amara needs\npower first."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 7,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 5,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "time",
+              "closeDelayTime": 0.5,
+              "closeDelayFrames": 30
+            },
+            "id": "da557fe4-4f23-5a7e-bcee-5d69c38306e4"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 16
+              }
+            },
+            "id": "2e75714f-513f-5d26-829a-f26a5be36594"
+          },
+          {
+            "command": "EVENT_OVERLAY_SHOW",
+            "args": {
+              "color": "black",
+              "x": 0,
+              "y": 0
+            },
+            "id": "f5483d0c-ae40-598a-a28f-58f183a7027c"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "LINE %D1$45$/5 HOME %D1$00$/1",
+              "x": 0,
+              "y": 0,
+              "location": "overlay"
+            },
+            "id": "26bf6ecb-a289-59cf-98bb-f0460ed4fe60"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "v0.19.0-dev",
+              "x": 9,
+              "y": 1,
+              "location": "overlay"
+            },
+            "id": "80d5df80-abf4-5e1b-9fdf-3205be37a942"
+          }
+        ]
+      }
+    }
+  ],
+  "leaveScript": [],
+  "_index": 1
+}

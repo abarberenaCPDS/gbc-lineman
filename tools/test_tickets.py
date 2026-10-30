@@ -72,15 +72,18 @@ class ContractTests(unittest.TestCase):
             for line in lines:
                 self.assertLessEqual(len(line), tickets.MAX_CHARS, line)
 
-    def test_five_line_job_destinations_and_right_edge_exits_follow_widened_maps(self):
+    def test_job_destinations_and_the_report_exit_on_pine_rim(self):
         import kiko
-        import ridge
         import rosa
-        self.assertEqual((ridge.MAP_W, rosa.MAP_W, kiko.MAP_W), (100, 100, 100))
-        self.assertEqual(tickets.REPORT_EXIT, (kiko.MAP_W - 2, 9, 1, 3))
-        self.assertEqual(kiko.HILL_EXIT, (rosa.MAP_W - 2, 9, 1, 3))
+        import scene_links
         self.assertEqual(tickets.TICKETS[3]["start"], rosa.START)
         self.assertEqual(tickets.TICKETS[4]["start"], kiko.START)
+        # The report exit is 4C's porch-end exit (scene_links), gated on Emil's house.
+        link = scene_links.link(kiko.RIM, scene_links.REPORT, scene_links.table("redesign"))
+        self.assertEqual(tickets.REPORT_EXIT, link.rect)
+        self.assertEqual(tickets.REPORT_EXIT, (kiko.RIM_W - 2, 9, 1, 3))
+        self.assertEqual(tickets.REPORT_EXIT_GATE_VAR, link.gate)
+        self.assertEqual(tickets.REPORT_EXIT_GATE_VAR, kiko.VAR_HOME_POWERED)
 
     def test_generator_text_check_passes(self):
         scene.check_text()

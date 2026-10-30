@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "08352137-084f-5364-8b5a-7daec4e15b77",
+  "name": "Box Zone Transformer (house)",
+  "prefabId": "",
+  "x": 38,
+  "y": 9,
+  "symbol": "trigger_pine_house_reach",
+  "prefabScriptOverrides": {},
+  "width": 5,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 105
+        }
+      },
+      "id": "d81f3147-2f9d-5ba3-b0eb-0f586f3e5864"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 105
+          }
+        }
+      },
+      "id": "00e4c330-a029-5665-829e-b3d95527b629",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "6e7c3362-8c36-55e7-88c2-fab40a0001d4"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 4
+}

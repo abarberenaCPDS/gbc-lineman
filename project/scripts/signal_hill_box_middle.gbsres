@@ -5,12 +5,7 @@
   "symbol": "script_signal_hill_middle",
   "description": "Plug in the middle cable and refresh the grid chain.",
   "variables": {},
-  "actors": {
-    "0": {
-      "id": "0",
-      "name": "Storm Pole (middle)"
-    }
-  },
+  "actors": {},
   "script": [
     {
       "command": "EVENT_IF",
@@ -27,7 +22,7 @@
           }
         }
       },
-      "id": "63e29d0c-39bf-59df-8f4f-4ca11bfa5bdf",
+      "id": "d329716c-12de-5374-a704-5ea6e8b1c177",
       "children": {
         "true": [
           {
@@ -39,7 +34,7 @@
                 "value": 150
               }
             },
-            "id": "31c2e34f-6042-57a6-ad73-44f7954deac6"
+            "id": "9e8f8f6b-f9a8-589e-8e20-17b7e87abd5b"
           },
           {
             "command": "EVENT_TEXT",
@@ -64,7 +59,7 @@
               "closeDelayTime": 0.5,
               "closeDelayFrames": 30
             },
-            "id": "d345d18f-957e-5bf0-a3f3-ab315ff40d3e"
+            "id": "1878a72f-fdbd-5937-9842-4504d5719ec2"
           },
           {
             "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -75,7 +70,7 @@
                 "value": 16
               }
             },
-            "id": "2649a9c9-ab34-5083-82e6-c94e236b3541"
+            "id": "167e8c6b-61fa-505f-805c-31c92a7117e6"
           },
           {
             "command": "EVENT_OVERLAY_SHOW",
@@ -84,7 +79,7 @@
               "x": 0,
               "y": 0
             },
-            "id": "681bd8b8-56fb-5976-ad0f-8518dcf2397f"
+            "id": "f581b890-32ab-5612-ab8c-1c790c183d9f"
           },
           {
             "command": "EVENT_TEXT_DRAW",
@@ -94,7 +89,7 @@
               "y": 0,
               "location": "overlay"
             },
-            "id": "55d69330-6985-596e-828a-4a7efecf7f5b"
+            "id": "c705f77c-de14-5b35-b183-84d8c7cfbe84"
           },
           {
             "command": "EVENT_TEXT_DRAW",
@@ -104,7 +99,7 @@
               "y": 1,
               "location": "overlay"
             },
-            "id": "7736e3f4-9cb0-5f95-b28c-af095ad14568"
+            "id": "9319e6b7-6034-58c8-8f5c-9e00863a3d4d"
           }
         ],
         "false": [
@@ -123,7 +118,7 @@
                 }
               }
             },
-            "id": "c56f98c2-cb38-567d-9403-d3814d7855aa",
+            "id": "f96cac9c-73a1-5d0d-a81b-eb2225a6ac82",
             "children": {
               "true": [
                 {
@@ -135,7 +130,7 @@
                       "value": 0
                     }
                   },
-                  "id": "35b47a27-ccfb-5c3f-ab72-97b05bfca946"
+                  "id": "35369ff3-b180-5ff4-b6d1-38ffc16a6595"
                 },
                 {
                   "command": "EVENT_ACTOR_SET_STATE",
@@ -144,7 +139,7 @@
                     "spriteStateId": "",
                     "loopAnim": true
                   },
-                  "id": "51e3ef17-a6f3-5ec4-a90c-bc2a43a1edcd"
+                  "id": "2d22fa87-92d0-5222-bdd0-4c212c4f04ad"
                 },
                 {
                   "command": "EVENT_SET_VALUE",
@@ -155,23 +150,14 @@
                       "value": 1
                     }
                   },
-                  "id": "0cbe91cb-a6f4-5eda-a5d2-f469b439e6e3"
+                  "id": "eecc9f49-885e-53b9-987b-21e496ab37a5"
                 },
                 {
                   "command": "EVENT_INC_VALUE",
                   "args": {
                     "variable": "22"
                   },
-                  "id": "11cd7804-0517-53f5-967b-5a4eacb17c10"
-                },
-                {
-                  "command": "EVENT_ACTOR_SET_STATE",
-                  "args": {
-                    "actorId": "0",
-                    "spriteStateId": "Standing",
-                    "loopAnim": true
-                  },
-                  "id": "bc5b7949-0e65-5f5d-9525-0c3dbfab3675"
+                  "id": "e171a90c-52c1-58bf-a610-852072e602a4"
                 },
                 {
                   "command": "EVENT_IF",
@@ -188,7 +174,7 @@
                       }
                     }
                   },
-                  "id": "170f16a9-f4b7-57ca-bac6-93cf133914c6",
+                  "id": "099c4d70-479e-5a1c-96ec-8937b6f7a3de",
                   "children": {
                     "true": [
                       {
@@ -206,7 +192,7 @@
                             }
                           }
                         },
-                        "id": "84b262e9-490d-5af5-90c3-eb2a600343ce",
+                        "id": "44402320-781f-5631-8438-67c1e9631ee6",
                         "children": {
                           "true": [
                             {
@@ -224,7 +210,7 @@
                                   }
                                 }
                               },
-                              "id": "27611a70-2416-5899-93c0-e4fb9a365617",
+                              "id": "fdf2954f-dc9a-58be-a3d7-8f0df970f43b",
                               "children": {
                                 "true": [
                                   {
@@ -242,7 +228,7 @@
                                         }
                                       }
                                     },
-                                    "id": "067ad469-dea4-50ec-9315-52fa2a31f38d",
+                                    "id": "279af77b-26c3-5fc6-9f4e-64f8bd9d4490",
                                     "children": {
                                       "true": [
                                         {
@@ -260,7 +246,7 @@
                                               }
                                             }
                                           },
-                                          "id": "48c8bc38-1825-5952-ad74-c400664bfedc",
+                                          "id": "ca35db66-77ae-5efa-aa2f-72f37510ce79",
                                           "children": {
                                             "true": [
                                               {
@@ -272,7 +258,7 @@
                                                     "value": 5
                                                   }
                                                 },
-                                                "id": "9102fcb4-e8fb-50d9-ab5e-4fd30a144b2b"
+                                                "id": "6e12954c-8889-5f78-830c-36bc61b35f55"
                                               },
                                               {
                                                 "command": "EVENT_PALETTE_SET_BACKGROUND",
@@ -286,7 +272,7 @@
                                                   "palette6": "f5d7c707-3e38-5fca-99c9-03545cfca971",
                                                   "palette7": "keep"
                                                 },
-                                                "id": "e5fa976d-4865-53da-a7db-6acb0aee082a"
+                                                "id": "52aebdb0-314f-5b21-a5d3-8fb3c282922a"
                                               }
                                             ],
                                             "false": [
@@ -299,7 +285,7 @@
                                                     "value": 4
                                                   }
                                                 },
-                                                "id": "6f829629-6aa8-5b0c-8448-3e7ed63de851"
+                                                "id": "8293c5e9-4141-5a57-8f63-d8669fbf6cec"
                                               },
                                               {
                                                 "command": "EVENT_PALETTE_SET_BACKGROUND",
@@ -313,7 +299,7 @@
                                                   "palette6": "8b59b918-8227-5ce4-8fac-fc9abcc6bbfd",
                                                   "palette7": "keep"
                                                 },
-                                                "id": "92253fb6-e759-528b-a753-72d4bc5b97c2"
+                                                "id": "c01af82d-bf9d-5844-a227-6d56001f3e01"
                                               }
                                             ]
                                           }
@@ -329,7 +315,7 @@
                                               "value": 3
                                             }
                                           },
-                                          "id": "8665bc14-41c6-5704-adc7-7cad15c8cb33"
+                                          "id": "8cf8459b-3730-5cc1-a8c5-dad16184ecf5"
                                         },
                                         {
                                           "command": "EVENT_PALETTE_SET_BACKGROUND",
@@ -343,7 +329,7 @@
                                             "palette6": "c0d1322b-8e26-5dea-9586-54fc11ff9658",
                                             "palette7": "keep"
                                           },
-                                          "id": "23865e81-e7bb-51b2-8275-dee94ba73b51"
+                                          "id": "9537b32b-aee4-5a8d-a28b-ea9b8156641a"
                                         }
                                       ]
                                     }
@@ -359,7 +345,7 @@
                                         "value": 2
                                       }
                                     },
-                                    "id": "68b76d21-76cd-5684-9a33-f6c1cd24e5eb"
+                                    "id": "ed3c225c-75bc-572a-aaf5-eccfd1103fa6"
                                   },
                                   {
                                     "command": "EVENT_PALETTE_SET_BACKGROUND",
@@ -373,7 +359,7 @@
                                       "palette6": "e6fc52e0-f740-5e79-802d-74c083b48636",
                                       "palette7": "keep"
                                     },
-                                    "id": "3f0bdf0b-016a-5780-8157-ee04b6132eff"
+                                    "id": "e7424be4-cd63-52e0-9708-9045a01abd4e"
                                   }
                                 ]
                               }
@@ -389,7 +375,7 @@
                                   "value": 1
                                 }
                               },
-                              "id": "fa0a5c58-d5cb-521c-bc41-871ed9cb7319"
+                              "id": "3db036ce-4112-5d3c-9a47-d75721cd3e8c"
                             },
                             {
                               "command": "EVENT_PALETTE_SET_BACKGROUND",
@@ -403,7 +389,7 @@
                                 "palette6": "46335023-27aa-5714-ab50-164d75dd2cf3",
                                 "palette7": "keep"
                               },
-                              "id": "4ad1576a-45ec-506f-add1-fa3a62ed67cf"
+                              "id": "93ac98c7-9f96-5d6e-a9bb-49291d9ecfa5"
                             }
                           ]
                         }
@@ -419,7 +405,7 @@
                             "value": 0
                           }
                         },
-                        "id": "2d1d3b2c-1c7e-501c-9b12-3b641deeac94"
+                        "id": "6e6919fd-03bc-5e03-b958-6e43394fc328"
                       },
                       {
                         "command": "EVENT_PALETTE_SET_BACKGROUND",
@@ -433,7 +419,7 @@
                           "palette6": "dfdd8006-fbf0-5cf8-8f28-baf4ae7157a9",
                           "palette7": "keep"
                         },
-                        "id": "eca1e38d-7ba2-51a2-b2a8-acea2fa589ec"
+                        "id": "dc63d95c-4a16-5f2e-88fe-cc2054cedc43"
                       }
                     ]
                   }
@@ -450,7 +436,7 @@
                     "wait": true,
                     "effect": 0
                   },
-                  "id": "7602a73a-46c0-505c-b740-327c830e5819"
+                  "id": "3439d41d-ccfd-5efe-8164-3633015ef013"
                 },
                 {
                   "command": "EVENT_IF",
@@ -467,7 +453,7 @@
                       }
                     }
                   },
-                  "id": "5797d7d6-c8be-5b03-b88d-d53916ea7626",
+                  "id": "9b32de92-cbff-52f2-b2b6-0a6d218c061a",
                   "children": {
                     "true": [
                       {
@@ -479,7 +465,7 @@
                             "value": 150
                           }
                         },
-                        "id": "6fa6d10d-6530-5d55-9d09-d60e3d02b6aa"
+                        "id": "bf98b285-3ea9-567f-8ab5-5ea6e7bd8b40"
                       },
                       {
                         "command": "EVENT_TEXT",
@@ -504,7 +490,7 @@
                           "closeDelayTime": 0.5,
                           "closeDelayFrames": 30
                         },
-                        "id": "f63f8818-46ff-5bfe-ad69-ebe7f80edb63"
+                        "id": "f6d998a5-80da-5fd8-b820-243b14257d35"
                       },
                       {
                         "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -515,7 +501,7 @@
                             "value": 16
                           }
                         },
-                        "id": "37c0a64b-6fe5-5b67-bab8-1f4446a14f59"
+                        "id": "4ad4ccab-3919-506d-8797-7c8387dd9082"
                       },
                       {
                         "command": "EVENT_OVERLAY_SHOW",
@@ -524,7 +510,7 @@
                           "x": 0,
                           "y": 0
                         },
-                        "id": "a12514f4-53a8-5114-8265-0217ea08c447"
+                        "id": "511f35b3-6bb6-5f41-8af8-bd485a9507b8"
                       },
                       {
                         "command": "EVENT_TEXT_DRAW",
@@ -534,7 +520,7 @@
                           "y": 0,
                           "location": "overlay"
                         },
-                        "id": "92fce651-457a-559b-b760-7d1376b16cd6"
+                        "id": "fe6ac979-b12c-5f7f-870c-18289c825212"
                       },
                       {
                         "command": "EVENT_TEXT_DRAW",
@@ -544,7 +530,7 @@
                           "y": 1,
                           "location": "overlay"
                         },
-                        "id": "3b1facb3-8b99-5043-9830-f93b5821793f"
+                        "id": "374acddb-3064-5779-82a7-01a405eb8a82"
                       }
                     ],
                     "false": [
@@ -563,7 +549,7 @@
                             }
                           }
                         },
-                        "id": "1b098cea-c95b-5c5a-8d27-67a40fae0e62",
+                        "id": "4a9782d1-6748-5fdd-b0f2-0c9c1575dd37",
                         "children": {
                           "true": [
                             {
@@ -575,7 +561,7 @@
                                   "value": 150
                                 }
                               },
-                              "id": "3b7c9106-ba8f-5785-9d16-6124f56ce5c2"
+                              "id": "6812ca54-f541-516f-bc31-d4a52cdf57ac"
                             },
                             {
                               "command": "EVENT_TEXT",
@@ -600,7 +586,7 @@
                                 "closeDelayTime": 0.5,
                                 "closeDelayFrames": 30
                               },
-                              "id": "189dd329-78a4-518c-a986-2d28bfbcc32e"
+                              "id": "9274a2f5-d5d9-56c4-9308-62ddbbd428e7"
                             },
                             {
                               "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -611,7 +597,7 @@
                                   "value": 16
                                 }
                               },
-                              "id": "a4b77d79-3d7a-59fb-bf51-de6e51e38157"
+                              "id": "866c1444-6220-5782-81a4-e31a171e20ba"
                             },
                             {
                               "command": "EVENT_OVERLAY_SHOW",
@@ -620,7 +606,7 @@
                                 "x": 0,
                                 "y": 0
                               },
-                              "id": "81c601fe-7fda-59d3-8804-499e50095a2e"
+                              "id": "b35b5c42-38fd-53cc-803a-df1a4a6f8250"
                             },
                             {
                               "command": "EVENT_TEXT_DRAW",
@@ -630,7 +616,7 @@
                                 "y": 0,
                                 "location": "overlay"
                               },
-                              "id": "163cdf96-f4b5-550a-ad95-cf2d4c1b6d47"
+                              "id": "3768e3f3-a2f6-50b0-ab4b-4c5fe04c56b7"
                             },
                             {
                               "command": "EVENT_TEXT_DRAW",
@@ -640,7 +626,7 @@
                                 "y": 1,
                                 "location": "overlay"
                               },
-                              "id": "e968df18-1cac-5202-9f3e-5a8fb38ace9b"
+                              "id": "292ea44e-6d74-5a83-aaf3-9960aceae5e8"
                             }
                           ],
                           "false": [
@@ -653,7 +639,7 @@
                                   "value": 150
                                 }
                               },
-                              "id": "c158e576-8794-553e-858e-687feb954c0a"
+                              "id": "f9c276e2-5986-52bb-8b50-958d1f0980cc"
                             },
                             {
                               "command": "EVENT_TEXT",
@@ -678,7 +664,7 @@
                                 "closeDelayTime": 0.5,
                                 "closeDelayFrames": 30
                               },
-                              "id": "4a7e8527-d67b-59b7-8c84-65f1d48aea62"
+                              "id": "d2273bac-69d3-54f9-83ec-1f406fdec14e"
                             },
                             {
                               "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -689,7 +675,7 @@
                                   "value": 16
                                 }
                               },
-                              "id": "c2b0efcd-693e-5d90-bc96-3f794bcdef34"
+                              "id": "706b2112-16af-57d7-8f4f-5949374c5e8c"
                             },
                             {
                               "command": "EVENT_OVERLAY_SHOW",
@@ -698,7 +684,7 @@
                                 "x": 0,
                                 "y": 0
                               },
-                              "id": "3e4219a3-52bf-5894-a72a-555c8128a434"
+                              "id": "62d7f2ee-292a-53be-964f-f42c7f200482"
                             },
                             {
                               "command": "EVENT_TEXT_DRAW",
@@ -708,7 +694,7 @@
                                 "y": 0,
                                 "location": "overlay"
                               },
-                              "id": "15938504-e737-5dfa-b30a-d2810554457a"
+                              "id": "8ae082ca-f3c3-5c00-a78c-40623f7bb112"
                             },
                             {
                               "command": "EVENT_TEXT_DRAW",
@@ -718,7 +704,7 @@
                                 "y": 1,
                                 "location": "overlay"
                               },
-                              "id": "56abad70-3199-5b0e-94f9-a726690cd909"
+                              "id": "2625e2a7-a34a-53bc-844f-6a1a8297e712"
                             }
                           ]
                         }
@@ -743,7 +729,7 @@
                       }
                     }
                   },
-                  "id": "99d2c249-c929-5cb7-9a1e-e41ff4aa24d3",
+                  "id": "0643571e-2de1-5ced-9915-b11caa7f8d46",
                   "children": {
                     "true": [
                       {
@@ -755,7 +741,7 @@
                             "value": 150
                           }
                         },
-                        "id": "37244cdc-1a12-5b73-b60e-267a047c4ce9"
+                        "id": "ce3d7845-484f-517d-b827-aeeae6a06608"
                       },
                       {
                         "command": "EVENT_TEXT",
@@ -780,7 +766,7 @@
                           "closeDelayTime": 0.5,
                           "closeDelayFrames": 30
                         },
-                        "id": "70b8e0a0-5950-5978-9eb4-ff39426bb604"
+                        "id": "6e012be6-b11c-58d8-b4f6-1137333b16df"
                       },
                       {
                         "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -791,7 +777,7 @@
                             "value": 16
                           }
                         },
-                        "id": "d7ab8907-5ad7-5aad-975d-42127de8084a"
+                        "id": "077bcac9-ebd7-5f4f-9f78-ff85e6e7b95d"
                       },
                       {
                         "command": "EVENT_OVERLAY_SHOW",
@@ -800,7 +786,7 @@
                           "x": 0,
                           "y": 0
                         },
-                        "id": "558b5fa2-f779-5469-92da-4aa54cd6a3b6"
+                        "id": "da05dd7e-756b-50b6-a10a-2abb2a182b34"
                       },
                       {
                         "command": "EVENT_TEXT_DRAW",
@@ -810,7 +796,7 @@
                           "y": 0,
                           "location": "overlay"
                         },
-                        "id": "227a6a2a-f90c-5e13-b15c-0581b29d1d36"
+                        "id": "d29ce194-9bcc-5a34-9afe-4ef8eaf006e6"
                       },
                       {
                         "command": "EVENT_TEXT_DRAW",
@@ -820,7 +806,7 @@
                           "y": 1,
                           "location": "overlay"
                         },
-                        "id": "a56b0c9e-a501-5ff3-8170-a6f1549eec3d"
+                        "id": "ce7f0868-6cb4-5a08-ae0a-805b4ceaf7cd"
                       }
                     ],
                     "false": [
@@ -833,7 +819,7 @@
                             "value": 150
                           }
                         },
-                        "id": "c7d904e8-891a-5b2a-a034-e4ca71746031"
+                        "id": "6a75af49-845b-5d66-8bb2-fca7c4808763"
                       },
                       {
                         "command": "EVENT_TEXT",
@@ -858,7 +844,7 @@
                           "closeDelayTime": 0.5,
                           "closeDelayFrames": 30
                         },
-                        "id": "02b792ac-8072-5499-89ab-0d81c7286607"
+                        "id": "5fba3661-57d5-5500-b7ee-c547037c6185"
                       },
                       {
                         "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
@@ -869,7 +855,7 @@
                             "value": 16
                           }
                         },
-                        "id": "53f9adea-6b3e-5d76-a393-fc76f184687b"
+                        "id": "6aa46f80-e5b8-57cb-b012-28cc6d489d49"
                       },
                       {
                         "command": "EVENT_OVERLAY_SHOW",
@@ -878,7 +864,7 @@
                           "x": 0,
                           "y": 0
                         },
-                        "id": "a91d4f36-340a-56cd-bcf1-c8440ca3bc98"
+                        "id": "57bf0335-51ae-5580-bbd1-cfc3822358f1"
                       },
                       {
                         "command": "EVENT_TEXT_DRAW",
@@ -888,7 +874,7 @@
                           "y": 0,
                           "location": "overlay"
                         },
-                        "id": "9ba5de57-51e1-567e-b7f6-956f0f7a5efc"
+                        "id": "c7386953-3bec-5677-a070-67a8b3429523"
                       },
                       {
                         "command": "EVENT_TEXT_DRAW",
@@ -898,7 +884,7 @@
                           "y": 1,
                           "location": "overlay"
                         },
-                        "id": "845ad51c-a994-52be-888d-0d4ac9822e06"
+                        "id": "f710395f-98ef-5f02-b18e-7e8b6b2c04ba"
                       }
                     ]
                   }

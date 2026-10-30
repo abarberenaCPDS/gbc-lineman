@@ -1,7 +1,7 @@
 {
   "_resourceType": "actor",
   "id": "f6697c07-d704-5c3c-bc75-9dea70ae0d45",
-  "_index": 4,
+  "_index": 2,
   "symbol": "kiko_middle_pole",
   "prefabId": "",
   "name": "Storm Pole (middle)",
@@ -59,13 +59,45 @@
         ],
         "false": [
           {
-            "command": "EVENT_ACTOR_SET_STATE",
+            "command": "EVENT_IF",
             "args": {
-              "actorId": "$self$",
-              "spriteStateId": "Snapped+Cable",
-              "loopAnim": true
+              "condition": {
+                "type": "eq",
+                "valueA": {
+                  "type": "variable",
+                  "value": "6"
+                },
+                "valueB": {
+                  "type": "number",
+                  "value": 3
+                }
+              }
             },
-            "id": "e463f1dd-6ccf-57ad-bd12-8f148f8fa2e5"
+            "id": "36cdd8fd-a81b-5bb2-b990-db15bb60359c",
+            "children": {
+              "true": [
+                {
+                  "command": "EVENT_ACTOR_SET_STATE",
+                  "args": {
+                    "actorId": "$self$",
+                    "spriteStateId": "Snapped",
+                    "loopAnim": true
+                  },
+                  "id": "2581f002-0445-5d91-a955-0e7097d7d90e"
+                }
+              ],
+              "false": [
+                {
+                  "command": "EVENT_ACTOR_SET_STATE",
+                  "args": {
+                    "actorId": "$self$",
+                    "spriteStateId": "Snapped+Cable",
+                    "loopAnim": true
+                  },
+                  "id": "e463f1dd-6ccf-57ad-bd12-8f148f8fa2e5"
+                }
+              ]
+            }
           }
         ]
       }

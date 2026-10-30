@@ -1,8 +1,13 @@
-"""Generate the deterministic Storm Climb scene from ``climb.py``.
+"""Generate the deterministic Storm Climb scene (job 1A) from ``climb.py``.
 
 Run with ``python3 tools/make_climb_scene.py`` from any working directory.
 Resource and event IDs are stable; this generator writes only its own scene
 resources. The authored climb data remains in the sibling ``climb.py`` module.
+Job 1's second scene, the crest (1B), is ``make_crest_scene.py``; it reuses the
+grid chain built here (``make_chain``) and the helpers below.
+
+Other job generators import this module as ``shared`` for its generic helpers
+(event builders, JSON writers, hazard actors, ...): keep their names and signatures.
 """
 
 from __future__ import annotations
@@ -51,11 +56,12 @@ try:
     import hazards  # noqa: E402  (cracked boards and hidden cables: placement and timings)
     import rosa  # noqa: E402  (Signal Hill owns the live arc sprite and palette)
     import scenes  # noqa: E402  (scene registry: editor positions)
+    import scene_links  # noqa: E402  (job 1 exits: street, summit -> crest)
     import grid_chain  # noqa: E402  (B-press zone values and zone rects, shared with the job scenes)
     import shaft  # noqa: E402  (shaft template: culling thread builder)
 except ModuleNotFoundError as error:
     if error.name in {"tickets", "voices", "climb", "intro", "opening", "ridge", "hazards", "rosa", "scenes",
-                      "grid_chain", "shaft"}:
+                      "grid_chain", "shaft", "scene_links"}:
         raise SystemExit(
             f"cannot generate storm_climb: tools/{error.name}.py is missing; "
             "it must provide the climb/opening data API"
@@ -63,9 +69,9 @@ except ModuleNotFoundError as error:
     raise
 
 POLE_SPRITE_PALETTE_SLOT = intro.SPRITE_SLOTS["pole"]
-# Amara stands on the summit, left of her house door (climb.AMARA). She has no
-# collision, so the 24px hero's respawn tile and landing stay unobstructed.
-MARTA_SHELF_POSITION = climb.AMARA
+# Amara stands on the crest porch, left of her house door (climb.CREST_AMARA;
+# make_crest_scene builds her). She has no collision.
+MARTA_SHELF_POSITION = climb.CREST_AMARA
 # Two-digit variable tokens only: GB Studio drops a single leading zero.
 HUD_TEXT = climb.HUD_TEXT
 VAR_CARRYING_CABLE_ID = climb.VAR_CARRYING_CABLE
@@ -382,7 +388,9 @@ def cable_drop_events(key: str, text: str | None = None) -> list[dict[str, Any]]
 # ---------------------------------------------------------------------------
 # The grid chain (grid_chain.py's model, five lines climbing the mountain):
 # zones set VAR_NEAR, and one input script picks up, plugs in, drops or stays
-# quiet. Override is off, so Amara's native B talk keeps working.
+# quiet. Override is off, so Amara's native B talk (on the crest) keeps working.
+# Lines are global, actors are local: the climb's chain has the five poles and
+# transformers 1-4; the crest's (make_crest_scene) has transformer 5 only.
 #
 # The transformers are background art (climb.TRANSFORMERS), so ClimbChain
 # drops GridChain's box-actor state events and bindings; the wire palettes are
@@ -462,18 +470,20 @@ class ClimbChain(grid_chain.GridChain):
         return actor
 
 
-def _make_chain() -> ClimbChain:
+def make_chain(scene: str = climb.CLIMB_SCENE) -> ClimbChain:
+    """Job 1's grid chain for one of its scene folders (same IDs, palettes and box scripts)."""
     for text in CLIMB_TEXT.values():
         short_lines(text)
     return ClimbChain(
         rid=resource_id, lines=LINES, chain_var=climb.VAR_CHAIN_LIVE, lines_var=climb.VAR_LINES_LIVE,
         carrying_var=VAR_CARRYING_CABLE_ID, near_var=VAR_NEAR_ID, line_bg_slot=climb.LINE_BG_SLOT,
         line_bg_slot_2=climb.LINE_BG_SLOT_2, text=CLIMB_TEXT, say=say, hud=hud_events,
-        background_boxes=True,
+        background_boxes=True, scene=scene,
     )
 
 
-CHAIN = _make_chain()
+_make_chain = make_chain
+CHAIN = make_chain(climb.CLIMB_SCENE)
 
 
 def chain_palette_resources() -> list[tuple[str, dict[str, Any]]]:
@@ -501,22 +511,21 @@ def box_script_resources(audio_ids: dict[str, str]) -> list[tuple[str, dict[str,
 
 def b_press_script(connect_sound_id: str, pickup_sound_id: str) -> dict[str, Any]:
     """The one B input script: pole zones pick up, box zones call their box script,
-    Amara's zone stays quiet (native talk), anywhere else drops a carried cable."""
+    a neighbour zone stays quiet (native talk), anywhere else drops a carried cable."""
     del connect_sound_id  # the box scripts carry the connect sound
     return CHAIN.input_script_event(pickup_sound_id=pickup_sound_id)
 
 
-def climb_zone_triggers() -> list[dict[str, Any]]:
-    """Box zones first, then pole zones, then Amara's zone (first match wins where they meet)."""
-    boxes = [CHAIN.box_zone_trigger(line, symbol=line["box_zone_symbol"], index=0) for line in LINES]
-    poles = [CHAIN.zone_trigger(name=f"Pole Zone ({line['key']})", symbol=line["pole_zone_symbol"], index=0,
+def climb_zone_triggers(chain: ClimbChain | None = None) -> list[dict[str, Any]]:
+    """Box zones first, then pole zones (first match wins where they meet), for the
+    chain's own scene: transformers 1-4 and all five poles in the climb."""
+    chain = chain or CHAIN
+    boxes = [chain.box_zone_trigger(line, symbol=line["box_zone_symbol"], index=0) for line in chain.box_lines()]
+    poles = [chain.zone_trigger(name=f"Pole Zone ({line['key']})", symbol=line["pole_zone_symbol"], index=0,
                                 rect=grid_chain.pole_zone_rect(line["pole_at"]), value=line["number"],
                                 trigger_key=line["pole_zone_key"])
-             for line in LINES]
-    npc = zone_trigger(name="Amara Zone", symbol="trigger_marta_zone", index=0,
-                       rect=grid_chain.npc_zone_rect(MARTA_SHELF_POSITION), value=grid_chain.NPC_ZONE,
-                       trigger_key="npc-zone:marta")
-    return [*boxes, *poles, npc]
+             for line in chain.pole_lines()]
+    return [*boxes, *poles]
 
 
 def actor_state(actor_id: str, state: str, key: str, loop: bool = True) -> dict[str, Any]:
@@ -525,23 +534,24 @@ def actor_state(actor_id: str, state: str, key: str, loop: bool = True) -> dict[
     }, key)
 
 
-def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
+def respawn_events(key: str, death_sound_id: str, chain: ClimbChain | None = None,
+                   start: tuple[int, int] = climb.START) -> list[dict[str, Any]]:
     """Shared checkpoint-aware reset for trigger and actor collisions.
 
     The cable drop runs before repositioning so the carrier's hands are empty
-    wherever the checkpoint sends them.
+    wherever the checkpoint sends them; a cable whose pole is in the other scene
+    goes home too (Abe). The respawn is the furthest repaired line whose
+    checkpoint is in this scene, else this scene's upstream entry ``start``
+    (spec §3 rule 4): lines 1-4 in the climb, line 5 on the crest.
     """
+    chain = chain or CHAIN
     return [
         sound_event(death_sound_id, f"{key}:death-sfx"),
         *shock.shock_events(key),
-        *cable_drop_events(key),
+        *chain.cable_drop_events(key),
         # The respawn teleports the hero without a leave event: forget the board.
         set_value(hazards.VAR_ON_BOARD, 0, f"{key}:clear-board"),
-        # Furthest repaired line's checkpoint, else START; Amara's door once reached.
-        if_value(VARIABLE_CHECKPOINTS_REACHED, 0, f"{key}:respawn-check",
-                 CHAIN.checkpoint_chain(key, climb.START), [
-            set_position(climb.HOUSE_A["x"], climb.HOUSE_A["y"], f"{key}:respawn-house"),
-        ]),
+        *chain.checkpoint_chain(key, start),
     ]
 
 
@@ -701,45 +711,47 @@ def collision_rle(grid: list[list[int]], width: int, height: int) -> str:
     return "".join(out)
 
 
+JOB = 1   # tickets.TICKETS[1]: the work order card leaves var 16 = 1 for a fresh start
+
+
 def scene_script(music_id: str, audio_ids: dict[str, str],
                  culled_actors: list[dict[str, Any]] | None = None) -> list[dict[str, Any]]:
+    """Scene init (grid_chain "Multi-scene jobs", rules 1, 2 and 6).
+
+    Job 1 resets once, on a fresh start from its work order (var 16 == 1): every
+    line dead, empty hands, Amara's door (var 0) closed. Coming back down from
+    the crest keeps everything; the poles and a carried cable follow the
+    variables, and only a fresh start plays the music and the intro lines.
+    The arrival direction is the link's (scene_links), so the init sets none.
+    """
     return [
         event(
             "EVENT_PLAYER_SET_SPRITE",
             {"spriteSheetId": opening.resource_id("sprite:opening_worker24")},
             "init-player-sprite",
         ),
-        event(
-            "EVENT_ACTOR_SET_DIRECTION",
-            {"actorId": "player", "direction": {"type": "direction", "value": "right"}},
-            "init-player-direction",
-        ),
-        set_value(VARIABLE_CHECKPOINTS_REACHED, 0, "init-checkpoints-reached"),
-        # Every entry starts with empty hands and five dead lines.
-        set_value(VAR_CARRYING_CABLE_ID, 0, "init-carrying-cable"),
-        *[set_value(line["live_var"], 0,
-                    "init-line-live" if line["key"] == "summit" else f"init-{line['key']}-live")
-          for line in LINES],
-        set_value(climb.VAR_LINES_LIVE, 0, "init-lines-live"),
+        *CHAIN.job_reset_events(JOB, extra=[
+            set_value(VARIABLE_CHECKPOINTS_REACHED, 0, "job-reset:checkpoints-reached"),
+        ]),
         set_value(VAR_NEAR_ID, grid_chain.NEAR_NONE, "init-near"),
         b_press_script(audio_ids["connect"], audio_ids["pickup"]),
         # Standing on a cracked board is tracked by its trigger; a fresh entry starts off it.
         set_value(hazards.VAR_ON_BOARD, 0, "init-on-board"),
-        # Explicit cold summit window on every entry, matching the var 0 reset.
-        background_palette_state(False, "init-summit-window-cold"),
-        # Chain variable and both wire slots dead.
+        # Chain variable and both wire slots from the line variables.
         *CHAIN.chain_refresh_events("init-chain"),
-        # Each pole's start script also reads its line variable, and the order
-        # between scripts is unspecified: pin Snapped+Cable on every entry.
-        *[actor_state(CHAIN.actor_id(line["pole"]), "Snapped+Cable",
-                      "init-pole-snapped-cable" if line["key"] == "summit" else f"init-{line['key']}-pole-snapped")
-          for line in LINES],
-        event("EVENT_MUSIC_PLAY", {"musicId": music_id}, "play-village-music"),
-        # The overlay scanline cutoff survives scene switches: lift it so the
-        # intro box is visible even when a previous visit left the HUD's 16px.
-        cutoff_event(150, "intro-controls:say-cutoff"),
-        text_event(short_lines("A: jump\nDown+A: drop", "B: grab a cable,\nB: plug it in."), "intro-controls"),
-        *say(short_lines("Fix 5 lines up\nto Amara's door!"), "intro-lines"),
+        # Pole start scripts run in an unspecified order against the scene init,
+        # so the init has the last word: Standing / Snapped (carried) / Snapped+Cable.
+        *CHAIN.pole_init_events(),
+        *CHAIN.carry_restore_events(),
+        *CHAIN.fresh_start_events(JOB, [
+            CHAIN.music_event(music_id),
+            # The overlay scanline cutoff survives scene switches: lift it so the
+            # intro box is visible even when a previous visit left the HUD's 16px.
+            cutoff_event(150, "intro-controls:say-cutoff"),
+            text_event(short_lines("A: jump\nDown+A: drop", "B: grab a cable,\nB: plug it in."),
+                       "intro-controls"),
+            *say(short_lines("Fix 5 lines up\nto Amara's door!"), "intro-lines"),
+        ]),
         *hud_events("initial-hud"),
         *([cull_thread_event(culled_actors)] if culled_actors else []),
     ]
@@ -821,50 +833,6 @@ def actor_resource(
     }
 
 
-MARTA_ACTOR_KEY = "marta-checkpoint"
-
-
-def marta_actor_id() -> str:
-    return resource_id(f"actor:{MARTA_ACTOR_KEY}")
-
-
-def marta_talk_events(key: str) -> list[dict[str, Any]]:
-    return [if_value(VARIABLE_CHECKPOINTS_REACHED, 0, f"{key}:talk", [
-        if_value(climb.VAR_CHAIN_LIVE, climb.LINE_COUNT, f"{key}:talk-line", [
-            *say(short_lines("Power's up here!\nTry my door."), f"{key}:talk-live", "marta"),
-        ], [
-            *say(short_lines("Storm cut five\nlines below me!"), f"{key}:talk-dead", "marta"),
-        ]),
-    ], [
-        *say(short_lines("Food is saved.\nThanks, lineman!"), f"{key}:talk-after", "marta"),
-    ])]
-
-
-def checkpoint_actor(index: int, marta_sprite_id: str) -> dict[str, Any]:
-    """Amara on the summit: Waiting until the arrival checkpoint.
-
-    The start script is unconditional. The scene script resets var 0 on every
-    entry, but actor start scripts give no ordering guarantee against it, so a
-    conditional here could read a stale value from a previous visit.
-    """
-    key = MARTA_ACTOR_KEY
-    x, y = MARTA_SHELF_POSITION
-    actor = actor_resource(
-        index=index,
-        symbol="marta_checkpoint",
-        name="Amara (Summit Checkpoint)",
-        x=x,
-        y=y,
-        sprite_id=marta_sprite_id,
-        key=key,
-        script=marta_talk_events(key),
-        start_script=[actor_state("$self$", "Waiting", f"{key}:waiting")],
-    )
-    # Match the opening's Amara, whose Waiting/Powered states carry idle frames.
-    actor["animate"] = True
-    return actor
-
-
 def climb_board_actor(number: int, board: tuple[int, int, int], index: int) -> dict[str, Any]:
     """Cracked board whose idle plank is background art: the actor only shows while it creaks.
 
@@ -908,14 +876,18 @@ def climb_board_actor(number: int, board: tuple[int, int, int], index: int) -> d
     return actor
 
 
-def whip_actor(number: int, lane: tuple[int, int, int], start_delay: int, index: int) -> dict[str, Any]:
-    """Whipping cut cable hanging from the deck above, swinging across a ledge (Wind Ridge's whip)."""
+def whip_actor(number: int, lane: tuple[int, int, int], start_delay: int, index: int,
+               key_prefix: str = "", symbol_prefix: str = "climb_") -> dict[str, Any]:
+    """Whipping cut cable hanging from the deck above, swinging across a ledge (Wind Ridge's whip).
+
+    The prefixes namespace another scene's whips (the crest: ``climb_crest:`` / ``crest_``).
+    """
     row, x0, x1 = lane
     if x1 - x0 + 1 != ridge.WHIP_CANVAS[0] // 8:
         raise ValueError("the whip lane is the sprite's width")
-    key = f"whip:{number}"
+    key = f"{key_prefix}whip:{number}"
     actor = actor_resource(
-        index=index, symbol=f"climb_whip_{number:02d}", name=f"Whipping Cut Cable {number}",
+        index=index, symbol=f"{symbol_prefix}whip_{number:02d}", name=f"Whipping Cut Cable {number}",
         x=x0, y=row + 1, sprite_id=ridge.WHIP_SPRITE_ID, key=key,
         start_script=hazards.whip_start_script(key, event),
     )
@@ -941,66 +913,30 @@ def span_arc_actors() -> list[dict[str, Any]]:
     return out
 
 
-def arrival_rect() -> tuple[int, int, int, int]:
-    """Return (x, y, width, height) for the arrival trigger.
+def exit_switch_events(link: scene_links.Link, key: str) -> list[dict[str, Any]]:
+    """Lift the HUD cutoff and hide the overlay, then the link's switch (spec §3 rule 6).
 
-    Only the top row of a 24px hero standing on the summit shelf (row 3) is
-    covered, at the doorway columns 11-13. Exact-ROM play showed a rows 3-5
-    trigger firing early: an 8-frame jump from shelf 12 put the head in
-    row 4. Landing straight up from shelf 9's safe takeoff (x72) stays left
-    of column 11, so the reward plays on reaching Amara's door.
+    The HUD's 16px scanline cutoff survives a switch; exact-ROM play showed the
+    next scene's text box invisible and waiting for A otherwise.
     """
-    house = climb.HOUSE_A
-    return int(house["x"]), int(house["y"]) - 2, 3, 1
-
-
-def build_checkpoint_trigger(death_sound_id: str, connect_sound_id: str) -> dict[str, Any]:
-    x, y, width, height = arrival_rect()
-    # Keep the original stable trigger key (100) so the resource ID and file
-    # path are unchanged; only its geometry, name and script are new.
-    checkpoint = trigger_resource(100, (y, x, x + width - 1), death_sound_id)
-    checkpoint.update({
-        "name": "Amara Arrival Checkpoint",
-        "symbol": "trigger_marta_arrival",
-        "x": x,
-        "y": y,
-        "width": width,
-        "height": height,
-        # Amara's door needs all five lines live (the chain reaches the top).
-        # Without it nothing is saved; the hint stays quiet while a cable is
-        # carried past the door to transformer 5.
-        "script": [if_value(climb.VAR_CHAIN_LIVE, climb.LINE_COUNT, "checkpoint-arrival:line", [
-            if_value(VARIABLE_CHECKPOINTS_REACHED, 0, "checkpoint-arrival", [
-                set_value(VARIABLE_CHECKPOINTS_REACHED, 1, "checkpoint-arrival:set"),
-                sound_event(connect_sound_id, "checkpoint-arrival:sfx"),
-                background_palette_state(True, "checkpoint-arrival:summit-lit"),
-                actor_state(marta_actor_id(), "Powered", "checkpoint-arrival:marta-powered"),
-                cutoff_event(150, "checkpoint-arrival:cutoff"),
-                # Second page: Amara's work order closes (tickets.py).
-                text_event([*short_lines("Power's back!\nMy fridge hums."), *tickets.closed_lines(1)],
-                           "checkpoint-arrival:text"),
-                *hud_events("checkpoint-arrival:hud"),
-            ]),
-        ], [
-            if_value(VAR_CARRYING_CABLE_ID, 0, "checkpoint-arrival:hint", [
-                *say(short_lines("Still no power.\nFix all 5 lines!"), "checkpoint-arrival:no-power"),
-            ]),
-        ])],
-    })
-    return checkpoint
+    return [
+        cutoff_event(150, f"{key}:cutoff"),
+        event("EVENT_OVERLAY_HIDE", {}, f"{key}:hud-hide"),
+        *scene_links.exit_events(link, key, event=event, set_value=set_value, number=number),
+    ]
 
 
 def street_exit_trigger() -> dict[str, Any]:
     """Back to the service opening, two tiles before its awning exit.
 
-    Re-entering the climb runs scene init again: vars 0/6/7 reset while the
-    opening's var 4 (service restored) keeps the gate open. The HUD's 16px
-    scanline cutoff survives the switch, so it is lifted and the overlay hidden
-    first; exact-ROM play showed the opening's controls box invisible and
-    waiting for A otherwise.
+    A carried cable stays in the job: it goes home to its pole (the pole init
+    shows it on the way back). The awning sends the hero straight back here
+    without resetting the job once a line is live (make_opening_scene).
     """
     x, y, width, height = climb.STREET_EXIT
-    arrive_x, arrive_y = opening.EXIT_NUDGE
+    link = scene_links.link(climb.CLIMB_SCENE, "service_opening", scene_links.table("redesign"))
+    assert link.rect == climb.STREET_EXIT and link.entry == opening.EXIT_NUDGE
+    switch = exit_switch_events(link, "street-exit")
     return {
         "_resourceType": "trigger",
         "id": resource_id("trigger:street-exit"),
@@ -1012,47 +948,22 @@ def street_exit_trigger() -> dict[str, Any]:
         "prefabScriptOverrides": {},
         "width": width,
         "height": height,
-        "script": [
-            cutoff_event(150, "street-exit:cutoff"),
-            event("EVENT_OVERLAY_HIDE", {}, "street-exit:hud-hide"),
-            event("EVENT_SWITCH_SCENE", {
-            "x": number(arrive_x), "y": number(arrive_y), "direction": "left",
-            "sceneId": opening.resource_id("scene:service-opening"), "fadeSpeed": "2",
-            }, "street-exit:to-opening"),
-        ],
+        "script": [switch[0], set_value(VAR_CARRYING_CABLE_ID, 0, "street-exit:cable-home"), *switch[1:]],
         "leaveScript": [],
         "_index": 100,
     }
 
 
-SUMMIT_EXIT_NUDGE_TILES = 3
-
-
 def summit_exit_trigger() -> dict[str, Any]:
-    """Right end of the summit shelf leads on to Hiroshi's Wind Ridge.
-
-    Gated on Amara's checkpoint (var 0) so the jobs stay in order; before
-    that the hero is told why and nudged back onto the shelf. Like the street
-    exit, it lifts the HUD cutoff and hides the overlay before switching.
-    """
-    x, y, width, height = ridge.CLIMB_SUMMIT_EXIT
-    go = [
-        cutoff_event(150, "summit-exit:cutoff"),
-        event("EVENT_OVERLAY_HIDE", {}, "summit-exit:hud-hide"),
-        # Hiroshi's work order first; its card switches on to Wind Ridge's start.
-        *tickets.to_work_order(2, "summit-exit", event, set_value, number),
-    ]
-    # Exact ROM 147c23be: a two-tile nudge after the text left the 24px hero's
-    # box (x+2..x+14) touching the exit after leftover momentum, so the text
-    # looped. Step back three tiles first, then explain.
-    wait = [
-        set_position(x - SUMMIT_EXIT_NUDGE_TILES, climb.HOUSE_A["y"], "summit-exit:nudge-back"),
-        *say(short_lines("Amara needs\npower first."), "summit-exit:not-yet"),
-    ]
+    """The summit's top-right exit leads up to the crest (1B), ungated: carry 5
+    goes on there (a carried cable stays in hand, var 6 survives the switch)."""
+    x, y, width, height = climb.SUMMIT_EXIT
+    link = scene_links.link(climb.CLIMB_SCENE, climb.CREST_SCENE, scene_links.table("redesign"))
+    assert link.rect == climb.SUMMIT_EXIT and link.gate is None
     return {
         "_resourceType": "trigger",
         "id": resource_id("trigger:summit-exit"),
-        "name": "Summit Exit (to Wind Ridge)",
+        "name": "Summit Exit (to Climb Crest)",
         "prefabId": "",
         "x": x,
         "y": y,
@@ -1060,15 +971,21 @@ def summit_exit_trigger() -> dict[str, Any]:
         "prefabScriptOverrides": {},
         "width": width,
         "height": height,
-        "script": [if_value(ridge.CLIMB_EXIT_GATE_VAR, 1, "summit-exit:gate", go, wait)],
+        "script": exit_switch_events(link, "summit-exit"),
         "leaveScript": [],
         "_index": 101,
     }
 
 
 def timed_gust_actor(index: int, lane: tuple[int, int, int], sprite_id: str,
-                     key_prefix: str = "", symbol_prefix: str = "") -> dict[str, Any]:
-    """Warning has no collision; burst hits through the shared group-1 reset."""
+                     key_prefix: str = "", symbol_prefix: str = "",
+                     timings: tuple[int, int, int] | None = None) -> dict[str, Any]:
+    """Warning has no collision; burst hits through the shared group-1 reset.
+
+    ``timings`` is (warning, burst, rest) frames; None keeps the climb's GUST_*.
+    """
+    warning_frames, active_frames, rest_frames = timings or (
+        climb.GUST_WARNING_FRAMES, climb.GUST_ACTIVE_FRAMES, climb.GUST_REST_FRAMES)
     row, x0, x1 = lane
     if x1 - x0 + 1 != 3:
         raise ValueError("the authored gust sprite is exactly three tiles wide")
@@ -1091,13 +1008,13 @@ def timed_gust_actor(index: int, lane: tuple[int, int, int], sprite_id: str,
         own("EVENT_ACTOR_COLLISIONS_DISABLE", "warning-safe"),
         own("EVENT_ACTOR_SET_STATE", "warning-state", spriteStateId="Warning", loopAnim=True),
         own("EVENT_ACTOR_SHOW", "warning-visible"),
-        wait_event(climb.GUST_WARNING_FRAMES, f"{key}:warning-time"),
+        wait_event(warning_frames, f"{key}:warning-time"),
         own("EVENT_ACTOR_SET_STATE", "burst-state", spriteStateId="Burst", loopAnim=True),
         own("EVENT_ACTOR_COLLISIONS_ENABLE", "burst-active"),
-        wait_event(climb.GUST_ACTIVE_FRAMES, f"{key}:burst-time"),
+        wait_event(active_frames, f"{key}:burst-time"),
         own("EVENT_ACTOR_COLLISIONS_DISABLE", "rest-safe"),
         own("EVENT_ACTOR_HIDE", "rest-hidden"),
-        wait_event(climb.GUST_REST_FRAMES, f"{key}:rest-time"),
+        wait_event(rest_frames, f"{key}:rest-time"),
     ]
     return actor
 
@@ -1108,14 +1025,7 @@ def trigger_resource(index: int, lane: tuple[int, int, int], death_sound_id: str
         raise ValueError(f"gust lane {index} has reversed x bounds")
     key = f"gust-lane:{index}"
     start = climb.START
-    house = climb.HOUSE_A
-    respawn = if_value(
-        VARIABLE_CHECKPOINTS_REACHED,
-        0,
-        f"{key}:respawn-start-check",
-        [set_position(int(start[0]), int(start[1]), f"{key}:respawn-start")],
-        [set_position(int(house["x"]), int(house["y"]), f"{key}:respawn-house-a")],
-    )
+    respawn = set_position(int(start[0]), int(start[1]), f"{key}:respawn-start")
     # Storm Night trigger coordinates and dimensions are tile-based in the
     # native resource schema, so retain that representation here.
     return {
@@ -1151,9 +1061,9 @@ def gust_marker_triggers(death_sound_id: str) -> list[dict[str, Any]]:
 
 
 def build_actors(sprite_ids: dict[str, str]) -> list[dict[str, Any]]:
-    """Amara, five poles, then hazards; editor order is list order (higher draws on top)."""
-    actors = [checkpoint_actor(0, sprite_ids["marta"])]
-    actors += [CHAIN.pole_actor(line, 0, intro.POLE_SPRITE_ID) for line in LINES]
+    """Five poles, then hazards; editor order is list order (higher draws on top).
+    Amara moved up to the crest (make_crest_scene)."""
+    actors = [CHAIN.pole_actor(line, 0, intro.POLE_SPRITE_ID) for line in CHAIN.pole_lines()]
     actors += [timed_gust_actor(index + 1, climb.GUST_LANES[index], sprite_ids["gust"])
                for index in climb.TIMED_GUST_LANE_INDICES]
     actors += span_arc_actors()
@@ -1173,9 +1083,8 @@ def build_actors(sprite_ids: dict[str, str]) -> list[dict[str, Any]]:
 
 
 def build_triggers(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
-    """Exits first (first match wins), the door, boards, B zones, then the inert gust markers."""
-    triggers = [street_exit_trigger(), summit_exit_trigger(),
-                build_checkpoint_trigger(audio_ids["death"], audio_ids["connect"])]
+    """Exits first (first match wins), boards, B zones, then the inert gust markers."""
+    triggers = [street_exit_trigger(), summit_exit_trigger()]
     triggers += hazard_triggers()
     triggers += climb_zone_triggers()
     triggers += gust_marker_triggers(audio_ids["death"])
@@ -1185,16 +1094,15 @@ def build_triggers(audio_ids: dict[str, str]) -> list[dict[str, Any]]:
     return triggers
 
 
-def build_scene(music_id: str, audio_ids: dict[str, str],
-                actors: list[dict[str, Any]] | None = None) -> dict[str, Any]:
-    if int(climb.MAP_W) != 20 or int(climb.MAP_H) != 36:
-        raise ValueError("storm_climb must match the Storm Night 20x36 scene schema")
+def scene_palettes() -> tuple[list[str], list[str]]:
+    """(background, sprite) palette IDs of job 1's scenes (the climb and the crest)."""
     scene = load_json(REFERENCE_SCENE)
     sprite_palette_ids = scene.get("spritePaletteIds")
     if not isinstance(sprite_palette_ids, list) or len(sprite_palette_ids) != 8:
         raise ValueError("Storm Climb reference scene must have eight sprite palette slots")
     sprite_palette_ids = list(sprite_palette_ids)
     sprite_palette_ids[0] = opening.resource_id("palette:sprite:worker")
+    # Slot 1 is Amara's (on the crest); the climb keeps it: the lab rooms copy these slots.
     sprite_palette_ids[MARTA_SPRITE_PALETTE_SLOT] = opening.resource_id("palette:sprite:marta")
     sprite_palette_ids[GRID_SPRITE_PALETTE_SLOT] = grid_sprite_palette_id()
     sprite_palette_ids[POLE_SPRITE_PALETTE_SLOT] = intro.palette_id("pole")
@@ -1213,6 +1121,15 @@ def build_scene(music_id: str, audio_ids: dict[str, str],
     background_palette_ids[climb.HARDWARE_BG_SLOT] = hardware_palette_id()
     for slot, palette_id in CHAIN.chain_palette_ids(0).items():
         background_palette_ids[slot] = palette_id
+    return background_palette_ids, sprite_palette_ids
+
+
+def build_scene(music_id: str, audio_ids: dict[str, str],
+                actors: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    if int(climb.MAP_W) != 20 or int(climb.MAP_H) != 36:
+        raise ValueError("storm_climb must match the Storm Night 20x36 scene schema")
+    scene = load_json(REFERENCE_SCENE)
+    background_palette_ids, sprite_palette_ids = scene_palettes()
     editor_x, editor_y = scenes.editor_position("storm_climb")
     scene.update(
         {
@@ -1309,7 +1226,8 @@ def main() -> None:
             write_json(SCENE_DIR / folder / f"{item['symbol']}.gbsres", item)
     print(
         f"generated storm_climb: {climb.MAP_W}x{climb.MAP_H} PLATFORM, "
-        f"{len(actors)} actors, {len(triggers)} triggers; {climb.LINE_COUNT} lines; "
+        f"{len(actors)} actors, {len(triggers)} triggers; {len(CHAIN.pole_lines())} poles, "
+        f"{len(CHAIN.box_lines())} transformers; "
         f"{len(hazards.BOARDS['storm_climb'])} cracked boards, "
         f"{len(hazards.HIDDEN_CABLES['storm_climb'])} hidden cable, "
         f"{len(climb.TIMED_GUST_LANE_INDICES)} timed gusts, {len(climb.span_arc_lanes())} span arc, "

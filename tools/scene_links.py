@@ -118,7 +118,7 @@ REDESIGN: dict[int, tuple[Link, ...]] = {
         Link("signal_porch", (1, 12, 1, 3), "signal_gully", (17, 32), "left"),
         Link("signal_porch", (38, 9, 1, 3), "pine_hollow", REDESIGN_START[4], "right", gate="11", ticket=4)),
     4: (Link("pine_hollow", (62, 9, 1, 3), "pine_ladder", (2, 32), "right"),
-        Link("pine_ladder", (0, 30, 1, 3), "pine_hollow", (55, 14), "left"),
+        Link("pine_ladder", (0, 30, 1, 3), "pine_hollow", (55, 8), "left"),
         Link("pine_ladder", (17, 2, 1, 3), "pine_rim", (3, 8), "right"),
         Link("pine_rim", (1, 6, 1, 3), "pine_ladder", (15, 4), "left"),
         Link("pine_rim", (54, 9, 1, 3), REPORT, WORK_ORDER_POSITION, "down", gate="13")),

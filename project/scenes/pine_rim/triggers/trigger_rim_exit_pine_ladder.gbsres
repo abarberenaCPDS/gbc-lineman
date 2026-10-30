@@ -1,0 +1,49 @@
+{
+  "_resourceType": "trigger",
+  "id": "e7350792-85d5-554c-be94-9885df903e0f",
+  "name": "Exit (to Pine Ladder)",
+  "prefabId": "",
+  "x": 1,
+  "y": 6,
+  "symbol": "trigger_rim_exit_pine_ladder",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "cab3520e-7ebe-5cae-8502-aad5817daa5d"
+    },
+    {
+      "command": "EVENT_OVERLAY_HIDE",
+      "args": {},
+      "id": "c4b12767-b147-5611-9220-85a1c5389601"
+    },
+    {
+      "command": "EVENT_SWITCH_SCENE",
+      "args": {
+        "x": {
+          "type": "number",
+          "value": 15
+        },
+        "y": {
+          "type": "number",
+          "value": 4
+        },
+        "direction": "left",
+        "sceneId": "260e1781-da9f-5323-bc93-5ee7f73af3c7",
+        "fadeSpeed": "2"
+      },
+      "id": "b404e3e0-5496-52db-aa4f-ead377e139fe"
+    }
+  ],
+  "leaveScript": [],
+  "_index": 0
+}

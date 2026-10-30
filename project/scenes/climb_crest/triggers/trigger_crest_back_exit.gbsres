@@ -1,0 +1,49 @@
+{
+  "_resourceType": "trigger",
+  "id": "68d29fef-59b7-53e6-847b-5a93cb6d22b7",
+  "name": "Back Exit (to Storm Climb)",
+  "prefabId": "",
+  "x": 1,
+  "y": 6,
+  "symbol": "trigger_crest_back_exit",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "aed1a185-e8ac-511f-933c-a3d4e21fd657"
+    },
+    {
+      "command": "EVENT_OVERLAY_HIDE",
+      "args": {},
+      "id": "16a40ae5-47fa-550e-af0a-ce514f6fe3de"
+    },
+    {
+      "command": "EVENT_SWITCH_SCENE",
+      "args": {
+        "x": {
+          "type": "number",
+          "value": 14
+        },
+        "y": {
+          "type": "number",
+          "value": 4
+        },
+        "direction": "left",
+        "sceneId": "e8778f37-44a7-5d3a-ad39-49d52fe4c5c7",
+        "fadeSpeed": "2"
+      },
+      "id": "cee69159-4b54-5676-b507-2af2860bc510"
+    }
+  ],
+  "leaveScript": [],
+  "_index": 0
+}

@@ -13,10 +13,10 @@ import voices
 ROOT = Path(__file__).resolve().parent.parent
 # Every in-play character: the actor and door resources whose boxes they speak.
 SPOKEN = {
-    "marta": ["service_opening/actors/marta", "storm_climb/actors/marta_checkpoint"],
-    "tomas": ["wind_ridge/actors/ridge_tomas", "wind_ridge/triggers/trigger_ridge_tomas_door"],
-    "rosa": ["signal_hill/actors/signal_rosa", "signal_hill/triggers/trigger_signal_rosa_door"],
-    "kiko": ["pine_hollow/actors/pine_kiko", "pine_hollow/triggers/trigger_pine_home_door"],
+    "marta": ["service_opening/actors/marta", "climb_crest/actors/marta_checkpoint"],
+    "tomas": ["ridge_saddle/actors/ridge_tomas", "ridge_saddle/triggers/trigger_ridge_tomas_door"],
+    "rosa": ["signal_porch/actors/signal_rosa", "signal_porch/triggers/trigger_signal_rosa_door"],
+    "kiko": ["pine_rim/actors/pine_kiko", "pine_rim/triggers/trigger_pine_home_door"],
 }
 
 

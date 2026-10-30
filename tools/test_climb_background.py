@@ -52,14 +52,15 @@ class ClimbBackgroundTests(unittest.TestCase):
                 elif cell == climb.COL_TOP:
                     self.assertEqual(slots[y][x], art.TIMBER, (x, y))
 
-    def test_summit_windows_alone_own_the_power_slot(self):
+    def test_no_house_on_the_summit(self):
+        """Amara's house and windows moved to the crest (test_crest_background.py)."""
         slots, _ = load()
         lit = {(x, y) for y, row in enumerate(slots) for x, slot in enumerate(row) if slot == art.WINDOW}
-        self.assertEqual(lit, set(climb.SUMMIT_WINDOW_TILES))
+        self.assertEqual(lit, set())
 
     def test_transformers_are_hardware_with_bushings_in_their_stage_slot(self):
         slots, proxy = load()
-        for line in climb.LINES:
+        for line in climb.boxes_in(climb.CLIMB_SCENE):
             top, body = climb.transformer_tiles(line["box"])
             stage = line["number"]
             for x, y in body:
@@ -73,14 +74,15 @@ class ClimbBackgroundTests(unittest.TestCase):
         hardware = {(x, y) for y, row in enumerate(slots) for x, slot in enumerate(row) if slot == art.HARDWARE}
         sx0, sx1, sy0, sy1 = climb.SUBSTATION_TILES
         substation = {(x, y) for x in range(sx0, sx1 + 1) for y in range(sy0, sy1 + 1)}
-        bodies = {cell for line in climb.LINES for cell in climb.transformer_tiles(line["box"])[1]}
+        bodies = {cell for line in climb.boxes_in(climb.CLIMB_SCENE) for cell in climb.transformer_tiles(line["box"])[1]}
+        self.assertEqual(len(bodies), 4 * 4, "transformers 1-4 only; transformer 5 is on the crest")
         self.assertEqual(hardware, substation | bodies)
 
     def test_wire_tiles_light_only_their_own_stage(self):
         """In slots 5 and 6, every non-zero index is a stage colour drawn by that stage's wire or bushing."""
         slots, proxy = load()
         bushing = {}
-        for line in climb.LINES:
+        for line in climb.boxes_in(climb.CLIMB_SCENE):
             bx, by = line["box"]
             left, top = bx * 8, (by - climb.TRANSFORMER_H + 1) * 8
             for dy, row in enumerate(art.TRANSFORMER_ART):
@@ -115,6 +117,8 @@ class ClimbBackgroundTests(unittest.TestCase):
             self.assertGreaterEqual(len(shown), 8, f"stage {stage} barely visible")
             for x, y in shown:
                 self.assertEqual(grid[y][x], climb.COL_EMPTY, "wires are drawn on open air only")
+        # Stage 5 reaches the right edge on the edge-port row (the crest picks it up there).
+        self.assertEqual(slots[climb.EDGE_PORT_ROW][climb.MAP_W - 2], climb.stage_slot(5))
 
     def test_background_tile_budget(self):
         image, slots = art.make_background()
