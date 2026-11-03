@@ -20,17 +20,18 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Current gameplay round (2026-11-03):** feedback-and-flow prototype 🔄 on
-`feat/experience-feedback` in sibling `../gb-mr-cfe-experience`. Abe approved the
-experience-review advice. R1/R2/R3/R4 and the short R7 home-cue candidate are
-implemented; **502 tests pass**, deterministic regeneration verified, and native
-recovery/retrieval/reward checks passed. Human browser/listening/hardware acceptance
-remains open. Conditional R5/R6/R8/R9/R10 trials remain sequenced behind that
-evidence, as advised. See `docs/GAME_EXPERIENCE_REVIEW.md` implementation record
-and `docs/HANDOFF.md`. VERSION stays `0.19.0-dev`; existing tags unchanged.
+**Current gameplay round (2026-11-03):** experience pilots 🔄 on
+`feat/experience-feedback` in sibling `../gb-mr-cfe-experience`. R1–R4/R7 are
+implemented at `32f3ba1`; continued with crest safe-span R8 and resolved ending
+reprise R10 candidates. **512 tests pass**, 645 deterministic outputs; native
+phase/repair/reentry and report→title→story cue checks passed. Human listening,
+recognition and hardware gates remain open. New web export built, but preview
+replacement returned an UNKNOWN recording-close acknowledgement; old saved player
+and listener preserved. See current `docs/HANDOFF.md` and the experience review's
+continuation record. VERSION stays `0.19.0-dev`; existing tags unchanged.
 
-**Last updated:** 2026-11-03 · **Feedback prototype implemented and native-checked;
-502 tests pass; live worktree preview; human acceptance open.**
+**Last updated:** 2026-11-03 · **R8/R10 candidates implemented and native-checked;
+512 tests pass; preview close unresolved; human acceptance open.**
 
 **Character names (2026-10-26, Abe: "use names from all different countries"):** Marta → **Amara** (Nigeria), Tomás → **Hiroshi** (Japan), Rosa → **Priya** (India), Kiko → **Emil** (Denmark). Only player-visible text changed; resource keys, file names, symbols and editor variable names keep the old names (`opening_marta`, `tomas.png`, `var_rosa_home_powered`…) so stable IDs hold. Older log entries below keep the names used at the time.
 
@@ -684,6 +685,8 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-11-03 | R8/R10 experience pilots | After reading Abe's linked review task, continued from `32f3ba1`: crest line-5 repair persistently disables one span with queued-phase guards and explicit custom-script actor binding; separate 8s D-major reprise carries report→title and idle replay restarts normal Intro B. Existing intro/gameplay scores, other hazards, geometry and art unchanged. | 512 tests; 645 deterministic files; native warning/active/rest repair + real reentry and music pointer traces. Final ROM `a61696ce...`, web export `98c45eae...`. Old Chrome state saved at10600 before replacement; plugin reported UNKNOWN recording-close acknowledgement, old listener/export preserved. Human taste and physical acceptance open; see review continuation and HANDOFF. |
+| 2026-11-03 | Session summary saved | At Abe's request, saved [SESSION_SUMMARY_2026-11-03.md](SESSION_SUMMARY_2026-11-03.md): implementation commit/worktree, delivered proposals, verification, artifact identities, preview state, and remaining human gates. | Documentation only; implementation remains `32f3ba1`. |
 | 2026-11-03 | Experience advice implementation | Abe approved the review and requested sibling worktree/branch. Built `feat/experience-feedback`: R1 named/need-specific rewards, R2 once-per-job remote cable-return guidance after respawn, R3 one shock cue, R4 first-use teaching then quiet routine success + shorter Emil briefing + movement on existing opening page, R7 220ms home-completion replacement cue. Conditional recognition/safe-span/score changes remain staged behind player/listening evidence per the review. VERSION/tags, geometry, intro/music and accepted art retained. | 502 tests; 642 deterministic asset/resource files; project health 0/0/0; native recovery/retrieval and Amara speech/CLOSED/re-entry recordings; final logo-start ROM `8ee9a676...`, 512 KiB; separate web ROM `3f53f857...`. Preview served; browser host unavailable; listening and hardware acceptance unverified. See review implementation record for exact hashes, recordings and URL. |
 | 2026-11-03 | Multidisciplinary experience review ✅ | Completed all fourteen requested advisory roles with explicit model overrides: Astra for story/creative/supervisors, Terra for storyboard workers and character/background/color design, Sol for music design/arrangement/SFX, Luna for script/music continuity. Goal: improve the gaming experience. Report `docs/GAME_EXPERIENCE_REVIEW.md` consolidates ten prioritized proposals, fourteen role contributions, storyboard/cue tables, conflicts resolved, validation and decisions for Abe. Current authored RGB/background and character reference sheets included. | Advisory only, baseline `c1e7120` / `0.19.0-dev`; at most five parallel workers. All completed; storyboard supervisor read workers and story editor, music supervisor read all four audio specialists. Main corrected internal-title-key and unused ladder-animation concerns; current RGB review dropped broad shaft redesign. Source/binary/WAV/static-visual evidence separated from prior native checks, hypotheses and listening/play limits. Documentation and reference images only; no game edits, builds or preview interruptions. Implementation proposals await Abe's review. |
 | 2026-11-03 | Review accepted ✅ | Abe: "very good, let's commit this version." Accepted the reviewed landing/recovery fixes for commit with generated assets and verification documentation. | 490 tests passed in the completed review; final diff checks pass and logo start is restored. VERSION stays `0.19.0-dev`; its existing tag and `stable` stay unchanged. Local `opencode.jsonc` excluded. No flash requested; hardware acceptance remains open. |

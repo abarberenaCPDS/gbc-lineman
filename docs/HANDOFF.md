@@ -1,64 +1,70 @@
-# Session handoff: Lineman feedback prototype (2026-11-03)
+# Session handoff: experience pilots (November 3, 2026)
 
 Continue in `/Users/abe/src/modretro-chromatic/gb-mr-cfe-experience`, branch
-`feat/experience-feedback`, based on `c1e7120`. The original main checkout and its
-uncommitted review/handoff/local config were preserved. No remote, merge, tag or
-flash. VERSION remains `0.19.0-dev` for this prototype.
+`feat/experience-feedback`. Main checkout and its uncommitted review/local config
+are preserved. VERSION `0.19.0-dev`; no tag, merge, remote or flash changes.
 
-Abe approved implementing `docs/GAME_EXPERIENCE_REVIEW.md` as advised. The
-recommended first feedback-and-flow prototype is implemented: R1/R2/R3/R4 and
-the short R7 cue candidate. **Read that document's implementation record for the
-complete per-proposal status, evidence and human gates.** R5/R6/R9 are recognition
-checks; R8 safe-span and R10 music changes remain subsequent controlled trials.
-Do not represent those conditional ideas as implemented or human-accepted.
+## Current implementation
 
-## Delivered
+- `32f3ba1`: R1–R4/R7 feedback prototype: named/need-specific rewards, once-per-job
+  remote cable-return guidance, one shock cue, less routine modal text, short
+  household-completion signature. See `SESSION_SUMMARY_2026-11-03.md`.
+- Follow-up: **R8** crest span becomes persistently safe after line 5 repair;
+  immediate cleanup and queued-phase guards; explicit arc actor binding through
+  the final-box custom script. Only this span changes; first-pass waits unchanged.
+- **R10** new separate 8s D-major ending reprise, report→title; title idle story
+  replay still explicitly restarts Intro B, opening starts gameplay music.
+- See `GAME_EXPERIENCE_REVIEW.md`, section “Continuation: R8 and R10 candidates,”
+  for exact native recordings, scoped evidence, and remaining human gates.
 
-- Amara has named/voiced personal reward, separate narrated CLOSED; Hiroshi's
-  mandatory payoff acknowledges machine response and easier breathing.
-- First remote cable loss per job explains its original pole/source scene after
-  respawn. Shared vars 50/51 reset at fresh jobs, persist through internal edges.
-- Hits request only the existing shock WAV; 12f shake + 12f hold unchanged.
-- First pickup/ordinary powered connection teaches once per job (52/53); later
-  successes use Carry/HUD/wires/SFX. Errors/upstream-dark/final directions remain.
-  Emil has one actionable entry page; opening adds same-page movement.
-- Home rewards alone use the new 220ms E-G-B cue. Regenerate through job profiles
-  or `python3 tools/make_completion_sfx.py`. Existing connect/music untouched.
+## Verification
 
-## Verified
+**512 tests pass**, all profiles regenerated, **645 files** unchanged on repeat
+generation. New UGE binary decoded notes/instruments/effects/orders match source;
+repeat render identical. All 38 existing music/engine/settings hashes unchanged.
+MCP health 0 errors/warnings/info. Test starts restored; production boots logo.
 
-- Managed-Python full suite: **502 tests pass**. All eight profiles regenerated;
-  second pass leaves **642 files byte-identical**. `git diff --check` passes.
-- Strong MCP project health: 0 errors/warnings/info. Existing art, music, engine,
-  geometry and normal logo start unchanged; no fixture settings committed.
-- Exact native final ROM: `build/rom/lineman-experience.gbc`, 524288 bytes,
-  SHA-256 `8ee9a6765da62177d59f35d5fb675727bc9be556c82358388fed30f7320dd0fd`.
-  Valid header; source debug boots Abe's Games Logo at frame 120.
-- Temporary native fixtures: remote-loss hint → original pole retrieval → quiet
-  later pickup; Amara named reward → separate CLOSED → no repeat on door reentry.
-  Recorded in `artifacts/playtests/experience-recovery` and `experience-amara`.
-  Seeds/test starts restored through generators. Exact identities and evidence
-  limits are in the review. Native final ROM is distinct from web export.
+- Native final: `build/rom/lineman-experience-pilots.gbc`, 524288 bytes, SHA-256
+  `a61696cebd77482bea71cf8443133d9b9f0d4816830046e915ec5ffe2d216a83`.
+  Source debug: Abe's Games Logo at frame 120.
+- Web export: `build/web-experience-pilots`, SHA-256
+  `98c45eae463a3702d2b218fe3ef4ff563317f1bf98a367db5f3a1bfde618372d`.
+  Build succeeded; not installed into the live preview.
+- Retained native evidence: `artifacts/playtests/experience-span-pilot` and
+  `experience-ending-pilot`. Seeded fixtures and SELECT→production box dispatch
+  are documented; they do not prove full-game, human taste or hardware acceptance.
 
-## Preview and next human checkpoint
+Regenerate ending with managed Python:
+`tools/make_project.py tickets --render-music --verify` (offline installed Docker
+image). Other profiles retain their normal commands.
 
+## Preview close unresolved — preserve before recovery
+
+Saved old Chrome player at frame10600, state ID
+`07c33040fc5e3b34c4a9a8d190abf6eb73d11368a0ba637eb6ea26a42139ea97`.
+Exact old ROM is `3f53f857...`; keep old `build/web-experience` export for it.
+Player is paused. Do not restore this state into the new ROM.
+
+Attempt to show the successfully built new export returned:
+**Browser recording close acknowledgement is UNKNOWN.**
+
+Status confirms old listener remains open with unresolved closure. Do not replay
+the uncertain close, force a replacement, kill its process, or erase recordings.
+Resolve original close/plugin ownership before publishing the verified new export.
+Chrome automation host unavailable; no browser or listening verdict claimed.
+
+Old URL (serves R1–R4/R7, **not** R8/R10):
 http://127.0.0.1:56988/aac254e162594eccf2a143c73c41faeb4d9e65a2a2865320c3fa0ff5085c6a2e/
 
-Serves `build/web-experience`, web ROM SHA-256
-`3f53f857643361b225c252dad13f2d0859d497ce89959666a5e8a7c684feb814`.
-Listener open; verified cached export. Keep it available for Abe. Built-in browser
-and Chrome automation host unavailable; no agent browser/listening verdict.
-Abe cited old Chrome URLs at 54764 and 62832. At final check, 54764 served HTTP200;
-62832 refused connections. Do not replace unknown old listeners or lose their state.
+## Next human checks
 
-Compare a complete job's interruptions and return guidance; audition shock across
-ten retries, all four completion cues and two full 48-second music loops. Check
-muted hazard recognition, paired handoffs, Carry/device/resident recognition in
-native 1x/grayscale. Hardware/readability/audio acceptance remains open. Only then
-choose a warning/marker, safe-span or resolved-ending trial. This is the advised
-playable checkpoint, not full R1-R10 or hardware acceptance.
+Compare crest before/after repair and reentry; audition report/reprise/title/idle
+replay; review pickup/connection/hit comfort over full jobs and two gameplay loops.
+R5/R6/R9 hazard/handoff/Carry/resident/device recognition remains evidence-led;
+no extra audio warning, marker/art sweep, or lighter arrangement added. Human
+listening and physical Chromatic acceptance remain open.
 
-Reusable continuation: **“Read docs/HANDOFF.md and the experience review's
-implementation record. Continue from Abe's feedback on the prototype, preserve
-accepted intro/art/geometry/cable return, and keep native/browser/listening/hardware
-evidence separate.”**
+Continuation prompt: “Read docs/HANDOFF.md and the experience review continuation.
+Preserve the captured old preview state and resolve its original UNKNOWN close
+without replaying it. Review the verified R8/R10 candidates with Abe and keep native,
+browser, listening and physical-device evidence separate.”

@@ -5,7 +5,12 @@
   "symbol": "script_storm_climb_summit",
   "description": "Plug in the summit cable and refresh the grid chain.",
   "variables": {},
-  "actors": {},
+  "actors": {
+    "0": {
+      "id": "0",
+      "name": "Downed Span Arc (crest) 1"
+    }
+  },
   "script": [
     {
       "command": "EVENT_IF",
@@ -422,6 +427,42 @@
                         "id": "703fca7f-60e2-5084-9439-932e3d9fdd77"
                       }
                     ]
+                  }
+                },
+                {
+                  "command": "EVENT_IF",
+                  "args": {
+                    "condition": {
+                      "type": "eq",
+                      "valueA": {
+                        "type": "variable",
+                        "value": "7"
+                      },
+                      "valueB": {
+                        "type": "number",
+                        "value": 1
+                      }
+                    }
+                  },
+                  "id": "d2d4f5bd-98d0-59a1-be15-35b80c3f65b5",
+                  "children": {
+                    "true": [
+                      {
+                        "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+                        "args": {
+                          "actorId": "0"
+                        },
+                        "id": "e27aa392-15fd-531e-86db-eaab7bf193e4"
+                      },
+                      {
+                        "command": "EVENT_ACTOR_HIDE",
+                        "args": {
+                          "actorId": "0"
+                        },
+                        "id": "86fd689d-60e8-5302-a57b-2b2ded7435d5"
+                      }
+                    ],
+                    "false": []
                   }
                 },
                 {

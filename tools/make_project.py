@@ -70,10 +70,15 @@ def main() -> None:
     except ImportError:
         parser.error("Pillow is required; use the managed toolchain Python, not an unprepared system interpreter")
     if args.render_music:
-        run("tools/compose_intro.py" if args.profile == "intro" else "tools/compose_climb.py",
-            "--render")
+        composer = {"intro": "compose_intro.py", "tickets": "compose_ending.py"}.get(
+            args.profile, "compose_climb.py")
+        run("tools/" + composer, "--render")
     elif args.profile != "lab" and not (ROOT / "assets/music/cfe_storm_climb.uge.gbsres").exists():
         parser.error("native music is missing; use --render-music with the installed uge-builder image")
+    if args.profile == "tickets":
+        if not (ROOT / "assets/music/cfe_ending_reprise.uge.gbsres").exists():
+            parser.error("ending music is missing; use tickets --render-music with the installed uge-builder image")
+        run("tools/compose_ending.py")
     if args.profile in {"climb", "ridge", "rosa", "kiko"}:
         run("tools/make_completion_sfx.py")
     for script in PROFILES[args.profile]:
@@ -92,7 +97,7 @@ def main() -> None:
                     "rosa": ["test_rosa*.py", "test_ridge.py", "test_scenes.py", *SHARED_TESTS],
                     "kiko": ["test_kiko*.py", "test_rosa.py", "test_scenes.py", *SHARED_TESTS],
                     "intro": ["test_intro*.py", "test_opening.py", "test_scenes.py"],
-                    "tickets": ["test_tickets.py", "test_scenes.py"],
+                    "tickets": ["test_tickets.py", "test_ending.py", "test_scenes.py"],
                     "lab": ["test_lab*.py", "test_scenes.py"]}
         for pattern in patterns[args.profile]:
             if not any((ROOT / "tools").glob(pattern)):

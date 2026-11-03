@@ -32,11 +32,12 @@ EMPTY_ROW = [0] * 20
 sys.path.insert(0, str(TOOLS_DIR))
 try:
     import intro  # noqa: E402  (palette names, title scene, hero sprite)
+    import ending  # noqa: E402  (resolved reprise music contract)
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
     import tickets  # noqa: E402  (sole source of truth for this scene set)
     import voices  # noqa: E402  (narrator blip)
 except ModuleNotFoundError as error:
-    if error.name in {"intro", "make_climb_scene", "tickets", "voices", "climb", "opening",
+    if error.name in {"intro", "ending", "make_climb_scene", "tickets", "voices", "climb", "opening",
                       "ridge", "kiko", "rosa"}:
         raise SystemExit(
             f"cannot generate the ticket scenes: tools/{error.name}.py is missing"
@@ -183,10 +184,10 @@ def storm_report_script() -> list[dict[str, Any]]:
         victory_sound(shared.sidecar_id(VICTORY_SOUND, "sound"), "storm-report:victory"),
         overlay_hide("storm-report:hide-overlay-exit"),
         fade_out("storm-report:fade"),
-        # The title has no music of its own (the logo starts the theme), so restart
-        # the intro theme here instead of carrying the job's music onto the title.
-        ev("EVENT_MUSIC_PLAY", {"musicId": intro.THEME_IDS[intro.DEFAULT_THEME]},
-           "storm-report:title-theme"),
+        # The short resolved reprise carries into the silent title; its idle
+        # replay enters the story, which explicitly restarts the normal Intro B.
+        ev("EVENT_MUSIC_PLAY", {"musicId": ending.MUSIC_ID},
+           "storm-report:ending-reprise"),
         switch_scene(tickets.TITLE_SCENE_ID, 0, 0, "right", "storm-report:to-title"),
     ]
 

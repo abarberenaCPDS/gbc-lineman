@@ -564,7 +564,8 @@ CREST_GUST_LANES = [(10, 21, 23)]       # on rock B, guarding the tap onto catwa
 CREST_GUST_TIMINGS = (GUST_WARNING_FRAMES, GUST_ACTIVE_FRAMES, 70)
 CREST_WHIP_LANES = [(7, 33, 34)]        # at catwalk C's end, hanging from line 5's wire
 CREST_WHIP_START_DELAYS = [20]
-# The fallen span on the floor goes live once lines 1-4 are repaired.
+# R8 pilot: the fallen span goes live after lines 1-4, preserving the carry-5
+# challenge; its crest-specific chain makes it stay safe once line 5 is repaired.
 CREST_FALLEN_SPANS = [{"live_after": 4, "arcs": [(13, 11, 12)], "delays": [0]}]
 
 # Stage 5's wire enters at the left edge on the edge-port row, runs over the

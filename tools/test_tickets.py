@@ -203,13 +203,29 @@ class StormReportTests(unittest.TestCase):
         self.assertEqual(last["args"]["sceneId"], tickets.TITLE_SCENE_ID)
         self.assertEqual(last["args"]["fadeSpeed"], "2")
 
-    def test_title_gets_the_intro_theme_not_the_job_music(self):
-        # Abe on 0.16.0-dev: after the last mission the title kept the job's music.
+    def test_title_inherits_the_resolved_ending_reprise(self):
+        # The report cue is followed by the resolved reprise; title inherits it.
         import intro
+        import ending
         music = commands(self.script, "EVENT_MUSIC_PLAY")
-        self.assertEqual([m["args"]["musicId"] for m in music],
-                         [intro.THEME_IDS[intro.DEFAULT_THEME]])
+        self.assertEqual([m["args"]["musicId"] for m in music], [ending.MUSIC_ID])
         self.assertEqual(self.script[-2]["command"], "EVENT_MUSIC_PLAY")
+        self.assertNotEqual(ending.MUSIC_ID, intro.THEME_IDS[intro.DEFAULT_THEME])
+
+    def test_report_narration_and_victory_cue_still_precede_reprise(self):
+        import ending
+        report = next(i for i, entry in enumerate(self.script)
+                      if entry["command"] == "EVENT_TEXT")
+        cue = next(i for i, entry in enumerate(self.script)
+                   if entry["command"] == "EVENT_SOUND_PLAY_EFFECT")
+        reprise = next(i for i, entry in enumerate(self.script)
+                       if entry["command"] == "EVENT_MUSIC_PLAY")
+        switch = next(i for i, entry in enumerate(self.script)
+                      if entry["command"] == "EVENT_SWITCH_SCENE")
+        self.assertLess(report, cue)
+        self.assertLess(cue, reprise)
+        self.assertLess(reprise, switch)
+        self.assertEqual(self.script[reprise]["args"]["musicId"], ending.MUSIC_ID)
 
 
 class FileTests(unittest.TestCase):

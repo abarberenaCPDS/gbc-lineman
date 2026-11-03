@@ -41,10 +41,91 @@ SCENE_INDEX = 12
 SCENE_ID = scenes.REGISTRY[FOLDER]["id"]
 BACKGROUND_ID = shared.resource_id("background:climb-crest")
 VAR_DOOR = shared.VARIABLE_CHECKPOINTS_REACHED      # var 0: Amara's door reached
-CHAIN = shared.make_chain(FOLDER)
 SUMMIT = shared.LINE_BY_KEY["summit"]
 # Span arcs are numbered across the job (1A has span arc 1), so actor IDs stay unique.
 SPAN_ARC_FIRST_NUMBER = len(climb.span_arc_lanes()) + 1
+
+
+class CrestChain(shared.ClimbChain):
+    """Crest-only chain behavior for the repaired downed span pilot."""
+
+    def _span_final_repair_guard(self, number: int, phase: str, continuation: list[dict[str, Any]]):
+        key = f"span-arc:{number}:final-repair-{phase}"
+        safe = [
+            self.event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": "$self$"}, f"{key}:disable"),
+            self.event("EVENT_ACTOR_HIDE", {"actorId": "$self$"}, f"{key}:hide"),
+            self.wait_event(1, f"{key}:tick"),
+        ]
+        return self.if_value(climb.LINES[-1]["live_var"], 1, key, safe, continuation)
+
+    def span_arc_actor(self, number, lane, start_delay, sprite_id, live_after, *, timings, symbol, name):
+        actor = super().span_arc_actor(number, lane, start_delay, sprite_id, live_after,
+                                       timings=timings, symbol=symbol, name=name)
+        warning, active, rest = timings
+        key = f"span-arc:{number}"
+
+        def own(command, suffix, **args):
+            return self.event(command, {"actorId": "$self$", **args}, f"{key}:{suffix}")
+
+        # Recheck after every wait. A box script also hides/disables immediately;
+        # these gates prevent an already queued phase from turning it back on.
+        # Preserve the original direction trick and its start-delay semantics.
+        first_true = [own("EVENT_ACTOR_SET_DIRECTION", "started", direction={"type": "direction", "value": "up"})]
+        if start_delay:
+            first_true.append(self.wait_event(start_delay, f"{key}:start-delay"))
+        cycle = [self.branch_event("EVENT_IF_ACTOR_DIRECTION",
+                                   {"actorId": "$self$", "direction": {"type": "direction", "value": "down"}},
+                                   f"{key}:first-cycle", first_true),
+                 self._span_final_repair_guard(number, "after-delay", [
+                     own("EVENT_ACTOR_SET_STATE", "warning-state", spriteStateId="Warning", loopAnim=True),
+                     own("EVENT_ACTOR_SHOW", "warning-visible"),
+                     self.wait_event(warning, f"{key}:warning-time"),
+                     self._span_final_repair_guard(number, "after-warning", [
+                         own("EVENT_ACTOR_SET_STATE", "arc-state", spriteStateId="Arc", loopAnim=True),
+                         own("EVENT_ACTOR_COLLISIONS_ENABLE", "arc-active"),
+                         self.wait_event(active, f"{key}:arc-time"),
+                         self._span_final_repair_guard(number, "after-active", [
+                             own("EVENT_ACTOR_COLLISIONS_DISABLE", "rest-safe"),
+                             own("EVENT_ACTOR_HIDE", "rest-hidden"),
+                             self.wait_event(rest, f"{key}:rest-time"),
+                             self._span_final_repair_guard(number, "after-rest", []),
+                         ]),
+                     ]),
+                 ])]
+        cycle.insert(0, own("EVENT_ACTOR_COLLISIONS_DISABLE", "cycle-safe"))
+        actor["updateScript"] = [self.if_at_least(self.chain_var, live_after, f"{key}:upstream", cycle, [
+            own("EVENT_ACTOR_COLLISIONS_DISABLE", "dead-safe"),
+            own("EVENT_ACTOR_HIDE", "dead-hidden"),
+            self.wait_event(1, f"{key}:dead-tick"),
+        ])]
+        return actor
+
+    def chain_refresh_events(self, key):
+        events = super().chain_refresh_events(key)
+        # This runs synchronously on the final box repair and on scene entry.
+        span_actor_id = self.actor_id(f"span-arc:{SPAN_ARC_FIRST_NUMBER}")
+        events.append(self.if_value(climb.LINES[-1]["live_var"], 1, f"{key}:crest-span-safe", [
+            self.event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": span_actor_id},
+                       f"{key}:crest-span-disable"),
+            self.event("EVENT_ACTOR_HIDE", {"actorId": span_actor_id},
+                       f"{key}:crest-span-hide"),
+        ]))
+        return events
+
+    def box_script_actor_bindings(self, line):
+        bindings = super().box_script_actor_bindings(line)
+        if line["number"] == climb.LINE_COUNT:
+            bindings.append((self.actor_id(f"span-arc:{SPAN_ARC_FIRST_NUMBER}"), "Downed Span Arc (crest) 1"))
+        return bindings
+
+
+CHAIN = CrestChain(
+    rid=shared.resource_id, lines=shared.LINES, chain_var=climb.VAR_CHAIN_LIVE,
+    lines_var=climb.VAR_LINES_LIVE, carrying_var=shared.VAR_CARRYING_CABLE_ID,
+    near_var=shared.VAR_NEAR_ID, line_bg_slot=climb.LINE_BG_SLOT,
+    line_bg_slot_2=climb.LINE_BG_SLOT_2, text=shared.CLIMB_TEXT, say=shared.say,
+    hud=shared.hud_events, background_boxes=True, scene=FOLDER,
+)
 
 event = shared.event
 if_value = shared.if_value

@@ -181,18 +181,53 @@ class CrestSceneTests(unittest.TestCase):
         self.assertEqual(npc["args"]["condition"]["valueB"]["value"], grid_chain.NPC_ZONE)
         self.assertEqual(npc["children"]["true"], [], "Amara's zone leaves native talk")
         calls = [e for e in flatten([b]) if e["command"] == "EVENT_CALL_CUSTOM_EVENT"]
-        self.assertEqual([c["args"] for c in calls],
-                         [{"customEventId": shared.CHAIN.box_script_id(shared.LINE_BY_KEY["summit"])}])
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(calls[0]["args"], {
+            "customEventId": crest.CHAIN.box_script_id(shared.LINE_BY_KEY["summit"]),
+            "$actor[0]$": crest.CHAIN.actor_id(f"span-arc:{crest.SPAN_ARC_FIRST_NUMBER}"),
+        })
 
     def test_transformer_five_box_script_lights_the_whole_chain(self):
         box = Fixture.boxes["project/scripts/storm_climb_box_summit.gbsres"]
-        self.assertEqual(box["actors"], {}, "pole 5 is in the climb; its init stands it up")
+        self.assertEqual(box["actors"], {"0": {"id": "0", "name": "Downed Span Arc (crest) 1"}},
+                         "the final repair refresh hides the crest span through its explicit actor binding")
         events = list(flatten(box["script"]))
         sets = {(e["args"]["variable"], e["args"]["value"]["value"]) for e in events
                 if e["command"] == "EVENT_SET_VALUE"}
         self.assertIn((climb.VAR_LINE_LIVE, 1), sets)
         self.assertIn((climb.VAR_CHAIN_LIVE, 5), sets)
+        self.assertTrue(any(e["command"] == "EVENT_ACTOR_HIDE" for e in events))
+        self.assertTrue(any(e["command"] == "EVENT_ACTOR_COLLISIONS_DISABLE" for e in events))
         self.assertIn(["All 5 lines live!\nGo see Amara."], texts(box["script"]))
+
+    def test_crest_span_keeps_first_pass_cycle_but_final_repair_gates_every_phase(self):
+        arc = Fixture.by_symbol["crest_span_arc_01"]
+        outer = arc["updateScript"][0]
+        self.assertEqual(outer["args"]["condition"]["valueB"]["value"], 4)
+        waits = [e["args"]["frames"]["value"] for e in flatten(arc["updateScript"])
+                 if e["command"] == "EVENT_WAIT"]
+        self.assertEqual([n for n in waits if n in (rosa.ARC_WARNING_FRAMES,
+                                                     rosa.ARC_ACTIVE_FRAMES,
+                                                     rosa.ARC_REST_FRAMES)],
+                         [rosa.ARC_WARNING_FRAMES, rosa.ARC_ACTIVE_FRAMES, rosa.ARC_REST_FRAMES])
+        gates = [e for e in flatten(arc["updateScript"])
+                 if e["command"] == "EVENT_IF"
+                 and e["args"]["condition"]["valueA"].get("value") == climb.LINES[-1]["live_var"]]
+        self.assertEqual(len(gates), 4, "after delay, warning, active and rest: queued phases cannot revive the span")
+        for gate in gates:
+            safe_commands = [e["command"] for e in flatten(gate["children"]["true"])]
+            self.assertIn("EVENT_ACTOR_COLLISIONS_DISABLE", safe_commands)
+            self.assertIn("EVENT_ACTOR_HIDE", safe_commands)
+
+    def test_chain_refresh_immediately_hides_span_after_line_five_and_on_reentry(self):
+        refresh = crest.CHAIN.chain_refresh_events("reentry")
+        [cleanup] = [e for e in refresh if e["id"] == shared.resource_id("event:reentry:crest-span-safe")]
+        self.assertEqual(cleanup["args"]["condition"]["valueA"]["value"], climb.LINES[-1]["live_var"])
+        self.assertEqual([e["command"] for e in cleanup["children"]["true"]], [
+            "EVENT_ACTOR_COLLISIONS_DISABLE", "EVENT_ACTOR_HIDE",
+        ])
+        self.assertEqual(cleanup["children"]["true"][0]["args"]["actorId"],
+                         crest.CHAIN.actor_id(f"span-arc:{crest.SPAN_ARC_FIRST_NUMBER}"))
 
     def test_amaras_door_needs_all_five_lines_and_is_once_only(self):
         door = Fixture.triggers_by_symbol["trigger_marta_arrival"]
