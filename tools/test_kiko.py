@@ -93,7 +93,10 @@ class ContractTests(unittest.TestCase):
             spec, contract = specs[folder], kiko.SCENES[folder]
             with self.subTest(folder=folder):
                 self.assertEqual((contract.map_w, contract.map_h), (spec.width, spec.height))
-                self.assertEqual(contract.collision_grid(), spec.grid)
+                expected = [row[:] for row in spec.grid]
+                if folder == HOLLOW:
+                    expected[9][56] = kiko.COL_TOP  # full-width return landing
+                self.assertEqual(contract.collision_grid(), expected)
                 self.assertEqual(sorted(contract.kinded_lanes()), sorted(spec.lanes))
                 self.assertEqual(sorted(contract.boards), sorted(spec.boards))
                 self.assertEqual([link.rect for link in contract.links()], [rect for _, rect in spec.triggers])
@@ -104,7 +107,7 @@ class ContractTests(unittest.TestCase):
                 house = contract.house or {}
                 self.assertEqual([house["npc"]] if house else [], spec.npcs)
                 self.assertEqual([house["device"]] if house else [], spec.devices)
-        self.assertEqual(kiko.collision_grid(), specs[HOLLOW].grid)
+        self.assertEqual(kiko.collision_grid(), kiko.SCENES[HOLLOW].collision_grid())
         self.assertEqual((kiko.MAP_W, kiko.MAP_H), (64, 18))
 
     def test_lines_are_global_with_scene_local_poles_and_boxes(self):

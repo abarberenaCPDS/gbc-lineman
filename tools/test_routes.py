@@ -63,6 +63,7 @@ import kiko
 import redesign_maps
 import ridge
 import rosa
+import scene_links
 import shaft
 
 MAX_RISE = 3       # tiles a jump climbs: one A tap per 3-tile shelf, as the contracts assume
@@ -136,6 +137,21 @@ class Routes:
                 if nxt not in seen:
                     seen.add(nxt)
                     todo.append(nxt)
+        return seen
+
+    def can_reach(self, targets) -> set[tuple[int, int]]:
+        """Reverse search: positions from which at least one target can be reached."""
+        previous = {p: [] for p in self.standable}
+        for source, destinations in self.adj.items():
+            for destination in destinations:
+                previous[destination].append(source)
+        seen = set(targets) & self.standable
+        todo = deque(seen)
+        while todo:
+            for source in previous[todo.popleft()]:
+                if source not in seen:
+                    seen.add(source)
+                    todo.append(source)
         return seen
 
     def zone(self, line) -> set[tuple[int, int]]:
@@ -473,6 +489,54 @@ class ContractRoutes(unittest.TestCase):
                     self.assertLessEqual({"folder", "grid", "start", "lines", "lanes", "boards", "exit"},
                                          set(scene))
                     self.assertTrue(all(kind in LANE_KINDS for kind, *_ in scene["lanes"]))
+
+    def test_internal_exits_remain_reachable_after_a_fall(self) -> None:
+        """A dropped cable must be retrievable from its upstream home scene.
+
+        Symmetric links alone do not prove the hero can climb back to a link.
+        Check every reachable standing tile, including lower recovery floors.
+        This is the static tap-jump model; native movement still needs testing.
+        """
+        for _, scene, _ in contract_scenes():
+            routes = Routes(scene)
+            reachable = set().union(*(routes.reach(entry) for entry in
+                                      scene.get("entries", [scene["start"]])))
+            for link in scene_links.from_scene(scene["folder"], scene_links.table("redesign")):
+                if not link.internal:
+                    continue
+                with self.subTest(source=link.source, target=link.target):
+                    recovery = routes.can_reach(routes.exit_tiles(link.rect))
+                    self.assertEqual(sorted(reachable - recovery), [],
+                                     "reachable ground strands the player away from an internal exit")
+
+    def test_arrivals_have_full_width_safe_footing(self) -> None:
+        for _, scene, _ in contract_scenes():
+            grid = scene["grid"]
+            for x, y in scene.get("entries", [scene["start"]]):
+                with self.subTest(folder=scene["folder"], entry=(x, y)):
+                    self.assertTrue(all(grid[y + 1][c] in (shaft.COL_TOP, shaft.COL_SOLID)
+                                        for c in (x, x + 1)))
+                    body = _hero_box((x, y))
+                    for _, row, x0, x1 in scene["lanes"]:
+                        self.assertFalse(body & {(c, row) for c in range(x0, x1 + 1)})
+                    for row, x0, x1 in scene["boards"]:
+                        self.assertFalse(body & {(c, row - 1) for c in range(x0, x1 + 1)})
+
+    def test_recovery_rule_detects_the_original_arrival_traps(self) -> None:
+        cases = {"climb_crest": (6, (7, 14), "storm_climb"),
+                 "ridge_saddle": (4, (5, 14), "wind_ridge")}
+        for _, scene, _ in contract_scenes():
+            if scene["folder"] not in cases:
+                continue
+            x1, floor, target = cases[scene["folder"]]
+            grid = [cells[:] for cells in scene["grid"]]
+            for row in (9, 10, 11):
+                grid[row][1:x1 + 1] = [shaft.COL_SOLID] * x1
+            broken = Routes({**scene, "grid": grid})
+            link = scene_links.link(scene["folder"], target, scene_links.table("redesign"))
+            with self.subTest(folder=scene["folder"]):
+                self.assertIn(floor, broken.reach(scene["start"]))
+                self.assertNotIn(floor, broken.can_reach(broken.exit_tiles(link.rect)))
 
 
 class SpecMapRoutes(unittest.TestCase):

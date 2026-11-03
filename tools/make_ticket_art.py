@@ -19,7 +19,7 @@ from make_climb_scene import collision_rle
 
 ROOT = tickets.ROOT
 BG_DIR = ROOT / "assets/backgrounds"
-PREVIEW_DIR = Path("/Users/abe/.claude/jobs/1189fb4d/tmp")
+PREVIEW_DIR = ROOT / "build" / "ticket-art"
 TILE = intro.TILE
 MAP_W, MAP_H = tickets.MAP_W, tickets.MAP_H
 WIDTH, HEIGHT = MAP_W * TILE, MAP_H * TILE

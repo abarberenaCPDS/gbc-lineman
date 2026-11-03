@@ -1,8 +1,59 @@
-# Session handoff: Lineman (2026-11-02): 0.19.0-dev on `feat/wind-ridge-lines`
+# Session handoff: Lineman (2026-11-02): 0.19.0-dev review on `main`
 
-Start a new session in the worktree `../gb-mr-cfe-wind-ridge` with:
+Start a new session in `/Users/abe/src/modretro-chromatic/gb-mr-cfe` with:
 **"Read docs/HANDOFF.md and continue."**
 `docs/PROJECT_PLAN.md` is the long-term record (progress log, newest rows near line 685).
+
+The former feature worktree is gone; its branch was merged into `main`.
+Abe accepted this round for commit on 2026-11-03: "very good, let's commit this version."
+VERSION remains `0.19.0-dev`; its existing tag stays on the earlier merge.
+Leave local `opencode.jsonc` uncommitted. No cartridge flash requested.
+
+## Current round (2026-11-02)
+
+- Abe accepted the intro sync and WP5 art: **"accepted, all good."** He requested a
+  frontier gameplay review, implementation, remaining native checks, and preview recovery.
+  **Accepted for commit on 2026-11-03.** No version bump, tag change or flash.
+- Frontier GPT-6 Astra reviewed all ten job routes and implemented four fairness fixes:
+  crest and saddle arrivals now have solid recovery steps below one-way timber, so two
+  short jumps regain the upstream exit; Wind Ridge and Pine Hollow return catwalks extend
+  one tile to support both columns of the hero. Obstacle mix/timings and tutorial unchanged.
+  A smaller independent worker checked art/collision linkage and hazard clearance.
+- New route checks cover recovery from every reachable standing tile and safe full-width
+  arrivals across all ten scenes. **490 tests pass** after all profiles regenerated.
+  Also fixed empty abandoned scene directories confusing registry tests and the ticket-art
+  preview's hardcoded old session path (now `build/ticket-art/`).
+- Native checks (unrecorded, original recordings preserved):
+  - Cable 5: pole pickup -> crest preserves var 6 = 5; hidden-cable hit clears it to 0,
+    line 5 remains dead; return to the original pole permits pickup again (var 6 = 5).
+    Baseline test ROM `c48d9bd5…`, frames 180–1080; gameplay state handling unchanged.
+  - Gully with cable 4: feet row 14 -> 17 -> 20, var 6 stays 4. Holding Down+A for
+    90 frames on the second drop stays at row 20. ROM `2e8bb960…`, frames 546–763.
+  - Saddle floor -> step (feet 11) -> timber (feet 8), two 6-frame A taps:
+    `68c13b62…`, frames 276–346. Crest recovery plus return to Storm Climb:
+    `a447c763…`, frames 360–543. Original maps were not proven runtime softlocks;
+    these improve short-tap recovery rather than maximum-jump capability.
+  - Internal music continuity: `fd78cb98…`, frames 180–276, climb -> crest. hUGE row
+    16 -> 33, order 0 unchanged, counter 99 -> 202; track bank 3/pointer 0x79df unchanged.
+    A temporary generator wrapper (`build/review-music-fixture.py`) seeds playback at a
+    summit test start; transition scripts are production code. Fixture and test start restored.
+    Normal-flow climb -> opening also continues: `9c228c5d…`, frames 3070–3138, row 21 -> 33.
+  - Sampled OAM: climb ascent peaks at 9/line; gully at 6; ladder ascent feet 32 -> 8
+    (`935e133d…`, frames 495–770) peaks at 7. Zero over-limit scanlines in these samples.
+    These are sampled routes, not every hazard phase/camera position or a full-game verdict.
+- All ten scenes analyzed: 84–198 effective BG tiles. Whole-map static OAM warnings remain
+  conservative: horizontal rows include off-screen actors; shafts depend on culling.
+- Final logo-start ROM: `build/rom/lineman-review.gbc`, 524288 B, SHA256
+  `e850ee012246d173c7b99d45b90e70a91652ec94551aaa0274d86979702ef7ef`, header valid;
+  native source debug confirms Abe's Games Logo at frame 120.
+- **Current web preview**, stable while Abe tests:
+  `http://127.0.0.1:62832/868951b201c95dc1d8411acbfa4b3a760283132af437193bc22b46537ea9bf59/`
+  serves `build/web-review`, ROM `1936436b…`. Listener open; no old unresolved closure in
+  this plugin session, so no restart required. Built-in browser host unavailable: the agent
+  could not open its tab. URL supplied to Abe; don't replace/reload this export during play.
+
+The sections below retain the previous round's implementation history; the current round
+and current URL above take precedence.
 
 ## Read first
 
@@ -48,26 +99,18 @@ you do emulator work or spawn workers.
 
 ## Left to do
 
-1. **Abe's feedback:** human listening of the intro sync (let the title loop back into the story),
-   plus a browser pass on the WP5 art.
-2. **Known art weak spots:** Priya's radio masts have low contrast, the gully lashings are faint,
-   and the signpost reads like a mailbox.
-3. **Native checks not done yet:**
-   - Cross-scene carry, and a hit sending the cable home.
-   - Gully Down+A drop-through descent.
-   - Music continuity across scene edges.
-   - OAM on the new routes beyond the ladder sample.
-4. **Preview listener:** the MCP reports an unresolved closure ("Browser recording close
-   acknowledgement is UNKNOWN"), so `web_preview` open/recover/close all refuse. The URL still
-   serves `build/web`. Restart the ModRetro Chromatic plugin to clear it, then reopen the preview.
-   Don't delete recordings.
-5. **Release bookkeeping:** after Abe accepts this round, tag `v0.19.0-dev`, or bump the patch
+1. **Abe's review of the geometry improvements**, especially recovery after a fall in the crest
+   and saddle and the widened return landings. Prior intro/art review is accepted.
+2. **Broader play coverage:** native evidence above covers the listed mechanisms and sampled
+   ascent routes, not every cross-scene cable, hazard phase or horizontal camera window.
+   Physical hardware acceptance of this round remains untested.
+3. **Release bookkeeping:** after Abe accepts this round, tag `v0.19.0-dev`, or bump the patch
    first (the music sync is a fix: `0.19.1-dev`; bump in a `chore(release)` commit and regenerate
    every profile). If he asks, flash the cart without asking again: build the committed ROM with
    the logo start, then fresh device discovery, then `rom_inspect`. Never auto-retry an uncertain
    write.
-6. Older open items stay in `docs/PROJECT_PLAN.md` and `docs/BUGS.md` (the seven inactive climb gust
-   triggers stay intentionally empty).
+4. Older open items stay in `docs/PROJECT_PLAN.md` and `docs/BUGS.md`; inactive climb gust
+   trigger resources stay intentionally empty.
 
 ## Verification recipe (native)
 

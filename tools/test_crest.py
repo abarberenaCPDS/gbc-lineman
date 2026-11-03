@@ -48,7 +48,12 @@ class CrestContractTests(unittest.TestCase):
     def test_contract_matches_the_spec_map(self):
         spec = redesign_maps.load()["climb_crest"]
         self.assertEqual((climb.CREST_W, climb.CREST_H), (spec.width, spec.height))
-        self.assertEqual(climb.crest_collision_grid(), spec.grid)
+        expected = [row[:] for row in spec.grid]
+        # Arrival rock becomes timber over a lower step, preserving its clear approach.
+        expected[9][1:7] = [climb.COL_TOP] * 6
+        for row in (10, 11):
+            expected[row][1:7] = [climb.COL_EMPTY] * 6
+        self.assertEqual(climb.crest_collision_grid(), expected)
         self.assertEqual(climb.CREST_START, spec.start)
         self.assertEqual([climb.CREST_AMARA], spec.npcs)
         self.assertEqual(spec.rows[climb.CREST_DOOR[1]][climb.CREST_DOOR[0]], "d")

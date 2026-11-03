@@ -535,11 +535,14 @@ CREST_W, CREST_H = 56, 18
 CREST_FLOOR_ROW = 15
 CREST_PORCH_ROW = 12
 CREST_CATWALK_ROW = 9
-CREST_PLATFORMS = [(CREST_CATWALK_ROW, 25, 37)]           # catwalk C, one-way timber
+CREST_PLATFORMS = [
+    (9, 1, 6),                         # arrival timber: jump back through from the step below
+    (CREST_CATWALK_ROW, 25, 37),         # catwalk C, one-way timber
+]
 CREST_SOLID_BLOCKS = [
     (0, 0, HUD_ROWS, CREST_H - 1),                        # left cliff wall
     (CREST_W - 1, CREST_W - 1, HUD_ROWS, CREST_H - 1),    # right cliff wall
-    (0, 6, 9, 14),                                        # arrival ledge under the back exit
+    (0, 6, 12, 14),                                       # recovery step below the arrival timber
     (0, CREST_W - 1, CREST_FLOOR_ROW, CREST_H - 1),       # floor and bedrock
     (20, 24, CREST_PORCH_ROW, 14),                        # rock B
     (38, CREST_W - 1, CREST_PORCH_ROW, 14),               # Amara's porch

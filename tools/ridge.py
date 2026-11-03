@@ -401,7 +401,7 @@ LAYOUTS = {
                 (15, 20, SURFACE_HIGH, GROUND_ROW - 1),    # plateau B: T1, pole 2
                 (35, 40, SURFACE_STEP, GROUND_ROW - 1)],   # rock C: T2, pole 3
         ledges=[(SURFACE_HIGH, 9, 14),     # C1: rock A -> plateau B (board, whip below)
-                (SURFACE_HIGH, 42, 56),    # D: rock C -> F (cable, gust, whip; gust on the floor)
+                (SURFACE_HIGH, 42, 57),    # D: support both columns of the (56, 8) return entry
                 (SURFACE_HIGH, 58, 61)],   # F: the board before the edge
         gusts=[(CHEST_HIGH, 47, 49), (CHEST_LOW, 49, 51)], gust_delays=[30, 0],
         whips=[(CHEST_LOW, 12, 13), (CHEST_HIGH, 53, 54)], whip_delays=[0, 50],
@@ -411,11 +411,12 @@ LAYOUTS = {
     ),
     SADDLE: Layout(
         SADDLE, scene_id=SADDLE_SCENE_ID, background_id=SADDLE_BACKGROUND_ID, name="Ridge Saddle",
-        blocks=[(1, 4, SURFACE_HIGH, GROUND_ROW - 1),      # arrival rock (same tier as F)
+        blocks=[(1, 4, SURFACE_STEP, GROUND_ROW - 1),      # recovery step below arrival timber
                 (13, 18, SURFACE_STEP, GROUND_ROW - 1),    # T3 and pole 4
                 (32, 37, SURFACE_TOP, GROUND_ROW - 1),     # summit rock D: T4, pole 5
                 (50, MAP_W - 2, SURFACE_STEP, GROUND_ROW - 1)],   # Hiroshi's porch
-        ledges=[(SURFACE_HIGH, 20, 31),    # C: pole 4 -> summit (board, gust)
+        ledges=[(SURFACE_HIGH, 1, 4),     # jump back through to the upstream exit after a fall
+                (SURFACE_HIGH, 20, 31),    # C: pole 4 -> summit (board, gust)
                 (SURFACE_HIGH, 38, 47)],   # E: summit -> porch (board, whip)
         gusts=[(CHEST_HIGH, 26, 28), (CHEST_LOW, 47, 49)], gust_delays=[20, 0],
         whips=[(CHEST_HIGH, 43, 44)], whip_delays=[20],

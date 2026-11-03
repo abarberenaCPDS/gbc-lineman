@@ -22,7 +22,10 @@ def load(path: Path) -> dict:
 
 
 def folders_on_disk() -> list[str]:
-    return sorted(p.name for p in SCENES_DIR.iterdir() if p.is_dir())
+    # Git/editor renames can leave empty directories behind. Any resource,
+    # including an orphaned actor, still makes a folder subject to registration.
+    return sorted(p.name for p in SCENES_DIR.iterdir()
+                  if p.is_dir() and any(p.rglob("*.gbsres")))
 
 
 def walk(events):

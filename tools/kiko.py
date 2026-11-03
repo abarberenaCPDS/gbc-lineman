@@ -191,7 +191,7 @@ ROCK_A = (4, 6, 12, 14)         # pole 1 (feeder)
 MESA = (16, 22, 9, 14)          # T1, pole 2
 ROCK_C = (36, 41, 12, 14)       # T2, pole 3
 C1 = (9, 8, 15)                 # catwalk: rock A -> mesa (board on the landing, hidden cable)
-D1 = (9, 43, 55)                # catwalk: rock C -> east (gust, whip)
+D1 = (9, 43, 56)                # both columns of the (55, 8) return entry have footing
 F = (12, 57, 61)                # low catwalk to the ladder exit (board)
 START = (2, 14)                 # entry from the work order card, facing right
 

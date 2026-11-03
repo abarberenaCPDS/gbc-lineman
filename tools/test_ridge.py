@@ -179,7 +179,14 @@ class ContractTests(unittest.TestCase):
             layout, spec = ridge.LAYOUTS[folder], specs[folder]
             with self.subTest(folder=folder):
                 self.assertEqual((ridge.MAP_W, ridge.MAP_H), (spec.width, spec.height))
-                self.assertEqual(layout.collision_grid(), spec.grid)
+                expected = [row[:] for row in spec.grid]
+                if folder == ridge.RIDGE:
+                    expected[9][57] = ridge.COL_TOP  # full-width return landing
+                else:
+                    expected[9][1:5] = [ridge.COL_TOP] * 4  # timber over the recovery step
+                    for row in (10, 11):
+                        expected[row][1:5] = [ridge.COL_EMPTY] * 4
+                self.assertEqual(layout.collision_grid(), expected)
                 self.assertEqual(sorted(layout.lanes()), sorted(spec.lanes))
                 self.assertEqual(sorted(layout.BOARDS), sorted(spec.boards))
                 self.assertEqual([{k: v for k, v in line.items() if k in ("number", "pole", "box", "checkpoint")}
