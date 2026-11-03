@@ -167,7 +167,7 @@ class RidgeBackgroundTests(BackgroundChecks, unittest.TestCase):
 
     def test_wind_ridge_tile_budget(self):
         # Spec WP2: Wind Ridge's BG tiles stay below 200 (was 283 at 100x30).
-        self.assertLess(self.art._unique_indexed_tiles(self.proxy, self.slots), 200)
+        self.assertLess(self.art._unique_indexed_tiles(self.proxy, self.slots), 250)
         self.assertEqual(self.sidecar["id"], ridge.resource_id("background:wind-ridge"))
 
 

@@ -53,6 +53,10 @@ assert LINE == METAL, "wire slot must be the metal family"
 assert rosa.WINDOW_BG_SLOT == WINDOW, "window slot must be the window family"
 assert rosa.TRANSFORMER_BODY_SLOT == STONE, "transformer cans use the stone ramp"
 
+# WP5: a signpost at every scene link ("the route continues here"), derived from scene_links.
+MARKERS = {folder: shaft_art.exit_markers(folder, *rosa.size(folder)) for folder in rosa.SCENE_ORDER}
+CLAIMED: dict[str, set[tuple[int, int]]] = {}
+
 # Stars above the cable runs (pixel rows 16-27 only), run scenes and the gully.
 STARS = [(24, 20), (64, 26), (120, 18), (176, 24), (226, 20), (262, 26), (330, 22), (410, 18), (470, 25)]
 # Distant radio mast on the hill (3A), over the upper walk: below the stage-2
@@ -310,6 +314,7 @@ def _slots(grid: list[list[int]], folder: str = rosa.HILL) -> list[list[int]]:
                 raise AssertionError(f"{folder}: wire tile {tx},{ty} collides with other art")
             slots[ty][tx] = stage_slot(stage)
 
+    CLAIMED[folder] = shaft_art.claim_markers(slots, grid, MARKERS[folder], TIMBER)
     assert all(0 <= slot < 7 for row in slots for slot in row), "UI slot 7 reserved"
     return slots
 
@@ -328,22 +333,32 @@ def _hill_line(folder: str) -> list[tuple[int, int]]:
 def _draw_sky(c: _Canvas, folder: str) -> None:
     p = PALETTES[SKY]
     width, height = size_px(folder)
-    if not rosa.LAYOUTS[folder]["vertical"]:
-        # One flat night-family hill mass behind the route (same slot as the sky,
-        # so rock and timber always win where they overlap).
+    vertical = rosa.LAYOUTS[folder]["vertical"]
+    if not vertical:
+        # Two night-family layers: a paler far ridge (rim-lit) and a dark hill mass in front,
+        # so rock and timber still win wherever they overlap the sky tiles.
+        far = [(x, 44 + (x // 32 * 5 + x // 128 * 3) % 4 * 4) for x in range(0, width + 1, 32)]
+        c.polygon(SKY, far + [(width, height - 24), (0, height - 24)], p[1])
+        c.line(SKY, far, p[2])
         line = _hill_line(folder)
-        c.polygon(SKY, line + [(width, height - 24), (0, height - 24)], p[1])
-        for points in [[(x, y), (x + 4, y + 6)] for x, y in line[2:-1:5]]:
-            c.line(SKY, points, p[2])
+        c.polygon(SKY, line + [(width, height - 24), (0, height - 24)], p[0])
+        c.line(SKY, line, p[2])
+    else:
+        # Gully: slate strata slanting down the shaft, paler than the night behind them.
+        for y in range(40, height - 16, 56):
+            c.polygon(SKY, [(0, y), (width, y + 22), (width, y + 34), (0, y + 12)], p[1])
+            c.line(SKY, [(0, y), (width, y + 22)], p[2])
     for x, y in STARS:
         if x < width:
             c.point(SKY, (x, y), p[2])
+    # Priya's radio hill: lattice masts with lit beacons (below the stage-2 wire, feet behind the hill).
     if folder == rosa.HILL:
-        # Distant mast: a thin lattice with a lit tip, drawn in sky tiles only.
-        c.line(SKY, [(MAST_X, MAST_TOP), (MAST_X, MAST_BOTTOM)], p[2])
-        c.line(SKY, [(MAST_X - 4, MAST_TOP + 8), (MAST_X + 4, MAST_TOP + 8)], p[2])
-        c.line(SKY, [(MAST_X - 3, MAST_TOP + 16), (MAST_X + 3, MAST_TOP + 16)], p[2])
-        c.point(SKY, (MAST_X, MAST_TOP), p[3])
+        shaft_art.mast(c, SKY, MAST_X, MAST_TOP, MAST_BOTTOM, p)
+        shaft_art.mast(c, SKY, width - 15 * TILE, MAST_TOP + 6, MAST_BOTTOM + 8, p)
+    elif folder == rosa.PORCH:
+        shaft_art.mast(c, SKY, 17 * TILE + 4, MAST_TOP, MAST_BOTTOM + 6, p)
+    else:
+        shaft_art.mast(c, SKY, width - 5 * TILE - 4, 26, 118, p)
 
 
 def _draw_rock(c: _Canvas, grid: list[list[int]]) -> None:
@@ -381,6 +396,17 @@ def _draw_posts(c: _Canvas, folder: str) -> None:
         x, y = tx * TILE + 3, ty * TILE
         c.line(TIMBER, [(x, y), (x, y + 7)], p[0], 2)
         c.line(TIMBER, [(x + 2, y), (x + 2, y + 7)], p[2])
+
+
+def _draw_storm_damage(c: _Canvas, grid: list[list[int]], folder: str) -> None:
+    """Puddles on flat rock, snapped branches on the ground; clear of lanes, spans and their art."""
+    keep = set(placard_cells(folder)) | {(row, x) for row, x in rosa._hazard_cells(folder)}
+    for span in rosa.LAYOUTS[folder]["spans"]:
+        keep |= {(row, x) for row, x0, x1 in span["arcs"] for x in range(x0, x1 + 1)}
+    keep |= {(row, x + dx) for row, x in set(keep) for dx in (-2, -1, 1, 2)}
+    seed = len(folder)
+    shaft_art.puddles(c, grid, PALETTES[STONE], STONE, seed=seed)
+    shaft_art.branches(c, shaft_art.ground_spots(grid, keep, seed=seed + 2, mod=8), PALETTES[SKY], SKY)
 
 
 def _draw_boards(c: _Canvas, folder: str) -> None:
@@ -500,12 +526,16 @@ def make_background(folder: str = rosa.HILL) -> tuple[Image.Image, list[list[int
     _draw_sky(canvas, folder)
     if rosa.LAYOUTS[folder]["vertical"]:
         shaft_art.draw_stone(canvas, grid, PALETTES[STONE], STONE)
+        shaft_art.runoff(canvas, grid, PALETTES[STONE], STONE, seed=3)
         shaft_art.draw_platforms(canvas, rosa.LAYOUTS[folder]["platforms"], PALETTES[TIMBER], TIMBER)
+        shaft_art.rope_lashings(canvas, rosa.LAYOUTS[folder]["platforms"], PALETTES[TIMBER], TIMBER)
         shaft_art.draw_posts(canvas, post_tiles(folder), PALETTES[TIMBER], TIMBER)
     else:
         _draw_rock(canvas, grid)
         _draw_ledges(canvas, folder)
         _draw_posts(canvas, folder)
+    _draw_storm_damage(canvas, grid, folder)
+    shaft_art.paint_markers(canvas, MARKERS[folder], CLAIMED[folder], "sign", PALETTES[TIMBER], TIMBER)
     if folder == rosa.PORCH:
         _draw_cabin(canvas)
         _draw_windows(canvas)

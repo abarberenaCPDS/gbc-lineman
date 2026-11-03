@@ -56,6 +56,12 @@ PALETTES[WIRE_1] = _rgb(climb.WIRE_SLOT_DEAD)
 PALETTES[WIRE_2] = _rgb(climb.WIRE_SLOT_DEAD)
 CREST_WINDOW_TILES = climb.CREST_WINDOW_TILES
 
+# WP5: a timber arch at every scene link ("the route continues here"), derived from
+# scene_links; the tiles it claims are open sky only (wires and terrain keep theirs).
+MARKERS = {"storm_climb": shaft_art.exit_markers("storm_climb", climb.MAP_W, climb.MAP_H),
+           "climb_crest": shaft_art.exit_markers("climb_crest", climb.CREST_W, climb.CREST_H)}
+CLAIMED: dict[str, set[tuple[int, int]]] = {}
+
 # Background transformer: the shared job transformer (transformer_art.py), a
 # 16x24 condensation of the transformer sprite's Live frame. Its top tile row is
 # in the stage's wire slot ("W": cap, bushing, clamp, collar and lid glow when
@@ -133,6 +139,7 @@ def _slots(grid: list[list[int]]) -> list[list[int]]:
     sx0, sx1, sy0, sy1 = climb.SUBSTATION_TILES
     _set_rect(slots, HARDWARE, sx0, sx1, sy0, sy1)
     _reserve_transformers_and_wires(slots, grid, climb.boxes_in(climb.CLIMB_SCENE), stage_pixels)
+    CLAIMED["storm_climb"] = shaft_art.claim_markers(slots, grid, MARKERS["storm_climb"], TIMBER)
     return slots
 
 
@@ -179,6 +186,11 @@ def _draw_sky(c: _Canvas) -> None:
         c.point(SKY, (x, y), p[color])
     for x, y in [(71, 30), (121, 78), (92, 110), (67, 158), (112, 190), (53, 236)]:
         c.line(SKY, [(x, y), (x - 2, y + 4)], p[1])
+
+
+def _clear_cells(cells: set[tuple[int, int]]) -> set[tuple[int, int]]:
+    """Hazard cells widened by one column each side, so debris never sits beside a hazard lane."""
+    return cells | {(row, x + dx) for row, x in cells for dx in (-2, -1, 1, 2)}
 
 
 def _draw_stone(c: _Canvas, grid: list[list[int]]) -> None:
@@ -278,10 +290,14 @@ def make_background() -> tuple[Image.Image, list[list[int]]]:
     canvas = _Canvas(image, slots)
     _draw_sky(canvas)
     _draw_stone(canvas, grid)
+    shaft_art.puddles(canvas, grid, PALETTES[STONE], STONE)
+    shaft_art.branches(canvas, shaft_art.ground_spots(grid, _clear_cells(climb.hazard_cells()), seed=2, mod=7),
+                       PALETTES[SKY], SKY)
     _draw_platforms(canvas)
     _draw_posts(canvas, grid)
     _draw_boards(canvas)
     _draw_substation(canvas)
+    shaft_art.paint_markers(canvas, MARKERS["storm_climb"], CLAIMED["storm_climb"], "arch", PALETTES[TIMBER], TIMBER)
     _draw_transformers(canvas)
     _draw_wires(canvas)
 
@@ -324,22 +340,42 @@ def crest_slots(grid: list[list[int]]) -> list[list[int]]:
     for tx, ty in CREST_WINDOW_TILES:
         slots[ty][tx] = WINDOW
     _reserve_transformers_and_wires(slots, grid, climb.boxes_in(climb.CREST_SCENE), crest_stage_pixels)
+    CLAIMED["climb_crest"] = shaft_art.claim_markers(slots, grid, MARKERS["climb_crest"], TIMBER)
     return slots
 
 
 def _draw_crest_sky(c: _Canvas) -> None:
-    """Night sky over the town: one distant range (repeats every 15 tiles) with town
-    lights in the valley below it, a few stars and rain streaks. Night slot only."""
+    """Night sky over the town, all in the night slot: receding storm cloud, a far range with
+    two pylons on its crest, and a mostly dark town in the valley (a few windows still lit,
+    the neighbours waiting on the power). Stars, rain streaks and the HUD rows stay clear."""
     p = PALETTES[SKY]
-    base = 84
+    base = 60
+    for x0 in range(30, CREST_WIDTH - 40, 150):               # storm cloud banks (p1 slabs)
+        y = 28 + (x0 // 150) % 2 * 10
+        c.polygon(SKY, [(x0, y + 8), (x0 + 10, y + 2), (x0 + 30, y), (x0 + 52, y + 4), (x0 + 70, y + 9),
+                        (x0 + 40, y + 12), (x0 + 12, y + 12)], p[1])
+        c.line(SKY, [(x0 + 12, y + 3), (x0 + 30, y + 1), (x0 + 50, y + 5)], p[2])
     pts = [(-2, base + 14)]
     for i, x in enumerate(range(0, CREST_WIDTH + 24, 24)):
         pts.append((x, base + (0, 10, 4, 14, 6)[i % 5]))
-    pts += [(CREST_WIDTH + 2, base + 40), (-2, base + 40)]
+    pts += [(CREST_WIDTH + 2, base + 60), (-2, base + 60)]
     c.polygon(SKY, pts, p[1])
-    for x in range(10, CREST_WIDTH, 40):          # town lights below the range
-        c.point(SKY, (x, base + 22 + (x // 40) % 3 * 2), p[3])
-        c.point(SKY, (x + 9, base + 26 + (x // 40) % 2 * 2), p[2])
+    c.line(SKY, pts[:-2], p[2])
+    for x in range(100, CREST_WIDTH - 40, 190):               # pylons on the range crest
+        top = base - 6
+        foot = base + 18
+        c.line(SKY, [(x - 6, foot), (x, top), (x + 6, foot)], p[2], 2)
+        c.line(SKY, [(x - 5, top + 9), (x + 5, top + 9)], p[2], 2)
+        c.line(SKY, [(x - 8, top + 3), (x + 8, top + 3)], p[2], 2)
+    for k, x in enumerate(range(6, CREST_WIDTH - 6, 14)):     # the dark town: roofs and lit windows
+        h = 6 + (k * 5) % 7
+        w = 7 + (k * 3) % 4
+        y1 = base + 56
+        y0 = y1 - h - (k % 3) * 3
+        c.rect(SKY, (x, y0, x + w, y1), p[0])
+        c.polygon(SKY, [(x - 1, y0), (x + w // 2, y0 - 4), (x + w + 1, y0)], p[0])
+        if k % 3 == 1:                                         # a lit window in every third house
+            c.rect(SKY, (x + 2, y0 + 3, x + 3, y0 + 4), p[3])
     for x, y, color in [(20, 26, 2), (76, 34, 3), (132, 22, 2), (188, 44, 3), (244, 28, 2),
                         (300, 40, 3), (356, 24, 2), (412, 36, 3)]:
         c.point(SKY, (x, y), p[color])
@@ -362,9 +398,13 @@ def make_crest_background() -> tuple[Image.Image, list[list[int]]]:
     canvas = _Canvas(image, slots)
     _draw_crest_sky(canvas)
     shaft_art.draw_stone(canvas, grid, PALETTES[STONE], STONE)
+    shaft_art.puddles(canvas, grid, PALETTES[STONE], STONE, seed=1)
+    shaft_art.branches(canvas, shaft_art.ground_spots(grid, _clear_cells(climb.crest_hazard_cells()), seed=3, mod=9),
+                       PALETTES[SKY], SKY)
     shaft_art.draw_platforms(canvas, climb.CREST_PLATFORMS, PALETTES[TIMBER], TIMBER)
     shaft_art.draw_posts(canvas, crest_post_tiles(grid), PALETTES[TIMBER], TIMBER)
     _draw_house(canvas)
+    shaft_art.paint_markers(canvas, MARKERS["climb_crest"], CLAIMED["climb_crest"], "arch", PALETTES[TIMBER], TIMBER)
     _draw_transformers(canvas, climb.boxes_in(climb.CREST_SCENE))
     _draw_wires(canvas, crest_stage_pixels)
     _check_palette_colors(image, slots)

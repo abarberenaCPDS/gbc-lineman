@@ -90,6 +90,11 @@ class SceneArt:
         self.transformer_tiles = {cell for line in self.scene.box_lines()
                                   for cell in transformer_art.all_tiles(line["box"])}
         ledges = [p for p in self.scene.platforms if p[0] in (*shaft.LEDGE_ROWS, kiko.ARRIVAL_SHELF[0])]
+        # WP5: pine gates at the scene links, pine trunks (shaft) or standing pines (runs).
+        self.markers = shaft_art.exit_markers(folder, self.scene.map_w, self.scene.map_h)
+        self.claimed: set[tuple[int, int]] = set()
+        self.tree_tiles: set[tuple[int, int]] = set()
+        self.trees: list[tuple[int, int, int]] = []      # (first column, top row, bottom row) of 2-column pines
         self.posts = (shaft_art.post_tiles(self.grid, ledges, self.scene.hazard_cells(), self.scene.map_h)
                       if self.scene.shaft else [])
 
@@ -186,8 +191,59 @@ class SceneArt:
                 if (ty, tx) in self.placard_cells or (tx, ty) in house or (tx, ty) in posts or (tx, ty) in bodies:
                     raise AssertionError(f"{self.folder}: wire tile {tx},{ty} collides with other art")
                 slots[ty][tx] = stage_slot(stage)
+        self._claim_trees(slots)
+        self.claimed = shaft_art.claim_markers(slots, grid, self.markers, FOLIAGE)
         assert all(0 <= slot < 7 for row in slots for slot in row), "UI slot 7 reserved"
         return slots
+
+    def _lane_neighbourhood(self) -> set[tuple[int, int]]:
+        """(row, column) of every hazard lane widened by one tile each way, so a spark stays on dark sky."""
+        lanes = self.scene.hazard_cells()
+        return {(row + dr, x + dx) for row, x in lanes for dr in (-1, 0, 1) for dx in (-1, 0, 1)}
+
+    def _free(self, slots, tx: int, ty: int, avoid) -> bool:
+        return (self.grid[ty][tx] == climb.COL_EMPTY and slots[ty][tx] == SKY and (ty, tx) not in avoid
+                and ty >= kiko.HUD_ROWS)
+
+    def _claim_trees(self, slots) -> None:
+        """Pine trunks behind the shaft's slabs (4B) / tall standing pines on the runs (4A, 4C):
+        foliage tiles on open sky only, never beside a hazard lane, never over wires or art."""
+        avoid = self._lane_neighbourhood()
+        marker_cols = {tx + dx for _s, tx, _t in self.markers for dx in (-3, -2, -1, 0, 1, 2, 3, 4)}
+        width, height = self.scene.map_w, self.scene.map_h
+        if self.scene.shaft:
+            def runs(col):
+                out, run = [], []
+                for ty in range(height):
+                    if all(self._free(slots, col + dx, ty, avoid) for dx in (0, 1)):
+                        run.append(ty)
+                    else:
+                        out, run = (out + [run] if len(run) >= 3 else out), []
+                return out + ([run] if len(run) >= 3 else [])
+            best = sorted(range(1, width - 3), key=lambda col: -sum(len(r) for r in runs(col)))
+            chosen: list[int] = []
+            for col in best:
+                if all(abs(col - other) >= 5 for other in chosen) and len(chosen) < 3:
+                    chosen.append(col)
+            for col in sorted(chosen):
+                for run in runs(col):
+                    self.trees.append((col, run[0], run[-1]))
+        else:
+            chosen = []
+            for col in range(3, width - 5):
+                if col in marker_cols or any(abs(col - other) < 11 for other in chosen):
+                    continue
+                floor = next(ty for ty in range(height) if self.grid[ty][col] != climb.COL_EMPTY)
+                top = kiko.HUD_ROWS + 3 + (col * 3) % 3
+                if all(self._free(slots, col + dx, ty, avoid) for dx in (0, 1) for ty in range(top, floor)) \
+                        and all(self.grid[floor][col + dx] != climb.COL_EMPTY for dx in (0, 1)):
+                    chosen.append(col)
+                    self.trees.append((col, top, floor - 1))
+        for col, top, bottom in self.trees:
+            for ty in range(top, bottom + 1):
+                for dx in (0, 1):
+                    slots[ty][col + dx] = FOLIAGE
+                    self.tree_tiles.add((col + dx, ty))
 
     # -- drawing ---------------------------------------------------------------
     def _draw_backdrop(self, c) -> None:
@@ -212,6 +268,39 @@ class SceneArt:
             x = (i * 53 + 24) % self.width
             y = 18 + (i * 37) % 10 + (i % len(bands)) * 92
             c.point(SKY, (x, y), p[2])
+
+    def _draw_trees(self, c) -> None:
+        p = PALETTES[FOLIAGE]
+        for col, top, bottom in self.trees:
+            x, y0, y1 = col * TILE, top * TILE, (bottom + 1) * TILE - 1
+            if self.scene.shaft:       # trunk behind the slabs: body, shaded side, bark cracks, branch stubs
+                c.rect(FOLIAGE, (x + 2, y0, x + 13, y1), p[1])
+                c.rect(FOLIAGE, (x + 2, y0, x + 3, y1), p[0])
+                c.line(FOLIAGE, [(x + 11, y0), (x + 11, y1)], p[2])
+                for ty in range(top, bottom + 1):
+                    yy = ty * TILE
+                    c.line(FOLIAGE, [(x + 6, yy + 1 + ty % 3), (x + 6, yy + 5 + ty % 3)], p[0])
+                    c.line(FOLIAGE, [(x + 9, yy + 4 - ty % 3), (x + 9, yy + 7)], p[0])
+                    if ty % 3 == col % 3:
+                        c.line(FOLIAGE, [(x + 13, yy + 3), (x + 15, yy)], p[1], 2)
+                        c.line(FOLIAGE, [(x + 2, yy + 5), (x, yy + 7)], p[1], 2)
+                continue
+            w, center = 16, x + 8
+            c.polygon(FOLIAGE, [(center, y0), (x + 2, y0 + 11), (x + 5, y0 + 10), (x, y0 + 20), (x + 5, y0 + 19),
+                                (x, y1 - 1), (x + w, y1 - 1), (x + w - 5, y0 + 19), (x + w, y0 + 20),
+                                (x + w - 5, y0 + 10), (x + w - 2, y0 + 11)], p[1])
+            c.line(FOLIAGE, [(center, y0 + 2), (center, y1 - 1)], p[0])
+            c.line(FOLIAGE, [(center - 1, y0 + 7), (center - 3, y0 + 12)], p[2])
+            c.line(FOLIAGE, [(center + 3, y0 + 21), (center + 5, y0 + 25)], p[2])
+
+    def _draw_storm_damage(self, c) -> None:
+        """Puddles on flat rock, snapped branches on the ground, clear of every hazard lane."""
+        keep = self._lane_neighbourhood() | self.placard_cells
+        for span in self.scene.spans:
+            keep |= {(row, x + dx) for row, x0, x1 in span["arcs"] for x in range(x0, x1 + 1) for dx in (-2, -1, 0, 1, 2)}
+        seed = len(self.folder)
+        shaft_art.puddles(c, self.grid, PALETTES[STONE], STONE, seed=seed)
+        shaft_art.branches(c, shaft_art.ground_spots(self.grid, keep, seed=seed + 1, mod=8), PALETTES[SKY], SKY)
 
     def _draw_rock(self, c) -> None:
         grid = self.grid
@@ -335,8 +424,11 @@ class SceneArt:
                         pixels[x, y] = color
         canvas = shaft_art.Canvas(image, slots)
         self._draw_backdrop(canvas)
+        self._draw_trees(canvas)
         self._draw_rock(canvas)
         self._draw_timber(canvas)
+        self._draw_storm_damage(canvas)
+        shaft_art.paint_markers(canvas, self.markers, self.claimed, "pine", PALETTES[FOLIAGE], FOLIAGE)
         self._draw_cabin(canvas)
         self._draw_warnings(canvas)
         self._draw_boards(canvas)

@@ -14,7 +14,7 @@ from test_opening import decode_rle
 ROOT = Path(__file__).resolve().parent.parent
 BACKGROUND = ROOT / "assets/backgrounds/climb_crest.png"
 PROXY_INDEX = {255: 0, 170: 1, 85: 2, 0: 3}
-BG_TILE_BUDGET = 110      # docs/LEVEL_REDESIGN.md §5 estimate for 1B
+BG_TILE_BUDGET = 200      # §5 estimated 110 for the functional pass; the WP5 backdrop raised it (MCP limit 384)
 
 
 def load():

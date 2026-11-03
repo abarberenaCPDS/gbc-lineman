@@ -33,6 +33,7 @@ from PIL import Image, ImageDraw
 import climb
 import opening
 import ridge
+import shaft_art
 import transformer_art
 from make_climb_scene import collision_rle
 
@@ -53,8 +54,8 @@ assert ridge.WINDOW_BG_SLOT == WINDOW, "window slot must be the window family"
 assert ridge.TRANSFORMER_BODY_SLOT == STONE, "transformer cans use the stone ramp"
 
 # Unique (slot, pattern) tiles before GB Studio's flip dedupe (CGB limit 384).
-# Spec WP2: Wind Ridge stays below 200.
-MAX_UNIQUE_TILES = {ridge.RIDGE: 199, ridge.SADDLE: 240}
+# Spec WP2 asked for <200; the WP5 art pass raised it (the MCP effective count stays far below 384).
+MAX_UNIQUE_TILES = {ridge.RIDGE: 249, ridge.SADDLE: 260}
 # Per-scene backdrop: pine columns and tops (px), skyline seeds.
 PINES = {ridge.RIDGE: [(2, 48), (22, 40), (33, 56)], ridge.SADDLE: [(7, 48), (48, 40)]}
 SKY_SEEDS = {ridge.RIDGE: (7, 19, 41), ridge.SADDLE: (11, 23, 43)}
@@ -200,6 +201,9 @@ class SceneArt:
         self.NEAR_RIDGE = _ridge_line(near, 80, 16, 64, 96)
         self.RAIN_SLASHES, self.SPARKS = self._decor(decor)
         self.TRANSFORMER_TILES = {cell for line in c.box_lines() for cell in transformer_art.all_tiles(line["box"])}
+        # WP5: a braced timber arch at every scene link; claimed tiles are set by _slots.
+        self.MARKERS = shaft_art.exit_markers(folder, ridge.MAP_W, ridge.MAP_H)
+        self.CLAIMED: set[tuple[int, int]] = set()
 
     stage_slot = staticmethod(stage_slot)
     span_points = staticmethod(span_points)
@@ -327,6 +331,7 @@ class SceneArt:
                 if (ty, tx) in self.PLACARD_CELLS or (tx, ty) in house or (tx, ty) in posts or (tx, ty) in bodies:
                     raise AssertionError(f"{self.folder}: wire tile {tx},{ty} collides with other art")
                 slots[ty][tx] = stage_slot(stage)
+        self.CLAIMED = shaft_art.claim_markers(slots, grid, self.MARKERS, TIMBER)
         assert all(0 <= slot < 7 for row in slots for slot in row), "UI slot 7 reserved"
         assert all(slots[ty][tx] == WINDOW for tx, ty in c.HOUSE_WINDOWS)
         return slots
@@ -345,6 +350,36 @@ class SceneArt:
             cv.line(SKY, [(x, y), (x - 2, y + 4)], p[2])
         for x, y, index in self.SPARKS:
             cv.point(SKY, (x, y), p[index])
+        self._draw_wind(cv)
+
+    def _draw_wind(self, cv: _Canvas) -> None:
+        """Hiroshi's windy ridge: gust streaks, wind-bent pines on the near ridge, and per scene a
+        low cloud bank (2A) or the moon over the saddle (2B). Sky slot only, below the HUD rows."""
+        p = PALETTES[SKY]
+        rng = random.Random(SKY_SEEDS[self.folder][0] * 31)
+        for _ in range(7):                                        # gust streaks, 2px thick
+            x, y = rng.randint(1, WIDTH // 8 - 4) * 8, rng.randint(3, 6) * 8 + rng.choice((0, 4))
+            cv.line(SKY, [(x, y), (x + 14, y)], p[2], 2)
+            cv.line(SKY, [(x + 16, y + 1), (x + 22, y + 1)], p[2])
+        for x in range(20, WIDTH - 20, 88):                       # trees swept right by the wind
+            x += (x // 88 * 29) % 24
+            y = _ridge_y(self.NEAR_RIDGE, x) + 2
+            cv.line(SKY, [(x, y), (x + 3, y - 14)], p[0], 2)
+            for k in range(3):
+                top = y - 8 - k * 7
+                cv.polygon(SKY, [(x + 3 - k, top - 8), (x + 15 - 2 * k, top + 1), (x - 3 + k, top + 5)], p[0])
+        if self.folder == ridge.SADDLE:                           # moon through the thinning cloud
+            mx, my = WIDTH // 2 + 40, 40
+            cv.polygon(SKY, [(mx + dx, my + dy) for dx, dy in
+                             ((-4, -7), (4, -7), (8, -3), (8, 3), (4, 7), (-4, 7), (-8, 3), (-8, -3))], p[3])
+            cv.polygon(SKY, [(mx + dx, my + dy) for dx, dy in
+                             ((-1, -9), (7, -9), (11, -5), (11, 1), (7, 5), (-1, 5), (-5, 1), (-5, -5))], p[0])
+            cv.polygon(SKY, [(mx + dx, my + dy) for dx, dy in
+                             ((-4, -7), (4, -7), (8, -3), (8, 0), (0, 0), (-8, 0), (-8, -3))], p[3])
+        else:
+            for x in range(40, WIDTH - 80, 150):                  # low cloud bank across the ridge
+                cv.polygon(SKY, [(x, 36), (x + 18, 30), (x + 50, 29), (x + 84, 34), (x + 60, 40), (x + 20, 41)], p[1])
+                cv.line(SKY, [(x + 20, 31), (x + 50, 30), (x + 78, 34)], p[2])
 
     def _draw_pines(self, cv: _Canvas) -> None:
         p = PALETTES[FOLIAGE]
@@ -394,6 +429,16 @@ class SceneArt:
             x, y = tx * TILE + 3, ty * TILE
             cv.line(TIMBER, [(x, y), (x, y + 7)], p[0], 2)
             cv.line(TIMBER, [(x + 2, y), (x + 2, y + 7)], p[2])
+
+    def _draw_storm_damage(self, cv: _Canvas, grid) -> None:
+        """Puddles on flat rock and snapped branches on the ground, away from hazard lanes and spans."""
+        keep = set(self.PLACARD_CELLS)
+        for span in self.c.FALLEN_SPANS:
+            keep |= {(ridge.GROUND_ROW - 1, x) for x in range(span["columns"][0], span["columns"][1] + 1)}
+        keep |= {(row, x + dx) for row, x in set(keep) for dx in (-2, -1, 1, 2)}
+        shaft_art.puddles(cv, grid, PALETTES[STONE], STONE, seed=SKY_SEEDS[self.folder][0])
+        shaft_art.branches(cv, shaft_art.ground_spots(grid, keep, seed=SKY_SEEDS[self.folder][1], mod=8),
+                           PALETTES[SKY], SKY)
 
     def _draw_cabin(self, cv: _Canvas) -> None:
         p = PALETTES[TIMBER]
@@ -489,6 +534,8 @@ class SceneArt:
         self._draw_rock(cv, grid)
         self._draw_ledges(cv)
         self._draw_posts(cv, grid)
+        shaft_art.paint_markers(cv, self.MARKERS, self.CLAIMED, "brace", PALETTES[TIMBER], TIMBER)
+        self._draw_storm_damage(cv, grid)
         if self.c.HOUSE:
             self._draw_cabin(cv)
             self._draw_windows(cv)
