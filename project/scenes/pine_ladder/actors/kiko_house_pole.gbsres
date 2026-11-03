@@ -1,0 +1,110 @@
+{
+  "_resourceType": "actor",
+  "id": "95414067-7c3a-5185-86d9-0a2521ec48ce",
+  "_index": 1,
+  "symbol": "kiko_house_pole",
+  "prefabId": "",
+  "name": "Storm Pole (house)",
+  "coordinateType": "tiles",
+  "x": 16,
+  "y": 14,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "616a294b-fae9-5c68-965a-9a1db4b273d0",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "76a4b64f-9f5d-55be-99be-7f2b9d9b467e"
+    },
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "12"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "ae211c33-8772-53bf-bf19-b6637accbe12",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "$self$",
+              "spriteStateId": "Standing",
+              "loopAnim": true
+            },
+            "id": "c092a547-5fba-50e9-84c0-2f93a3d1568f"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_IF",
+            "args": {
+              "condition": {
+                "type": "eq",
+                "valueA": {
+                  "type": "variable",
+                  "value": "6"
+                },
+                "valueB": {
+                  "type": "number",
+                  "value": 5
+                }
+              }
+            },
+            "id": "1e5f2e90-9d61-508b-9701-affdaa8cfcf3",
+            "children": {
+              "true": [
+                {
+                  "command": "EVENT_ACTOR_SET_STATE",
+                  "args": {
+                    "actorId": "$self$",
+                    "spriteStateId": "Snapped",
+                    "loopAnim": true
+                  },
+                  "id": "1ec93b95-f48f-58e3-ac96-2594786664a6"
+                }
+              ],
+              "false": [
+                {
+                  "command": "EVENT_ACTOR_SET_STATE",
+                  "args": {
+                    "actorId": "$self$",
+                    "spriteStateId": "Snapped+Cable",
+                    "loopAnim": true
+                  },
+                  "id": "4825fb9c-a63e-5cc2-bb7e-5dc43518e5f4"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

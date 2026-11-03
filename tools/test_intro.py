@@ -67,10 +67,12 @@ class ContractTests(unittest.TestCase):
             for line in lines:
                 self.assertLessEqual(len(line), intro.MAX_CAPTION_CHARS, (name, line))
 
-    def test_nine_shots_in_budget(self):
+    def test_nine_shots_on_the_bar_grid(self):
         self.assertEqual(len(intro.SHOTS), 9)
+        bar_frames = intro.BAR_ROWS * intro.THEME_TPR / intro.MUSIC_TICK_HZ * intro.FRAME_HZ
         for name, _, frames in intro.SHOTS:
             self.assertTrue(180 <= frames <= 240, (name, frames))
+            self.assertLess(abs(frames - intro.SHOT_BARS * bar_frames), 0.5, name)
 
     def test_scanline_obj_peak_within_hardware_limit(self):
         self.assertLessEqual(intro._scanline_peak(intro.story_actors()), 10)
@@ -194,7 +196,7 @@ class StoryTests(unittest.TestCase):
         events = list(walk(self.script))
         snapped = {e["args"]["actorId"] for e in events
                    if e["command"] == "EVENT_ACTOR_SET_STATE"
-                   and e["args"]["spriteStateId"] == "Snapped"}
+                   and e["args"]["spriteStateId"] == "Snapped+Cable"}
         self.assertEqual(len(snapped), len(intro.POLES))
         crashes = sorted(e["args"]["duration"] for e in events
                          if e["command"] == "EVENT_SOUND_PLAY_EFFECT" and e["args"]["type"] == "crash")
@@ -225,7 +227,16 @@ class StoryTests(unittest.TestCase):
 
     def test_each_shot_waits_its_frame_budget(self):
         totals = shot_wait_totals(self.script[-1]["children"]["true"])
-        self.assertEqual(totals, [frames for _, _, frames in intro.SHOTS])
+        # The hero's blocking walk and the measured per-shot script cost fill the rest.
+        self.assertEqual(totals, [frames - intro.SHOT_OVERHEAD_FRAMES
+                                  - (intro.HERO_WALK_FRAMES if name == "hero" else 0)
+                                  for name, _, frames in intro.SHOTS])
+
+    def test_story_restarts_the_theme_before_the_first_shot(self):
+        body = self.script[-1]["children"]["true"]
+        self.assertEqual(body[0]["command"], "EVENT_MUSIC_PLAY")
+        self.assertEqual(body[0]["args"]["musicId"], intro.THEME_IDS[intro.DEFAULT_THEME])
+        self.assertEqual(body[1]["command"], "EVENT_TEXT_DRAW")
 
     def test_skip_and_exit_both_go_to_title(self):
         targets = [e for e in walk(self.script) if e["command"] == "EVENT_SWITCH_SCENE"]
@@ -319,13 +330,16 @@ class MusicAndVoiceTests(unittest.TestCase):
             self.assertTrue((music / f"{name}.uge").stat().st_size > 0, name)
             self.assertEqual(load(music / f"{name}.uge.gbsres")["id"], intro.THEME_IDS[key])
 
-    def test_logo_sets_the_voice_and_starts_the_default_theme(self):
+    def test_logo_sets_the_voice_and_stays_silent(self):
         commands = {e["command"]: e["args"] for e in self.logo}
         self.assertEqual(commands["EVENT_TEXT_SET_SOUND_EFFECT"], intro.TEXT_SOUND)
-        self.assertEqual(commands["EVENT_MUSIC_PLAY"]["musicId"],
-                         intro.THEME_IDS[intro.DEFAULT_THEME])
-        order = [e["command"] for e in self.logo]
-        self.assertLess(order.index("EVENT_MUSIC_PLAY"), order.index("EVENT_SWITCH_SCENE"))
+        self.assertNotIn("EVENT_MUSIC_PLAY", commands)
+
+    def test_default_theme_has_one_section_per_shot(self):
+        song = json.loads((TOOLS_DIR.parent / "assets" / "music"
+                           / f"{intro.THEME_FILES[intro.DEFAULT_THEME]}.json").read_text())
+        self.assertEqual(song["ticks_per_row"], intro.THEME_TPR)
+        self.assertEqual({len(order) for order in song["orders"]}, {len(intro.SHOTS)})
 
     def test_select_on_the_title_auditions_every_theme(self):
         played = {e["args"]["musicId"] for e in walk(self.title)
@@ -365,6 +379,26 @@ class SettingsTests(unittest.TestCase):
         updated = scene.settings_update(None)
         changed = {k for k in before if before[k] != updated.get(k)}
         self.assertLessEqual(changed, set(intro.settings_start()))
+
+
+class DevLabelTests(unittest.TestCase):
+    """Abe (2026-10-27): dev builds say so on screen, not only on the title."""
+
+    def test_label_only_in_dev_versions(self):
+        version = intro.read_version()
+        self.assertEqual(intro.dev_label(), version if "-dev" in version else None)
+
+    def test_label_sits_right_aligned_on_the_second_hud_row(self):
+        events = intro.dev_hud_events(lambda command, args, key: {"command": command, "args": args, "id": key},
+                                      "probe")
+        if intro.dev_label() is None:
+            self.assertEqual(events, [])
+            return
+        [draw] = events
+        self.assertEqual(draw["command"], "EVENT_TEXT_DRAW")
+        self.assertEqual(draw["args"]["y"], 1, "row 0 holds the LINE/HOME counter")
+        self.assertEqual(draw["args"]["x"] + len(draw["args"]["text"]), intro.HUD_COLUMNS)
+        self.assertGreaterEqual(draw["args"]["x"], 0)
 
 
 if __name__ == "__main__":

@@ -52,7 +52,7 @@ EMPTY = "." * CANVAS
 
 # ---------------------------------------------------------------------------
 # Priya: a villager working online, front view, feet on row 15.
-# 1 = skin, 2 = rose cardigan, 3 = long hair, glasses, outline, skirt, shoes.
+# 1 = skin, 2 = rose cardigan, 3 = long hair, dark glasses frames, outline, skirt, shoes.
 # Long hair falls past the chin to the shoulders; a rose headset (band, earcup, mic boom).
 # Waiting: worried mouth (middle higher); A holds a dark phone at her side,
 #   B blinks behind her glasses and raises the phone to look at it.
@@ -63,10 +63,10 @@ _ROSA_HEAD = [
     "....33333333....",
     "...3333333333...",
     "...3311111133...",  # forehead
-    "...3311111133...",
-    "...3313113133...",  # eyes: two dark pixels on skin, two rows tall
-    "...3313113133...",
-    "...3311111133...",  # cheeks
+    "...3333333333...",  # glasses: dark frame top
+    "...3311331133...",  # skin lenses, dark bridge
+    "...3313113133...",  # eyes behind the lenses
+    "...3333333333...",  # glasses: dark frame bottom
 ]
 _MOUTH_FROWN = [
     "...3311331133...",  # middle higher than corners
@@ -101,8 +101,8 @@ ROSA_WAIT_A = _ROSA_HEAD + _MOUTH_FROWN + _JAW + [
     "..3222222223....",
 ] + _SKIRT_LEGS_SHOES
 ROSA_WAIT_B = _ROSA_HEAD[:5] + [
-    "...3311111133...",  # blink: eyes shut to a single row
-    "...3313113133...",
+    "...3313113133...",  # blink: lids shut, one lash row behind the frames
+    "...3311111133...",
 ] + _ROSA_HEAD[7:] + _MOUTH_FROWN + _JAW + [
     ".22332222223333.",  # phone raised to chest height
     "..3222222223.33.",

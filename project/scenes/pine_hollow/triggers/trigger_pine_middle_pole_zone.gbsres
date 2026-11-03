@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "08a0cbbb-2594-5a18-b801-d939658f36db",
+  "name": "Pole Zone (middle)",
+  "prefabId": "",
+  "x": 40,
+  "y": 9,
+  "symbol": "trigger_pine_middle_pole_zone",
+  "prefabScriptOverrides": {},
+  "width": 3,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 3
+        }
+      },
+      "id": "a8260e32-fbd1-5e9b-b372-47fc8332b0b0"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 3
+          }
+        }
+      },
+      "id": "42945266-3362-52eb-9ad9-afb25e994a01",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "9359b73f-16c0-52a4-9666-0cb389abad5f"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 7
+}

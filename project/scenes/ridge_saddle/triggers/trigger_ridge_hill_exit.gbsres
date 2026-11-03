@@ -1,0 +1,159 @@
+{
+  "_resourceType": "trigger",
+  "id": "3f8ec14b-4f59-5b20-9498-b3a8073ce59e",
+  "name": "Hill Exit (to Signal Hill)",
+  "prefabId": "",
+  "x": 62,
+  "y": 9,
+  "symbol": "trigger_ridge_hill_exit",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "9"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "50e89504-771a-50ef-ad7f-4d3f1e7d0530",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "f4d452c9-6821-5359-9626-c043eb2b7566"
+          },
+          {
+            "command": "EVENT_OVERLAY_HIDE",
+            "args": {},
+            "id": "9bf841b9-65b9-594c-bb25-4c2966a609ff"
+          },
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "16",
+              "value": {
+                "type": "number",
+                "value": 3
+              }
+            },
+            "id": "797e584b-74ff-54b2-a0a6-476eca9e947b"
+          },
+          {
+            "command": "EVENT_SWITCH_SCENE",
+            "args": {
+              "x": {
+                "type": "number",
+                "value": 0
+              },
+              "y": {
+                "type": "number",
+                "value": 0
+              },
+              "direction": "down",
+              "sceneId": "6d76ca16-f510-5fd7-bb1c-c915a1367045",
+              "fadeSpeed": "2"
+            },
+            "id": "8e5a8f4f-2d86-5b09-a3f7-ed5be8423822"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "f197b6fb-34e4-5ec5-a10d-0bc621547fa2"
+          },
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "Power Hiroshi's\nhouse first."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 7,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 5,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "time",
+              "closeDelayTime": 0.5,
+              "closeDelayFrames": 30
+            },
+            "id": "9766ef18-c505-5dda-960e-fbfb179e5028"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 16
+              }
+            },
+            "id": "3ae5c45d-de6f-5518-b677-1768bd4360ad"
+          },
+          {
+            "command": "EVENT_OVERLAY_SHOW",
+            "args": {
+              "color": "black",
+              "x": 0,
+              "y": 0
+            },
+            "id": "484d9b62-e544-5f38-8d7d-6b714fbefc76"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "LINE %D1$18$/5 HOME %D1$09$/1",
+              "x": 0,
+              "y": 0,
+              "location": "overlay"
+            },
+            "id": "ade65c21-e8a1-558d-8e6b-b7954fbf317e"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "v0.19.0-dev",
+              "x": 9,
+              "y": 1,
+              "location": "overlay"
+            },
+            "id": "a33f8b12-b705-5710-8eb5-30d561e2aaf2"
+          }
+        ]
+      }
+    }
+  ],
+  "leaveScript": [],
+  "_index": 1
+}

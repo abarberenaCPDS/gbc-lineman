@@ -1,0 +1,49 @@
+{
+  "_resourceType": "trigger",
+  "id": "4d815815-af88-5a49-8595-7bcc9d782194",
+  "name": "Exit to Signal Hill",
+  "prefabId": "",
+  "x": 0,
+  "y": 2,
+  "symbol": "trigger_gully_exit_signal_hill",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "2ccfacfe-0da3-5adf-bb87-7c21e10d7aab"
+    },
+    {
+      "command": "EVENT_OVERLAY_HIDE",
+      "args": {},
+      "id": "d2601860-93f0-5816-bf69-3a60e523aa38"
+    },
+    {
+      "command": "EVENT_SWITCH_SCENE",
+      "args": {
+        "x": {
+          "type": "number",
+          "value": 59
+        },
+        "y": {
+          "type": "number",
+          "value": 5
+        },
+        "direction": "left",
+        "sceneId": "7c856987-bbdf-5d75-a97e-327259a90956",
+        "fadeSpeed": "2"
+      },
+      "id": "fca6c443-6dd6-5cca-be5c-fe35e10bfcfe"
+    }
+  ],
+  "leaveScript": [],
+  "_index": 0
+}

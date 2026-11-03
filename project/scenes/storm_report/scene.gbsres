@@ -1,7 +1,7 @@
 {
   "_resourceType": "scene",
   "id": "87eb95ce-7a29-5e5f-a362-e92762f6cb26",
-  "_index": 4,
+  "_index": 1,
   "name": "Storm Report",
   "symbol": "scene_storm_report",
   "backgroundId": "03197e36-bd9e-5364-94dc-553056ba2bc8",
@@ -63,11 +63,12 @@
         "text": [
           "STORM REPORT",
           "Tickets closed:\n4 of 4.",
+          "Lines fixed:\n20 of 20.",
           "Amara's food is\nsafe and cold.",
           "Hiroshi breathes\neasy again.",
           "Priya is back\nonline.",
           "Emil's soup is\nhot.",
-          "Thank you,\nMister CFE!",
+          "Thank you,\nLineman!",
           "A game by\nAbe's Games"
         ],
         "avatarId": "",
@@ -114,6 +115,13 @@
         "speed": "2"
       },
       "id": "884dac8f-c142-5b6b-a720-e5f7895770ae"
+    },
+    {
+      "command": "EVENT_MUSIC_PLAY",
+      "args": {
+        "musicId": "28224f5e-66bd-569b-9263-a26b30806f7f"
+      },
+      "id": "d3b27280-2a27-56be-a427-d3ff8040d45e"
     },
     {
       "command": "EVENT_SWITCH_SCENE",

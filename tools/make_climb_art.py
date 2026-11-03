@@ -1,9 +1,19 @@
-"""Generate the authored, collision-aligned Storm Climb background.
+"""Generate job 1's collision-aligned backgrounds from ``climb.py``: 1A
+``storm_climb.png`` (20x36) and 1B ``climb_crest.png`` (56x18, the CREST section).
 
-The RGB image returned by :func:`make_background` is the artist-facing source.
-The compiler-facing PNG is a grayscale index proxy, matching the native
-GB Studio color-index thresholds.  This generator owns only
-``storm_climb.png`` and its background sidecar.
+The RGB images returned by :func:`make_background` / :func:`make_crest_background`
+are the artist-facing sources. The compiler-facing PNGs are grayscale index
+proxies, matching the native GB Studio color-index thresholds. This generator
+owns only those two PNGs and their background sidecars. The crest is functional
+art from the climb's own pieces (sky, stone, timber, transformer, house); an
+art pass may dress it later.
+
+BG palette slots: 0 night sky, 1 stone (walls, deck slabs, bedrock), 2 timber
+(walks, ledges, posts, Amara's house on the crest), 3 window (Amara's windows
+only; her door swaps it), 4 hardware (transformer cans, substation), 5 wire
+stages 1-3, 6 wire stages 4-5, 7 UI. Wire tiles hold wire pixels and a transformer's
+bushings only, in their stage's colour index, so the chain palettes light the
+route stage by stage (climb.CHAIN_PALETTES).
 """
 from __future__ import annotations
 
@@ -14,467 +24,255 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 import climb
+import hazards
 import opening
+import shaft_art
+import transformer_art
 from make_climb_scene import collision_rle, resource_id
 
 
 ROOT = Path(__file__).resolve().parent.parent
 OUTPUT = ROOT / "assets/backgrounds/storm_climb.png"
 SIDECAR = Path(str(OUTPUT) + ".gbsres")
-WIDTH, HEIGHT = climb.MAP_W * climb.TILE, climb.MAP_H * climb.TILE
-PALETTES = [[tuple(bytes.fromhex(color)) for color in colors]
-            for _, colors in opening.BG_PALETTES]
+CREST_OUTPUT = ROOT / "assets/backgrounds/climb_crest.png"
+CREST_SIDECAR = Path(str(CREST_OUTPUT) + ".gbsres")
+TILE = climb.TILE
+WIDTH, HEIGHT = climb.MAP_W * TILE, climb.MAP_H * TILE
+CREST_WIDTH, CREST_HEIGHT = climb.CREST_W * TILE, climb.CREST_H * TILE
 NATIVE_PROXY_BY_INDEX = (255, 170, 85, 0)
-# Amara's two windows flank the door; slot 3 is reserved for them alone.
-SUMMIT_WINDOW_TILES = ((11, 4), (14, 4))
-LANE_CELLS = {
-    (row, x) for row, x0, x1 in climb.GUST_LANES for x in range(x0, x1 + 1)
-}
+MAX_UNIQUE_TILES = 300
 
-# Amara's broken line (gameplay contract: climb.DAMAGED_POLE / JUNCTION_BOX).
-# The snapped pole is the animated intro_pole actor on the shelf-21 pickup
-# corner (see make_climb_scene), so the background draws no pole. Its cable
-# starts at the top of that sprite (tile row DAMAGED_POLE y-3), rises to row
-# 11, sags across the mountain and drops into the junction box.  Cable pixels
-# are only painted on empty sky/ridge tiles, which are claimed for BG slot 5
-# (LINE_BG_SLOT).  Posts, foliage, windows and shelf or rock tiles are never
-# claimed, so the line passes behind them as gaps.
-CABLE_ATTACH = (31, 137)      # tile (3,17): top of the pole sprite, above its insulator
-CABLE_CORNER = (50, 88)       # tile (6,11): leaves the pole on row 11
-CABLE_SPAN_END = (134, 88)    # tile (16,11): end of the sagging span
-CABLE_SPAN_SAG = 5            # pixels the span dips below its chord at mid-span
-CABLE_BOX_DROP = (138, 100)   # tile (17,12)
-CABLE_BOX_TOP = (139, 111)    # tile (17,13): directly above the junction box
+SKY, STONE, TIMBER, WINDOW, HARDWARE, WIRE_1, WIRE_2 = range(7)
+assert climb.HARDWARE_BG_SLOT == HARDWARE and climb.LINE_BG_SLOT == WIRE_1 and climb.LINE_BG_SLOT_2 == WIRE_2
+
+
+def _rgb(colors: list[str]) -> list[tuple[int, int, int]]:
+    return [tuple(bytes.fromhex(color)) for color in colors]
+
+
+PALETTES = [_rgb(colors) for _, colors in opening.BG_PALETTES]
+PALETTES[HARDWARE] = _rgb(climb.HARDWARE_COLORS)
+PALETTES[WIRE_1] = _rgb(climb.WIRE_SLOT_DEAD)
+PALETTES[WIRE_2] = _rgb(climb.WIRE_SLOT_DEAD)
+CREST_WINDOW_TILES = climb.CREST_WINDOW_TILES
+
+# WP5: a timber arch at every scene link ("the route continues here"), derived from
+# scene_links; the tiles it claims are open sky only (wires and terrain keep theirs).
+MARKERS = {"storm_climb": shaft_art.exit_markers("storm_climb", climb.MAP_W, climb.MAP_H),
+           "climb_crest": shaft_art.exit_markers("climb_crest", climb.CREST_W, climb.CREST_H)}
+CLAIMED: dict[str, set[tuple[int, int]]] = {}
+
+# Background transformer: the shared job transformer (transformer_art.py), a
+# 16x24 condensation of the transformer sprite's Live frame. Its top tile row is
+# in the stage's wire slot ("W": cap, bushing, clamp, collar and lid glow when
+# the stage is live); the can and post are hardware ("L" light, "G" grey, "D" dark).
+TRANSFORMER_ART = transformer_art.ART
+ART_INDEX = {"L": 1, "G": 2, "D": 3}
+assert len(TRANSFORMER_ART) == climb.TRANSFORMER_H * TILE
+assert all(len(row) == climb.TRANSFORMER_W * TILE for row in TRANSFORMER_ART)
+
+
+def _mask_pixels(draw, width: int = WIDTH, height: int = HEIGHT) -> frozenset[tuple[int, int]]:
+    mask = Image.new("1", (width + 2, height + 2), 0)
+    draw(ImageDraw.Draw(mask))
+    w = mask.width
+    data = list(mask.get_flattened_data())
+    return frozenset((i % w, i // w) for i, v in enumerate(data) if v)
+
+
+def _polyline_pixels(route, width: int = WIDTH, height: int = HEIGHT) -> frozenset[tuple[int, int]]:
+    """2px-thick polyline through contract tile cells (offset 3 inside each tile)."""
+    pts = [(tx * TILE + 3, ty * TILE + 3) for tx, ty in route]
+
+    def draw(d):
+        for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+            d.line([(x + dx, y + dy) for x, y in pts], fill=1, width=1)
+    return _mask_pixels(draw, width, height)
 
 
 @functools.lru_cache(maxsize=None)
-def cable_waypoints() -> tuple[tuple[int, int], ...]:
-    """Pixel polyline for the cable: pole, rise, sagging span, box drop."""
-    x0, y0 = CABLE_CORNER
-    x1, y1 = CABLE_SPAN_END
-    assert y0 == y1, "span must be level at both ends"
-    mid, half = (x0 + x1) / 2, (x1 - x0) / 2
-    span = [(x, round(y0 + CABLE_SPAN_SAG * (1 - ((x - mid) / half) ** 2)))
-            for x in range(x0, x1 + 1)]
-    return (CABLE_ATTACH, *span, CABLE_BOX_DROP, CABLE_BOX_TOP)
+def stage_pixels(stage: int) -> frozenset[tuple[int, int]]:
+    """Every pixel that may carry the wire colour index of ``stage`` (1A)."""
+    out: set[tuple[int, int]] = set()
+    for s, route in climb.WIRE_ROUTES:
+        if s == stage:
+            out |= _polyline_pixels(route)
+    return frozenset((x, y) for x, y in out if x < WIDTH and y < HEIGHT)
 
 
 @functools.lru_cache(maxsize=None)
-def cable_pixels() -> frozenset[tuple[int, int]]:
-    """Every (x, y) pixel the 1px cable would occupy before tile occlusion."""
-    mask = Image.new("1", (WIDTH, HEIGHT), 0)
-    ImageDraw.Draw(mask).line(list(cable_waypoints()), fill=255, width=1)
-    return frozenset((x, y) for y in range(HEIGHT) for x in range(WIDTH)
-                     if mask.getpixel((x, y)))
+def crest_stage_pixels(stage: int) -> frozenset[tuple[int, int]]:
+    """Every crest pixel that may carry the wire colour index of ``stage`` (only stage 5 runs there)."""
+    out: set[tuple[int, int]] = set()
+    for s, route in climb.CREST_WIRE_ROUTES:
+        if s == stage:
+            out |= _polyline_pixels(route, CREST_WIDTH, CREST_HEIGHT)
+    return frozenset((x, y) for x, y in out if x < CREST_WIDTH and y < CREST_HEIGHT)
 
 
-@functools.lru_cache(maxsize=None)
-def cable_route_tiles() -> frozenset[tuple[int, int]]:
-    """(tx, ty) tiles the cable passes through; some may be occluded."""
-    return frozenset((x // 8, y // 8) for x, y in cable_pixels())
+def stage_color(stage: int) -> tuple[int, int, int]:
+    return PALETTES[climb.stage_slot(stage)][climb.STAGE_COLOR_INDEX[stage - 1]]
 
 
-def _set_slot(slots: list[list[int]], tx: int, ty: int, slot: int,
-              *, empty_only: bool = False) -> bool:
-    if not (0 <= tx < climb.MAP_W and 0 <= ty < climb.MAP_H):
-        return False
-    if empty_only and slots[ty][tx] != 0:
-        return False
-    slots[ty][tx] = slot
-    return True
-
-
-def _set_rect(slots: list[list[int]], slot: int, x0: int, x1: int,
-              y0: int, y1: int, *, empty_only: bool = False) -> None:
+def _set_rect(slots: list[list[int]], slot: int, x0: int, x1: int, y0: int, y1: int) -> None:
     for ty in range(y0, y1 + 1):
         for tx in range(x0, x1 + 1):
-            _set_slot(slots, tx, ty, slot, empty_only=empty_only)
+            slots[ty][tx] = slot
+
+
+def _post_tiles(grid: list[list[int]]) -> list[tuple[int, int]]:
+    """Timber posts under each ledge end, down to the next occupied cell (at most three rows)."""
+    return shaft_art.post_tiles(grid, climb.LEDGES, climb.hazard_cells(), climb.MAP_H)
 
 
 def _slots(grid: list[list[int]]) -> list[list[int]]:
-    """Choose palette families by tile while respecting authored geometry."""
-    slots = [[0] * climb.MAP_W for _ in range(climb.MAP_H)]
+    """Choose one palette family per tile, respecting the collision grid."""
+    slots = [[SKY] * climb.MAP_W for _ in range(climb.MAP_H)]
     for ty, row in enumerate(grid):
         for tx, cell in enumerate(row):
             if cell == climb.COL_SOLID:
-                slots[ty][tx] = 6 if ty >= 34 else 1
+                slots[ty][tx] = STONE
             elif cell == climb.COL_TOP:
-                slots[ty][tx] = 2
-
-    # Layered blue-violet mountain silhouettes.  Their irregular stepped
-    # profiles stay behind the route; the actual rock collisions remain the
-    # opaque, nearer buttresses and ground.
-    ridge_spans = {
-        0: [(0, 6), (16, 19)],
-        1: [(0, 7), (15, 19)],
-        2: [(0, 8), (17, 19)],
-        3: [(0, 7), (16, 19)],
-        4: [(0, 5), (17, 19)],
-        5: [(0, 4), (18, 19)],
-        7: [(0, 2), (18, 19)],
-        8: [(0, 3), (18, 19)],
-        9: [(0, 4), (19, 19)],
-        11: [(0, 5), (16, 19)],
-        12: [(0, 4), (17, 19)],
-        14: [(0, 4), (16, 19)],
-        15: [(0, 3), (17, 19)],
-        17: [(0, 4), (16, 19)],
-        18: [(0, 3), (17, 19)],
-        20: [(0, 4), (16, 19)],
-        21: [(0, 3), (17, 19)],
-        23: [(0, 4), (16, 19)],
-        24: [(0, 3), (17, 19)],
-        26: [(0, 4), (16, 19)],
-        27: [(0, 3), (17, 19)],
-        29: [(0, 4), (16, 19)],
-        30: [(0, 3), (17, 19)],
-        32: [(0, 2), (17, 19)],
-    }
-    for ty, spans in ridge_spans.items():
-        for x0, x1 in spans:
-            _set_rect(slots, 1, x0, x1, ty, ty, empty_only=True)
-
-    # Foliage frames the route at the cliff margins, not over the jump lanes.
-    foliage = [
-        (0, 2, 8, 9), (0, 1, 10, 11), (0, 3, 15, 16),
-        (0, 2, 21, 22), (0, 2, 24, 24), (0, 3, 28, 29),
-        (0, 2, 31, 31), (17, 19, 8, 9), (18, 19, 12, 13),
-        (17, 19, 18, 18), (17, 19, 21, 21), (17, 19, 24, 24),
-        (17, 19, 27, 27), (17, 19, 30, 31),
-    ]
-    for x0, x1, y0, y1 in foliage:
-        _set_rect(slots, 4, x0, x1, y0, y1, empty_only=True)
-
-    # Powered home: reserve its small facade/window area above the summit walk.
-    _set_rect(slots, 2, 8, 17, 1, 5)
-    # Each lit window owns exactly one whole tile, so the checkpoint's slot-3
-    # palette swap warms both windows and nothing else on the facade.
-    for tx, ty in SUMMIT_WINDOW_TILES:
-        _set_slot(slots, tx, ty, 3)
-
-    # Base substation and its timber service frame near the spawn. The player
-    # remains in front of this background structure at (2,32).
-    _set_rect(slots, 5, 0, 4, 28, 32, empty_only=True)
-    _set_rect(slots, 2, 0, 4, 27, 27, empty_only=True)
-
-    # Two metal mast fragments and the torn conductor link infrastructure up
-    # the cliff. Only sky/backdrop cells are claimed; platforms remain visible.
-    for tx, ty in [(5, 29), (5, 30), (5, 31), (6, 31), (8, 24),
-                   (8, 23), (14, 17), (14, 16), (6, 9), (6, 8)]:
-        _set_slot(slots, tx, ty, 5, empty_only=True)
-
-    # These are currently static reset lanes.  Give every lane a distinct
-    # metal-backed warning marker; do not imply a timed gust animation.
-    for row, x0, x1 in climb.GUST_LANES:
-        for tx in range(x0, x1 + 1):
-            if grid[row][tx] != climb.COL_EMPTY:
-                raise AssertionError(f"static warning overlaps collision at {tx},{row}")
-            slots[row][tx] = 5
-
-    # Catwalk supports are only vertical timber posts below the exact collision
-    # row. They stop at the next occupied tile or at a marked warning lane.
-    for row, x0, x1 in climb.PLATFORMS:
-        support_xs = sorted({x0, x1, *range(x0 + 3, x1, 4)})
-        for tx in support_xs:
-            for ty in range(row + 1, min(row + 4, climb.MAP_H)):
-                if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in LANE_CELLS:
-                    break
-                if slots[ty][tx] in (3, 4, 5):
-                    break
-                slots[ty][tx] = 2
-
-    # Claim the cable's empty sky/ridge tiles for the metal line slot, after
-    # posts and lanes are placed. Posts, foliage, windows and shelves keep
-    # their slots, so the line passes behind them as a gap, not a recolour.
-    for tx, ty in sorted(cable_route_tiles()):
-        if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in LANE_CELLS:
-            continue
-        if slots[ty][tx] == climb.LINE_BG_SLOT:
-            raise AssertionError(f"cable route crosses existing slot-5 tile {tx},{ty}")
-        if slots[ty][tx] in (0, 1):
-            slots[ty][tx] = climb.LINE_BG_SLOT
-
-    # Keep the editor's UI palette reserved and unused by background tiles.
-    assert all(slot in range(7) for row in slots for slot in row)
-    assert all(slots[row][x] == 2 for row, x0, x1 in climb.PLATFORMS
-               for x in range(x0, x1 + 1))
-    assert all(slots[row][x] == 5 for row, x0, x1 in climb.GUST_LANES
-               for x in range(x0, x1 + 1))
+                slots[ty][tx] = TIMBER
+    for tx, ty in _post_tiles(grid):
+        slots[ty][tx] = TIMBER
+    sx0, sx1, sy0, sy1 = climb.SUBSTATION_TILES
+    _set_rect(slots, HARDWARE, sx0, sx1, sy0, sy1)
+    _reserve_transformers_and_wires(slots, grid, climb.boxes_in(climb.CLIMB_SCENE), stage_pixels)
+    CLAIMED["storm_climb"] = shaft_art.claim_markers(slots, grid, MARKERS["storm_climb"], TIMBER)
     return slots
 
 
-class _Canvas:
-    """Clip all painting to its tile's one assigned palette family."""
-
-    def __init__(self, image: Image.Image, slots: list[list[int]]):
-        self.image = image
-        self.slots = slots
-
-    def _apply(self, slot: int, painter) -> None:
-        layer = Image.new("RGBA", self.image.size, (0, 0, 0, 0))
-        painter(ImageDraw.Draw(layer))
-        bounds = layer.getbbox()
-        if not bounds:
-            return
-        px, over = self.image.load(), layer.load()
-        left, top, right, bottom = bounds
-        for y in range(top, bottom):
-            for x in range(left, right):
-                rgba = over[x, y]
-                if rgba[3] and self.slots[y // 8][x // 8] == slot:
-                    px[x, y] = rgba[:3]
-
-    @staticmethod
-    def _rgba(color):
-        return tuple(color) + (255,)
-
-    def rect(self, slot: int, box, color, outline=None, width=1) -> None:
-        fill = self._rgba(color)
-        edge = self._rgba(outline) if outline is not None else None
-        self._apply(slot, lambda d: d.rectangle(box, fill=fill, outline=edge,
-                                                 width=width))
-
-    def line(self, slot: int, points, color, width=1) -> None:
-        rgba = self._rgba(color)
-        self._apply(slot, lambda d: d.line(points, fill=rgba, width=width))
-
-    def polygon(self, slot: int, points, color) -> None:
-        rgba = self._rgba(color)
-        self._apply(slot, lambda d: d.polygon(points, fill=rgba))
-
-    def point(self, slot: int, xy, color) -> None:
-        rgba = self._rgba(color)
-        self._apply(slot, lambda d: d.point(xy, fill=rgba))
-
-
-def _draw_terrain(c: _Canvas, grid: list[list[int]]) -> None:
-    p = PALETTES
-    # Distant ridges have broad, cool facets and restrained summit catches.
-    c.polygon(1, [(-4, 52), (5, 44), (17, 48), (32, 31), (44, 37),
-                  (58, 25), (72, 34), (85, 26), (101, 39), (117, 30),
-                  (133, 40), (149, 28), (164, 38), (164, 66), (-4, 66)], p[1][1])
-    c.polygon(1, [(-3, 60), (12, 50), (25, 57), (39, 44), (53, 52),
-                  (68, 42), (84, 54), (100, 43), (116, 52), (133, 42),
-                  (148, 52), (163, 46), (163, 73), (-3, 73)], p[1][0])
-    # Distant ranges in the night-sky family continue behind the playable
-    # route. Keeping these in slot 0 makes them low-contrast atmosphere rather
-    # than false solid ledges.
-    c.polygon(0, [(-3, 105), (11, 94), (24, 100), (39, 87), (52, 95),
-                  (68, 83), (84, 96), (99, 86), (114, 98), (130, 87),
-                  (147, 98), (163, 90), (163, 132), (-3, 132)], p[0][1])
-    c.polygon(0, [(-3, 121), (13, 111), (27, 118), (43, 106), (57, 116),
-                  (74, 103), (89, 116), (106, 105), (123, 118), (140, 106),
-                  (163, 120), (163, 139), (-3, 139)], p[0][2])
-    for points in [
-        [(4, 47), (17, 48), (30, 34), (39, 36), (27, 43), (19, 52), (8, 51)],
-        [(56, 28), (62, 26), (73, 35), (67, 32)],
-        [(113, 34), (118, 31), (132, 40), (125, 38)],
-        [(147, 31), (151, 29), (162, 38), (156, 36)],
-    ]:
-        c.polygon(1, points, p[1][2])
-    for points in [[(32, 32), (36, 31), (40, 35)],
-                   [(58, 26), (62, 25), (65, 29)],
-                   [(117, 31), (120, 30), (123, 33)],
-                   [(149, 29), (152, 28), (155, 31)]]:
-        c.line(1, points, p[1][3])
-
-    # The lower route gets a second, subdued cliff horizon rather than a
-    # vertically stretched opening backdrop.
-    c.polygon(1, [(-2, 149), (12, 138), (24, 145), (36, 132), (49, 139),
-                  (63, 128), (77, 138), (90, 130), (105, 141), (120, 132),
-                  (136, 143), (151, 132), (162, 139), (162, 165), (-2, 165)], p[1][0])
-    c.polygon(1, [(-2, 229), (12, 220), (25, 226), (40, 214), (54, 221),
-                  (68, 211), (82, 222), (99, 213), (114, 224), (130, 214),
-                  (146, 225), (162, 216), (162, 246), (-2, 246)], p[1][0])
-    c.polygon(0, [(-2, 181), (12, 171), (25, 178), (41, 164), (57, 174),
-                  (74, 160), (90, 173), (107, 161), (122, 175), (140, 163),
-                  (162, 177), (162, 207), (-2, 207)], p[0][1])
-    c.polygon(0, [(-2, 201), (14, 191), (29, 198), (45, 185), (61, 196),
-                  (78, 181), (96, 195), (111, 184), (128, 198), (145, 185),
-                  (162, 198), (162, 216), (-2, 216)], p[0][2])
-    c.polygon(0, [(-2, 258), (14, 246), (28, 253), (42, 241), (59, 252),
-                  (75, 238), (92, 251), (109, 239), (126, 253), (142, 241),
-                  (162, 254), (162, 276), (-2, 276)], p[0][1])
-    for x, y in [(13, 142), (37, 136), (64, 131), (91, 133),
-                 (121, 135), (151, 135), (14, 223), (41, 217),
-                 (69, 214), (100, 216), (132, 217)]:
-        c.line(1, [(x, y), (x + 2, y - 1)], p[1][2])
-
-    # Uneven stone planes in collision blocks: every solid tile is filled
-    # edge-to-edge, with diagonal seams rather than shelf-like highlights.
-    for ty, row in enumerate(grid):
-        for tx, cell in enumerate(row):
-            if cell != climb.COL_SOLID:
+def _reserve_transformers_and_wires(slots: list[list[int]], grid: list[list[int]], lines, pixels) -> None:
+    """Transformer tiles (body hardware, top in the stage's wire slot), then wire tiles on open sky."""
+    reserved = {(tx, ty) for ty, row in enumerate(slots) for tx, slot in enumerate(row) if slot != SKY}
+    bushings = set()
+    for line in lines:
+        top, body = climb.transformer_tiles(line["box"])
+        for tx, ty in body:
+            assert (tx, ty) not in reserved, f"transformer body over {tx},{ty}"
+            slots[ty][tx] = HARDWARE
+        for tx, ty in top:
+            assert (tx, ty) not in reserved, f"transformer top over {tx},{ty}"
+            slots[ty][tx] = climb.stage_slot(line["number"])
+            bushings.add((tx, ty))
+    # Wire tiles take their stage's slot on open sky only, upstream first, so a
+    # junction shared by two slots goes to the downstream stage. Platforms, rock,
+    # posts, the house and hardware keep theirs: the wire passes behind as a gap.
+    for stage in range(1, climb.LINE_COUNT + 1):
+        for tx, ty in sorted({(x // TILE, y // TILE) for x, y in pixels(stage)}):
+            if grid[ty][tx] != climb.COL_EMPTY or (tx, ty) in bushings:
                 continue
-            x, y = tx * 8, ty * 8
-            slot = 6 if ty >= 34 else 1
-            ramp = p[slot]
-            c.rect(slot, (x, y, x + 7, y + 7), ramp[1])
-            if (tx + ty) % 3 == 0:
-                c.polygon(slot, [(x, y + 2), (x + 3, y), (x + 4, y + 2),
-                                 (x + 2, y + 4)], ramp[0])
-            else:
-                c.line(slot, [(x + 1, y + 1), (x + 3, y + 2), (x + 2, y + 4)], ramp[0])
-            c.line(slot, [(x + 5, y + 1), (x + 6, y + 3)], ramp[2])
-            if (tx * 3 + ty) % 4 == 0:
-                c.point(slot, (x + 6, y + 6), ramp[3])
-    # Valley bedrock has broad earthen strata, still fully opaque.
-    c.polygon(6, [(0, 278), (29, 278), (39, 282), (67, 282), (77, 278),
-                  (109, 278), (121, 283), (151, 283), (160, 278),
-                  (160, 288), (0, 288)], p[6][2])
-    for x, y in [(11, 280), (45, 285), (87, 281), (132, 286)]:
-        c.line(6, [(x, y), (x + 5, y - 1)], p[6][0])
+            if slots[ty][tx] in (SKY, WIRE_1, WIRE_2):
+                slots[ty][tx] = climb.stage_slot(stage)
+    assert all(0 <= slot < 7 for row in slots for slot in row), "UI slot 7 reserved"
 
 
-def _draw_foliage(c: _Canvas) -> None:
-    p = PALETTES[4]
-    # Fir bough silhouettes are built from short downward/diagonal tiers, not
-    # flat shelves; all strokes are clipped to reserved foliage tiles.
-    pines = [
-        (4, 75, 11, 102), (25, 123, 34, 147), (3, 169, 12, 196),
-        (20, 205, 29, 232), (2, 247, 12, 276),
-        (143, 78, 153, 106), (126, 111, 137, 139),
-        (145, 157, 156, 185), (128, 194, 139, 221),
-        (145, 235, 155, 264),
-    ]
-    for index, (x, y, w, h) in enumerate(pines):
-        center = x + w // 2
-        c.polygon(4, [(center, y), (x + 2, y + 11), (x + 5, y + 10),
-                      (x, y + 20), (x + 5, y + 19), (x, h - 2),
-                      (x + w, h - 2), (x + w - 5, y + 19), (x + w, y + 20),
-                      (x + w - 5, y + 10), (x + w - 2, y + 11)], p[1])
-        c.line(4, [(center, y + 2), (center, h - 2)], p[0])
-        c.line(4, [(center - 1, y + 7), (center - 3, y + 12)], p[2])
-        if index % 2 == 0:
-            c.point(4, (center + 1, y + 16), p[3])
-
-
-def _draw_platforms(c: _Canvas) -> None:
-    p = PALETTES[2]
-    for row, x0, x1 in climb.PLATFORMS:
-        y = row * 8
-        left, right = x0 * 8, x1 * 8 + 7
-        # The light top edge is exactly the collision row's first pixel.
-        c.line(2, [(left, y), (right, y)], p[3], 1)
-        c.line(2, [(left, y + 1), (right, y + 1)], p[2], 1)
-        c.rect(2, (left, y + 2, right, y + 4), p[1])
-        c.line(2, [(left, y + 5), (right, y + 5)], p[0])
-        c.line(2, [(left, y + 6), (right, y + 6)], p[0])
-        # Repeating short plank seams and occasional fastening pegs.
-        for x in range(left + 10, right - 2, 16):
-            c.line(2, [(x, y + 2), (x, y + 4)], p[0])
-            c.point(2, (x + 3, y + 2), p[3])
-
-
-def _draw_supports(c: _Canvas, slots: list[list[int]]) -> None:
-    p = PALETTES[2]
-    for row, x0, x1 in climb.PLATFORMS:
-        supports = sorted({x0, x1, *range(x0 + 3, x1, 4)})
-        for tx in supports:
-            for ty in range(row + 1, min(row + 4, climb.MAP_H)):
-                if slots[ty][tx] != 2 or (ty, tx) in LANE_CELLS:
-                    break
-                x, y = tx * 8 + 3, ty * 8
-                c.line(2, [(x, y), (x, y + 7)], p[0], 2)
-                c.line(2, [(x + 2, y), (x + 2, y + 7)], p[2])
-
-
-def _draw_home(c: _Canvas) -> None:
-    p = PALETTES
-    # A compact powered service home, perched above the summit walk.
-    c.polygon(2, [(69, 35), (84, 12), (104, 3), (124, 15), (140, 35),
-                  (134, 38), (121, 23), (104, 14), (86, 23), (75, 38)], p[2][0])
-    c.polygon(2, [(75, 34), (87, 19), (104, 8), (121, 19), (135, 34),
-                  (128, 34), (119, 24), (104, 16), (88, 25), (81, 34)], p[2][2])
-    c.rect(2, (81, 31, 128, 47), p[2][1])
-    c.line(2, [(82, 32), (82, 46)], p[2][3])
-    c.line(2, [(127, 32), (127, 46)], p[2][0])
-    c.rect(2, (99, 36, 108, 47), p[2][0])
-    c.point(2, (105, 41), p[2][3])
-    # Slot 3 is the selective power/window family; bright source index 3 marks
-    # a lit room without warming the whole facade.
-    for tx, ty in SUMMIT_WINDOW_TILES:
-        x, y = tx * 8, ty * 8
-        c.rect(3, (x, y, x + 7, y + 7), p[3][0])
-        c.rect(3, (x + 1, y + 1, x + 6, y + 6), p[3][1])
-        c.rect(3, (x + 2, y + 2, x + 5, y + 5), p[3][3])
-        c.line(3, [(x + 3, y + 2), (x + 3, y + 5)], p[3][2])
-        c.line(3, [(x + 2, y + 4), (x + 5, y + 4)], p[3][2])
-
-
-def _draw_infrastructure(c: _Canvas) -> None:
-    p = PALETTES
-    # Service cabinet and timber mounting frame at the valley start.
-    c.rect(2, (0, 225, 39, 231), p[2][0])
-    c.rect(2, (2, 222, 38, 224), p[2][2])
-    c.line(2, [(4, 226), (4, 262)], p[2][2], 2)
-    c.line(2, [(37, 226), (37, 262)], p[2][2], 2)
-    c.rect(5, (8, 230, 31, 262), p[5][0])
-    c.line(5, [(9, 230), (30, 230)], p[5][3])
-    c.line(5, [(9, 231), (9, 260)], p[5][2])
-    c.rect(5, (12, 234, 27, 237), p[5][2])
-    c.rect(5, (12, 240, 27, 256), p[5][0])
-    c.line(5, [(14, 242), (25, 242)], p[5][2])
-    c.line(5, [(14, 245), (17, 245)], p[5][3])
-    c.line(5, [(14, 249), (17, 249)], p[5][3])
-    c.line(5, [(14, 253), (23, 253)], p[5][2])
-
-    # Two narrow mast remnants and a snapped conductor, articulated in metal.
-    c.line(5, [(44, 263), (44, 226)], p[5][2], 2)
-    c.line(5, [(41, 230), (47, 230)], p[5][3])
-    c.line(5, [(44, 229), (56, 221), (69, 217), (80, 210)], p[5][2])
-    c.line(5, [(82, 208), (91, 204), (101, 194)], p[5][2])
-    c.line(5, [(103, 193), (111, 187), (119, 181)], p[5][2])
-    c.line(5, [(121, 179), (126, 176)], p[5][2])
-    c.line(5, [(126, 176), (130, 177)], p[5][3])
-    c.line(5, [(136, 170), (136, 145)], p[5][2], 2)
-    c.line(5, [(132, 149), (140, 149)], p[5][3])
-    c.line(5, [(136, 148), (125, 143), (115, 141)], p[5][2])
-    # Broken ceramic forks make the conductor visibly torn, not a clean line.
-    c.line(5, [(123, 141), (121, 138)], p[5][3])
-    c.line(5, [(126, 143), (129, 140)], p[5][2])
-    c.line(5, [(131, 141), (134, 138)], p[5][3])
-
-
-def _draw_warnings(c: _Canvas) -> None:
-    p = PALETTES[5]
-    for row, x0, x1 in climb.GUST_LANES:
-        left, right = x0 * 8, x1 * 8 + 7
-        y = row * 8
-        # Fixed, high-contrast metal hazard placard. Cross center pixels use
-        # palette index 3 and are visible in the compiler proxy as native 3.
-        c.rect(5, (left + 2, y + 2, right - 2, y + 5), p[0])
-        c.line(5, [(left + 4, y + 2), (right - 4, y + 5)], p[2])
-        c.line(5, [(right - 4, y + 2), (left + 4, y + 5)], p[2])
-        center = (left + right) // 2
-        c.line(5, [(center - 2, y + 3), (center + 2, y + 3)], p[3])
-        c.line(5, [(center, y + 1), (center, y + 6)], p[3])
-
-
-def _draw_cable(c: _Canvas, slots: list[list[int]]) -> None:
-    """Paint the cable in LINE_COLOR_INDEX on claimed slot-5 route tiles only."""
-    color = PALETTES[climb.LINE_BG_SLOT][climb.LINE_COLOR_INDEX]
-    px = c.image.load()
-    for x, y in sorted(cable_pixels()):
-        tx, ty = x // 8, y // 8
-        if slots[ty][tx] == climb.LINE_BG_SLOT and (ty, tx) not in LANE_CELLS:
-            px[x, y] = color
+# Deck/ledge/slab/post drawing lives in shaft_art.py (shared with the other shafts).
+_Canvas = shaft_art.Canvas
 
 
 def _draw_sky(c: _Canvas) -> None:
-    p = PALETTES[0]
-    # Small rain slashes and isolated storm lights leave the climbing corridor
-    # legible. Repeated marks share patterns to keep native tile use bounded.
-    for x, y, color in [(20, 16, 2), (52, 20, 3), (136, 12, 2),
-                        (148, 65, 3), (21, 112, 2), (101, 126, 3),
-                        (40, 181, 2), (91, 202, 3), (151, 227, 2)]:
-        c.point(0, (x, y), p[color])
-    for x, y in [(71, 14), (121, 76), (92, 112), (67, 157),
-                 (112, 190), (53, 235)]:
-        c.line(0, [(x, y), (x - 2, y + 4)], p[1])
-    # A broken storm cloud edge in the upper-left sky.
-    c.line(0, [(8, 63), (17, 61), (22, 63)], p[1], 2)
-    c.line(0, [(11, 66), (16, 65)], p[2])
+    p = PALETTES[SKY]
+    # Distant ranges in the night family stay low-contrast atmosphere behind the route.
+    for base, color in ((52, 1), (130, 2), (210, 1)):
+        pts = [(-2, base + 14)]
+        for i, x in enumerate(range(0, WIDTH + 24, 24)):
+            pts.append((x, base + (0, 10, 4, 14, 6)[i % 5]))
+        pts += [(WIDTH + 2, base + 30), (-2, base + 30)]
+        c.polygon(SKY, pts, p[color])
+    for x, y, color in [(20, 18, 2), (52, 22, 3), (126, 14, 2), (148, 66, 3), (28, 112, 2),
+                        (100, 126, 3), (44, 182, 2), (92, 204, 3), (140, 228, 2), (60, 252, 3)]:
+        c.point(SKY, (x, y), p[color])
+    for x, y in [(71, 30), (121, 78), (92, 110), (67, 158), (112, 190), (53, 236)]:
+        c.line(SKY, [(x, y), (x - 2, y + 4)], p[1])
+
+
+def _clear_cells(cells: set[tuple[int, int]]) -> set[tuple[int, int]]:
+    """Hazard cells widened by one column each side, so debris never sits beside a hazard lane."""
+    return cells | {(row, x + dx) for row, x in cells for dx in (-2, -1, 1, 2)}
+
+
+def _draw_stone(c: _Canvas, grid: list[list[int]]) -> None:
+    shaft_art.draw_stone(c, grid, PALETTES[STONE], STONE)
+
+
+def _draw_platforms(c: _Canvas) -> None:
+    shaft_art.draw_platforms(c, climb.PLATFORMS, PALETTES[TIMBER], TIMBER)
+
+
+def _draw_posts(c: _Canvas, grid: list[list[int]]) -> None:
+    shaft_art.draw_posts(c, _post_tiles(grid), PALETTES[TIMBER], TIMBER)
+
+
+def _draw_boards(c: _Canvas) -> None:
+    """Cracked planks (the board actor only shows while it creaks)."""
+    p = PALETTES[TIMBER]
+    for row, x0, x1 in hazards.BOARDS["storm_climb"]:
+        y = row * TILE
+        for tx in range(x0, x1 + 1):
+            x = tx * TILE
+            c.line(TIMBER, [(x + 1, y + 2), (x + 3, y + 4), (x + 5, y + 3)], p[0])
+            c.point(TIMBER, (x + 6, y + 4), p[0])
+
+
+def _draw_house(c: _Canvas, house_rect: tuple[int, int, int, int] = climb.CREST_HOUSE_RECT,
+                door: tuple[int, int] = climb.CREST_DOOR,
+                window_tiles: tuple[tuple[int, int], ...] = CREST_WINDOW_TILES) -> None:
+    """Amara's house (moved from the summit to the crest porch, same drawing)."""
+    p = PALETTES
+    hx0, hx1, hy0, hy1 = house_rect
+    left, right = hx0 * TILE, hx1 * TILE + 7
+    top, bottom = hy0 * TILE, hy1 * TILE + 7
+    mid = (left + right) // 2
+    c.polygon(TIMBER, [(left - 2, top + 15), (mid, top), (right + 2, top + 15)], p[TIMBER][0])
+    c.polygon(TIMBER, [(left + 2, top + 14), (mid, top + 3), (right - 2, top + 14)], p[TIMBER][2])
+    c.rect(TIMBER, (left + 1, top + 15, right - 1, bottom), p[TIMBER][1])
+    c.line(TIMBER, [(left + 1, top + 16), (left + 1, bottom)], p[TIMBER][3])
+    c.line(TIMBER, [(right - 1, top + 16), (right - 1, bottom)], p[TIMBER][0])
+    door_x = door[0] * TILE
+    c.rect(TIMBER, (door_x + 2, bottom - 12, door_x + 13, bottom), p[TIMBER][0])
+    c.point(TIMBER, (door_x + 11, bottom - 6), p[TIMBER][3])
+    # Slot 3 is the selective power/window family: the checkpoint warms it.
+    for tx, ty in window_tiles:
+        x, y = tx * TILE, ty * TILE
+        c.rect(WINDOW, (x, y, x + 7, y + 7), p[WINDOW][0])
+        c.rect(WINDOW, (x + 1, y + 1, x + 6, y + 6), p[WINDOW][1])
+        c.rect(WINDOW, (x + 2, y + 2, x + 5, y + 5), p[WINDOW][3])
+        c.line(WINDOW, [(x + 3, y + 2), (x + 3, y + 5)], p[WINDOW][2])
+        c.line(WINDOW, [(x + 2, y + 4), (x + 5, y + 4)], p[WINDOW][2])
+
+
+def _draw_substation(c: _Canvas) -> None:
+    p = PALETTES[HARDWARE]
+    x0, x1, y0, y1 = climb.SUBSTATION_TILES
+    left, right, top, bottom = x0 * TILE, x1 * TILE + 7, y0 * TILE, y1 * TILE + 7
+    c.rect(HARDWARE, (left + 1, top + 2, right - 1, bottom), p[3])
+    c.rect(HARDWARE, (left + 2, top + 3, right - 2, bottom - 1), p[1])
+    for y in range(top + 6, bottom - 2, 4):
+        c.line(HARDWARE, [(left + 4, y), (right - 4, y)], p[2])
+    c.rect(HARDWARE, (right - 7, top, right - 4, top + 2), p[3])
+
+
+def _draw_transformers(c: _Canvas, lines=None) -> None:
+    body_rgb = {code: PALETTES[HARDWARE][index] for code, index in ART_INDEX.items()}
+    for line in climb.boxes_in(climb.CLIMB_SCENE) if lines is None else lines:
+        top, body = climb.transformer_tiles(line["box"])
+        assert all(c.slots[ty][tx] == climb.stage_slot(line["number"]) for tx, ty in top)
+        assert all(c.slots[ty][tx] == HARDWARE for tx, ty in body)
+        transformer_art.paint(c.image.load(), line["box"], stage_rgb=stage_color(line["number"]),
+                              body_rgb=body_rgb)
+
+
+def _draw_wires(c: _Canvas, pixels=stage_pixels) -> None:
+    """Paint each stage's colour index on its own slot's tiles only."""
+    px = c.image.load()
+    for stage in range(1, climb.LINE_COUNT + 1):
+        slot = climb.stage_slot(stage)
+        color = stage_color(stage)
+        for x, y in sorted(pixels(stage)):
+            if c.slots[y // TILE][x // TILE] == slot:
+                px[x, y] = color
 
 
 def make_background() -> tuple[Image.Image, list[list[int]]]:
@@ -486,29 +284,136 @@ def make_background() -> tuple[Image.Image, list[list[int]]]:
     for ty, row in enumerate(slots):
         for tx, slot in enumerate(row):
             color = PALETTES[slot][0]
-            for y in range(ty * 8, ty * 8 + 8):
-                for x in range(tx * 8, tx * 8 + 8):
+            for y in range(ty * TILE, ty * TILE + TILE):
+                for x in range(tx * TILE, tx * TILE + TILE):
                     pixels[x, y] = color
     canvas = _Canvas(image, slots)
-    _draw_terrain(canvas, grid)
-    _draw_foliage(canvas)
-    _draw_platforms(canvas)
-    _draw_supports(canvas, slots)
-    _draw_home(canvas)
-    _draw_infrastructure(canvas)
-    _draw_warnings(canvas)
-    _draw_cable(canvas, slots)
     _draw_sky(canvas)
+    _draw_stone(canvas, grid)
+    shaft_art.puddles(canvas, grid, PALETTES[STONE], STONE)
+    shaft_art.branches(canvas, shaft_art.ground_spots(grid, _clear_cells(climb.hazard_cells()), seed=2, mod=7),
+                       PALETTES[SKY], SKY)
+    _draw_platforms(canvas)
+    _draw_posts(canvas, grid)
+    _draw_boards(canvas)
+    _draw_substation(canvas)
+    shaft_art.paint_markers(canvas, MARKERS["storm_climb"], CLAIMED["storm_climb"], "arch", PALETTES[TIMBER], TIMBER)
+    _draw_transformers(canvas)
+    _draw_wires(canvas)
 
-    # Every material remains within its one tile palette's four native colors.
+    _check_palette_colors(image, slots)
+    _check_geometry_art(image, grid, slots)
+    return image, slots
+
+
+def _check_palette_colors(image: Image.Image, slots: list[list[int]]) -> None:
+    """Every material remains within its one tile palette's four native colors."""
     allowed = [set(colors) for colors in PALETTES]
     for ty, row in enumerate(slots):
         for tx, slot in enumerate(row):
-            for y in range(ty * 8, ty * 8 + 8):
-                for x in range(tx * 8, tx * 8 + 8):
+            for y in range(ty * TILE, ty * TILE + TILE):
+                for x in range(tx * TILE, tx * TILE + TILE):
                     if image.getpixel((x, y)) not in allowed[slot]:
                         raise AssertionError(f"illegal palette color in tile {tx},{ty}")
-    _check_geometry_art(image, grid)
+
+
+# ---------------------------------------------------------------------------
+# 1B climb_crest (56x18): the climb's sky, stone, timber, transformer and house
+# ---------------------------------------------------------------------------
+def crest_post_tiles(grid: list[list[int]]) -> list[tuple[int, int]]:
+    """Timber posts under catwalk C's ends."""
+    return shaft_art.post_tiles(grid, climb.CREST_PLATFORMS, climb.crest_hazard_cells(), climb.CREST_H)
+
+
+def crest_slots(grid: list[list[int]]) -> list[list[int]]:
+    slots = [[SKY] * climb.CREST_W for _ in range(climb.CREST_H)]
+    for ty, row in enumerate(grid):
+        for tx, cell in enumerate(row):
+            if cell == climb.COL_SOLID:
+                slots[ty][tx] = STONE
+            elif cell == climb.COL_TOP:
+                slots[ty][tx] = TIMBER
+    for tx, ty in crest_post_tiles(grid):
+        slots[ty][tx] = TIMBER
+    hx0, hx1, hy0, hy1 = climb.CREST_HOUSE_RECT
+    _set_rect(slots, TIMBER, hx0, hx1, hy0, hy1)
+    for tx, ty in CREST_WINDOW_TILES:
+        slots[ty][tx] = WINDOW
+    _reserve_transformers_and_wires(slots, grid, climb.boxes_in(climb.CREST_SCENE), crest_stage_pixels)
+    CLAIMED["climb_crest"] = shaft_art.claim_markers(slots, grid, MARKERS["climb_crest"], TIMBER)
+    return slots
+
+
+def _draw_crest_sky(c: _Canvas) -> None:
+    """Night sky over the town, all in the night slot: receding storm cloud, a far range with
+    two pylons on its crest, and a mostly dark town in the valley (a few windows still lit,
+    the neighbours waiting on the power). Stars, rain streaks and the HUD rows stay clear."""
+    p = PALETTES[SKY]
+    base = 60
+    for x0 in range(30, CREST_WIDTH - 40, 150):               # storm cloud banks (p1 slabs)
+        y = 28 + (x0 // 150) % 2 * 10
+        c.polygon(SKY, [(x0, y + 8), (x0 + 10, y + 2), (x0 + 30, y), (x0 + 52, y + 4), (x0 + 70, y + 9),
+                        (x0 + 40, y + 12), (x0 + 12, y + 12)], p[1])
+        c.line(SKY, [(x0 + 12, y + 3), (x0 + 30, y + 1), (x0 + 50, y + 5)], p[2])
+    pts = [(-2, base + 14)]
+    for i, x in enumerate(range(0, CREST_WIDTH + 24, 24)):
+        pts.append((x, base + (0, 10, 4, 14, 6)[i % 5]))
+    pts += [(CREST_WIDTH + 2, base + 60), (-2, base + 60)]
+    c.polygon(SKY, pts, p[1])
+    c.line(SKY, pts[:-2], p[2])
+    for x in range(100, CREST_WIDTH - 40, 190):               # pylons on the range crest
+        top = base - 6
+        foot = base + 18
+        c.line(SKY, [(x - 6, foot), (x, top), (x + 6, foot)], p[2], 2)
+        c.line(SKY, [(x - 5, top + 9), (x + 5, top + 9)], p[2], 2)
+        c.line(SKY, [(x - 8, top + 3), (x + 8, top + 3)], p[2], 2)
+    for k, x in enumerate(range(6, CREST_WIDTH - 6, 14)):     # the dark town: roofs and lit windows
+        h = 6 + (k * 5) % 7
+        w = 7 + (k * 3) % 4
+        y1 = base + 56
+        y0 = y1 - h - (k % 3) * 3
+        c.rect(SKY, (x, y0, x + w, y1), p[0])
+        c.polygon(SKY, [(x - 1, y0), (x + w // 2, y0 - 4), (x + w + 1, y0)], p[0])
+        if k % 3 == 1:                                         # a lit window in every third house
+            c.rect(SKY, (x + 2, y0 + 3, x + 3, y0 + 4), p[3])
+    for x, y, color in [(20, 26, 2), (76, 34, 3), (132, 22, 2), (188, 44, 3), (244, 28, 2),
+                        (300, 40, 3), (356, 24, 2), (412, 36, 3)]:
+        c.point(SKY, (x, y), p[color])
+    for x, y in [(52, 60), (164, 52), (276, 64), (388, 56)]:
+        c.line(SKY, [(x, y), (x - 2, y + 4)], p[1])
+
+
+def make_crest_background() -> tuple[Image.Image, list[list[int]]]:
+    """Return authored 448x144 RGB art and its 56x18 tile-palette map (climb_crest)."""
+    grid = climb.crest_collision_grid()
+    slots = crest_slots(grid)
+    image = Image.new("RGB", (CREST_WIDTH, CREST_HEIGHT))
+    pixels = image.load()
+    for ty, row in enumerate(slots):
+        for tx, slot in enumerate(row):
+            color = PALETTES[slot][0]
+            for y in range(ty * TILE, ty * TILE + TILE):
+                for x in range(tx * TILE, tx * TILE + TILE):
+                    pixels[x, y] = color
+    canvas = _Canvas(image, slots)
+    _draw_crest_sky(canvas)
+    shaft_art.draw_stone(canvas, grid, PALETTES[STONE], STONE)
+    shaft_art.puddles(canvas, grid, PALETTES[STONE], STONE, seed=1)
+    shaft_art.branches(canvas, shaft_art.ground_spots(grid, _clear_cells(climb.crest_hazard_cells()), seed=3, mod=9),
+                       PALETTES[SKY], SKY)
+    shaft_art.draw_platforms(canvas, climb.CREST_PLATFORMS, PALETTES[TIMBER], TIMBER)
+    shaft_art.draw_posts(canvas, crest_post_tiles(grid), PALETTES[TIMBER], TIMBER)
+    _draw_house(canvas)
+    shaft_art.paint_markers(canvas, MARKERS["climb_crest"], CLAIMED["climb_crest"], "arch", PALETTES[TIMBER], TIMBER)
+    _draw_transformers(canvas, climb.boxes_in(climb.CREST_SCENE))
+    _draw_wires(canvas, crest_stage_pixels)
+    _check_palette_colors(image, slots)
+    _check_wire_slots(image, slots)
+    for row, x0, x1 in climb.CREST_PLATFORMS:
+        assert all(image.getpixel((x * TILE, row * TILE)) == PALETTES[TIMBER][3] for x in range(x0, x1 + 1))
+    for y, row in enumerate(grid):
+        for x, cell in enumerate(row):
+            assert cell != climb.COL_SOLID or slots[y][x] == STONE
     return image, slots
 
 
@@ -522,20 +427,19 @@ def _gb_studio_native_index(green: int) -> int:
     return 0
 
 
-def encode_native_background(image: Image.Image,
-                             slots: list[list[int]]) -> Image.Image:
-    """Convert each authored ramp index to a canonical grayscale proxy."""
-    if image.mode != "RGB" or image.size != (WIDTH, HEIGHT):
-        raise ValueError(f"expected RGB {(WIDTH, HEIGHT)} author image")
-    if len(slots) != climb.MAP_H or any(len(row) != climb.MAP_W for row in slots):
-        raise ValueError(f"expected {climb.MAP_W}x{climb.MAP_H} palette grid")
-    palette_indices = [{color: index for index, color in enumerate(palette)}
-                       for palette in PALETTES]
+def encode_native_background(image: Image.Image, slots: list[list[int]]) -> Image.Image:
+    """Convert each authored ramp index to a canonical grayscale proxy (either scene's size)."""
+    width, height = len(slots[0]) * TILE, len(slots) * TILE
+    if image.mode != "RGB" or image.size != (width, height):
+        raise ValueError(f"expected RGB {(width, height)} author image")
+    if any(len(row) * TILE != width for row in slots):
+        raise ValueError("ragged palette grid")
+    palette_indices = [{color: index for index, color in enumerate(palette)} for palette in PALETTES]
     proxy = Image.new("RGB", image.size)
     src, dst = image.load(), proxy.load()
-    for y in range(HEIGHT):
-        for x in range(WIDTH):
-            slot = slots[y // 8][x // 8]
+    for y in range(height):
+        for x in range(width):
+            slot = slots[y // TILE][x // TILE]
             try:
                 intended = palette_indices[slot][src[x, y]]
             except (IndexError, KeyError) as exc:
@@ -547,74 +451,96 @@ def encode_native_background(image: Image.Image,
     return proxy
 
 
-def _unique_indexed_tiles(image: Image.Image,
-                          slots: list[list[int]]) -> int:
+def unique_indexed_tiles(image: Image.Image, slots: list[list[int]]) -> int:
     patterns = set()
     for ty, row in enumerate(slots):
         for tx, slot in enumerate(row):
-            pixels = tuple(image.getpixel((tx * 8 + x, ty * 8 + y))
-                           for y in range(8) for x in range(8))
+            pixels = tuple(image.getpixel((tx * TILE + x, ty * TILE + y)) for y in range(8) for x in range(8))
             patterns.add((slot, pixels))
     return len(patterns)
 
 
-def _check_geometry_art(image: Image.Image, grid: list[list[int]]) -> None:
-    # All ten collision rows have a bright timber edge at exactly y=row*8.
+def _check_geometry_art(image: Image.Image, grid: list[list[int]], slots: list[list[int]]) -> None:
     for row, x0, x1 in climb.PLATFORMS:
-        py = row * 8
-        assert all(grid[row][x] == climb.COL_TOP for x in range(x0, x1 + 1))
-        assert all(image.getpixel((x * 8, py)) == PALETTES[2][3]
-                   for x in range(x0, x1 + 1)), f"platform lip drift on row {row}"
-        assert grid[row][x0] == climb.COL_TOP
+        py = row * TILE
+        for x in range(x0, x1 + 1):
+            if grid[row][x] != climb.COL_TOP:
+                continue
+            assert image.getpixel((x * TILE, py)) == PALETTES[TIMBER][3], f"platform lip drift on row {row}"
     for x0, x1, row0, row1 in climb.SOLID_BLOCKS:
         for row in range(row0, row1 + 1):
             for x in range(x0, x1 + 1):
-                assert grid[row][x] == climb.COL_SOLID
-                color = image.getpixel((x * 8 + 3, row * 8 + 3))
-                assert color in PALETTES[6 if row >= 34 else 1]
+                assert slots[row][x] == STONE
+    _check_wire_slots(image, slots)
+
+
+def _check_wire_slots(image: Image.Image, slots: list[list[int]]) -> None:
+    """Only wire and bushing pixels use a stage's index; everything else in a wire
+    slot is the dark index 0, so the swap lights nothing but the route."""
+    for ty, row in enumerate(slots):
+        for tx, slot in enumerate(row):
+            if slot not in (WIRE_1, WIRE_2):
+                continue
+            for y in range(ty * TILE, ty * TILE + TILE):
+                for x in range(tx * TILE, tx * TILE + TILE):
+                    color = image.getpixel((x, y))
+                    assert color == PALETTES[slot][0] or any(
+                        color == stage_color(s) and climb.stage_slot(s) == slot
+                        for s in range(1, climb.LINE_COUNT + 1)), f"stray colour in wire tile {tx},{ty}"
+
+
+def _check_owned_output(output: Path, sidecar: Path, expected_id: str) -> None:
+    if sidecar.exists():
+        try:
+            current = json.loads(sidecar.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise RuntimeError(f"refusing to overwrite unreadable sidecar: {sidecar}") from exc
+        if current.get("id") != expected_id:
+            raise RuntimeError(f"refusing to overwrite unowned sidecar: {sidecar}")
+    elif output.exists():
+        raise RuntimeError(f"refusing to overwrite PNG without its owned sidecar: {output}")
 
 
 def _check_owned_outputs() -> None:
-    expected_id = resource_id("background:storm-climb")
-    if SIDECAR.exists():
-        try:
-            current = json.loads(SIDECAR.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError) as exc:
-            raise RuntimeError(f"refusing to overwrite unreadable sidecar: {SIDECAR}") from exc
-        if current.get("id") != expected_id:
-            raise RuntimeError(f"refusing to overwrite unowned sidecar: {SIDECAR}")
-    elif OUTPUT.exists():
-        raise RuntimeError(f"refusing to overwrite PNG without its owned sidecar: {OUTPUT}")
+    _check_owned_output(OUTPUT, SIDECAR, resource_id("background:storm-climb"))
+    _check_owned_output(CREST_OUTPUT, CREST_SIDECAR, resource_id("background:climb-crest"))
+
+
+# (output, sidecar, background key, name, author-image builder) per job 1 scene.
+BACKGROUNDS = (
+    (OUTPUT, SIDECAR, "background:storm-climb", "storm_climb", lambda: make_background()),
+    (CREST_OUTPUT, CREST_SIDECAR, "background:climb-crest", "climb_crest", lambda: make_crest_background()),
+)
 
 
 def main() -> None:
     _check_owned_outputs()
-    author_image, slots = make_background()
-    proxy = encode_native_background(author_image, slots)
-    unique = _unique_indexed_tiles(proxy, slots)
-    if unique >= 300:
-        raise AssertionError(f"storm_climb uses {unique} unique indexed tiles (target <300)")
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    proxy.save(OUTPUT, format="PNG", optimize=False)
-    resource = {
-        "_resourceType": "background",
-        "id": resource_id("background:storm-climb"),
-        "name": "storm_climb",
-        "symbol": "bg_storm_climb",
-        "filename": OUTPUT.name,
-        "width": climb.MAP_W,
-        "height": climb.MAP_H,
-        "imageWidth": proxy.width,
-        "imageHeight": proxy.height,
-        "autoColor": False,
-        "tileColors": collision_rle(slots, climb.MAP_W, climb.MAP_H),
-    }
-    contents = json.dumps(resource, indent=2) + "\n"
-    SIDECAR.write_text(contents, encoding="utf-8")
-    slot_counts = {slot: sum(value == slot for row in slots for value in row)
-                   for slot in range(7)}
-    print(f"generated {OUTPUT.relative_to(ROOT)}: {proxy.width}x{proxy.height}px, "
-          f"{unique} unique indexed tiles (<300 target), palette tiles {slot_counts}")
+    for output, sidecar, key, name, build in BACKGROUNDS:
+        author_image, slots = build()
+        proxy = encode_native_background(author_image, slots)
+        unique = unique_indexed_tiles(proxy, slots)
+        if unique >= MAX_UNIQUE_TILES:
+            raise AssertionError(f"{name} uses {unique} unique indexed tiles (target <{MAX_UNIQUE_TILES})")
+        output.parent.mkdir(parents=True, exist_ok=True)
+        proxy.save(output, format="PNG", optimize=False)
+        width, height = len(slots[0]), len(slots)
+        resource = {
+            "_resourceType": "background",
+            "id": resource_id(key),
+            "name": name,
+            "symbol": f"bg_{name}",
+            "filename": output.name,
+            "width": width,
+            "height": height,
+            "imageWidth": proxy.width,
+            "imageHeight": proxy.height,
+            "autoColor": False,
+            "tileColors": collision_rle(slots, width, height),
+        }
+        sidecar.write_text(json.dumps(resource, indent=2) + "\n", encoding="utf-8")
+        slot_counts = {slot: sum(value == slot for row in slots for value in row) for slot in range(7)}
+        print(f"generated {output.relative_to(ROOT)}: {proxy.width}x{proxy.height}px, "
+              f"{unique} unique indexed tiles (<{MAX_UNIQUE_TILES} target), palette tiles {slot_counts}")
 
 
 if __name__ == "__main__":

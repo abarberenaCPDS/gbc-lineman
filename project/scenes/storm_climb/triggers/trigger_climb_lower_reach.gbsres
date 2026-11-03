@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "33dcbed8-1cc7-5d16-8050-dc4eaedc298e",
+  "name": "Box Zone Transformer (lower)",
+  "prefabId": "",
+  "x": 13,
+  "y": 18,
+  "symbol": "trigger_climb_lower_reach",
+  "prefabScriptOverrides": {},
+  "width": 5,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 102
+        }
+      },
+      "id": "151323b6-3861-5a69-8d7e-4ab177fb8ac6"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 102
+          }
+        }
+      },
+      "id": "b53eb8d9-88ee-5ea5-893d-5b35850e26f1",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "6bec5fc7-9cba-5845-b9aa-e7aaff7d11e0"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 6
+}

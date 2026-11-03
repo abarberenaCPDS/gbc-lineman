@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "d92eea1b-0317-5847-9c36-84cdc6362bfa",
+  "name": "Pole Zone (lower)",
+  "prefabId": "",
+  "x": 15,
+  "y": 24,
+  "symbol": "trigger_climb_lower_pole_zone",
+  "prefabScriptOverrides": {},
+  "width": 3,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 2
+        }
+      },
+      "id": "9ce5ce02-82bd-599b-a5a3-1a3b4aa3deef"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 2
+          }
+        }
+      },
+      "id": "57dc04be-c884-59c3-90bd-fc40e01a5b6e",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "76d86bcf-1b6c-556a-a214-f9d6b2001d45"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 10
+}

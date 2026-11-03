@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "0b355193-a597-5cc0-97b4-5443c8be81ff",
+  "name": "Box Zone Junction Box (Ridge House)",
+  "prefabId": "",
+  "x": 49,
+  "y": 9,
+  "symbol": "trigger_ridge_house_reach",
+  "prefabScriptOverrides": {},
+  "width": 5,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 105
+        }
+      },
+      "id": "ac99f5b3-bcb3-5d85-a34a-71831d5d8338"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 105
+          }
+        }
+      },
+      "id": "43dbad6f-9b81-5315-bd19-a03e3bc6ded5",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "8fea2255-dbc6-5746-bc7b-65aa651c9e25"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 7
+}

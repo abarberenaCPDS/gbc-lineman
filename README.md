@@ -42,7 +42,6 @@ they arc. Each neighbour speaks with their own name and voice pitch.
 | B | Interact: pick up, connect, talk |
 | START | Start from the title |
 | A or START | Skip the cinematic |
-| SELECT | Service Opening only: compare the 16px hero |
 
 ## 🧱 Project layout
 

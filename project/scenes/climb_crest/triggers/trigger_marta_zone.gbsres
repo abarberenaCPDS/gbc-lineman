@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "8ea9f072-da76-5262-b5b5-0da66ec5103f",
+  "name": "Amara Zone",
+  "prefabId": "",
+  "x": 44,
+  "y": 9,
+  "symbol": "trigger_marta_zone",
+  "prefabScriptOverrides": {},
+  "width": 2,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 200
+        }
+      },
+      "id": "beedac78-7906-5a31-a444-4bed866c0b2b"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 200
+          }
+        }
+      },
+      "id": "06af2980-4e71-5dec-ab84-b7c3e497d461",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "3567334b-a37e-5bfe-ad15-8f003d3e8b65"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 5
+}

@@ -1,0 +1,49 @@
+{
+  "_resourceType": "trigger",
+  "id": "1799ce70-f74c-587a-b2cf-3d11e1a8cf10",
+  "name": "Exit (to Pine Hollow)",
+  "prefabId": "",
+  "x": 0,
+  "y": 30,
+  "symbol": "trigger_ladder_exit_pine_hollow",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "c249d3b7-766b-5876-afaf-1bf40cf48a0f"
+    },
+    {
+      "command": "EVENT_OVERLAY_HIDE",
+      "args": {},
+      "id": "49193926-8f78-58c8-b157-ac871f3d2f36"
+    },
+    {
+      "command": "EVENT_SWITCH_SCENE",
+      "args": {
+        "x": {
+          "type": "number",
+          "value": 55
+        },
+        "y": {
+          "type": "number",
+          "value": 8
+        },
+        "direction": "left",
+        "sceneId": "4d9329db-9c79-52dd-8372-d215a891bcb8",
+        "fadeSpeed": "2"
+      },
+      "id": "4006f6c3-1c14-53f0-acae-ea25d2488ed0"
+    }
+  ],
+  "leaveScript": [],
+  "_index": 0
+}

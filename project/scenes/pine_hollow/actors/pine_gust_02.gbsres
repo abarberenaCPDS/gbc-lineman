@@ -1,0 +1,158 @@
+{
+  "_resourceType": "actor",
+  "id": "80b7dbe1-9997-5cdd-9896-24d5b83d69ee",
+  "_index": 4,
+  "symbol": "pine_gust_02",
+  "prefabId": "",
+  "name": "Telegraphed Gust 2",
+  "coordinateType": "tiles",
+  "x": 47,
+  "y": 13,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "31b39167-ad7a-5152-8387-976ca2d50655",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 8,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "1",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "e33e00f8-a49d-541c-b984-41e334fad871"
+    }
+  ],
+  "updateScript": [
+    {
+      "command": "EVENT_IF_ACTOR_DIRECTION",
+      "args": {
+        "actorId": "$self$",
+        "direction": {
+          "type": "direction",
+          "value": "down"
+        }
+      },
+      "id": "8d3ab54e-d965-5db2-94f9-2c1fed6e4d4d",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_ACTOR_SET_DIRECTION",
+            "args": {
+              "actorId": "$self$",
+              "direction": {
+                "type": "direction",
+                "value": "up"
+              }
+            },
+            "id": "b2a35478-c272-50f0-9190-93437b0f246f"
+          },
+          {
+            "command": "EVENT_ACTOR_HIDE",
+            "args": {
+              "actorId": "$self$"
+            },
+            "id": "e82021b0-dcea-5e85-9e16-27a5689934ea"
+          }
+        ],
+        "false": []
+      }
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "2cdc01b3-056c-5ffe-945a-eef762ee4b1b"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Warning",
+        "loopAnim": true
+      },
+      "id": "fbe0c96d-17f5-5d2a-a658-0339af3838c7"
+    },
+    {
+      "command": "EVENT_ACTOR_SHOW",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "3c373687-2c6c-519f-8c41-815de930ea13"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 44
+        }
+      },
+      "id": "20833b65-37f4-5e49-bcb6-adb7e1f040c6"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Burst",
+        "loopAnim": true
+      },
+      "id": "8b725a50-c47a-5c52-b510-d0cc0610cdeb"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_ENABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "c97c8af5-8dde-561f-818d-1e2a77e418f3"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 24
+        }
+      },
+      "id": "8a46c3c9-8d4b-5cdf-9e9e-a0f33a4de865"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "ed5a7a8d-ad8e-5c4f-b5f5-91594d0bf8bc"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "a690888c-40df-5376-920b-4d94815abffb"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 58
+        }
+      },
+      "id": "5dd84316-673f-5bd1-8385-6a6b18e49064"
+    }
+  ],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

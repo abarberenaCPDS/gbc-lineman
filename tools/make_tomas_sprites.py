@@ -56,7 +56,7 @@ MAX_ACCENT_PIXELS = 4  # the cyan accent is reserved for small lights and airflo
 # 1 = skin, 2 = cardigan green, 3 = hair, outline, trousers, shoes, nasal tube.
 # Waiting: open mouth, hand to chest (A raised, B lowered for a slow breath).
 # Relieved: smile; A stands square, B lifts his head a pixel (easy breathing).
-# Nasal hose: prongs under the nose, tube hooked at the ear and down to the floor.
+# Nasal hose: prongs under the nose, tube hooked at the ear, down to a hip oxygen unit.
 # ---------------------------------------------------------------------------
 def _row(*parts: tuple[int, str]) -> str:
     cells = ["."] * CANVAS
@@ -67,7 +67,7 @@ def _row(*parts: tuple[int, str]) -> str:
 
 def _tomas_frame(smile: bool, hand: int = 2, relaxed: bool = False, lift: bool = False):
     """Head forward-left of a rounded back; bald crown, ears, moustache, nasal tube."""
-    tube = (13, "3")  # nasal tube drops to the floor on the right (reads as a cane too)
+    tube = (13, "3")  # nasal hose runs down his right side into a small oxygen unit at the hip
     head = [
         _row((2, "333333")),                  # thin outline over a bald crown
         _row((1, "2"), (2, "111111"), (8, "2")),  # thinning hair wisps (gray)
@@ -75,25 +75,25 @@ def _tomas_frame(smile: bool, hand: int = 2, relaxed: bool = False, lift: bool =
         _row((1, "11111111")),
         _row((1, "11311311")),                # eyes: two dark dots on skin
         _row((0, "1113113111")),              # ears out to each side
-        _row((0, "1111111111"), (10, "3")),   # tube hooks over the ear
+        _row((0, "1111111111"), (10, "3")),   # hose hooks over the ear
         _row((1, "11333311"), (10, "3")),     # moustache
         _row((1, "11111111"), (10, "3")),
         _row((1, "11311311") if smile else (1, "11133111"), (10, "3")),  # mouth
         _row((2, "333333"), (10, "3")),       # chin
     ]
     body = [
-        _row((3, "3"), (4, "222222"), (10, "3333")),     # shoulders, tube turns down
+        _row((3, "3"), (4, "222222"), (10, "3333")),     # shoulders, hose turns down
         _row((3, "3"), (4, "22222222"), (12, "33")),     # rounded back bulges right
         _row((3, "3"), (4, "22222222"), (12, "33")),
         _row((3, "3"), (4, "2222222"), (11, "3"), tube),
         _row((3, "3"), (4, "2222222"), (11, "3"), tube),
-        _row((3, "3"), (4, "2222222"), (11, "3"), tube),
-        _row((3, "3"), (4, "2222222"), (11, "3"), tube),
-        _row((3, "333333333"), tube),            # cardigan hem
-        _row((4, "333"), (8, "333"), tube),
-        _row((4, "333"), (8, "333"), tube),
-        _row((4, "333"), (8, "333"), tube),
-        _row((3, "333"), (8, "3333"), tube),     # shoes
+        _row((3, "3"), (4, "2222222"), (11, "3"), (13, "333")),  # oxygen unit top
+        _row((3, "3"), (4, "2222222"), (11, "3"), (13, "313")),  # unit: dark case, light panel
+        _row((3, "333333333"), (13, "313")),     # cardigan hem
+        _row((4, "333"), (8, "333"), (13, "333")),  # unit bottom, hangs at the hip
+        _row((4, "333"), (8, "333")),
+        _row((4, "333"), (8, "333")),
+        _row((3, "333"), (8, "3333")),           # shoes
     ]
     if relaxed:  # arms at his sides, hands visible
         body[3] = _row((3, "1"), (4, "2222222"), (11, "1"), tube)

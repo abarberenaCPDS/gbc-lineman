@@ -12,7 +12,7 @@ after Emil's house a storm report thanks everyone and returns to the title.
 * Closing: right after a house's power payoff, the job's own scene shows a
   CLOSED box (``closed_lines``) with the victory jingle. It stays in-scene:
   re-entering a job scene re-runs its init and would reset its variables.
-* ``storm_report``: TOPDOWN, same card art. Pine Hollow's porch exit (gated on
+* ``storm_report``: TOPDOWN, same card art. Pine Rim's porch exit (gated on
   Emil's house) leads here; the report pages thank everyone, then the title.
 
 TOPDOWN (not LOGO) because these scenes draw text (MCP_TOOLKIT §5). All lines
@@ -30,6 +30,7 @@ import kiko
 import opening
 import ridge
 import rosa
+import scenes
 
 ROOT = Path(__file__).resolve().parent.parent
 _TICKET_NAMESPACE = _uuid.UUID("3f9a6c21-5d7e-5b08-a4c3-9e1b7d2f6a40")
@@ -49,8 +50,8 @@ WORK_ORDER_SCENE_ID = resource_id("scene:work-order")
 REPORT_SCENE_ID = resource_id("scene:storm-report")
 # (scene id, folder/symbol, name, background png stem, editor x, editor y)
 SCENES = [
-    (WORK_ORDER_SCENE_ID, "work_order", "Work Order", "ticket_card", 720, -240),
-    (REPORT_SCENE_ID, "storm_report", "Storm Report", "ticket_card", 960, -240),
+    (WORK_ORDER_SCENE_ID, "work_order", "Work Order", "ticket_card", *scenes.editor_position("work_order")),
+    (REPORT_SCENE_ID, "storm_report", "Storm Report", "ticket_card", *scenes.editor_position("storm_report")),
 ]
 BACKGROUND_NAME = "ticket_card"                 # assets/backgrounds/ticket_card.png
 BACKGROUND_ID = resource_id("background:ticket_card")
@@ -70,25 +71,25 @@ TICKETS = {
         "number": "WO-0412",
         "scene_id": CLIMB_SCENE_ID,
         "start": climb.START,
-        "pages": ["WORK ORDER\nWO-0412", "Amara, hilltop:\nfridge is out.", "Fix: reconnect\nthe snapped line."],
+        "pages": ["WORK ORDER\nWO-0412", "Amara, hilltop:\nfridge is out.", "Climb the hill,\nrestore the line."],
     },
     2: {
         "number": "WO-0413",
         "scene_id": ridge.SCENE_ID,
         "start": ridge.START,
-        "pages": ["WORK ORDER\nWO-0413", "Hiroshi, ridge:\noxygen machine\nhas no power.", "Fix: run the\nline to his box."],
+        "pages": ["WORK ORDER\nWO-0413", "Hiroshi, ridge:\noxygen machine\nhas no power.", "Urgent: medical.\nWatch the wind."],
     },
     3: {
         "number": "WO-0414",
         "scene_id": rosa.SCENE_ID,
         "start": rosa.START,
-        "pages": ["WORK ORDER\nWO-0414", "Priya, hill:\nno internet,\nwork is due.", "Fix: reconnect.\nMind live wires."],
+        "pages": ["WORK ORDER\nWO-0414", "Priya, hill:\nno internet,\nwork is due.", "Live wires down.\nStep carefully."],
     },
     4: {
         "number": "WO-0415",
         "scene_id": kiko.SCENE_ID,
         "start": kiko.START,
-        "pages": ["WORK ORDER\nWO-0415", "Emil, hollow:\nstove is dead,\ndinner's cold.", "Fix: reconnect\nthe mesa line."],
+        "pages": ["WORK ORDER\nWO-0415", "Emil, hollow:\nstove is dead,\ndinner's cold.", "Worst damage yet.\nStay sharp."],
     },
 }
 LAST_TICKET = 4
@@ -102,17 +103,19 @@ def closed_lines(ticket: int) -> list[str]:
 REPORT_PAGES = [
     "STORM REPORT",
     "Tickets closed:\n4 of 4.",
+    "Lines fixed:\n20 of 20.",
     "Amara's food is\nsafe and cold.",
     "Hiroshi breathes\neasy again.",
     "Priya is back\nonline.",
     "Emil's soup is\nhot.",
-    "Thank you,\nMister CFE!",
+    "Thank you,\nLineman!",
     "A game by\nAbe's Games",
 ]
 
-# Pine Hollow porch exit to the report, gated on Emil's house (var 13).
-# Same shape as Signal Hill's porch exit; it sorts before the door (BUGS B-05).
-REPORT_EXIT = (38, 9, 1, 3)
+# Pine Rim (4C) porch exit to the report, gated on Emil's house (var 13); the
+# trigger itself comes from scene_links (pine_rim -> storm_report). It sorts
+# before the door (BUGS B-05).
+REPORT_EXIT = (kiko.RIM_W - 2, 9, 1, 3)
 REPORT_EXIT_GATE_VAR = kiko.VAR_HOME_POWERED
 TITLE_SCENE_ID = intro.TITLE_SCENE_ID
 

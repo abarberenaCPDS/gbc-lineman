@@ -29,6 +29,7 @@ import uuid as _uuid
 from pathlib import Path
 
 import opening
+import scenes
 
 TILE = 8
 MAP_W, MAP_H = 20, 18
@@ -51,6 +52,33 @@ def read_version() -> str:
     return "v" + VERSION_FILE.read_text().strip()
 
 
+def dev_label() -> str | None:
+    """The version for on-screen display in dev builds; None for releases.
+
+    Abe (2026-10-27): dev builds must say so on screen, and test builds often
+    start mid-game, so the title's version tag is never seen.
+    """
+    version = read_version()
+    return version if "-dev" in version else None
+
+
+HUD_COLUMNS = 20
+
+
+def dev_hud_events(event, key: str) -> list[dict]:
+    """Right-aligned dev label on the HUD's second row (empty in releases).
+
+    ``event(command, args, key)`` is the calling scene's builder, so the event
+    ID stays in that scene's namespace.
+    """
+    label = dev_label()
+    if label is None:
+        return []
+    return [event("EVENT_TEXT_DRAW",
+                  {"text": label, "x": HUD_COLUMNS - len(label), "y": 1, "location": "overlay"},
+                  f"{key}:dev-label")]
+
+
 # ---------------------------------------------------------------------------
 # Scenes (editor placement above the job row; indices after Pine Hollow's 6)
 # ---------------------------------------------------------------------------
@@ -59,9 +87,9 @@ STORY_SCENE_ID = resource_id("scene:story")
 TITLE_SCENE_ID = resource_id("scene:title")
 SCENES = [
     # (scene id, folder, name, background file stem, index, editor x, y)
-    (LOGO_SCENE_ID, "intro_logo", "Abe's Games Logo", "intro_logo", 7, 0, -240),
-    (STORY_SCENE_ID, "intro_story", "Intro Story", "intro_story", 8, 240, -240),
-    (TITLE_SCENE_ID, "title", "Title", "title", 9, 480, -240),
+    (LOGO_SCENE_ID, "intro_logo", "Abe's Games Logo", "intro_logo", 7, *scenes.editor_position("intro_logo")),
+    (STORY_SCENE_ID, "intro_story", "Intro Story", "intro_story", 8, *scenes.editor_position("intro_story")),
+    (TITLE_SCENE_ID, "title", "Title", "title", 9, *scenes.editor_position("title")),
 ]
 # The title is TOPDOWN too: as a LOGO scene, its high background tiles (the
 # baked text band) were overwritten by engine UI tiles (exact ROM 3eb072a3).
@@ -88,8 +116,9 @@ def settings_start(test_start: tuple[str, int, int, str] | None = None) -> dict:
 # ---------------------------------------------------------------------------
 # Music and the dialogue "voice"
 #
-# Three intro-theme candidates (tools/compose_intro.py). The logo starts the
-# chosen theme and it plays on through the story and the title; the opening
+# Three intro-theme candidates (tools/compose_intro.py). The story (re)starts
+# the chosen theme on its first shot, every pass, and it plays on into the
+# title; the logo is silent. The opening
 # starts its own track. Until Abe picks one, SELECT on the title auditions the
 # next candidate (VAR_THEME holds the index).
 # ---------------------------------------------------------------------------
@@ -99,6 +128,18 @@ THEME_IDS = {key: resource_id(f"music:intro-{key}") for key in THEMES}
 DEFAULT_THEME = "b"             # Abe: "let's try option B" (A and C stay on disk)
 AUDITION_THEMES = False         # True: SELECT on the title cycles the candidates
 VAR_THEME = "14"
+# Music clock: GB Studio's timer ISR runs hUGE at 64 Hz, the screen at
+# 59.7275 Hz. Theme B (tpr 4) plays one 16-row bar per second, and each shot
+# is one 4-bar section, so section n of the song starts with shot n.
+MUSIC_TICK_HZ = 64
+FRAME_HZ = 59.7275
+THEME_TPR = 4
+BAR_ROWS = 16
+SHOT_BARS = 4
+SHOT_FRAMES = round(SHOT_BARS * BAR_ROWS * THEME_TPR / MUSIC_TICK_HZ * FRAME_HZ)  # 239
+# Measured script cost per shot (caption draw + cues): the hero shot began 36
+# frames late after 7 shots on exact ROM d44b642e. Each shot's waits leave it out.
+SHOT_OVERHEAD_FRAMES = 5
 VARIABLES = [(VAR_THEME, "Intro Theme", "var_intro_theme")]
 # EVENT_TEXT_SET_SOUND_EFFECT, set once at boot: a short square-wave blip for
 # every typed character, so dialogue "speaks". It persists across scenes.
@@ -189,11 +230,14 @@ HERO_STATES = {"Idle": [0, 16], "Walk": [96, 112, 128, 144]}   # facing right
 HERO_ENTER = (0, 13)            # hidden until shot 7
 HERO_STOP = (18, 13)            # walks past every snapped pole, faces up the hill
 HERO_SIZE = (2, 4)              # tiles (w, h) of the 16x32 canvas
+HERO_MOVE_SPEED = 1             # px per frame (actor moveSpeed 1)
+# The walk blocks the story thread; the hero shot's waits leave this much out.
+HERO_WALK_FRAMES = (HERO_STOP[0] - HERO_ENTER[0]) * 8 // HERO_MOVE_SPEED
 
 RAIN_SPRITE_ID = resource_id("sprite:intro_rain")     # 16x16, state Default, loops
 BOLT_SPRITE_ID = resource_id("sprite:intro_bolt")     # 16x32, state Default
-POLE_SPRITE_ID = resource_id("sprite:intro_pole")     # 16x32, Standing / Snapped
-POLE_STATES = ["Standing", "Snapped"]
+POLE_SPRITE_ID = resource_id("sprite:intro_pole")     # 16x32, Standing / Snapped+Cable / Snapped
+POLE_STATES = ["Standing", "Snapped+Cable", "Snapped"]
 SPRITE_SIZES = {RAIN_SPRITE_ID: (2, 2), BOLT_SPRITE_ID: (2, 4),
                 POLE_SPRITE_ID: (2, 4), HERO_SPRITE_ID: HERO_SIZE}
 
@@ -216,15 +260,15 @@ SPRITE_SLOTS = {"worker": 0, "rain": 1, "bolt": 2, "pole": 7}  # pole: the only 
 # Shots: (caption lines, frames). Effects per shot live in make_intro_scene.
 # ---------------------------------------------------------------------------
 SHOTS = [
-    ("dusk", ["A quiet evening", "on the hill..."], 210),
-    ("storm", ["Then a tropical", "storm rolled in."], 210),
-    ("lightning", ["Lightning struck.", "Ferocious winds."], 210),
-    ("snap", ["Poles snapped.", "The lines fell."], 240),
-    ("morning", ["The storm passed.", "The power didn't."], 210),
-    ("dark", ["No fridge. No AC.", "No fan. No stove."], 210),
-    ("offline", ["No WiFi or modem.", "No internet!"], 210),
-    ("hero", ["One electrician.", "One mission:"], 240),
-    ("mission", ["Bring the power", "back home."], 210),
+    ("dusk", ["A quiet evening", "on the hill..."], SHOT_FRAMES),
+    ("storm", ["Then a tropical", "storm rolled in."], SHOT_FRAMES),
+    ("lightning", ["Lightning struck.", "Ferocious winds."], SHOT_FRAMES),
+    ("snap", ["Poles snapped.", "The lines fell."], SHOT_FRAMES),
+    ("morning", ["The storm passed.", "The power didn't."], SHOT_FRAMES),
+    ("dark", ["Without power:", "no hot meals,"], SHOT_FRAMES),
+    ("offline", ["no medical gear,", "no internet."], SHOT_FRAMES),
+    ("hero", ["One lineman.", "One mission:"], SHOT_FRAMES),
+    ("mission", ["Bring the power", "back home."], SHOT_FRAMES),
 ]
 FLASH_FRAMES = 6                # each lightning flash
 WINDOW_OFF_GAP = 50             # frames between houses going dark in shot 4
@@ -289,7 +333,7 @@ def story_actors() -> list[tuple[str, tuple[int, int]]]:
 def _self_check() -> None:
     for _, lines, frames in SHOTS:
         assert len(lines) == 2 and all(len(l) <= MAX_CAPTION_CHARS for l in lines), lines
-        assert 180 <= frames <= 240, "shots run 3-4 s"
+        assert frames == SHOT_FRAMES, "one 4-bar music section per shot"
     assert len(SHOTS) == 9 and len({name for name, _, _ in SHOTS}) == 9
     assert all(len(slots) == 8 and slots[7] == "ui"
                for slots in (LOGO_SLOTS, STORY_SLOTS, TITLE_SLOTS))
@@ -327,6 +371,8 @@ def _self_check() -> None:
            RAIN_SPRITE_ID, BOLT_SPRITE_ID, POLE_SPRITE_ID}
     assert len(ids) == 9, "resource ids collide"
     assert LOGO_HOLD_FRAMES >= 100
+    assert 180 <= SHOT_FRAMES <= 240, "shots run 3-4 s"
+    assert HERO_WALK_FRAMES < SHOT_FRAMES, "the walk fits inside the hero shot"
     assert DEFAULT_THEME in THEMES and len(set(THEME_IDS.values())) == len(THEMES)
     assert 0 < TEXT_SOUND["duration"] <= 0.05, "a blip, not a beep"
 

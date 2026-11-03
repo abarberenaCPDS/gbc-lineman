@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "8fe48ec1-2b8b-53d7-8082-1cea02f484c8",
+  "name": "Box Zone Junction Box (Signal Hill)",
+  "prefabId": "",
+  "x": 23,
+  "y": 9,
+  "symbol": "trigger_signal_house_reach",
+  "prefabScriptOverrides": {},
+  "width": 5,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 105
+        }
+      },
+      "id": "d5f1e21b-d91f-5d06-8a73-92e4aaeb2461"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 105
+          }
+        }
+      },
+      "id": "c84146b4-5285-5a96-9960-f065379d958c",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "7c2a7c45-9fa6-54d1-b8f8-64a6103926ad"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 4
+}

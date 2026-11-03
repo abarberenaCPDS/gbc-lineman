@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "f54819d4-579e-58e7-b159-10070150bd0a",
+  "name": "Pole Zone (summit)",
+  "prefabId": "",
+  "x": 1,
+  "y": 6,
+  "symbol": "trigger_grid_pole_zone",
+  "prefabScriptOverrides": {},
+  "width": 3,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 5
+        }
+      },
+      "id": "858955ca-9a52-5ba5-82ec-dbfd13a71f30"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 5
+          }
+        }
+      },
+      "id": "4d1da7e0-5932-5343-9df9-aed16094da3b",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "82f294ca-85d3-5231-a967-0fdbb5ad0f9a"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 13
+}

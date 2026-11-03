@@ -11,7 +11,8 @@ Background and sprite art come from ``make_intro_art.py`` and
 when those sidecars are not on disk yet.
 
 Test ROMs use ``--test-start SCENE_ID X Y DIRECTION`` to point the start at another
-scene. That writes a temporary override to ``settings.gbsres``: never commit it,
+scene; SCENE_ID may be a registry folder name (``--test-start lab_movement_room 2 14
+right``). That writes a temporary override to ``settings.gbsres``: never commit it,
 and regenerate without the flag before committing.
 """
 
@@ -35,8 +36,9 @@ sys.path.insert(0, str(TOOLS_DIR))
 try:
     import intro  # noqa: E402  (sole source of truth for this scene set)
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
+    import scenes  # noqa: E402  (registry: folder name -> scene id for --test-start)
 except ModuleNotFoundError as error:
-    if error.name in {"intro", "make_climb_scene", "climb", "opening", "ridge"}:
+    if error.name in {"intro", "make_climb_scene", "climb", "opening", "ridge", "scenes"}:
         raise SystemExit(
             f"cannot generate the intro scenes: tools/{error.name}.py is missing"
         ) from error
@@ -46,6 +48,7 @@ except ModuleNotFoundError as error:
 STORY_SKIP_INPUTS = ["a", "start"]
 TITLE_START_INPUTS = ["start"]
 THREAD_HANDLE = "T0"           # GB Studio temp variable holding the thread handle
+SHAKE_THREAD_HANDLE = "T1"     # the story thread's own temp for its shake threads
 EMPTY_ROW = [0] * intro.MAP_W
 EMPTY_COLLISIONS = [list(EMPTY_ROW) for _ in range(intro.MAP_H)]
 # Story and title caption/text draws use BG slot 7 (UI), which every scene keeps.
@@ -170,7 +173,9 @@ def sound(sound_type: str, key: str, duration: float = 0.5) -> dict[str, Any]:
 
 
 def camera_shake(frames: int, magnitude: int, key: str) -> dict[str, Any]:
-    """Non-blocking: the camera shakes while the script keeps running."""
+    """Blocking: GB Studio invokes camera_shake_frames until the shake ends.
+
+    The story runs it in its own thread (shake_thread) to keep its timing."""
     return ev("EVENT_CAMERA_SHAKE", {
         "units": "frames", "frames": frames, "shakeDirection": "horizontal",
         "magnitude": num(magnitude),
@@ -221,15 +226,23 @@ def thread_start(body: list[dict[str, Any]], key: str) -> dict[str, Any]:
     return ev("EVENT_THREAD_START", {"variable": THREAD_HANDLE}, key, children={"true": body})
 
 
+def shake_thread(frames: int, magnitude: int, key: str) -> dict[str, Any]:
+    """Camera shake in a short thread of its own, so the story timeline does not stall."""
+    return ev("EVENT_THREAD_START", {"variable": SHAKE_THREAD_HANDLE}, key,
+              children={"true": [camera_shake(frames, magnitude, f"{key}:shake")]})
+
+
 def loop(body: list[dict[str, Any]], key: str) -> dict[str, Any]:
     return ev("EVENT_LOOP", {}, key, children={"true": body})
 
 
-def timeline(total: int, cues: list[tuple[int, list[dict[str, Any]]]], key: str) -> list[dict[str, Any]]:
-    """Events at frame offsets inside one shot. EVENT_WAIT fills the gaps so the waits sum to ``total``.
+def timeline(total: int, cues: list[tuple[int, list[dict[str, Any]]]], key: str,
+             walk: int = 0) -> list[dict[str, Any]]:
+    """Events at frame offsets inside one shot. EVENT_WAIT fills the gaps so the shot lasts ``total``.
 
-    Every event listed here must be non-blocking except the shot's own walk. A
-    blocking event (fade, move-to) would stretch the shot past its budget.
+    Every event listed here must be non-blocking except the shot's own walk,
+    which sits at offset 0 and holds the thread ``walk`` frames; the waits
+    leave those out so the shot stays on the music's bar grid.
     """
     offsets = [at for at, _ in cues]
     if offsets != sorted(offsets) or len(set(offsets)) != len(offsets):
@@ -243,6 +256,8 @@ def timeline(total: int, cues: list[tuple[int, list[dict[str, Any]]]], key: str)
             out.append(wait(at - now, f"{key}:to{at}"))
             now = at
         out.extend(events)
+        if at == 0:
+            now += walk
     if total > now:
         out.append(wait(total - now, f"{key}:tail"))
     return out
@@ -335,7 +350,6 @@ def logo_script() -> list[dict[str, Any]]:
         hide_player("logo:hide-player"),
         text_sound("logo:text-voice"),
         set_value(intro.VAR_THEME, intro.THEMES.index(intro.DEFAULT_THEME), "logo:theme-index"),
-        music_play(intro.DEFAULT_THEME, "logo:theme"),
         wait(intro.LOGO_HOLD_FRAMES, "logo:hold"),
         fade_out("logo:fade"),
         switch_scene(intro.STORY_SCENE_ID, 0, 0, "right", "logo:to-story"),
@@ -378,7 +392,7 @@ def _shot_cues(name: str) -> list[tuple[int, list[dict[str, Any]]]]:
             cues += [
                 (at, [actor_show(bolt, f"{k}:bolt-show"),
                       palette_slots({SKY: "sky_flash"}, f"{k}:flash0"),
-                      camera_shake(intro.SHAKE_FRAMES, intro.SHAKE_MAGNITUDE, f"{k}:shake")]),
+                      shake_thread(intro.SHAKE_FRAMES, intro.SHAKE_MAGNITUDE, f"{k}:shake-thread")]),
                 (at + flash, [palette_slots({SKY: "sky_storm"}, f"{k}:storm0")]),
                 (at + 2 * flash, [palette_slots({SKY: "sky_flash"}, f"{k}:flash1")]),
                 (at + 3 * flash, [palette_slots({SKY: "sky_storm"}, f"{k}:storm1")]),
@@ -389,7 +403,7 @@ def _shot_cues(name: str) -> list[tuple[int, list[dict[str, Any]]]]:
         connect = shared.sidecar_id(CONNECT_SOUND, "sound")
         struck_first = sorted(zip(pole_keys(), intro.POLES), key=lambda kp: kp[1] != intro.POLE)
         cues = [(SNAP_CONNECT_AT + n * intro.SNAP_GAP, [
-            actor_state(actor_id(pole_key), "Snapped", f"{key}:{pole_key}-snapped"),
+            actor_state(actor_id(pole_key), "Snapped+Cable", f"{key}:{pole_key}-snapped"),
             sound(connect, f"{key}:{pole_key}-spark"),
         ]) for n, (pole_key, _) in enumerate(struck_first)]
         for index, slot in enumerate(intro.WINDOW_SLOTS, start=1):
@@ -417,12 +431,16 @@ def _shot_cues(name: str) -> list[tuple[int, list[dict[str, Any]]]]:
 
 
 def story_script() -> list[dict[str, Any]]:
-    shots: list[dict[str, Any]] = []
+    # Restart the theme with the first shot on every pass (title attract loop
+    # included), so the song's sections land on their shots.
+    shots: list[dict[str, Any]] = [music_play(intro.DEFAULT_THEME, "story:theme")]
     for name, lines, frames in intro.SHOTS:
         caption = text_draw(intro.caption_text(lines), *intro.CAPTION_TEXT, "overlay",
                             f"story:{name}:caption")
         shots.append(caption)
-        shots.extend(timeline(frames, shot_cues(name), f"story:{name}"))
+        walk = intro.HERO_WALK_FRAMES if name == "hero" else 0
+        shots.extend(timeline(frames - intro.SHOT_OVERHEAD_FRAMES, shot_cues(name),
+                              f"story:{name}", walk))
     shots.extend(leave_to_title("story:end"))
     return [
         hide_player("story:hide-player"),
@@ -618,13 +636,20 @@ def write_settings(test_start: tuple[str, int, int, str] | None) -> None:
         print("unchanged project/settings.gbsres")
 
 
+def resolve_scene_id(value: str) -> str:
+    """A registry folder name (e.g. lab_movement_room) or a raw scene id."""
+    if value in scenes.REGISTRY:
+        return scenes.REGISTRY[value]["id"]
+    return value
+
+
 def parse_test_start(values: list[str] | None) -> tuple[str, int, int, str] | None:
     if values is None:
         return None
     scene, x, y, direction = values
     if direction not in DIRECTIONS:
         raise SystemExit(f"--test-start direction must be one of {DIRECTIONS}")
-    return scene, int(x), int(y), direction
+    return resolve_scene_id(scene), int(x), int(y), direction
 
 
 def write_variables() -> None:
@@ -644,8 +669,9 @@ def write_variables() -> None:
 def main(argv: list[str] | None = None) -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
-        "--test-start", nargs=4, metavar=("SCENE_ID", "X", "Y", "DIRECTION"),
-        help="temporary test-ROM start override (never commit the settings file)",
+        "--test-start", nargs=4, metavar=("SCENE_ID_OR_FOLDER", "X", "Y", "DIRECTION"),
+        help="temporary test-ROM start override; SCENE_ID_OR_FOLDER may be a registry folder "
+             "name such as lab_movement_room (never commit the settings file)",
     )
     args = parser.parse_args(argv)
     test_start = parse_test_start(args.test_start)

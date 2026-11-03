@@ -1,0 +1,49 @@
+{
+  "_resourceType": "trigger",
+  "id": "c4b983a9-b29b-5825-8551-ac290b3c8518",
+  "name": "Summit Exit (to Climb Crest)",
+  "prefabId": "",
+  "x": 17,
+  "y": 2,
+  "symbol": "trigger_summit_exit",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "7513441c-b74d-5757-aac9-a8fbf79aa7d4"
+    },
+    {
+      "command": "EVENT_OVERLAY_HIDE",
+      "args": {},
+      "id": "0cfa6341-db8d-5c1d-8124-06a65e1bd7e7"
+    },
+    {
+      "command": "EVENT_SWITCH_SCENE",
+      "args": {
+        "x": {
+          "type": "number",
+          "value": 3
+        },
+        "y": {
+          "type": "number",
+          "value": 8
+        },
+        "direction": "right",
+        "sceneId": "1e6699bd-6450-5e78-ae39-e75a00c5d127",
+        "fadeSpeed": "2"
+      },
+      "id": "d2b6b1e9-8f35-5f47-b243-23ccdc94b59f"
+    }
+  ],
+  "leaveScript": [],
+  "_index": 1
+}

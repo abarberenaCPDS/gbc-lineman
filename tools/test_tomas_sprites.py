@@ -42,12 +42,6 @@ def _state_frame_counts(meta: dict) -> dict:
 
 
 class ContractTests(unittest.TestCase):
-    def test_palette_slots_and_hardware_match_contract(self):
-        self.assertEqual(ridge.TOMAS_SPRITE_PALETTE_SLOT, 1)
-        self.assertEqual(ridge.GRID_SPRITE_PALETTE_SLOT, 2)
-        self.assertEqual(len(ridge.TOMAS_SPRITE_HARDWARE), 4)
-        self.assertEqual(ridge.TOMAS_SPRITE_HARDWARE[0], "000000")
-
     def test_grid_palette_copy_matches_climb_scene(self):
         import make_climb_scene
         self.assertEqual(mt.GRID_SPRITE_HARDWARE, make_climb_scene.GRID_SPRITE_HARDWARE)

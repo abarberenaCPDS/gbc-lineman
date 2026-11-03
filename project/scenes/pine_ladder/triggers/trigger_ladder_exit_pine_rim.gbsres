@@ -1,0 +1,49 @@
+{
+  "_resourceType": "trigger",
+  "id": "d1428477-f784-5f71-b89a-ae2499a6aff1",
+  "name": "Exit (to Pine Rim)",
+  "prefabId": "",
+  "x": 17,
+  "y": 2,
+  "symbol": "trigger_ladder_exit_pine_rim",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "10bf90ae-0a95-5e7e-a9e4-0173a4239370"
+    },
+    {
+      "command": "EVENT_OVERLAY_HIDE",
+      "args": {},
+      "id": "186da4d8-e7a2-5e9c-8bf7-5cc530b11fe0"
+    },
+    {
+      "command": "EVENT_SWITCH_SCENE",
+      "args": {
+        "x": {
+          "type": "number",
+          "value": 3
+        },
+        "y": {
+          "type": "number",
+          "value": 8
+        },
+        "direction": "right",
+        "sceneId": "c25308db-8f10-5a6a-ada8-1fa748e4541f",
+        "fadeSpeed": "2"
+      },
+      "id": "a346d10d-99c7-5f53-aecd-90aa7b9e834b"
+    }
+  ],
+  "leaveScript": [],
+  "_index": 1
+}

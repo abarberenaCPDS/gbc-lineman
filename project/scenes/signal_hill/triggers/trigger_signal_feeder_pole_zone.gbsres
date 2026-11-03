@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "11ca1807-dd23-5a3c-8179-fc206d49e20e",
+  "name": "Pole Zone (feeder)",
+  "prefabId": "",
+  "x": 3,
+  "y": 9,
+  "symbol": "trigger_signal_feeder_pole_zone",
+  "prefabScriptOverrides": {},
+  "width": 3,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 1
+        }
+      },
+      "id": "71671e59-3259-5a6d-aab0-2434559f4dee"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "b38cc1dd-a440-5fb4-a430-0e098f2b64a7",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "73c092aa-d98d-5b6e-b8dd-ce142974bc6f"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 5
+}

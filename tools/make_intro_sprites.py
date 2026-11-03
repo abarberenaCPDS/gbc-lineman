@@ -134,7 +134,7 @@ SPARKS = [
 WIRE_SWAY = [0, 1, 0]
 
 
-def pole_snapped(f: int) -> list[str]:
+def pole_snapped(f: int, cable: bool = True) -> list[str]:
     g = _grid(32)
     # lower stump with a jagged break (rows 17-18), gap above it holds the sparks
     for y in range(BREAK_Y + 3, 32):
@@ -148,12 +148,19 @@ def pole_snapped(f: int) -> list[str]:
         for x in range(W):
             if g2[y][x] != ".":
                 _put(g, x, y + 1, g2[y][x])
-    # dangling wire from the crossarm end to near the ground
-    wx = ARM_X1 + (BREAK_Y - 3) // 3
-    wx = min(wx, 14)
-    for y in range(7, 26):
-        sway = WIRE_SWAY[f] if y > 14 else 0
-        _put(g, min(wx + (1 if y > 18 else 0) - sway, 15), y, "3")
+    if cable:
+        # dangling wire from the crossarm end to near the ground, ending in a plug
+        wx = ARM_X1 + (BREAK_Y - 3) // 3
+        wx = min(wx, 14)
+        for y in range(7, 16):
+            sway = WIRE_SWAY[f] if y > 11 else 0
+            _put(g, min(wx + (1 if y > 13 else 0) - sway, 15), y, "3")
+        # compact plug head and its two prongs at the cable end
+        end_x = min(wx + 1 - WIRE_SWAY[f], 15)
+        _put(g, end_x, 16, "2")
+        _put(g, max(end_x - 1, 0), 16, "2")
+        _put(g, end_x, 17, "3")
+        _put(g, max(end_x - 1, 0), 17, "3")
     # sparks at the break
     for x, y in SPARKS[f]:
         _put(g, x, y, "1")
@@ -177,7 +184,8 @@ ASSETS = {
                        states=[("Default", [bolt_frame(0), bolt_frame(1)])]),
     "intro_pole": dict(sprite_id=intro.POLE_SPRITE_ID, h=32, slot="pole", speed=6,
                        states=[("Standing", [pole_standing()]),
-                               ("Snapped", [pole_snapped(f) for f in range(3)])]),
+                               ("Snapped+Cable", [pole_snapped(f, cable=True) for f in range(3)]),
+                               ("Snapped", [pole_snapped(f, cable=False) for f in range(3)])]),
     "intro_hero": dict(sprite_id=intro.HERO_SPRITE_ID, h=32, slot="worker", speed=10,
                        states=[(state, [hero_frame(x) for x in xs])
                                for state, xs in intro.HERO_STATES.items()]),

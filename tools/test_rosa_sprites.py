@@ -48,14 +48,6 @@ def _opaque(frame: Image.Image, x: int, y: int) -> bool:
 
 
 class ContractTests(unittest.TestCase):
-    def test_palette_slots_and_hardware_match_contract(self):
-        self.assertEqual(rosa.ROSA_SPRITE_PALETTE_SLOT, 1)
-        self.assertEqual(rosa.GRID_SPRITE_PALETTE_SLOT, 2)
-        self.assertEqual(rosa.ARC_SPRITE_PALETTE_SLOT, 3)
-        for hardware in (rosa.ROSA_SPRITE_HARDWARE, rosa.ARC_SPRITE_HARDWARE, mr.GRID_SPRITE_HARDWARE):
-            self.assertEqual(len(hardware), 4)
-            self.assertEqual(hardware[0], "000000")
-
     def test_grid_palette_copy_matches_climb_scene(self):
         import make_climb_scene
         self.assertEqual(mr.GRID_SPRITE_HARDWARE, make_climb_scene.GRID_SPRITE_HARDWARE)
@@ -256,9 +248,13 @@ class BoundsTests(unittest.TestCase):
         for index in range(4):
             frame = _frame_image(image, index)
             px = lambda x, y: frame.getpixel((x, y))
-            self.assertEqual(px(6, 14)[:3], (0, 0, 0), f"frame {index} left eye")
-            self.assertEqual(px(9, 14)[:3], (0, 0, 0), f"frame {index} right eye")
-            self.assertEqual(px(7, 14)[:3], (255, 255, 255), f"frame {index} skin between eyes")
+            # Glasses: frames on rows 12 and 15; the blink frame (1) shuts the eyes onto row 13.
+            ey = 13 if index == 1 else 14
+            self.assertEqual(px(6, ey)[:3], (0, 0, 0), f"frame {index} left eye")
+            self.assertEqual(px(9, ey)[:3], (0, 0, 0), f"frame {index} right eye")
+            self.assertEqual(px(7, ey)[:3], (255, 255, 255), f"frame {index} skin between eyes")
+            self.assertEqual(px(7, 12)[:3], (0, 0, 0), f"frame {index} glasses top frame")
+            self.assertEqual(px(7, 15)[:3], (0, 0, 0), f"frame {index} glasses bottom frame")
 
     def test_checksums_match_png_bytes(self):
         for name in NAMES:

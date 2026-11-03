@@ -1,0 +1,162 @@
+{
+  "_resourceType": "actor",
+  "id": "e9148d2e-8d34-5cc4-aada-71bd6279d577",
+  "_index": 7,
+  "symbol": "gully_hidden_cable_01",
+  "prefabId": "",
+  "name": "Hidden Cable 1",
+  "coordinateType": "tiles",
+  "x": 10,
+  "y": 22,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "cbcda85c-3b91-52e5-9bfd-2d979f5b6ad5",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 8,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "1",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "2b98b991-d6e5-5d49-b1f9-53d88ab0b907"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "1de97c65-c080-520f-9443-a6ced0ba29c6"
+    }
+  ],
+  "updateScript": [
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "f9cab4de-8205-5a7a-95e1-9d26fe77b42f"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "a8ab8e5e-b57e-505c-9cef-4e0702df8591"
+    },
+    {
+      "command": "EVENT_IF_ACTOR_DIRECTION",
+      "args": {
+        "actorId": "$self$",
+        "direction": {
+          "type": "direction",
+          "value": "down"
+        }
+      },
+      "id": "4f8bb163-a09e-50ad-b19e-4d0e680fe17c",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_ACTOR_SET_DIRECTION",
+            "args": {
+              "actorId": "$self$",
+              "direction": {
+                "type": "direction",
+                "value": "up"
+              }
+            },
+            "id": "93f875a2-dfea-51fb-ae1f-127012f6f2e6"
+          },
+          {
+            "command": "EVENT_WAIT",
+            "args": {
+              "units": "frames",
+              "frames": {
+                "type": "number",
+                "value": 50
+              }
+            },
+            "id": "abffa491-d803-5c5a-acd1-9ed310111202"
+          }
+        ],
+        "false": []
+      }
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 140
+        }
+      },
+      "id": "a6801265-03d6-523f-b58f-b8414f3362fa"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Warning",
+        "loopAnim": true
+      },
+      "id": "d6343fce-c65c-5b3c-8e7a-fcb78a0069c1"
+    },
+    {
+      "command": "EVENT_ACTOR_SHOW",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "ccac4d7b-ddfa-5b08-9351-222d925208c5"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 20
+        }
+      },
+      "id": "7b25fba0-333a-529d-89fb-8de21e09cdc5"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Arc",
+        "loopAnim": true
+      },
+      "id": "33b6cc50-59ff-5e35-be54-dbb81c983f88"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_ENABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "adabe4a2-d437-5f45-aff8-f69925c3b791"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 24
+        }
+      },
+      "id": "54c347b0-b46d-5b71-bca2-2a74501de719"
+    }
+  ],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

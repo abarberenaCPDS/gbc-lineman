@@ -1,0 +1,39 @@
+{
+  "_resourceType": "trigger",
+  "id": "9abe9597-44f4-5b4f-926c-4c8d168acc33",
+  "name": "Cracked Board 1 Stand",
+  "prefabId": "",
+  "x": 9,
+  "y": 8,
+  "symbol": "trigger_porch_cracked_board_01",
+  "prefabScriptOverrides": {},
+  "width": 3,
+  "height": 1,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "15",
+        "value": {
+          "type": "number",
+          "value": 1
+        }
+      },
+      "id": "0b0b1ebd-3514-547c-ae84-edc69b610a83"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "15",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "d323c7fb-cd72-5026-a833-be0eb6aeb2af"
+    }
+  ],
+  "_index": 3
+}

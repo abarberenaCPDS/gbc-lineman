@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "08888f4a-729d-5986-bdfd-99904a3707e2",
+  "name": "Box Zone Transformer (middle)",
+  "prefabId": "",
+  "x": 11,
+  "y": 9,
+  "symbol": "trigger_ridge_middle_reach",
+  "prefabScriptOverrides": {},
+  "width": 5,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 103
+        }
+      },
+      "id": "1ad3c011-639e-5589-97e5-1cdce853ba0c"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 103
+          }
+        }
+      },
+      "id": "fd76a80b-1412-547a-9269-042e8784e232",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "7208af8b-2bac-522e-bf8b-d1194fddefa4"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 5
+}

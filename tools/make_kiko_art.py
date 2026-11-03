@@ -1,9 +1,22 @@
-"""Generate the Pine Hollow background from the ``kiko.py`` contract.
+"""Generate Emil's three backgrounds (4A pine_hollow, 4B pine_ladder, 4C pine_rim) from ``kiko.py``.
 
 Modelled on ``make_rosa_art.py``: the RGB image returned by
 :func:`make_background` is the artist-facing source, and the compiler-facing
 PNG is a grayscale index proxy that uses GB Studio's native index thresholds.
-This generator owns only ``pine_hollow.png`` and its background sidecar.
+This generator owns ``pine_hollow.png``, ``pine_ladder.png``, ``pine_rim.png``
+and their background sidecars.
+
+Functional art (WP4): it reuses the hollow's tiles and palettes everywhere, and
+the shaft (4B) draws its slabs, walks and posts with ``shaft_art.py``; an art
+pass may dress it later (docs/LEVEL_REDESIGN.md §4).
+
+Both metal BG slots hold wire pixels and the transformers' stage rows only;
+placards and whip brackets live in the stone slot. Every box is the shared
+background transformer (``transformer_art.py``): the top tile row in its
+stage's wire slot, the can and post in the stone slot
+(``kiko.TRANSFORMER_BODY_SLOT``). Where a wire crosses rock or timber (the map
+edges, the shaft's slabs) it passes behind as a gap. Cracked boards are drawn
+as cracked planks on their timber; the board actor only shows while it creaks.
 """
 from __future__ import annotations
 
@@ -16,355 +29,450 @@ from PIL import Image, ImageDraw
 import climb
 import kiko
 import opening
+import shaft
+import shaft_art
+import transformer_art
 from make_climb_scene import collision_rle
 
 
 ROOT = Path(__file__).resolve().parent.parent
-OUTPUT = ROOT / "assets/backgrounds/pine_hollow.png"
-SIDECAR = Path(str(OUTPUT) + ".gbsres")
 TILE = kiko.TILE
-WIDTH, HEIGHT = kiko.MAP_W * TILE, kiko.MAP_H * TILE
 PALETTES = [[tuple(bytes.fromhex(color)) for color in colors]
             for _, colors in opening.BG_PALETTES]
 NATIVE_PROXY_BY_INDEX = (255, 170, 85, 0)
-MAX_UNIQUE_TILES = 192
+# Unique (slot, pattern) tiles before GB Studio's flip dedupe; the CGB limit is 384.
+MAX_UNIQUE_TILES = 300
 
 # BG palette families (opening.BG_PALETTES order). Slot 7 is the editor UI.
-SKY, STONE, TIMBER, WINDOW, FOLIAGE, METAL, EARTH = range(7)
+SKY, STONE, TIMBER, WINDOW, FOLIAGE, METAL, WIRE_2 = range(7)
+PALETTES[WIRE_2] = PALETTES[METAL][:]
 LINE = climb.LINE_BG_SLOT
-LINE_INDEX = climb.LINE_COLOR_INDEX
 assert LINE == METAL, "cable slot must be the metal family"
 assert kiko.WINDOW_BG_SLOT == WINDOW, "window slot must be the window family"
+assert kiko.TRANSFORMER_BODY_SLOT == STONE, "transformer cans use the stone ramp"
 
-# Night hollow: a low forest hill behind the route. It stops at the floor top
-# and never reaches the HUD rows (0-1).
-HILL_LINE = [(0, 70), (20, 62), (40, 66), (64, 58), (88, 64), (112, 60),
-             (136, 68), (160, 62), (184, 58), (208, 66), (232, 60), (256, 68),
-             (280, 64), (304, 58), (320, 66)]
-HILL_HIGHLIGHTS = [[(64, 58), (68, 64)], [(184, 58), (180, 64)],
-                   [(304, 58), (300, 64)]]
-# Stars above the cable run (pixel rows 16-27 only).
-STARS = [(24, 20), (64, 26), (120, 20), (176, 24), (226, 20), (262, 26)]
-# Pine silhouettes (x, top, w, bottom) in pixels, standing on the hill. Their
-# tips rise above the hill line into open sky. They are drawn in the sky
-# family, so they clip against the cable, mesa, cabin and gust placard.
-PINES = [(14, 40, 14, 79), (30, 52, 10, 79), (46, 40, 16, 79),
-         (102, 48, 12, 79), (196, 40, 14, 79), (214, 52, 10, 79),
-         (240, 44, 14, 79)]
-
-# The snapped utility pole (contract: kiko.DAMAGED_POLE) is the animated
-# intro_pole actor (see make_kiko_scene); the background draws no pole. The
-# cable starts at the top of that sprite (kiko.CABLE_ROUTE[0] == pole x, y-3).
-
-# Downed-wire posts: one at each end of every arc lane, standing on the floor.
-# Each entry is the post's top tile; the post is two tiles tall.
-ARC_POST_TOPS = [(tx, row) for row, x0, x1 in kiko.ARC_LANES
-                 for tx in (x0 - 1, x1 + 1)]
-ARC_POST_TILES = [(tx, ty) for tx, top in ARC_POST_TOPS for ty in (top, top + 1)]
-
-# Lane cells, arc and gust alike: no art may sit on them.
-LANE_CELLS = {(row, x) for row, x0, x1 in kiko.hazard_lanes()
-              for x in range(x0, x1 + 1)}
+FOLDERS = kiko.SCENE_ORDER
 
 
-@functools.lru_cache(maxsize=None)
-def cable_waypoints() -> tuple[tuple[int, int], ...]:
-    """Pixel polyline through the contract's CABLE_ROUTE tile centres."""
-    return tuple((tx * TILE + TILE // 2, ty * TILE + TILE // 2)
-                 for tx, ty in kiko.CABLE_ROUTE)
+def output(folder: str) -> Path:
+    return ROOT / "assets" / "backgrounds" / f"{folder}.png"
 
 
-@functools.lru_cache(maxsize=None)
-def cable_pixels() -> frozenset[tuple[int, int]]:
-    """Every (x, y) pixel the 1px cable occupies before tile occlusion."""
-    mask = Image.new("1", (WIDTH, HEIGHT), 0)
-    ImageDraw.Draw(mask).line(list(cable_waypoints()), fill=255, width=1)
-    return frozenset((x, y) for y in range(HEIGHT) for x in range(WIDTH)
-                     if mask.getpixel((x, y)))
+def sidecar(folder: str) -> Path:
+    return Path(str(output(folder)) + ".gbsres")
 
 
-@functools.lru_cache(maxsize=None)
-def cable_route_tiles() -> frozenset[tuple[int, int]]:
-    """(tx, ty) tiles the cable passes through; some may be occluded."""
-    return frozenset((x // TILE, y // TILE) for x, y in cable_pixels())
+def stage_slot(stage: int) -> int:
+    return LINE if stage <= 3 else WIRE_2
 
 
-def _set_rect(slots: list[list[int]], slot: int, x0: int, x1: int,
-              y0: int, y1: int) -> None:
-    for ty in range(y0, y1 + 1):
-        for tx in range(x0, x1 + 1):
-            slots[ty][tx] = slot
+def _mask_pixels(width: int, height: int, draw) -> frozenset[tuple[int, int]]:
+    mask = Image.new("1", (width + 2, height + 2), 0)
+    draw(ImageDraw.Draw(mask))
+    w = mask.width
+    return frozenset((i % w, i // w) for i, v in enumerate(mask.get_flattened_data()) if v)
 
 
-def _slots(grid: list[list[int]]) -> list[list[int]]:
-    """Choose one palette family per tile, respecting the collision grid."""
-    slots = [[SKY] * kiko.MAP_W for _ in range(kiko.MAP_H)]
-    for ty, row in enumerate(grid):
-        for tx, cell in enumerate(row):
-            if cell == climb.COL_SOLID:
-                slots[ty][tx] = EARTH if ty > kiko.GROUND_ROW else STONE
-            elif cell == climb.COL_TOP:
-                slots[ty][tx] = TIMBER
+class SceneArt:
+    """One scene's palette map and drawing, from its kiko.Scene."""
 
-    # Pine silhouettes: sky family only, open air only, never on a lane.
-    for x, top, w, bottom in PINES:
-        for ty in range(top // TILE, (bottom - 1) // TILE + 1):
-            for tx in range(x // TILE, (x + w - 1) // TILE + 1):
-                if grid[ty][tx] == climb.COL_EMPTY and (ty, tx) not in LANE_CELLS:
-                    slots[ty][tx] = SKY
+    def __init__(self, folder: str) -> None:
+        self.folder = folder
+        self.scene = kiko.SCENES[folder]
+        self.width, self.height = self.scene.map_w * TILE, self.scene.map_h * TILE
+        self.grid = self.scene.collision_grid()
+        self.lane_cells = {(row, x) for row, x0, x1 in self.scene.hazard_lanes() for x in range(x0, x1 + 1)}
+        # Run whips hang from a stone bracket; shaft whips hang from the walk above.
+        self.bracket_cells = set() if self.scene.shaft else {
+            (row + dr, x) for row, x0, x1 in self.scene.whip_lanes
+            for x in range(x0 - 1, x1 + 2) for dr in (-3, -2)}
+        self.placard_cells = self.lane_cells | self.bracket_cells
+        self.transformer_tiles = {cell for line in self.scene.box_lines()
+                                  for cell in transformer_art.all_tiles(line["box"])}
+        ledges = [p for p in self.scene.platforms if p[0] in (*shaft.LEDGE_ROWS, kiko.ARRIVAL_SHELF[0])]
+        # WP5: pine gates at the scene links, pine trunks (shaft) or standing pines (runs).
+        self.markers = shaft_art.exit_markers(folder, self.scene.map_w, self.scene.map_h)
+        self.claimed: set[tuple[int, int]] = set()
+        self.tree_tiles: set[tuple[int, int]] = set()
+        self.trees: list[tuple[int, int, int]] = []      # (first column, top row, bottom row) of 2-column pines
+        self.posts = (shaft_art.post_tiles(self.grid, ledges, self.scene.hazard_cells(), self.scene.map_h)
+                      if self.scene.shaft else [])
 
-    # The house: timber body over the floor, two lit windows, one door.
-    x0, x1, y0, y1 = kiko.HOUSE_RECT
-    for ty in range(y0, y1 + 1):
-        for tx in range(x0, x1 + 1):
-            if grid[ty][tx] != climb.COL_EMPTY:
-                raise AssertionError(f"house overlaps collision at {tx},{ty}")
-    _set_rect(slots, TIMBER, x0, x1, y0, y1)
-    # Each window owns exactly one whole tile; no other tile uses this slot.
-    for tx, ty in kiko.HOUSE_WINDOWS:
-        slots[ty][tx] = WINDOW
+    # -- wires -----------------------------------------------------------------
+    def _polyline_pixels(self, route) -> frozenset[tuple[int, int]]:
+        """2px-thick polyline through contract tile centres (inside the tile)."""
+        pts = [(tx * TILE + 3, ty * TILE + 3) for tx, ty in route]
 
-    # Downed-wire posts: metal family, open air, never on a lane.
-    for tx, ty in ARC_POST_TILES:
-        if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in LANE_CELLS:
-            raise AssertionError(f"arc post overlaps collision or lane at {tx},{ty}")
-        slots[ty][tx] = METAL
+        def draw(d):
+            for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+                d.line([(x + dx, y + dy) for x, y in pts], fill=1, width=1)
+        return _mask_pixels(self.width, self.height, draw)
 
-    # Gust lanes on the mesa get a metal hazard placard; it never uses the
-    # cable index.
-    for row, x0, x1 in kiko.GUST_LANES:
-        for tx in range(x0, x1 + 1):
-            if grid[row][tx] != climb.COL_EMPTY:
-                raise AssertionError(f"gust placard overlaps collision at {tx},{row}")
-            slots[row][tx] = METAL
+    def _span_pixels(self, span) -> frozenset[tuple[int, int]]:
+        x0, x1 = span["columns"]
+        y = span["row"] * TILE
+        pts = [(x, y + (3 if (x // 6) % 2 else 5)) for x in range(x0 * TILE + 1, (x1 + 1) * TILE - 1, 6)]
+        pts.append(((x1 + 1) * TILE - 2, y + 4))
+        return _mask_pixels(self.width, self.height, lambda d: d.line(pts, fill=1, width=2))
 
-    # Claim the cable's open-sky tiles for the metal line slot last. Cells on
-    # the cabin, pole or posts stay theirs, so the cable passes behind them as
-    # a gap rather than a recolour.
-    for tx, ty in sorted(cable_route_tiles()):
-        if grid[ty][tx] != climb.COL_EMPTY or (ty, tx) in LANE_CELLS:
-            continue
-        if slots[ty][tx] == SKY:
-            slots[ty][tx] = LINE
+    @functools.lru_cache(maxsize=None)
+    def stage_pixels(self, stage: int) -> frozenset[tuple[int, int]]:
+        """Every pixel that may carry the wire colour index of ``stage`` in this scene."""
+        out: set[tuple[int, int]] = set()
+        for s, route in self.scene.wire_routes:
+            if s == stage:
+                out |= self._polyline_pixels(route)
+        for span in self.scene.spans:
+            if span["live_after"] == stage:
+                out |= self._span_pixels(span)
+        line = kiko.LINES[stage - 1]
+        if line["box_scene"] == self.folder:
+            # The transformer's cap, bushing, clamp, collar and lid light with its stage.
+            out |= transformer_art.stage_pixels(line["box"])
+        return frozenset((x, y) for x, y in out if x < self.width and y < self.height)
 
-    assert all(0 <= slot < 7 for row in slots for slot in row), "UI slot 7 reserved"
-    assert all(slots[ty][tx] == METAL for tx, ty in ARC_POST_TILES)
-    assert all(slots[ty][tx] == WINDOW for tx, ty in kiko.HOUSE_WINDOWS)
-    return slots
+    def stages(self) -> list[int]:
+        return sorted({s for s, _ in self.scene.wire_routes} | {span["live_after"] for span in self.scene.spans}
+                      | {line["number"] for line in self.scene.box_lines()})
 
+    def house_tiles(self) -> set[tuple[int, int]]:
+        if not self.scene.house:
+            return set()
+        hx0, hx1, hy0, hy1 = self.scene.house["rect"]
+        return {(tx, ty) for ty in range(hy0, hy1 + 1) for tx in range(hx0, hx1 + 1)}
 
-class _Canvas:
-    """Clip all painting to tiles whose assigned palette family matches."""
+    # -- palette map -----------------------------------------------------------
+    def slots(self) -> list[list[int]]:
+        """Choose one palette family per tile, respecting the collision grid."""
+        grid, scene = self.grid, self.scene
+        slots = [[SKY] * scene.map_w for _ in range(scene.map_h)]
+        for ty, row in enumerate(grid):
+            for tx, cell in enumerate(row):
+                if cell == climb.COL_SOLID:
+                    slots[ty][tx] = STONE
+                elif cell == climb.COL_TOP:
+                    slots[ty][tx] = TIMBER
+        for tx, ty in self.posts:
+            slots[ty][tx] = TIMBER
+        if scene.house:
+            x0, x1, y0, y1 = scene.house["rect"]
+            for ty in range(y0, y1 + 1):
+                for tx in range(x0, x1 + 1):
+                    if grid[ty][tx] != climb.COL_EMPTY:
+                        raise AssertionError(f"house overlaps collision at {tx},{ty}")
+                    slots[ty][tx] = TIMBER
+            # Each window owns exactly one whole tile; no other tile uses this slot.
+            for tx, ty in scene.house["windows"]:
+                slots[ty][tx] = WINDOW
+        for row, tx in sorted(self.placard_cells):
+            if grid[row][tx] != climb.COL_EMPTY or (tx, row) in self.transformer_tiles:
+                raise AssertionError(f"{self.folder}: hazard placard overlaps terrain at {tx},{row}")
+            slots[row][tx] = STONE
+        # Background transformers: the top row in the stage's wire slot, the can in stone.
+        bodies = set()
+        for line in scene.box_lines():
+            top, body = transformer_art.tiles(line["box"])
+            for tx, ty in top + body:
+                if grid[ty][tx] != climb.COL_EMPTY or (tx, ty) in self.house_tiles() or (tx, ty) in self.posts:
+                    raise AssertionError(f"transformer {line['key']} overlaps terrain at {tx},{ty}")
+            for tx, ty in body:
+                slots[ty][tx] = kiko.TRANSFORMER_BODY_SLOT
+                bodies.add((tx, ty))
+            for tx, ty in top:
+                slots[ty][tx] = stage_slot(line["number"])
+        # Wire tiles take their stage's slot last, upstream first. Over rock or timber
+        # (map edges, shaft slabs) the wire passes behind as a gap; it may never hit
+        # a placard, the house, a post or a transformer's can.
+        house, posts = self.house_tiles(), set(self.posts)
+        for stage in self.stages():
+            for tx, ty in sorted({(x // TILE, y // TILE) for x, y in self.stage_pixels(stage)}):
+                if grid[ty][tx] != climb.COL_EMPTY:
+                    continue
+                if (ty, tx) in self.placard_cells or (tx, ty) in house or (tx, ty) in posts or (tx, ty) in bodies:
+                    raise AssertionError(f"{self.folder}: wire tile {tx},{ty} collides with other art")
+                slots[ty][tx] = stage_slot(stage)
+        self._claim_trees(slots)
+        self.claimed = shaft_art.claim_markers(slots, grid, self.markers, FOLIAGE)
+        assert all(0 <= slot < 7 for row in slots for slot in row), "UI slot 7 reserved"
+        return slots
 
-    def __init__(self, image: Image.Image, slots: list[list[int]]):
-        self.image = image
-        self.slots = slots
+    def _lane_neighbourhood(self) -> set[tuple[int, int]]:
+        """(row, column) of every hazard lane widened by one tile each way, so a spark stays on dark sky."""
+        lanes = self.scene.hazard_cells()
+        return {(row + dr, x + dx) for row, x in lanes for dr in (-1, 0, 1) for dx in (-1, 0, 1)}
 
-    def _apply(self, slot: int, painter) -> None:
-        layer = Image.new("RGBA", self.image.size, (0, 0, 0, 0))
-        painter(ImageDraw.Draw(layer))
-        bounds = layer.getbbox()
-        if not bounds:
+    def _free(self, slots, tx: int, ty: int, avoid) -> bool:
+        return (self.grid[ty][tx] == climb.COL_EMPTY and slots[ty][tx] == SKY and (ty, tx) not in avoid
+                and ty >= kiko.HUD_ROWS)
+
+    def _claim_trees(self, slots) -> None:
+        """Pine trunks behind the shaft's slabs (4B) / tall standing pines on the runs (4A, 4C):
+        foliage tiles on open sky only, never beside a hazard lane, never over wires or art."""
+        avoid = self._lane_neighbourhood()
+        marker_cols = {tx + dx for _s, tx, _t in self.markers for dx in (-3, -2, -1, 0, 1, 2, 3, 4)}
+        width, height = self.scene.map_w, self.scene.map_h
+        if self.scene.shaft:
+            def runs(col):
+                out, run = [], []
+                for ty in range(height):
+                    if all(self._free(slots, col + dx, ty, avoid) for dx in (0, 1)):
+                        run.append(ty)
+                    else:
+                        out, run = (out + [run] if len(run) >= 3 else out), []
+                return out + ([run] if len(run) >= 3 else [])
+            best = sorted(range(1, width - 3), key=lambda col: -sum(len(r) for r in runs(col)))
+            chosen: list[int] = []
+            for col in best:
+                if all(abs(col - other) >= 5 for other in chosen) and len(chosen) < 3:
+                    chosen.append(col)
+            for col in sorted(chosen):
+                for run in runs(col):
+                    self.trees.append((col, run[0], run[-1]))
+        else:
+            chosen = []
+            for col in range(3, width - 5):
+                if col in marker_cols or any(abs(col - other) < 11 for other in chosen):
+                    continue
+                floor = next(ty for ty in range(height) if self.grid[ty][col] != climb.COL_EMPTY)
+                top = kiko.HUD_ROWS + 3 + (col * 3) % 3
+                if all(self._free(slots, col + dx, ty, avoid) for dx in (0, 1) for ty in range(top, floor)) \
+                        and all(self.grid[floor][col + dx] != climb.COL_EMPTY for dx in (0, 1)):
+                    chosen.append(col)
+                    self.trees.append((col, top, floor - 1))
+        for col, top, bottom in self.trees:
+            for ty in range(top, bottom + 1):
+                for dx in (0, 1):
+                    slots[ty][col + dx] = FOLIAGE
+                    self.tree_tiles.add((col + dx, ty))
+
+    # -- drawing ---------------------------------------------------------------
+    def _draw_backdrop(self, c) -> None:
+        """Night forest: hill bands with pine silhouettes in the sky family (one band per run screen height)."""
+        p = PALETTES[SKY]
+        bands = [58] if not self.scene.shaft else [58, 150, 242]
+        for band, base in enumerate(bands):
+            hill = [(x, base + ((x // 24 * 11 + x // 96 * 3 + band * 5) % 4) * 4)
+                    for x in range(0, self.width + 1, 24)] + [(self.width, base + 8)]
+            c.polygon(SKY, hill + [(self.width, base + 70), (0, base + 70)], p[1])
+            for x, y in hill[2:-1:5]:
+                c.line(SKY, [(x, y), (x + 4, y + 6)], p[2])
+            for i, x in enumerate(range(14 + band * 9, self.width - 30, 34)):
+                top, w, bottom = base - 20 + (i % 3) * 6, 12 + (i % 2) * 4, base + 22
+                center = x + w // 2
+                c.polygon(SKY, [(center, top), (x + 2, top + 11), (x + 5, top + 10), (x, top + 20),
+                                (x + 5, top + 19), (x, bottom - 2), (x + w, bottom - 2), (x + w - 5, top + 19),
+                                (x + w, top + 20), (x + w - 5, top + 10), (x + w - 2, top + 11)], p[1])
+                c.line(SKY, [(center, top + 2), (center, bottom - 2)], p[0])
+                c.line(SKY, [(center - 1, top + 7), (center - 3, top + 12)], p[2])
+        for i in range(self.width // 40 * (len(bands))):
+            x = (i * 53 + 24) % self.width
+            y = 18 + (i * 37) % 10 + (i % len(bands)) * 92
+            c.point(SKY, (x, y), p[2])
+
+    def _draw_trees(self, c) -> None:
+        p = PALETTES[FOLIAGE]
+        for col, top, bottom in self.trees:
+            x, y0, y1 = col * TILE, top * TILE, (bottom + 1) * TILE - 1
+            if self.scene.shaft:       # trunk behind the slabs: body, shaded side, bark cracks, branch stubs
+                c.rect(FOLIAGE, (x + 2, y0, x + 13, y1), p[1])
+                c.rect(FOLIAGE, (x + 2, y0, x + 3, y1), p[0])
+                c.line(FOLIAGE, [(x + 11, y0), (x + 11, y1)], p[2])
+                for ty in range(top, bottom + 1):
+                    yy = ty * TILE
+                    c.line(FOLIAGE, [(x + 6, yy + 1 + ty % 3), (x + 6, yy + 5 + ty % 3)], p[0])
+                    c.line(FOLIAGE, [(x + 9, yy + 4 - ty % 3), (x + 9, yy + 7)], p[0])
+                    if ty % 3 == col % 3:
+                        c.line(FOLIAGE, [(x + 13, yy + 3), (x + 15, yy)], p[1], 2)
+                        c.line(FOLIAGE, [(x + 2, yy + 5), (x, yy + 7)], p[1], 2)
+                continue
+            w, center = 16, x + 8
+            c.polygon(FOLIAGE, [(center, y0), (x + 2, y0 + 11), (x + 5, y0 + 10), (x, y0 + 20), (x + 5, y0 + 19),
+                                (x, y1 - 1), (x + w, y1 - 1), (x + w - 5, y0 + 19), (x + w, y0 + 20),
+                                (x + w - 5, y0 + 10), (x + w - 2, y0 + 11)], p[1])
+            c.line(FOLIAGE, [(center, y0 + 2), (center, y1 - 1)], p[0])
+            c.line(FOLIAGE, [(center - 1, y0 + 7), (center - 3, y0 + 12)], p[2])
+            c.line(FOLIAGE, [(center + 3, y0 + 21), (center + 5, y0 + 25)], p[2])
+
+    def _draw_storm_damage(self, c) -> None:
+        """Puddles on flat rock, snapped branches on the ground, clear of every hazard lane."""
+        keep = self._lane_neighbourhood() | self.placard_cells
+        for span in self.scene.spans:
+            keep |= {(row, x + dx) for row, x0, x1 in span["arcs"] for x in range(x0, x1 + 1) for dx in (-2, -1, 0, 1, 2)}
+        seed = len(self.folder)
+        shaft_art.puddles(c, self.grid, PALETTES[STONE], STONE, seed=seed)
+        shaft_art.branches(c, shaft_art.ground_spots(self.grid, keep, seed=seed + 1, mod=8), PALETTES[SKY], SKY)
+
+    def _draw_rock(self, c) -> None:
+        grid = self.grid
+        if self.scene.shaft:
+            shaft_art.draw_stone(c, grid, PALETTES[STONE], STONE)
             return
-        px, over = self.image.load(), layer.load()
-        left, top, right, bottom = bounds
-        for y in range(top, bottom):
-            for x in range(left, right):
-                rgba = over[x, y]
-                if rgba[3] and self.slots[y // TILE][x // TILE] == slot:
-                    px[x, y] = rgba[:3]
+        ramp = PALETTES[STONE]
+        for ty, row in enumerate(grid):
+            for tx, cell in enumerate(row):
+                if cell != climb.COL_SOLID:
+                    continue
+                x, y = tx * TILE, ty * TILE
+                c.rect(STONE, (x, y, x + 7, y + 7), ramp[1])
+                if ty == 0 or grid[ty - 1][tx] != climb.COL_SOLID:
+                    c.line(STONE, [(x, y), (x + 7, y)], ramp[3])
+                if (tx + ty) % 3 == 0:
+                    c.polygon(STONE, [(x, y + 2), (x + 3, y), (x + 4, y + 2), (x + 2, y + 4)], ramp[0])
+                else:
+                    c.line(STONE, [(x + 1, y + 1), (x + 3, y + 2), (x + 2, y + 4)], ramp[0])
+                c.line(STONE, [(x + 5, y + 1), (x + 6, y + 3)], ramp[2])
+                if (tx * 3 + ty) % 4 == 0:
+                    c.point(STONE, (x + 6, y + 6), ramp[3])
 
-    @staticmethod
-    def _rgba(color):
-        return tuple(color) + (255,)
+    def _draw_timber(self, c) -> None:
+        p = PALETTES[TIMBER]
+        if self.scene.shaft:
+            shaft_art.draw_platforms(c, self.scene.platforms, p, TIMBER)
+            shaft_art.draw_posts(c, self.posts, p, TIMBER)
+            return
+        for row, x0, x1 in self.scene.platforms:
+            left, right, y = x0 * TILE, (x1 + 1) * TILE - 1, row * TILE
+            c.line(TIMBER, [(left, y), (right, y)], p[3])
+            c.rect(TIMBER, (left, y + 1, right, y + 4), p[1])
+            c.line(TIMBER, [(left, y + 5), (right, y + 5)], p[0])
 
-    def rect(self, slot: int, box, color) -> None:
-        fill = self._rgba(color)
-        self._apply(slot, lambda d: d.rectangle(box, fill=fill))
-
-    def line(self, slot: int, points, color, width=1) -> None:
-        rgba = self._rgba(color)
-        self._apply(slot, lambda d: d.line(points, fill=rgba, width=width))
-
-    def polygon(self, slot: int, points, color) -> None:
-        rgba = self._rgba(color)
-        self._apply(slot, lambda d: d.polygon(points, fill=rgba))
-
-    def point(self, slot: int, xy, color) -> None:
-        rgba = self._rgba(color)
-        self._apply(slot, lambda d: d.point(xy, fill=rgba))
-
-
-def _draw_sky(c: _Canvas) -> None:
-    p = PALETTES[SKY]
-    # One flat night-family hill mass behind the route. It is the same slot as
-    # the sky, so rock and timber always win where they overlap.
-    c.polygon(SKY, HILL_LINE + [(WIDTH, HEIGHT - 24), (0, HEIGHT - 24)], p[1])
-    for points in HILL_HIGHLIGHTS:
-        c.line(SKY, points, p[2])
-    for x, y in STARS:
-        c.point(SKY, (x, y), p[2])
-
-
-def _draw_pines(c: _Canvas) -> None:
-    # Silhouettes in the sky family: hill colour for the body, so the tiers
-    # read against the darker open sky above the hill line.
-    p = PALETTES[SKY]
-    for x, top, w, bottom in PINES:
-        center = x + w // 2
-        c.polygon(SKY, [(center, top), (x + 2, top + 11), (x + 5, top + 10),
-                        (x, top + 20), (x + 5, top + 19), (x, bottom - 2),
-                        (x + w, bottom - 2), (x + w - 5, top + 19),
-                        (x + w, top + 20), (x + w - 5, top + 10),
-                        (x + w - 2, top + 11)], p[1])
-        c.line(SKY, [(center, top + 2), (center, bottom - 2)], p[0])
-        c.line(SKY, [(center - 1, top + 7), (center - 3, top + 12)], p[2])
-
-
-def _draw_rock(c: _Canvas, grid: list[list[int]]) -> None:
-    for ty, row in enumerate(grid):
-        for tx, cell in enumerate(row):
-            if cell != climb.COL_SOLID:
-                continue
-            slot = EARTH if ty > kiko.GROUND_ROW else STONE
-            ramp = PALETTES[slot]
-            x, y = tx * TILE, ty * TILE
-            c.rect(slot, (x, y, x + 7, y + 7), ramp[1])
-            # Exposed rock gets a lit surface edge; the joint seams are
-            # diagonal, as in the climb rock. Step and mesa read as one stone.
-            if ty == 0 or grid[ty - 1][tx] != climb.COL_SOLID:
-                c.line(slot, [(x, y), (x + 7, y)], ramp[3])
-            if (tx + ty) % 3 == 0:
-                c.polygon(slot, [(x, y + 2), (x + 3, y), (x + 4, y + 2),
-                                 (x + 2, y + 4)], ramp[0])
-            else:
-                c.line(slot, [(x + 1, y + 1), (x + 3, y + 2), (x + 2, y + 4)], ramp[0])
-            c.line(slot, [(x + 5, y + 1), (x + 6, y + 3)], ramp[2])
-            if (tx * 3 + ty) % 4 == 0:
-                c.point(slot, (x + 6, y + 6), ramp[3])
-
-
-def _draw_cabin(c: _Canvas) -> None:
-    p = PALETTES[TIMBER]
-    x0, x1, y0, y1 = kiko.HOUSE_RECT
-    left, right = x0 * TILE, x1 * TILE + 7
-    top, bottom = y0 * TILE, y1 * TILE + 7
-    # Board walls with a seam at every tile edge.
-    c.rect(TIMBER, (left, top + 8, right, bottom), p[1])
-    for x in range(left + 7, right, TILE):
-        c.line(TIMBER, [(x, top + 8), (x, bottom)], p[0])
-    # Pitched roof on the top tile row, with a lit eave.
-    mid = (left + right) // 2
-    c.polygon(TIMBER, [(left, top + 7), (mid, top), (right, top + 7)], p[2])
-    c.line(TIMBER, [(left, top + 7), (right, top + 7)], p[3])
-    # Doorway: a dark opening three tiles tall, framed in light timber.
-    dx = kiko.HOUSE_DOOR[0] * TILE
-    dy0 = (kiko.HOUSE_DOOR[1] - 2) * TILE
-    c.rect(TIMBER, (dx, dy0, dx + 7, bottom), p[0])
-    c.line(TIMBER, [(dx, dy0), (dx, bottom)], p[3])
-    c.line(TIMBER, [(dx + 7, dy0), (dx + 7, bottom)], p[3])
-    c.point(TIMBER, (dx + 5, dy0 + 12), p[3])
-
-
-def _draw_windows(c: _Canvas) -> None:
-    p = PALETTES[WINDOW]
-    # Cold glass; the scene swaps this slot to warm when the line is live.
-    for tx, ty in kiko.HOUSE_WINDOWS:
-        x, y = tx * TILE, ty * TILE
-        c.rect(WINDOW, (x, y, x + 7, y + 7), p[0])
-        c.rect(WINDOW, (x + 1, y + 1, x + 6, y + 6), p[1])
-        c.rect(WINDOW, (x + 2, y + 2, x + 5, y + 5), p[3])
-        c.line(WINDOW, [(x + 3, y + 2), (x + 3, y + 5)], p[2])
-        c.line(WINDOW, [(x + 2, y + 4), (x + 5, y + 4)], p[2])
-
-
-def _draw_arc_posts(c: _Canvas) -> None:
-    # Metal posts use indices 0, 2 and 3 only; index 1 is the cable's.
-    p = PALETTES[METAL]
-    for tx, top in ARC_POST_TOPS:
-        x = tx * TILE + 3
-        y0, y1 = top * TILE + 2, (top + 2) * TILE - 1
-        c.rect(METAL, (x, y0, x + 1, y1), p[0])
-        c.line(METAL, [(x + 2, y0), (x + 2, y1)], p[2])
-        c.rect(METAL, (x - 1, y0, x + 3, y0 + 1), p[3])
-
-
-def _draw_warnings(c: _Canvas) -> None:
-    # Metal placards use indices 0, 2 and 3 only; index 1 is the cable's.
-    p = PALETTES[METAL]
-    for row, x0, x1 in kiko.GUST_LANES:
+    def _draw_cabin(self, c) -> None:
+        house = self.scene.house
+        if not house:
+            return
+        p = PALETTES[TIMBER]
+        x0, x1, y0, y1 = house["rect"]
         left, right = x0 * TILE, x1 * TILE + 7
-        y = row * TILE
-        c.rect(METAL, (left + 2, y + 2, right - 2, y + 5), p[0])
-        c.line(METAL, [(left + 4, y + 2), (right - 4, y + 5)], p[2])
-        c.line(METAL, [(right - 4, y + 2), (left + 4, y + 5)], p[2])
-        center = (left + right) // 2
-        c.line(METAL, [(center - 2, y + 3), (center + 2, y + 3)], p[3])
-        c.line(METAL, [(center, y + 1), (center, y + 6)], p[3])
+        top, bottom = y0 * TILE, y1 * TILE + 7
+        c.rect(TIMBER, (left, top + 8, right, bottom), p[1])
+        for x in range(left + 7, right, TILE):
+            c.line(TIMBER, [(x, top + 8), (x, bottom)], p[0])
+        mid = (left + right) // 2
+        c.polygon(TIMBER, [(left, top + 7), (mid, top), (right, top + 7)], p[2])
+        c.line(TIMBER, [(left, top + 7), (right, top + 7)], p[3])
+        dx = house["door"][0] * TILE
+        dy0 = (house["door"][1] - 2) * TILE
+        c.rect(TIMBER, (dx, dy0, dx + 7, bottom), p[0])
+        c.line(TIMBER, [(dx, dy0), (dx, bottom)], p[3])
+        c.line(TIMBER, [(dx + 7, dy0), (dx + 7, bottom)], p[3])
+        c.point(TIMBER, (dx + 5, dy0 + 12), p[3])
+        w = PALETTES[WINDOW]
+        # Cold glass; the scene swaps this slot to warm when the house is powered.
+        for tx, ty in house["windows"]:
+            x, y = tx * TILE, ty * TILE
+            c.rect(WINDOW, (x, y, x + 7, y + 7), w[0])
+            c.rect(WINDOW, (x + 1, y + 1, x + 6, y + 6), w[1])
+            c.rect(WINDOW, (x + 2, y + 2, x + 5, y + 5), w[3])
+            c.line(WINDOW, [(x + 3, y + 2), (x + 3, y + 5)], w[2])
+            c.line(WINDOW, [(x + 2, y + 4), (x + 5, y + 4)], w[2])
+
+    def _draw_warnings(self, c) -> None:
+        p = PALETTES[STONE]
+        for row, x0, x1 in self.scene.hazard_lanes():
+            left, right, y = x0 * TILE, (x1 + 1) * TILE - 1, row * TILE
+            c.rect(STONE, (left + 2, y + 2, right - 2, y + 5), p[0])
+            c.line(STONE, [(left + 3, y + 2), (right - 3, y + 5)], p[3])
+            c.line(STONE, [(right - 3, y + 2), (left + 3, y + 5)], p[3])
+        if self.scene.shaft:
+            return
+        for row, x0, x1 in self.scene.whip_lanes:
+            left, right, y = (x0 - 1) * TILE + 1, (x1 + 2) * TILE - 2, (row - 3) * TILE
+            c.rect(STONE, (left, y + 10, right, y + 13), p[2])
+            c.line(STONE, [(left, y + 10), (right, y + 10)], p[3])
+            for x in (left + 2, right - 3):
+                c.rect(STONE, (x, y + 3, x + 1, y + 9), p[2])
+
+    def _draw_boards(self, c) -> None:
+        """Cracked planks on their timber (the board actor only shows while it creaks)."""
+        p = PALETTES[TIMBER]
+        for row, x0, x1 in self.scene.boards:
+            y = row * TILE
+            for tx in range(x0, x1 + 1):
+                x = tx * TILE
+                c.line(TIMBER, [(x + 1, y + 2), (x + 3, y + 4), (x + 5, y + 3)], p[0])
+                c.point(TIMBER, (x + 6, y + 4), p[0])
+
+    def _draw_transformers(self, c) -> None:
+        body_rgb = {code: PALETTES[kiko.TRANSFORMER_BODY_SLOT][index]
+                    for code, index in kiko.TRANSFORMER_BODY_INDEX.items()}
+        for line in self.scene.box_lines():
+            stage = line["number"]
+            transformer_art.paint(c.image.load(), line["box"],
+                                  stage_rgb=PALETTES[stage_slot(stage)][kiko.STAGE_COLOR_INDEX[stage - 1]],
+                                  body_rgb=body_rgb)
+
+    def _draw_cable(self, c, slots: list[list[int]]) -> None:
+        """Paint each stage's wire pixels in its metal colour index, on claimed wire tiles only."""
+        px = c.image.load()
+        for stage in self.stages():
+            slot = stage_slot(stage)
+            color = PALETTES[slot][kiko.STAGE_COLOR_INDEX[stage - 1]]
+            for x, y in sorted(self.stage_pixels(stage)):
+                if slots[y // TILE][x // TILE] == slot:
+                    px[x, y] = color
+
+    def make_background(self) -> tuple[Image.Image, list[list[int]]]:
+        """Return authored art and the contract-sized tile-palette map."""
+        slots = self.slots()
+        image = Image.new("RGB", (self.width, self.height))
+        pixels = image.load()
+        for ty, row in enumerate(slots):
+            for tx, slot in enumerate(row):
+                color = PALETTES[slot][0]
+                for y in range(ty * TILE, ty * TILE + TILE):
+                    for x in range(tx * TILE, tx * TILE + TILE):
+                        pixels[x, y] = color
+        canvas = shaft_art.Canvas(image, slots)
+        self._draw_backdrop(canvas)
+        self._draw_trees(canvas)
+        self._draw_rock(canvas)
+        self._draw_timber(canvas)
+        self._draw_storm_damage(canvas)
+        shaft_art.paint_markers(canvas, self.markers, self.claimed, "pine", PALETTES[FOLIAGE], FOLIAGE)
+        self._draw_cabin(canvas)
+        self._draw_warnings(canvas)
+        self._draw_boards(canvas)
+        self._draw_transformers(canvas)
+        self._draw_cable(canvas, slots)
+
+        allowed = [set(colors) for colors in PALETTES]
+        for ty, row in enumerate(slots):
+            for tx, slot in enumerate(row):
+                for y in range(ty * TILE, ty * TILE + TILE):
+                    for x in range(tx * TILE, tx * TILE + TILE):
+                        if pixels[x, y] not in allowed[slot]:
+                            raise AssertionError(f"{self.folder}: illegal palette color in tile {tx},{ty}")
+        self._check_geometry_art(image, slots)
+        return image, slots
+
+    def _check_geometry_art(self, image: Image.Image, slots: list[list[int]]) -> None:
+        for ty, row in enumerate(self.grid):
+            for tx, cell in enumerate(row):
+                if cell == climb.COL_SOLID:
+                    assert slots[ty][tx] == STONE, f"solid not rock at {tx},{ty}"
+        # Metal-slot pixels of each stage's index belong to that stage's wire only.
+        pixels = image.load()
+        for stage in self.stages():
+            wire_slot = stage_slot(stage)
+            color = PALETTES[wire_slot][kiko.STAGE_COLOR_INDEX[stage - 1]]
+            owner = self.stage_pixels(stage)
+            for ty, row in enumerate(slots):
+                for tx, slot in enumerate(row):
+                    if slot != wire_slot:
+                        continue
+                    for y in range(ty * TILE, ty * TILE + TILE):
+                        for x in range(tx * TILE, tx * TILE + TILE):
+                            if pixels[x, y] == color:
+                                assert (x, y) in owner, f"{self.folder}: stray stage {stage} wire at {x},{y}"
 
 
-def _draw_cable(c: _Canvas, slots: list[list[int]]) -> None:
-    """Paint the cable in LINE_INDEX on claimed metal route tiles only."""
-    color = PALETTES[LINE][LINE_INDEX]
-    px = c.image.load()
-    for x, y in sorted(cable_pixels()):
-        tx, ty = x // TILE, y // TILE
-        if slots[ty][tx] == LINE and (ty, tx) not in LANE_CELLS:
-            px[x, y] = color
+@functools.lru_cache(maxsize=None)
+def scene_art(folder: str) -> SceneArt:
+    return SceneArt(folder)
 
 
-def make_background() -> tuple[Image.Image, list[list[int]]]:
-    """Return authored 320x144 RGB art and its 40x18 tile-palette map."""
-    grid = kiko.collision_grid()
-    slots = _slots(grid)
-    image = Image.new("RGB", (WIDTH, HEIGHT))
-    pixels = image.load()
-    for ty, row in enumerate(slots):
-        for tx, slot in enumerate(row):
-            color = PALETTES[slot][0]
-            for y in range(ty * TILE, ty * TILE + TILE):
-                for x in range(tx * TILE, tx * TILE + TILE):
-                    pixels[x, y] = color
-    canvas = _Canvas(image, slots)
-    _draw_sky(canvas)
-    _draw_pines(canvas)
-    _draw_rock(canvas, grid)
-    _draw_cabin(canvas)
-    _draw_windows(canvas)
-    _draw_arc_posts(canvas)
-    _draw_warnings(canvas)
-    _draw_cable(canvas, slots)
-
-    allowed = [set(colors) for colors in PALETTES]
-    for ty, row in enumerate(slots):
-        for tx, slot in enumerate(row):
-            for y in range(ty * TILE, ty * TILE + TILE):
-                for x in range(tx * TILE, tx * TILE + TILE):
-                    if image.getpixel((x, y)) not in allowed[slot]:
-                        raise AssertionError(f"illegal palette color in tile {tx},{ty}")
-    _check_geometry_art(image, grid, slots)
-    return image, slots
-
-
-def _check_geometry_art(image: Image.Image, grid: list[list[int]],
-                        slots: list[list[int]]) -> None:
-    for ty, row in enumerate(grid):
-        for tx, cell in enumerate(row):
-            if cell == climb.COL_SOLID:
-                color = image.getpixel((tx * TILE + 3, ty * TILE + 3))
-                assert color in PALETTES[slots[ty][tx]], f"rock miss at {tx},{ty}"
-                assert slots[ty][tx] in (STONE, EARTH), f"solid not rock at {tx},{ty}"
-    # The cable index is reserved for cable pixels in metal-family tiles.
-    line_color = PALETTES[LINE][LINE_INDEX]
-    cable = cable_pixels()
-    for ty, row in enumerate(slots):
-        for tx, slot in enumerate(row):
-            if slot != LINE:
-                continue
-            for y in range(ty * TILE, ty * TILE + TILE):
-                for x in range(tx * TILE, tx * TILE + TILE):
-                    if image.getpixel((x, y)) == line_color:
-                        assert (x, y) in cable, f"stray cable index at {x},{y}"
+def make_background(folder: str = kiko.HOLLOW) -> tuple[Image.Image, list[list[int]]]:
+    return scene_art(folder).make_background()
 
 
 def _gb_studio_native_index(green: int) -> int:
@@ -377,19 +485,15 @@ def _gb_studio_native_index(green: int) -> int:
     return 0
 
 
-def encode_native_background(image: Image.Image,
-                             slots: list[list[int]]) -> Image.Image:
+def encode_native_background(image: Image.Image, slots: list[list[int]]) -> Image.Image:
     """Convert each authored ramp index to a canonical grayscale proxy."""
-    if image.mode != "RGB" or image.size != (WIDTH, HEIGHT):
-        raise ValueError(f"expected RGB {(WIDTH, HEIGHT)} author image")
-    if len(slots) != kiko.MAP_H or any(len(row) != kiko.MAP_W for row in slots):
-        raise ValueError(f"expected {kiko.MAP_W}x{kiko.MAP_H} palette grid")
-    palette_indices = [{color: index for index, color in enumerate(palette)}
-                       for palette in PALETTES]
+    if image.mode != "RGB" or image.size != (len(slots[0]) * TILE, len(slots) * TILE):
+        raise ValueError("expected an RGB author image matching its palette grid")
+    palette_indices = [{color: index for index, color in enumerate(palette)} for palette in PALETTES]
     proxy = Image.new("RGB", image.size)
     src, dst = image.load(), proxy.load()
-    for y in range(HEIGHT):
-        for x in range(WIDTH):
+    for y in range(image.height):
+        for x in range(image.width):
             slot = slots[y // TILE][x // TILE]
             try:
                 intended = palette_indices[slot][src[x, y]]
@@ -402,58 +506,62 @@ def encode_native_background(image: Image.Image,
     return proxy
 
 
-def _unique_indexed_tiles(image: Image.Image, slots: list[list[int]]) -> int:
+def unique_indexed_tiles(image: Image.Image, slots: list[list[int]]) -> int:
     patterns = set()
+    pixels = image.load()
     for ty, row in enumerate(slots):
         for tx, slot in enumerate(row):
-            pixels = tuple(image.getpixel((tx * TILE + x, ty * TILE + y))
-                           for y in range(TILE) for x in range(TILE))
-            patterns.add((slot, pixels))
+            patterns.add((slot, tuple(pixels[tx * TILE + x, ty * TILE + y] for y in range(TILE) for x in range(TILE))))
     return len(patterns)
 
 
-def _check_owned_outputs() -> None:
-    expected_id = kiko.BACKGROUND_ID
-    if SIDECAR.exists():
+def _check_owned_outputs(folder: str) -> None:
+    expected_id = kiko.BACKGROUND_IDS[folder]
+    path, meta = output(folder), sidecar(folder)
+    if meta.exists():
         try:
-            current = json.loads(SIDECAR.read_text(encoding="utf-8"))
+            current = json.loads(meta.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError) as exc:
-            raise RuntimeError(f"refusing to overwrite unreadable sidecar: {SIDECAR}") from exc
+            raise RuntimeError(f"refusing to overwrite unreadable sidecar: {meta}") from exc
         if current.get("id") != expected_id:
-            raise RuntimeError(f"refusing to overwrite unowned sidecar: {SIDECAR}")
-    elif OUTPUT.exists():
-        raise RuntimeError(f"refusing to overwrite PNG without its owned sidecar: {OUTPUT}")
+            raise RuntimeError(f"refusing to overwrite unowned sidecar: {meta}")
+    elif path.exists():
+        raise RuntimeError(f"refusing to overwrite PNG without its owned sidecar: {path}")
 
 
-def main() -> None:
-    _check_owned_outputs()
-    author_image, slots = make_background()
-    proxy = encode_native_background(author_image, slots)
-    unique = _unique_indexed_tiles(proxy, slots)
-    if unique > MAX_UNIQUE_TILES:
-        raise AssertionError(
-            f"pine_hollow uses {unique} unique indexed tiles (budget {MAX_UNIQUE_TILES})")
-    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
-    proxy.save(OUTPUT, format="PNG", optimize=False)
-    resource = {
+def sidecar_resource(folder: str, proxy: Image.Image, slots: list[list[int]]) -> dict:
+    scene = kiko.SCENES[folder]
+    return {
         "_resourceType": "background",
-        "id": kiko.BACKGROUND_ID,
-        "name": "pine_hollow",
-        "symbol": "bg_pine_hollow",
-        "filename": OUTPUT.name,
-        "width": kiko.MAP_W,
-        "height": kiko.MAP_H,
+        "id": kiko.BACKGROUND_IDS[folder],
+        "name": folder,
+        "symbol": f"bg_{folder}",
+        "filename": output(folder).name,
+        "width": scene.map_w,
+        "height": scene.map_h,
         "imageWidth": proxy.width,
         "imageHeight": proxy.height,
         "autoColor": False,
-        "tileColors": collision_rle(slots, kiko.MAP_W, kiko.MAP_H),
+        "tileColors": collision_rle(slots, scene.map_w, scene.map_h),
     }
-    SIDECAR.write_text(json.dumps(resource, indent=2) + "\n", encoding="utf-8")
-    slot_counts = {slot: sum(value == slot for row in slots for value in row)
-                   for slot in range(7)}
-    print(f"generated {OUTPUT.relative_to(ROOT)}: {proxy.width}x{proxy.height}px, "
-          f"{unique} unique indexed tiles (budget {MAX_UNIQUE_TILES}), "
-          f"palette tiles {slot_counts}")
+
+
+def main() -> None:
+    for folder in FOLDERS:
+        _check_owned_outputs(folder)
+        author_image, slots = make_background(folder)
+        proxy = encode_native_background(author_image, slots)
+        unique = unique_indexed_tiles(proxy, slots)
+        if unique > MAX_UNIQUE_TILES:
+            raise AssertionError(f"{folder} uses {unique} unique indexed tiles (budget {MAX_UNIQUE_TILES})")
+        path = output(folder)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        proxy.save(path, format="PNG", optimize=False)
+        sidecar(folder).write_text(json.dumps(sidecar_resource(folder, proxy, slots), indent=2) + "\n",
+                                   encoding="utf-8")
+        counts = {slot: sum(value == slot for row in slots for value in row) for slot in range(7)}
+        print(f"generated {path.relative_to(ROOT)}: {proxy.width}x{proxy.height}px, "
+              f"{unique} unique indexed tiles (budget {MAX_UNIQUE_TILES}), palette tiles {counts}")
 
 
 if __name__ == "__main__":

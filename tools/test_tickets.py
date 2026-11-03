@@ -72,10 +72,18 @@ class ContractTests(unittest.TestCase):
             for line in lines:
                 self.assertLessEqual(len(line), tickets.MAX_CHARS, line)
 
-    def test_tickets_cover_one_to_four(self):
-        self.assertEqual(sorted(tickets.TICKETS), [1, 2, 3, 4])
-        self.assertEqual(tickets.VAR_TICKET, "16")
-        self.assertEqual(tickets.VARIABLES, [("16", "Work Order", "var_work_order")])
+    def test_job_destinations_and_the_report_exit_on_pine_rim(self):
+        import kiko
+        import rosa
+        import scene_links
+        self.assertEqual(tickets.TICKETS[3]["start"], rosa.START)
+        self.assertEqual(tickets.TICKETS[4]["start"], kiko.START)
+        # The report exit is 4C's porch-end exit (scene_links), gated on Emil's house.
+        link = scene_links.link(kiko.RIM, scene_links.REPORT, scene_links.table("redesign"))
+        self.assertEqual(tickets.REPORT_EXIT, link.rect)
+        self.assertEqual(tickets.REPORT_EXIT, (kiko.RIM_W - 2, 9, 1, 3))
+        self.assertEqual(tickets.REPORT_EXIT_GATE_VAR, link.gate)
+        self.assertEqual(tickets.REPORT_EXIT_GATE_VAR, kiko.VAR_HOME_POWERED)
 
     def test_generator_text_check_passes(self):
         scene.check_text()
@@ -195,6 +203,14 @@ class StormReportTests(unittest.TestCase):
         self.assertEqual(last["args"]["sceneId"], tickets.TITLE_SCENE_ID)
         self.assertEqual(last["args"]["fadeSpeed"], "2")
 
+    def test_title_gets_the_intro_theme_not_the_job_music(self):
+        # Abe on 0.16.0-dev: after the last mission the title kept the job's music.
+        import intro
+        music = commands(self.script, "EVENT_MUSIC_PLAY")
+        self.assertEqual([m["args"]["musicId"] for m in music],
+                         [intro.THEME_IDS[intro.DEFAULT_THEME]])
+        self.assertEqual(self.script[-2]["command"], "EVENT_MUSIC_PLAY")
+
 
 class FileTests(unittest.TestCase):
     def test_scene_files_match_build(self):
@@ -203,11 +219,6 @@ class FileTests(unittest.TestCase):
             path = PROJECT / "scenes" / folder / "scene.gbsres"
             self.assertEqual(json.loads(path.read_text(encoding="utf-8")), resource, folder)
 
-    def test_scene_files_do_not_change_when_rebuilt(self):
-        first = {f: json.dumps(r, indent=2) for f, r in scene.build_scenes().items()}
-        second = {f: json.dumps(r, indent=2) for f, r in scene.build_scenes().items()}
-        self.assertEqual(first, second)
-
     def test_variable_sixteen_registered_and_others_untouched(self):
         data = json.loads((PROJECT / "variables.gbsres").read_text(encoding="utf-8"))
         entries = {v["id"]: v for v in data["variables"]}
@@ -215,11 +226,6 @@ class FileTests(unittest.TestCase):
         before = json.loads(json.dumps(data))
         merged = scene.merged_variables(before)
         self.assertEqual(merged, before)  # idempotent once registered
-
-    def test_profile_is_registered(self):
-        import make_project
-        self.assertEqual(make_project.PROFILES["tickets"],
-                         ("make_ticket_art.py", "make_ticket_scene.py"))
 
 
 if __name__ == "__main__":

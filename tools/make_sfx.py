@@ -40,6 +40,9 @@ SFX = [
                  ("square", 1047, 1047, 0.10, 0.65)]),                                  # two-note "power restored"
     ("cut", [("noise", 0, 0, 0.04, 0.70), ("square", 1175, 587, 0.06, 0.60)]),          # sharp snap
     ("pickup", [("square", 784, 1047, 0.10, 0.60)]),                                    # rising chirp
+    ("shock", [("noise", 0, 0, 0.10, 0.70), ("square", 1500, 600, 0.06, 0.70),
+               ("square", 700, 1600, 0.06, 0.70), ("noise", 0, 0, 0.06, 0.60),
+               ("square", 1400, 400, 0.12, 0.60)]),                                 # crackling electric zap
     ("victory", [("square", 523, 523, 0.08, 0.70), ("square", 659, 659, 0.08, 0.70),
                  ("square", 784, 784, 0.08, 0.70), ("square", 1047, 1047, 0.16, 0.70)]), # C-E-G-C fanfare
 ]
@@ -90,6 +93,9 @@ def main():
     random.seed(1)                                                      # deterministic noise
     total = 0.0
     for name, segments in SFX:
+        if (SOUNDS / f"{name}.wav").exists():
+            print(f"skip assets/sounds/{name}.wav (exists)")
+            continue
         dur = write_sfx(name, segments)
         total += dur
         print(f"wrote assets/sounds/{name}.wav ({dur:.2f} s) + sidecar")

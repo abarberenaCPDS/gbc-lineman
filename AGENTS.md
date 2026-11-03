@@ -21,16 +21,16 @@ title → `service_opening` (M-V1); after the B repair its awning exit enters
 Hiroshi, Priya and Emil on screen; code keys keep the old names (`marta`, `tomas`,
 `rosa`, `kiko`) so resource IDs stay stable. `tools/voices.py` owns speaker names
 and text blips; pass `speaker=` to a job's `say()`.
-Its preferred hero is 24px (opening size variable 5: 0=tall default,
-1=16px comparator); SELECT returns to safe ground before swapping colliders.
+Its hero is the 24px lineman only (`opening_worker24`); the 16px comparator
+and its SELECT swap were removed.
 Managed-Python command: `tools/make_project.py opening --fixtures --verify`.
 `tools/opening.py` owns its palette/geometry/ID contract; the scene generator
 does not change launch settings. Compiler-facing background PNGs are indexed
 proxies, not the authored RGB fixtures (color pitfalls: `docs/MCP_TOOLKIT.md`).
 
 The active redesign is `storm_climb`: `tools/climb.py` owns its geometry;
-regenerate with managed Python: `make_climb_art.py`, `make_climb_sprites.py`,
-then `make_climb_scene.py` and `make_engine_fields.py`. Music needs
+regenerate with managed Python: `make_climb_art.py`, then `make_climb_scene.py`
+and `make_engine_fields.py`. Music needs
 `python3 tools/compose_climb.py --render` first (installed Docker `uge-builder`,
 offline/no pull); the legacy `compose_music.py` writes JSON, not binary UGE.
 See `docs/PROJECT_PLAN.md` for current acceptance gaps and the visual-quality gate.
@@ -52,6 +52,10 @@ source modules/generators rather than generated art or scene resources.
 ## Project gotchas
 
 - Current fixture: `project/scenes/service_opening/` (PLATFORM, 20×18); gameplay prototype: `project/scenes/storm_climb/` (20×36). Storm Night and the topdown village are legacy references, not acceptance targets.
+- `tools/scenes.py` is the scene registry: every scene folder is tagged `game`, `lab` or `legacy` with its id, editor position and owning generator; `test_scenes.py` fails if a folder is unregistered or a game scene switches into a lab/legacy scene. Register new scenes there first.
+- Lab scenes (`LAB_` names, editor row y=1200; `tools/make_lab_scene.py`, profile `lab`): hazard gallery and movement room for test starts, e.g. `make_intro_scene.py --test-start lab_movement_room 2 14 right` (restore settings before committing).
+- Release ROMs: `tools/make_release.py` copies the project to `build/release-project/` without lab and legacy scenes (refuses a `-dev` VERSION unless `--allow-dev`), then build that copy. Storm Night stays in the source tree: `make_climb_scene.py` uses it as a template.
+- Job scenes share the grid chain in `tools/grid_chain.py` (lines, transformers, B-press pole/box zones via var 27 and one B input script, hero `Carry` pose; B away from zones drops a carried cable); each job's contract (`ridge.py`, `rosa.py`, `kiko.py`) owns coordinates and variables.
 - `*.bak` files are GB Studio editor backups; `build/`, `artifacts/`, `save-states/`, `__pycache__/`, and `user_settings.gbsres` are gitignored generated/local state. Never force-add them.
 - Project settings: sprite mode 8x16, music driver `huge`, color-only. Respawn coordinates/state handling are scene-specific; inspect scripts rather than assuming a scene reload.
 

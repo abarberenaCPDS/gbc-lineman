@@ -5,8 +5,8 @@ Pick one option per question (or mix); each lists what it reuses.
 
 ## 6. Replace falling rocks with field-crew hazards
 
-Falling debris today: timed columns in the climb (`climb.HAZARD_DEBRIS`), Wind Ridge
-and Pine Hollow. Live-wire arcs (Signal Hill) and wind gusts already exist.
+Falling debris is retired: the `climb_debris` sprite is gone and no scene places
+falling columns any more. Live-wire arcs (Signal Hill) and wind gusts already exist.
 
 | Hazard | How it plays | Built from |
 |---|---|---|

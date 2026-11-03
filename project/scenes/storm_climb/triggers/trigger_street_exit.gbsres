@@ -1,0 +1,60 @@
+{
+  "_resourceType": "trigger",
+  "id": "5a3533c3-9ed1-5780-9a81-831f9569f19d",
+  "name": "Street Exit (to Service Opening)",
+  "prefabId": "",
+  "x": 0,
+  "y": 30,
+  "symbol": "trigger_street_exit",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "34c9b14d-ddc9-5228-9b1e-f6f9721202e6"
+    },
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "6",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "38c3014a-15c9-5e55-8fd6-9d969ab3b7f7"
+    },
+    {
+      "command": "EVENT_OVERLAY_HIDE",
+      "args": {},
+      "id": "44a14dbb-81ed-5b00-ae16-d2a4f48be9f6"
+    },
+    {
+      "command": "EVENT_SWITCH_SCENE",
+      "args": {
+        "x": {
+          "type": "number",
+          "value": 16
+        },
+        "y": {
+          "type": "number",
+          "value": 9
+        },
+        "direction": "left",
+        "sceneId": "8524d1f9-7d48-5747-9f1b-4392d56fdf02",
+        "fadeSpeed": "2"
+      },
+      "id": "a234bc6e-7d4d-5d56-b252-d62f1bc489be"
+    }
+  ],
+  "leaveScript": [],
+  "_index": 0
+}

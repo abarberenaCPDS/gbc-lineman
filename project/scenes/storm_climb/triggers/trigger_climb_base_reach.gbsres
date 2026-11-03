@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "c9d06dad-dea0-5264-b713-f7b74fd96cb6",
+  "name": "Box Zone Transformer (base)",
+  "prefabId": "",
+  "x": 2,
+  "y": 24,
+  "symbol": "trigger_climb_base_reach",
+  "prefabScriptOverrides": {},
+  "width": 4,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 101
+        }
+      },
+      "id": "b85a3338-d6c1-5dd4-9bf4-e093d8db3e6d"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 101
+          }
+        }
+      },
+      "id": "76fdce9d-c8b9-59ba-b5df-4b7ca1db2797",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "9f17a5cb-c546-5112-a59a-eb33b6cfc8b4"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 5
+}

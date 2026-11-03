@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "05d2ed73-ddc4-54c1-853e-5ca96c595d77",
+  "name": "Pole Zone (house)",
+  "prefabId": "",
+  "x": 2,
+  "y": 30,
+  "symbol": "trigger_signal_house_pole_zone",
+  "prefabScriptOverrides": {},
+  "width": 3,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 5
+        }
+      },
+      "id": "2d5d338f-6db3-5e6f-b898-2de0e2908b8f"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 5
+          }
+        }
+      },
+      "id": "e6bce975-0d29-59b0-8deb-07d70ba1671e",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "8a5ed66f-23e7-574e-a177-e4e54b2e3453"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 7
+}

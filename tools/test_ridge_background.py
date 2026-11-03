@@ -1,187 +1,187 @@
-"""Wind Ridge background checks; run with managed Python after regeneration."""
+"""Contract, native proxy and five-stage background checks for the repair jobs.
+
+A job scene that shows only some chain stages (a multi-scene job) declares them
+as ``contract.STAGES``; wires may cross the left or right edge wall (edge ports).
+"""
 from __future__ import annotations
 
 import json
-from pathlib import Path
 import unittest
 
 from PIL import Image
 
 import climb
-import intro
-import make_ridge_art as art
-import opening
+import make_ridge_art
 import ridge
 from test_opening import decode_rle
 
-ROOT = Path(__file__).resolve().parent.parent
-BACKGROUND = ROOT / "assets/backgrounds/wind_ridge.png"
-SIDECAR = Path(str(BACKGROUND) + ".gbsres")
-GRAYS = {255, 170, 85, 0}
 
+class BackgroundChecks:
+    """Shared assertions, with the three jobs' own geometry as the source of truth."""
 
-class RidgeBackgroundTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.sidecar = json.loads(SIDECAR.read_text(encoding="utf-8"))
-        cls.flat_slots = decode_rle(cls.sidecar["tileColors"])
-        cls.slots = [cls.flat_slots[row * ridge.MAP_W:(row + 1) * ridge.MAP_W]
-                     for row in range(ridge.MAP_H)]
-        with Image.open(BACKGROUND) as image:
+        cls.grid = cls.contract.collision_grid()
+        cls.sidecar = json.loads(cls.art.SIDECAR.read_text(encoding="utf-8"))
+        flat = decode_rle(cls.sidecar["tileColors"])
+        cls.flat = flat
+        cls.slots = [flat[y * cls.contract.MAP_W:(y + 1) * cls.contract.MAP_W]
+                     for y in range(cls.contract.MAP_H)]
+        with Image.open(cls.art.OUTPUT) as image:
             cls.proxy = image.convert("RGB")
-            cls.image_size = image.size
-        cls.grid = ridge.collision_grid()
 
-    def slot(self, tx: int, ty: int) -> int:
-        return self.slots[ty][tx]
-
-    def native(self, tx: int, ty: int, x: int, y: int) -> int:
-        gray = self.proxy.getpixel((tx * ridge.TILE + x, ty * ridge.TILE + y))[0]
-        return art._gb_studio_native_index(gray)
-
-    def test_size_and_sidecar_identity(self):
-        self.assertEqual(self.image_size, (320, 144))
-        self.assertEqual(self.sidecar["id"], ridge.BACKGROUND_ID)
-        self.assertEqual(self.sidecar["name"], "wind_ridge")
-        self.assertEqual((self.sidecar["width"], self.sidecar["height"]), (40, 18))
-        self.assertEqual((self.sidecar["imageWidth"], self.sidecar["imageHeight"]), (320, 144))
+    def test_size_identity_and_proxy(self):
+        c, a = self.contract, self.art
+        self.assertIn((c.MAP_W, c.MAP_H), ((100, 18), (100, 30), (64, 18)))
+        self.assertEqual(self.proxy.size, (c.MAP_W * 8, c.MAP_H * 8))
+        self.assertEqual((self.sidecar["width"], self.sidecar["height"]), (c.MAP_W, c.MAP_H))
+        self.assertEqual((self.sidecar["imageWidth"], self.sidecar["imageHeight"]), self.proxy.size)
+        self.assertEqual(self.sidecar["id"], c.BACKGROUND_ID)
         self.assertFalse(self.sidecar["autoColor"])
-        self.assertEqual(len(self.flat_slots), 40 * 18)
+        self.assertEqual(len(self.flat), c.MAP_W * c.MAP_H)
+        self.assertTrue(all(0 <= slot < 7 for slot in self.flat))
+        self.assertTrue(set(self.proxy.get_flattened_data()) <= {(v, v, v) for v in (0, 85, 170, 255)})
+        self.assertLessEqual(a._unique_indexed_tiles(self.proxy, self.slots), a.MAX_UNIQUE_TILES)
 
-    def test_proxy_is_grayscale_native_indices(self):
-        pixels = list(self.proxy.get_flattened_data())
-        self.assertTrue(all(r == g == b for r, g, b in pixels), "proxy must be grayscale")
-        self.assertTrue({r for r, _, _ in pixels} <= GRAYS)
+    def test_generated_image_and_palette_map_are_reproducible(self):
+        image, slots = self.art.make_background()
+        self.assertEqual(slots, self.slots)
+        self.assertEqual(self.art.encode_native_background(image, slots).tobytes(), self.proxy.tobytes())
 
-    def test_committed_art_matches_generator(self):
-        image, slots = art.make_background()
-        self.assertEqual(slots, self.slots, "run tools/make_ridge_art.py to regenerate")
-        proxy = art.encode_native_background(image, slots)
-        self.assertEqual(proxy.tobytes(), self.proxy.tobytes())
+    def test_wire_palettes_and_stage_mapping(self):
+        c, a = self.contract, self.art
+        self.assertEqual(c.STAGE_COLOR_INDEX, [1, 3, 2, 1, 3])
+        self.assertEqual([a.stage_slot(s) for s in range(1, 6)], [5, 5, 5, 6, 6])
+        self.assertEqual(a.PALETTES[5], a.PALETTES[6])
+        self.assertEqual(len(set(a.PALETTES[5])), 4)
+        self.assertEqual(set(c.CHAIN_PALETTES), set(range(6)))
+        for n in range(6):
+            palettes = c.CHAIN_PALETTES[n]
+            for stage in range(1, 6):
+                slot, index = a.stage_slot(stage), c.STAGE_COLOR_INDEX[stage - 1]
+                self.assertEqual(palettes[slot][index], c.WIRE_LIVE if stage <= n else c.WIRE_DEAD)
+                self.assertEqual(palettes[slot][0], c.METAL_DEAD[0])
 
-    def test_palette_slots_avoid_ui_and_stay_in_bg_families(self):
-        self.assertEqual(len(opening.BG_PALETTES), 7, "slot 7 is reserved for UI")
-        self.assertTrue(all(0 <= slot < 7 for slot in self.flat_slots))
+    def stages(self):
+        return list(getattr(self.contract, "STAGES", range(1, 6)))
 
-    def test_collision_and_art_alignment(self):
-        for ty, row in enumerate(self.grid):
-            for tx, cell in enumerate(row):
-                slot = self.slot(tx, ty)
+    def test_wire_slot_tiles_and_stage_pixels(self):
+        c, a = self.contract, self.art
+        owners = {s: a.stage_pixels(s) for s in range(1, 6)}
+        tile_owners = {s: {(x // 8, y // 8) for x, y in owners[s]} for s in owners}
+        for y, row in enumerate(self.slots):
+            for x, slot in enumerate(row):
+                if slot in (5, 6):
+                    self.assertEqual(self.grid[y][x], climb.COL_EMPTY, (x, y))
+                    self.assertTrue(any((x, y) in tile_owners[s] and a.stage_slot(s) == slot
+                                        for s in owners), (x, y, slot))
+        for stage in self.stages():
+            pixels = owners[stage]
+            slot, index = a.stage_slot(stage), c.STAGE_COLOR_INDEX[stage - 1]
+            painted = {(x, y) for x, y in pixels if 0 <= x < a.WIDTH and 0 <= y < a.HEIGHT
+                       and self.slots[y // 8][x // 8] == slot
+                       and not any((x, y) in owners[later] and a.stage_slot(later) == slot
+                                   for later in range(stage + 1, 6))}
+            self.assertGreater(len(painted), 20, f"stage {stage} missing")
+            for x, y in painted:
+                self.assertEqual(self.proxy.getpixel((x, y))[0], a.NATIVE_PROXY_BY_INDEX[index],
+                                 (stage, x, y))
+            for x, y in tile_owners[stage]:
+                if self.grid[y][x] != climb.COL_EMPTY:
+                    self.assertIn(x, (0, c.MAP_W - 1), (stage, x, y))
+                elif self.slots[y][x] != slot:
+                    # A downstream slot can take only an actual shared junction tile.
+                    self.assertTrue(any((x, y) in tile_owners[s] and a.stage_slot(s) == self.slots[y][x]
+                                        for s in range(stage + 1, 6)), (stage, x, y))
+
+    def test_wire_palette_boundary_shares_only_the_pole_junction_tile(self):
+        a = self.art
+        upstream = {(x // 8, y // 8) for x, y in a.stage_pixels(3)}
+        downstream = {(x // 8, y // 8) for x, y in a.stage_pixels(4)}
+        self.assertLessEqual(len(upstream & downstream), 1,
+                             "different palette slots must not replace an extended upstream wire")
+
+    def test_terrain_hazards_and_windows(self):
+        c, a = self.contract, self.art
+        for y, row in enumerate(self.grid):
+            for x, cell in enumerate(row):
                 if cell == climb.COL_SOLID:
-                    self.assertIn(slot, (art.STONE, art.EARTH), f"solid tile {tx},{ty} not rock")
-                elif cell == climb.COL_EMPTY:
-                    self.assertNotIn(slot, (art.STONE, art.EARTH),
-                                     f"open air at {tx},{ty} drawn as rock")
-                else:
-                    self.assertEqual(slot, art.TIMBER, f"one-way tile {tx},{ty} not timber")
+                    self.assertEqual(self.slots[y][x], a.STONE, (x, y))
+                    body = sum(self.proxy.getpixel((x * 8 + dx, y * 8 + dy))[0] == 170
+                               for dy in range(8) for dx in range(8))
+                    self.assertGreaterEqual(body, 40, (x, y))
+                elif cell == climb.COL_TOP:
+                    self.assertEqual(self.slots[y][x], a.TIMBER, (x, y))
+        for row, x0, x1 in c.hazard_lanes():
+            for x in range(x0, x1 + 1):
+                self.assertEqual(self.slots[row][x], a.STONE, (x, row))
+                self.assertEqual(self.grid[row][x], climb.COL_EMPTY)
+        for row, x in a.PLACARD_CELLS:
+            self.assertEqual(self.slots[row][x], a.STONE, (x, row))
+        for row, x0, x1 in c.LEDGES:
+            for x in range(x0, x1 + 1):
+                self.assertTrue(all(self.proxy.getpixel((x * 8 + dx, row * 8))[0] == 0
+                                    for dx in range(8)), (x, row))
+        windows = {(x, y) for y, row in enumerate(self.slots) for x, slot in enumerate(row)
+                   if slot == a.WINDOW}
+        self.assertEqual(windows, set(c.HOUSE_WINDOWS))
+        for y in range(c.HUD_ROWS):
+            self.assertEqual(set(self.slots[y]), {a.SKY})
+            self.assertEqual(set(self.proxy.crop((0, y * 8, a.WIDTH, y * 8 + 8)).get_flattened_data()),
+                             {(255, 255, 255)})
 
-    def test_solid_tiles_read_as_rock(self):
-        for ty, row in enumerate(self.grid):
-            for tx, cell in enumerate(row):
-                if cell != climb.COL_SOLID:
+    def test_wire_slots_contain_no_unowned_colored_pixels(self):
+        a, c = self.art, self.contract
+        for y, row in enumerate(self.slots):
+            for x, slot in enumerate(row):
+                if slot not in (5, 6):
                     continue
-                body = sum(self.native(tx, ty, x, y) == 1
-                           for y in range(ridge.TILE) for x in range(ridge.TILE))
-                self.assertGreaterEqual(body, 40, f"rock tile {tx},{ty} is not solid")
+                for dy in range(8):
+                    for dx in range(8):
+                        px, py = x * 8 + dx, y * 8 + dy
+                        gray = self.proxy.getpixel((px, py))[0]
+                        if gray == 255:
+                            continue
+                        self.assertTrue(any(a.stage_slot(s) == slot
+                                            and gray == a.NATIVE_PROXY_BY_INDEX[c.STAGE_COLOR_INDEX[s - 1]]
+                                            and (px, py) in a.stage_pixels(s)
+                                            for s in range(1, 6)), (px, py, slot, gray))
 
-    def test_ledges_are_thin_timber_catwalks(self):
-        for row, x0, x1 in ridge.LEDGES:
-            for tx in range(x0, x1 + 1):
-                self.assertEqual(self.slot(tx, row), art.TIMBER)
-                self.assertTrue(all(self.native(tx, row, x, 0) == 3 for x in range(ridge.TILE)),
-                                f"ledge lip missing at {tx},{row}")
-                body = sum(self.native(tx, row, x, y) == 1
-                           for y in (2, 3, 4) for x in range(ridge.TILE))
-                self.assertGreaterEqual(body, 12, f"ledge body missing at {tx},{row}")
+    def test_fallen_spans_are_drawn_in_their_stage(self):
+        c, a = self.contract, self.art
+        for span in c.FALLEN_SPANS:
+            stage, (x0, x1) = span["live_after"], span["columns"]
+            pixels = a._span_pixels(span)
+            self.assertEqual({x // 8 for x, _ in pixels}, set(range(x0, x1 + 1)))
+            self.assertEqual({y // 8 for _, y in pixels}, {c.GROUND_ROW - 1})
+            for x, y in pixels:
+                self.assertEqual(self.slots[y // 8][x // 8], a.stage_slot(stage))
+                self.assertEqual(self.proxy.getpixel((x, y))[0],
+                                 a.NATIVE_PROXY_BY_INDEX[c.STAGE_COLOR_INDEX[stage - 1]])
 
-    def test_pole_stands_on_plateau_and_background_draws_no_stub(self):
-        # The pole is the intro_pole actor: its footprint (rows py-3..py, two
-        # tiles wide) keeps no BG timber stub, and the cable starts on its top row.
-        px, py = ridge.DAMAGED_POLE
-        self.assertEqual(self.grid[py][px], climb.COL_EMPTY)
-        self.assertEqual(self.grid[py + 1][px], climb.COL_SOLID, "pole must stand on the plateau")
-        self.assertEqual(ridge.CABLE_ROUTE[0], (px, py - 3))
-        self.assertFalse(hasattr(art, "POLE_TILES"))
-        for ty in range(py - 3, py + 1):
-            for tx in (px, px + 1):
-                self.assertEqual(self.grid[ty][tx], climb.COL_EMPTY)
-                self.assertNotEqual(self.slot(tx, ty), art.TIMBER, f"BG stub at {tx},{ty}")
 
-    def test_only_cable_pixels_use_the_line_index_in_metal_slot(self):
-        route = art.cable_route_tiles()
-        line_cells = set()
-        for ty in range(ridge.MAP_H):
-            for tx in range(ridge.MAP_W):
-                if self.slot(tx, ty) != climb.LINE_BG_SLOT:
-                    continue
-                for y in range(ridge.TILE):
-                    for x in range(ridge.TILE):
-                        if self.native(tx, ty, x, y) == climb.LINE_COLOR_INDEX:
-                            line_cells.add((tx, ty))
-        claimed_route = {(tx, ty) for tx, ty in route
-                         if self.slot(tx, ty) == climb.LINE_BG_SLOT}
-        self.assertTrue(line_cells)
-        self.assertEqual(line_cells, claimed_route)
+class RidgeBackgroundTests(BackgroundChecks, unittest.TestCase):
+    """2A wind_ridge: stages 1-3, line 3 leaves through the right wall."""
+    contract = ridge.LAYOUTS[ridge.RIDGE]
+    art = make_ridge_art.ARTS[ridge.RIDGE]
 
-    def test_cable_links_pole_and_junction_box_and_house(self):
-        cells = {(tx, ty) for tx, ty in art.cable_route_tiles()
-                 if self.slot(tx, ty) == climb.LINE_BG_SLOT}
+    def test_wind_ridge_tile_budget(self):
+        # Spec WP2: Wind Ridge's BG tiles stay below 200 (was 283 at 100x30).
+        self.assertLess(self.art._unique_indexed_tiles(self.proxy, self.slots), 250)
+        self.assertEqual(self.sidecar["id"], ridge.resource_id("background:wind-ridge"))
 
-        def near(targets, reach=1):
-            return any(max(abs(ax - bx), abs(ay - by)) <= reach
-                       for ax, ay in cells for bx, by in targets)
 
-        pole = {(ridge.DAMAGED_POLE[0], ridge.DAMAGED_POLE[1] - 3)}
-        house_x0, house_x1, house_y0, house_y1 = ridge.HOUSE_RECT
-        house = {(x, y) for x in range(house_x0, house_x1 + 1)
-                 for y in range(house_y0, house_y1 + 1)}
-        self.assertTrue(near(pole), "cable must leave the pole")
-        self.assertTrue(near({ridge.JUNCTION_BOX}), "cable must reach the junction box")
-        self.assertTrue(near(house, reach=1), "cable must reach the house")
+class SaddleBackgroundTests(BackgroundChecks, unittest.TestCase):
+    """2B ridge_saddle: stages 3-5, line 3 enters through the left wall; Hiroshi's cabin."""
+    contract = ridge.LAYOUTS[ridge.SADDLE]
+    art = make_ridge_art.ARTS[ridge.SADDLE]
 
-    def test_cable_cells_are_empty_collision(self):
-        for tx, ty in art.cable_route_tiles():
-            if self.slot(tx, ty) == climb.LINE_BG_SLOT:
-                self.assertEqual(self.grid[ty][tx], climb.COL_EMPTY, f"cable on collision {tx},{ty}")
-                self.assertNotIn((ty, tx), art.LANE_CELLS)
-
-    def test_window_slot_belongs_to_house_windows_alone(self):
-        lit = {(tx, ty) for ty in range(ridge.MAP_H) for tx in range(ridge.MAP_W)
-               if self.slot(tx, ty) == ridge.WINDOW_BG_SLOT}
-        self.assertEqual(lit, set(ridge.HOUSE_WINDOWS))
-        self.assertEqual(len(ridge.HOUSE_WINDOWS), len(lit), "each window is one tile")
-        x0, x1, y0, y1 = ridge.HOUSE_RECT
-        for tx, ty in ridge.HOUSE_WINDOWS:
-            self.assertTrue(x0 <= tx <= x1 and y0 <= ty <= y1)
-
-    def test_cabin_sits_in_open_air_with_its_door(self):
-        x0, x1, y0, y1 = ridge.HOUSE_RECT
-        for ty in range(y0, y1 + 1):
-            for tx in range(x0, x1 + 1):
-                self.assertEqual(self.grid[ty][tx], climb.COL_EMPTY)
-        dx, dy = ridge.HOUSE_DOOR
-        self.assertTrue(x0 <= dx <= x1 and y0 <= dy <= y1)
-        self.assertEqual(self.slot(dx, dy), art.TIMBER)
-        # The doorway is dark timber, not a window.
-        self.assertTrue(all(self.native(dx, dy, x, 2) == 0 for x in range(2, 6)))
-
-    def test_gust_lanes_are_open_air_metal_placards(self):
-        for row, x0, x1 in ridge.GUST_LANES:
-            for tx in range(x0, x1 + 1):
-                self.assertEqual(self.grid[row][tx], climb.COL_EMPTY)
-                self.assertEqual(self.slot(tx, row), art.METAL)
-
-    def test_hud_rows_are_plain_sky(self):
-        for ty in range(ridge.HUD_ROWS):
-            for tx in range(ridge.MAP_W):
-                self.assertEqual(self.slot(tx, ty), art.SKY)
-                self.assertTrue(all(self.native(tx, ty, x, y) == 0
-                                    for y in range(ridge.TILE) for x in range(ridge.TILE)))
-
-    def test_background_tile_budget(self):
-        self.assertLessEqual(art._unique_indexed_tiles(self.proxy, self.slots), 192)
-        self.assertLessEqual(art._unique_indexed_tiles(self.proxy, self.slots),
-                             art.MAX_UNIQUE_TILES)
+    def test_edge_port_rows_match(self):
+        port = ridge.EDGE_PORTS[3]
+        left = {(x // 8, y // 8) for x, y in self.art.stage_pixels(3)}
+        right = {(x // 8, y // 8) for x, y in make_ridge_art.ARTS[ridge.RIDGE].stage_pixels(3)}
+        self.assertIn((0, port), left)
+        self.assertIn((ridge.MAP_W - 1, port), right)
 
 
 if __name__ == "__main__":

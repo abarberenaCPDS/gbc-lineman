@@ -8,11 +8,19 @@ import unittest
 from PIL import Image
 
 import climb
-import opening
+import make_climb_art as art
 from test_opening import decode_rle
 
 ROOT = Path(__file__).resolve().parent.parent
 BACKGROUND = ROOT / "assets/backgrounds/storm_climb.png"
+PROXY_INDEX = {255: 0, 170: 1, 85: 2, 0: 3}
+
+
+def load():
+    slots = decode_rle(json.loads(Path(str(BACKGROUND) + ".gbsres").read_text())["tileColors"])
+    with Image.open(BACKGROUND) as image:
+        proxy = image.convert("RGB")
+    return [slots[row * climb.MAP_W:(row + 1) * climb.MAP_W] for row in range(climb.MAP_H)], proxy
 
 
 class ClimbBackgroundTests(unittest.TestCase):
@@ -21,109 +29,101 @@ class ClimbBackgroundTests(unittest.TestCase):
         self.assertEqual((sidecar["width"], sidecar["height"]), (20, 36))
         self.assertEqual((sidecar["imageWidth"], sidecar["imageHeight"]), (160, 288))
         self.assertFalse(sidecar["autoColor"])
-        slots = decode_rle(sidecar["tileColors"])
-        self.assertEqual(len(slots), 20 * 36)
-        self.assertTrue(all(0 <= slot < 7 for slot in slots), "UI slot 7 is reserved")
-        with Image.open(BACKGROUND) as image:
-            self.assertEqual(image.size, (160, 288))
-            self.assertTrue(set(image.convert("RGB").get_flattened_data()) <= {
-                (255, 255, 255), (170, 170, 170), (85, 85, 85), (0, 0, 0),
-            })
+        slots, proxy = load()
+        self.assertTrue(all(0 <= slot < 7 for row in slots for slot in row), "UI slot 7 is reserved")
+        self.assertEqual(proxy.size, (160, 288))
+        self.assertTrue({proxy.getpixel((x, y)) for y in range(288) for x in range(160)}
+                        <= {(v, v, v) for v in PROXY_INDEX})
 
-    def test_material_signal_at_supported_collisions(self):
-        """The lower game-facing portion must not revert to blank debug bars."""
-        slots = decode_rle(json.loads(Path(str(BACKGROUND) + ".gbsres").read_text())["tileColors"])
+    def test_disk_matches_the_generator(self):
+        image, slots = art.make_background()
+        disk_slots, proxy = load()
+        self.assertEqual(disk_slots, slots)
+        self.assertEqual(list(art.encode_native_background(image, slots).get_flattened_data()),
+                         list(proxy.get_flattened_data()))
+
+    def test_collision_materials(self):
+        slots, _ = load()
         grid = climb.collision_grid()
-        # A supported edge must be a terrain/catwalk palette, not night or UI.
-        for row, x0, x1 in climb.PLATFORMS:
-            for x in range(x0, x1 + 1):
-                self.assertEqual(grid[row][x], climb.COL_TOP)
-                self.assertIn(slots[row * climb.MAP_W + x], (1, 2, 4, 5, 6))
-        self.assertEqual(len(opening.BG_PALETTES), 7)
+        for y, row in enumerate(grid):
+            for x, cell in enumerate(row):
+                if cell == climb.COL_SOLID:
+                    self.assertEqual(slots[y][x], art.STONE, (x, y))
+                elif cell == climb.COL_TOP:
+                    self.assertEqual(slots[y][x], art.TIMBER, (x, y))
 
-    def test_summit_windows_alone_own_the_power_slot(self):
-        import make_climb_art
-        slots = decode_rle(json.loads(Path(str(BACKGROUND) + ".gbsres").read_text())["tileColors"])
-        lit = {(i % climb.MAP_W, i // climb.MAP_W) for i, slot in enumerate(slots) if slot == 3}
-        self.assertEqual(lit, set(make_climb_art.SUMMIT_WINDOW_TILES))
+    def test_no_house_on_the_summit(self):
+        """Amara's house and windows moved to the crest (test_crest_background.py)."""
+        slots, _ = load()
+        lit = {(x, y) for y, row in enumerate(slots) for x, slot in enumerate(row) if slot == art.WINDOW}
+        self.assertEqual(lit, set())
 
-    def _slot_and_proxy(self):
-        slots = decode_rle(json.loads(Path(str(BACKGROUND) + ".gbsres").read_text())["tileColors"])
-        with Image.open(BACKGROUND) as image:
-            return slots, image.convert("RGB")
+    def test_transformers_are_hardware_with_bushings_in_their_stage_slot(self):
+        slots, proxy = load()
+        for line in climb.boxes_in(climb.CLIMB_SCENE):
+            top, body = climb.transformer_tiles(line["box"])
+            stage = line["number"]
+            for x, y in body:
+                self.assertEqual(slots[y][x], art.HARDWARE)
+            stage_index = climb.STAGE_COLOR_INDEX[stage - 1]
+            for x, y in top:
+                self.assertEqual(slots[y][x], climb.stage_slot(stage))
+                indexes = {PROXY_INDEX[proxy.getpixel((x * 8 + dx, y * 8 + dy))[0]]
+                           for dy in range(8) for dx in range(8)}
+                self.assertIn(stage_index, indexes, f"transformer {stage} bushing tile {(x, y)} not lit-able")
+        hardware = {(x, y) for y, row in enumerate(slots) for x, slot in enumerate(row) if slot == art.HARDWARE}
+        sx0, sx1, sy0, sy1 = climb.SUBSTATION_TILES
+        substation = {(x, y) for x in range(sx0, sx1 + 1) for y in range(sy0, sy1 + 1)}
+        bodies = {cell for line in climb.boxes_in(climb.CLIMB_SCENE) for cell in climb.transformer_tiles(line["box"])[1]}
+        self.assertEqual(len(bodies), 4 * 4, "transformers 1-4 only; transformer 5 is on the crest")
+        self.assertEqual(hardware, substation | bodies)
 
-    def test_only_cable_pixels_use_the_line_index_in_metal_slot(self):
-        import make_climb_art as art
-        slots, proxy = self._slot_and_proxy()
-        route = art.cable_route_tiles()
-        line_cells = set()
-        for ty in range(climb.MAP_H):
-            for tx in range(climb.MAP_W):
-                if slots[ty * climb.MAP_W + tx] != climb.LINE_BG_SLOT:
+    def test_wire_tiles_light_only_their_own_stage(self):
+        """In slots 5 and 6, every non-zero index is a stage colour drawn by that stage's wire or bushing."""
+        slots, proxy = load()
+        bushing = {}
+        for line in climb.boxes_in(climb.CLIMB_SCENE):
+            bx, by = line["box"]
+            left, top = bx * 8, (by - climb.TRANSFORMER_H + 1) * 8
+            for dy, row in enumerate(art.TRANSFORMER_ART):
+                for dx, code in enumerate(row):
+                    if code == "W":
+                        bushing[(left + dx, top + dy)] = line["number"]
+        checked = 0
+        for ty, row in enumerate(slots):
+            for tx, slot in enumerate(row):
+                if slot not in (art.WIRE_1, art.WIRE_2):
                     continue
-                for y in range(climb.TILE):
-                    for x in range(climb.TILE):
-                        gray = proxy.getpixel((tx * climb.TILE + x, ty * climb.TILE + y))[0]
-                        if art._gb_studio_native_index(gray) == climb.LINE_COLOR_INDEX:
-                            line_cells.add((tx, ty))
-        claimed_route = {
-            (tx, ty) for tx, ty in route
-            if slots[ty * climb.MAP_W + tx] == climb.LINE_BG_SLOT
-        }
-        # Every index-1 metal pixel is a cable pixel on a claimed route tile,
-        # and every claimed route tile carries cable pixels.
-        self.assertTrue(line_cells)
-        self.assertEqual(line_cells, claimed_route)
+                for y in range(ty * 8, ty * 8 + 8):
+                    for x in range(tx * 8, tx * 8 + 8):
+                        index = PROXY_INDEX[proxy.getpixel((x, y))[0]]
+                        if index == 0:
+                            continue
+                        stages = {s for s in range(1, 6) if (x, y) in art.stage_pixels(s)}
+                        if (x, y) in bushing:
+                            stages.add(bushing[(x, y)])
+                        owners = [s for s in stages if climb.stage_slot(s) == slot
+                                  and climb.STAGE_COLOR_INDEX[s - 1] == index]
+                        self.assertTrue(owners, f"stray index {index} at {(x, y)}")
+                        checked += 1
+        self.assertGreater(checked, 500)
 
-    def test_cable_links_pole_and_junction_box(self):
-        import make_climb_art as art
-        slots, _ = self._slot_and_proxy()
-        cells = {
-            (tx, ty) for tx, ty in art.cable_route_tiles()
-            if slots[ty * climb.MAP_W + tx] == climb.LINE_BG_SLOT
-        }
-
-        def near(tiles, targets):
-            return any(max(abs(ax - bx), abs(ay - by)) <= 1
-                       for ax, ay in tiles for bx, by in targets)
-
-        # The cable hangs from the top of the intro pole sprite, which covers
-        # the rows DAMAGED_POLE y-3..y; the first claimed route tile sits there.
-        px, py = climb.DAMAGED_POLE
-        self.assertEqual((art.CABLE_ATTACH[0] // climb.TILE, art.CABLE_ATTACH[1] // climb.TILE),
-                         (px, py - 3))
-        self.assertIn((px, py - 3), art.cable_route_tiles())
-        self.assertTrue(near(cells, {(px, py - 3)}))
-        self.assertTrue(near(cells, {climb.JUNCTION_BOX}))
-
-    def test_background_draws_no_pole_stub(self):
-        # The pole is the animated intro_pole actor now. Its footprint (two tiles
-        # wide, rows DAMAGED_POLE y-3..y) must not carry the old BG timber claim.
-        import make_climb_art as art
-        slots, _ = self._slot_and_proxy()
-        px, py = climb.DAMAGED_POLE
-        footprint = [(tx, ty) for ty in range(py - 3, py + 1) for tx in (px, px + 1)]
-        self.assertNotIn(2, [slots[ty * climb.MAP_W + tx] for tx, ty in footprint])
-        self.assertFalse(hasattr(art, "POLE_TILES"))
-
-    def test_cable_cells_are_empty_collision(self):
-        import make_climb_art as art
-        slots, _ = self._slot_and_proxy()
+    def test_every_stage_shows_a_continuous_visible_run(self):
+        slots, _ = load()
         grid = climb.collision_grid()
-        for tx, ty in art.cable_route_tiles():
-            if slots[ty * climb.MAP_W + tx] == climb.LINE_BG_SLOT:
-                self.assertEqual(grid[ty][tx], climb.COL_EMPTY, f"cable on collision {tx},{ty}")
-        px, py = climb.DAMAGED_POLE
-        for ty in range(py - 3, py + 1):
-            for tx in (px, px + 1):
-                self.assertEqual(grid[ty][tx], climb.COL_EMPTY, f"pole sprite on collision {tx},{ty}")
+        for stage in range(1, 6):
+            tiles = {(x // 8, y // 8) for x, y in art.stage_pixels(stage)}
+            shown = {(x, y) for x, y in tiles if slots[y][x] == climb.stage_slot(stage)}
+            self.assertGreaterEqual(len(shown), 8, f"stage {stage} barely visible")
+            for x, y in shown:
+                self.assertEqual(grid[y][x], climb.COL_EMPTY, "wires are drawn on open air only")
+        # Stage 5 reaches the right edge on the edge-port row (the crest picks it up there).
+        self.assertEqual(slots[climb.EDGE_PORT_ROW][climb.MAP_W - 2], climb.stage_slot(5))
 
     def test_background_tile_budget(self):
-        import make_climb_art as art
-        slots, proxy = self._slot_and_proxy()
-        grid_slots = [slots[row * climb.MAP_W:(row + 1) * climb.MAP_W]
-                      for row in range(climb.MAP_H)]
-        self.assertLessEqual(art._unique_indexed_tiles(proxy, grid_slots), 192)
+        image, slots = art.make_background()
+        unique = art.unique_indexed_tiles(art.encode_native_background(image, slots), slots)
+        self.assertLess(unique, art.MAX_UNIQUE_TILES)
 
 
 if __name__ == "__main__":

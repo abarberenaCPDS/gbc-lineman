@@ -1,0 +1,61 @@
+{
+  "_resourceType": "trigger",
+  "id": "77bcf2ca-3448-54d6-b2a2-e76e6c39f667",
+  "name": "Box Zone Transformer (feeder)",
+  "prefabId": "",
+  "x": 11,
+  "y": 6,
+  "symbol": "trigger_signal_feeder_reach",
+  "prefabScriptOverrides": {},
+  "width": 5,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 101
+        }
+      },
+      "id": "3cad4d35-d173-538a-bc08-c988b63f22d9"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "27"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 101
+          }
+        }
+      },
+      "id": "9cc5205d-965d-52c2-80c9-71a4e65fc792",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_SET_VALUE",
+            "args": {
+              "variable": "27",
+              "value": {
+                "type": "number",
+                "value": 0
+              }
+            },
+            "id": "7c579946-2848-5075-9a9a-49f7975d476e"
+          }
+        ],
+        "false": []
+      }
+    }
+  ],
+  "_index": 3
+}

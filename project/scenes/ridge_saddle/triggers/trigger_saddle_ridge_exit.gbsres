@@ -1,0 +1,49 @@
+{
+  "_resourceType": "trigger",
+  "id": "6cb2d844-ebcc-594c-9e13-e68bed1ab3b8",
+  "name": "Ridge Exit (back to Wind Ridge)",
+  "prefabId": "",
+  "x": 1,
+  "y": 6,
+  "symbol": "trigger_saddle_ridge_exit",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "cb452a54-df09-53e4-836a-1493d054ef96"
+    },
+    {
+      "command": "EVENT_OVERLAY_HIDE",
+      "args": {},
+      "id": "b3872451-4754-57be-aad0-804f05013cfc"
+    },
+    {
+      "command": "EVENT_SWITCH_SCENE",
+      "args": {
+        "x": {
+          "type": "number",
+          "value": 56
+        },
+        "y": {
+          "type": "number",
+          "value": 8
+        },
+        "direction": "left",
+        "sceneId": "20ae4686-7e62-5a4d-b3ab-0fddf0ad0d19",
+        "fadeSpeed": "2"
+      },
+      "id": "9d0f3f94-3491-53b8-a233-2fa2bd52b627"
+    }
+  ],
+  "leaveScript": [],
+  "_index": 0
+}

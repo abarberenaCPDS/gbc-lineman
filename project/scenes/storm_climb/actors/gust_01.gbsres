@@ -1,0 +1,124 @@
+{
+  "_resourceType": "actor",
+  "id": "87bc8be0-aafb-5804-af87-3bd9a2efef96",
+  "_index": 5,
+  "symbol": "gust_01",
+  "prefabId": "",
+  "name": "Telegraphed Gust 1",
+  "coordinateType": "tiles",
+  "x": 8,
+  "y": 16,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "31b39167-ad7a-5152-8387-976ca2d50655",
+  "paletteId": "",
+  "direction": "down",
+  "moveSpeed": 1,
+  "animSpeed": 8,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "1",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "b45bafdb-af27-553a-884d-e9bcdd013913"
+    }
+  ],
+  "updateScript": [
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "0b92a5eb-9be0-5921-9325-d8ab0f98daf2"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Warning",
+        "loopAnim": true
+      },
+      "id": "32dbd0c1-20db-52fc-a53c-ca06ab06bb21"
+    },
+    {
+      "command": "EVENT_ACTOR_SHOW",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "429b5790-8cfb-57e1-9310-cf83707fef07"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 50
+        }
+      },
+      "id": "d52ec406-e9c7-5543-8e0d-dc2360b7bfac"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Burst",
+        "loopAnim": true
+      },
+      "id": "26b20c09-40d1-5092-8985-55c9d49bc95b"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_ENABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "35ce05c8-7ece-57dc-948a-55da311eba65"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 22
+        }
+      },
+      "id": "c4862005-de96-5056-9073-ef415bf38918"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "35a23d7c-88ee-5df8-9576-1c22f6e6c364"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "8606a0dc-ad13-58a7-b477-d5d9a4a2f6e1"
+    },
+    {
+      "command": "EVENT_WAIT",
+      "args": {
+        "units": "frames",
+        "frames": {
+          "type": "number",
+          "value": 80
+        }
+      },
+      "id": "41a12d36-0552-54d4-8a9f-5a67b4ac5d24"
+    }
+  ],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

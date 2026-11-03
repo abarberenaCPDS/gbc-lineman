@@ -1,92 +1,85 @@
-# Session handoff: Mister CFE (2026-10-26) — v0.10.3 stable (stream), v0.10.2 on the cart
+# Session handoff: Lineman (2026-11-02): 0.19.0-dev on `feat/wind-ridge-lines`
 
-Start a new session with: **"Read docs/HANDOFF.md and continue."**
-`PROJECT_PLAN.md` is the long-term record (progress log, newest first).
+Start a new session in the worktree `../gb-mr-cfe-wind-ridge` with:
+**"Read docs/HANDOFF.md and continue."**
+`docs/PROJECT_PLAN.md` is the long-term record (progress log, newest rows near line 685).
 
 ## Read first
 
-`AGENTS.md`, `CLAUDE.md`, the top of `docs/PROJECT_PLAN.md` and its progress log,
-`docs/MCP_TOOLKIT.md` §5 (engine facts, including the new OBJ palette slot map and the
-stale MCP index) and §8 (budget, worker rules). Load the `chromatic-budget-playtest` skill
-before emulator work or spawning workers. VERSION `0.10.3` (tags `v0.10.3`, `stable`). Local-only repo; one-line
-Conventional Commits, no AI attribution. Bugs: `docs/BUGS.md`.
+`AGENTS.md`, `CLAUDE.md`, the newest `docs/PROJECT_PLAN.md` log rows, `docs/LEVEL_REDESIGN.md`
+(multi-scene spec, Abe's answers in §9), `docs/BUGS.md`, and `docs/MCP_TOOLKIT.md` §5 (engine facts, OBJ
+palette slot map) and §8 (budget, worker rules). Load the `chromatic-budget-playtest` skill before
+you do emulator work or spawn workers.
+- Local-only repo. Commits are one-line Conventional Commits with no AI attribution.
+- `project/settings.gbsres` must start at the logo. Never commit a `--test-start`; check with
+  `git diff --quiet project/settings.gbsres`.
+- Leave `opencode.jsonc` (Abe's local config) uncommitted.
 
-## State
+## Done (all committed on this branch)
 
-- **Committed:** speaker names + voices, 24px neighbours, animated storm poles, renamed
-  neighbours, docs (see `git log`). `project/settings.gbsres` starts at the logo
-  (`8f0deaff…`); never commit a `--test-start` override.
-- **Cart:** v0.10.2 `86d3d954…` flashed 2026-10-26 (attract loop + B-14/B-15 fixes + v0.10.0 hazards/tickets). Flashing:
-  later writes to that device need no new data-loss consent (given 2026-10-26), but
-  always bind the exact ROM via `rom_inspect` and confirm Abe isn't mid-play.
-- **Names:** Marta → **Amara** (Nigeria), Tomás → **Hiroshi** (Japan), Rosa → **Priya**
-  (India), Kiko → **Emil** (Denmark). Code keys keep the old names on purpose.
+- **0.17.0-dev / 0.18.0-dev** (tagged): the gameplay round from `HANDOFF_FEEDBACK.md`, harder
+  layouts for Hiroshi, Priya and Emil, carried-cable option C, and the Lineman rebrand with the
+  new story, opening and work-order script.
+- **0.19.0-dev multi-scene redesign** (not tagged yet): 10 job scenes from `LEVEL_REDESIGN.md`:
+  - Amara: storm_climb + climb_crest.
+  - Hiroshi: wind_ridge + ridge_saddle.
+  - Priya: signal_hill + signal_gully + signal_porch.
+  - Emil: pine_hollow + pine_ladder + pine_rim.
 
-## Done this burst (HANDOFF items 2–5)
+  Shared cross-scene infra lives in `scene_links.py`, `GridChain(scene=)` and `shaft.py`. Cart
+  header and release file are now `LINEMAN` / `lineman-release.gbc`. Abe's cart was flashed with
+  `ef36962`.
+- **WP5 art polish:**
+  - Scene-edge markers (arch, signpost, pine gate).
+  - Puddles and branches kept off hazard lanes.
+  - Gully rope lashings and runoff, radio masts.
+  - Crest storm backdrop, ridge wind streaks, pine trunks in the ladder.
+  - 84–200 BG tiles per scene.
+- **Intro music sync:**
+  - The story restarts theme B on shot 1 every pass, and the logo is silent.
+  - Theme B has 9 sections, one per shot.
+  - Every shot lasts `intro.SHOT_FRAMES` = 239 frames (4 bars at hUGE's 64 Hz).
+  - The hero walk counts inside its shot, and the camera shakes run in their own threads.
+  - A measured 5-frame per-shot script cost is subtracted (`SHOT_OVERHEAD_FRAMES`).
+  - Native exact ROM `7dea5da0…`: the hero shot starts at story+1674 ±2 frames (target 1673).
+- **Tests:** 487 pass.
+- **Web preview:** the export `0c0c5a45…` (art polish + music sync) is served at the existing
+  listener URL `http://127.0.0.1:55192/77361db4…/`. curl confirmed the served ROM hash.
 
-2. Speaker names: `tools/voices.py`; `say(lines, key, speaker)` in each job generator.
-3. Per-character voice pitch (Amara 660, Hiroshi 440, Priya 990, Emil 1320 Hz; narrator 880).
-4. The intro pole sprite is each job's broken pole: Snapped → Standing when the line goes live (OBJ slot 7).
-5. Bigger characters: three adults 24px, Emil 20px (a kid; easy to make 24 if Abe prefers).
+## Left to do
 
-## Open, in suggested order
+1. **Abe's feedback:** human listening of the intro sync (let the title loop back into the story),
+   plus a browser pass on the WP5 art.
+2. **Known art weak spots:** Priya's radio masts have low contrast, the gully lashings are faint,
+   and the signpost reads like a mailbox.
+3. **Native checks not done yet:**
+   - Cross-scene carry, and a hit sending the cable home.
+   - Gully Down+A drop-through descent.
+   - Music continuity across scene edges.
+   - OAM on the new routes beyond the ladder sample.
+4. **Preview listener:** the MCP reports an unresolved closure ("Browser recording close
+   acknowledgement is UNKNOWN"), so `web_preview` open/recover/close all refuse. The URL still
+   serves `build/web`. Restart the ModRetro Chromatic plugin to clear it, then reopen the preview.
+   Don't delete recordings.
+5. **Release bookkeeping:** after Abe accepts this round, tag `v0.19.0-dev`, or bump the patch
+   first (the music sync is a fix: `0.19.1-dev`; bump in a `chore(release)` commit and regenerate
+   every profile). If he asks, flash the cart without asking again: build the committed ROM with
+   the logo start, then fresh device discovery, then `rom_inspect`. Never auto-retry an uncertain
+   write.
+6. Older open items stay in `docs/PROJECT_PLAN.md` and `docs/BUGS.md` (the seven inactive climb gust
+   triggers stay intentionally empty).
 
-0. **Cart verdict on v0.10.2:** Abe: "all looks fantastic" (overall; no per-item notes). If he reports specifics later, the open questions were board creak fairness (50 frames), hidden cables, work orders 1–4, CLOSED boxes, storm report → title. `climb_debris` sprite is unused and can be retired.
-1. **Attract loop** shipped in v0.10.2 and covered by that verdict.
-2. Names, sizes and poles: covered only by the overall verdict above.
-3. Look items for Abe's pass: Emil's raised bowl is thin; Priya lost her glasses, so her
-   only props now are long hair and a phone; Hiroshi's tube doubles as his cane. The
-   storm pole's dangling wire overlaps the cable-end sprite on the same tile.
-4. Known minor: B-06 junction reach. B-07 fixed in v0.10.3 (one shelf per Down+A, engine overlay); approved on stream ("v0.10.3 looks good"), not flashed, so the cart still runs v0.10.2.
+## Verification recipe (native)
 
-Use parallel workers per the skill (art: Sonnet; plumbing: Haiku). Main selects the
-project **before** spawning workers, gives plumbing workers the OBJ slot map, and
-regenerates every profile + runs the full suite after they finish.
+1. Run `make_intro_scene.py --test-start <folder> X Y right`.
+2. `rom_build` with `captureDebugArtifacts`.
+3. `emulator_run` with `debugMode: source`.
+4. Restore the start scene with a plain `make_intro_scene.py`.
 
----
+Player/actor positions:
+- The actor array starts at WRAM offset 4639. Each actor is 56 bytes, laid out
+  `[flags, x u16, y u16]`; pixels = value >> 5.
+- The story hero is runtime actor 13, at offset 5367.
 
-# Delta 2026-10-28 — v0.10.4 release build (stream-approved)
-
-**This section is the current state. Everything above still describes 2026-10-26,
-VERSION 0.10.3 and cart v0.10.2; it is kept as history, not superseded in place.**
-
-- **VERSION `0.10.4`** (PATCH bump, no `-dev`), committed and tagged `v0.10.4`.
-  `stable` still points at `v0.10.3`; move it only when Abe asks explicitly.
-- **Abe on the v0.10.4 stream: “the gameplay is good”** — host-emulated stream only
-  (Player 01, 120 s, saves off, ROM `f17df37b…`), not a cartridge/hardware verdict.
-- **What landed:** the tree Abe approved was a rename/cleanup pass — `intro_logo` →
-  `abes_games_logo`, `service_opening` → `service_opening_-_m-v1`, actor files renamed to
-  the character names (`intro_hero` → `electrician`, `ridge_tomas` → `hiroshi_(wind_ridge)`,
-  `signal_rosa` → `priya_(signal_hill)`, `pine_kiko` → `emil_(pine_hollow)`,
-  `marta` → `amara_-_waiting_for_light`, …), plus deletion of the unused legacy `.uge`
-  tracks (`cfe_main`, `cfe_lose`, `cfe_win`, `cfe_village_1..3`, `cfe_intro`).
-  Resource **ids and symbols are unchanged** (12 scenes · 88 actors · 28 triggers), so
-  every script reference still resolves. Title art was regenerated so the baked tag
-  reads `v0.10.4`; project health is 0 errors / 0 warnings.
-- **Cart:** still v0.10.2 `86d3d954…`. `f17df37b…` (v0.10.4) has **not** been flashed.
-
-## Left to do, in suggested order
-
-0. **Generator/test rename fallout — blocks clean verification.** `tools/test_intro.py`
-   (4 errors) and `tools/test_voices.py` (1 error) still hardcode
-   `project/scenes/intro_logo/…` and `service_opening/…`, and `intro.SCENES` in
-   `tools/intro.py` still lists the old folder names — so `make_intro_scene.py` would
-   recreate `intro_logo/` and duplicate the scene. Fix it by resolving scenes and
-   resources through the stable `id`/`symbol` instead of folder paths, and update the
-   folder names in `intro.py` / the opening generator. Keep `test_intro_background` and
-   `test_engine_patch` green. **Do not rerun any scene generator until this is done.**
-1. **Flash `f17df37b…`** to the cart when Abe asks — no new data-loss consent is needed
-   for that device (given 2026-10-26), but bind the exact ROM via `rom_inspect`, confirm
-   he isn't mid-play, and then get a cart verdict on v0.10.4.
-2. **`stable` tag** — move to `v0.10.4` only on Abe's explicit approval (then
-   `git tag -fa stable v0.10.4^{commit} -m "stable: v0.10.4 (ROM <sha>), <verdict>"`).
-3. **Sprite metadata drift from the editor re-save (watch on the cart).** Eleven sprite
-   `.gbsres` files had `numTiles` recomputed downward (`opening_worker24` 31 → 17,
-   `player_platform` 20 → 12, `opening_worker16` 29 → 16, …) and four scenes had
-   `_index` reordered, while the PNG pixel data is unchanged. The approved ROM is built
-   from this exact state, so it is correct as committed; treat any sprite-sheet glitch on
-   hardware as a suspect here first.
-4. **Carried over unchanged:** B-06 junction reach; the look pass (Emil's thin raised
-   bowl, Priya’s missing glasses, Hiroshi’s tube doubling as a cane, the pole’s dangling
-   wire overlapping the cable-end sprite); `climb_debris` sprite is unused and can be
-   retired.
+Read text first and take screenshots only to judge looks. Each `rom_build` log is ~15k tokens.
+Docker `uge-builder` needs Docker Desktop running (`open -a Docker`) for `--render`.

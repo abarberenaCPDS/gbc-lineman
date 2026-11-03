@@ -1,0 +1,148 @@
+{
+  "_resourceType": "trigger",
+  "id": "c9be5b00-2440-5e9b-80a9-b866f80fec19",
+  "name": "Report (to Storm Report)",
+  "prefabId": "",
+  "x": 54,
+  "y": 9,
+  "symbol": "trigger_rim_report_exit",
+  "prefabScriptOverrides": {},
+  "width": 1,
+  "height": 3,
+  "script": [
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "13"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "2d8c6887-a607-5607-b3a1-0742c97b5560",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "2120031c-15d0-53df-b537-5ebd218bb48d"
+          },
+          {
+            "command": "EVENT_OVERLAY_HIDE",
+            "args": {},
+            "id": "6bd20d00-9dfe-54c3-b44d-9898596b6265"
+          },
+          {
+            "command": "EVENT_SWITCH_SCENE",
+            "args": {
+              "x": {
+                "type": "number",
+                "value": 0
+              },
+              "y": {
+                "type": "number",
+                "value": 0
+              },
+              "direction": "down",
+              "sceneId": "87eb95ce-7a29-5e5f-a362-e92762f6cb26",
+              "fadeSpeed": "2"
+            },
+            "id": "90f488d2-5fbf-544c-98eb-20e8e514204b"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 150
+              }
+            },
+            "id": "84c29b7e-ceb3-536a-9ca5-aca3906a6d90"
+          },
+          {
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "Power Emil's\nhouse first."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 7,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 5,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "time",
+              "closeDelayTime": 0.5,
+              "closeDelayFrames": 30
+            },
+            "id": "7933d9a3-c8a9-5e41-bcad-fc83019b6722"
+          },
+          {
+            "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+            "args": {
+              "units": "pixels",
+              "y": {
+                "type": "number",
+                "value": 16
+              }
+            },
+            "id": "526f9fe7-e680-5aff-8dde-0ff26075124d"
+          },
+          {
+            "command": "EVENT_OVERLAY_SHOW",
+            "args": {
+              "color": "black",
+              "x": 0,
+              "y": 0
+            },
+            "id": "f94da667-5255-52fd-bde8-4dbcbaa90434"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "LINES %D1$25$/5 HOME %D1$13$/1",
+              "x": 0,
+              "y": 0,
+              "location": "overlay"
+            },
+            "id": "0b2d1bad-f8b7-5674-a691-3f2e06d1a786"
+          },
+          {
+            "command": "EVENT_TEXT_DRAW",
+            "args": {
+              "text": "v0.19.0-dev",
+              "x": 9,
+              "y": 1,
+              "location": "overlay"
+            },
+            "id": "03aff288-ddb6-55f4-81ed-1bcc7f36ba02"
+          }
+        ]
+      }
+    }
+  ],
+  "leaveScript": [],
+  "_index": 1
+}

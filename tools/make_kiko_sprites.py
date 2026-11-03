@@ -148,7 +148,7 @@ def _overlay(base: str, over: str) -> str:
 
 
 def _relieved(shut: bool) -> list[str]:
-    """Bowl held in front of the chest: 6 wide, dark rim, light soup, 2px arm, 2 steam pixels."""
+    """Bowl held in front of the chest: 8 wide, dark rim, 6px soup, 2px arm, 2 steam pixels."""
     return _kiko_frame([
         _TUFTS,                                  # 0
         _CAP,                                    # 1
@@ -161,9 +161,9 @@ def _relieved(shut: bool) -> list[str]:
         _CHIN,                                   # 8
         _JAW,                                    # 9
         _torso("2221222122"),                    # 10 steam (light) above the bowl
-        _torso("2233333322") [:-3] + "223",      # 11 bowl rim, arm at x13-14
-        _torso("2231111311") [:-3] + "223",      # 12 soup, hand at x11-12
-        _torso("2223333222"),                    # 13 rounded bowl base
+        _torso("2333333332"),                    # 11 bowl rim, 8 wide
+        _torso("2331111332") [:-3] + "223",      # 12 soup in the bowl, arm/hand at x13-15
+        _torso("2233333322"),                    # 13 rounded bowl base
         _torso(_JACKET),                         # 14
         _torso(_JACKET),                         # 15
         _LEGS,                                   # 16

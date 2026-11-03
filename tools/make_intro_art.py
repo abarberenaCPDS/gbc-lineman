@@ -86,16 +86,32 @@ FONT = {
 }
 SPACE_COLS = 3
 
+# Title wordmark (Abe, 2026-10-30: "adapt the title to Lineman"). Its own bold
+# glyphs: four columns (M five) so seven letters fit between the bolt columns at
+# the logotype's 4x6 scale. Drawn in the TITLE_ROWS["MR CFE"] band (the row key
+# is kept so intro.py and its tests stay unchanged).
+WORDMARK = "LINEMAN"
+WORDMARK_FONT = {
+    "L": ["#...", "#...", "#...", "#...", "#...", "#...", "####"],
+    "I": ["###", ".#.", ".#.", ".#.", ".#.", ".#.", "###"],
+    "N": ["#..#", "##.#", "##.#", "#.##", "#.##", "#..#", "#..#"],
+    "E": ["####", "#...", "#...", "###.", "#...", "#...", "####"],
+    "M": ["#...#", "##.##", "#.#.#", "#.#.#", "#...#", "#...#", "#...#"],
+    "A": [".##.", "#..#", "#..#", "####", "#..#", "#..#", "#..#"],
+}
 
-def text_mask(text: str, sx: int, sy: int, gap: int) -> tuple[set[tuple[int, int]], int, int]:
+
+def text_mask(text: str, sx: int, sy: int, gap: int,
+              font: dict[str, list[str]] | None = None) -> tuple[set[tuple[int, int]], int, int]:
     """Scaled pixel mask (relative coords), plus its width and height."""
+    font = FONT if font is None else font
     pen = 0
     mask: set[tuple[int, int]] = set()
     for ch in text:
         if ch == " ":
             pen += SPACE_COLS * sx
             continue
-        glyph = FONT[ch]
+        glyph = font[ch]
         for gy, row in enumerate(glyph):
             for gx, c in enumerate(row):
                 if c == "#":
@@ -134,9 +150,9 @@ class Scene:
         ImageDraw.Draw(self.idx).ellipse(box, fill=v)
 
     def text(self, text, rows, sx, sy, gap, hi, lo, shadow, shade_rows=2, sh=(2, 2),
-             x_center=WIDTH // 2, y_off=None):
+             x_center=WIDTH // 2, y_off=None, font=None):
         """Chunky lettering centred in tile rows ``rows`` with a drop shadow."""
-        mask, w, h = text_mask(text, sx, sy, gap)
+        mask, w, h = text_mask(text, sx, sy, gap, font)
         x0 = x_center - w // 2
         top, bottom = rows[0] * TILE, (rows[1] + 1) * TILE
         y0 = top + ((bottom - top - h - sh[1]) // 2 if y_off is None else y_off)
@@ -361,8 +377,10 @@ def make_title() -> Scene:
     s.set_rows(lo, hi, 2, MAP_W - 2, MAP_W - 1)
     s.rect(0, lo * TILE, 15, hi * TILE + 7, 0)
     s.rect(WIDTH - 16, lo * TILE, WIDTH - 1, hi * TILE + 7, 0)
-    x0, y0, w, h = s.text("MR CFE", (lo, hi), 4, 6, 2, hi=3, lo=2, shadow=1,
-                          shade_rows=3, sh=(3, 3))
+    # Centre the letters plus their 3px shadow between the bolt columns.
+    x0, y0, w, h = s.text(WORDMARK, (lo, hi), 4, 6, 2, hi=3, lo=2, shadow=1,
+                          shade_rows=3, sh=(3, 3), x_center=(WIDTH - 3) // 2,
+                          font=WORDMARK_FONT)
     assert x0 >= 16 and x0 + w + 3 <= WIDTH - 16, "logotype collides with bolt columns"
     _bolt(s, 0, False)
     _bolt(s, MAP_W - 2, True)
