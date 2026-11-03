@@ -48,6 +48,7 @@ except ModuleNotFoundError as error:
 STORY_SKIP_INPUTS = ["a", "start"]
 TITLE_START_INPUTS = ["start"]
 THREAD_HANDLE = "T0"           # GB Studio temp variable holding the thread handle
+SHAKE_THREAD_HANDLE = "T1"     # the story thread's own temp for its shake threads
 EMPTY_ROW = [0] * intro.MAP_W
 EMPTY_COLLISIONS = [list(EMPTY_ROW) for _ in range(intro.MAP_H)]
 # Story and title caption/text draws use BG slot 7 (UI), which every scene keeps.
@@ -172,7 +173,9 @@ def sound(sound_type: str, key: str, duration: float = 0.5) -> dict[str, Any]:
 
 
 def camera_shake(frames: int, magnitude: int, key: str) -> dict[str, Any]:
-    """Non-blocking: the camera shakes while the script keeps running."""
+    """Blocking: GB Studio invokes camera_shake_frames until the shake ends.
+
+    The story runs it in its own thread (shake_thread) to keep its timing."""
     return ev("EVENT_CAMERA_SHAKE", {
         "units": "frames", "frames": frames, "shakeDirection": "horizontal",
         "magnitude": num(magnitude),
@@ -223,15 +226,23 @@ def thread_start(body: list[dict[str, Any]], key: str) -> dict[str, Any]:
     return ev("EVENT_THREAD_START", {"variable": THREAD_HANDLE}, key, children={"true": body})
 
 
+def shake_thread(frames: int, magnitude: int, key: str) -> dict[str, Any]:
+    """Camera shake in a short thread of its own, so the story timeline does not stall."""
+    return ev("EVENT_THREAD_START", {"variable": SHAKE_THREAD_HANDLE}, key,
+              children={"true": [camera_shake(frames, magnitude, f"{key}:shake")]})
+
+
 def loop(body: list[dict[str, Any]], key: str) -> dict[str, Any]:
     return ev("EVENT_LOOP", {}, key, children={"true": body})
 
 
-def timeline(total: int, cues: list[tuple[int, list[dict[str, Any]]]], key: str) -> list[dict[str, Any]]:
-    """Events at frame offsets inside one shot. EVENT_WAIT fills the gaps so the waits sum to ``total``.
+def timeline(total: int, cues: list[tuple[int, list[dict[str, Any]]]], key: str,
+             walk: int = 0) -> list[dict[str, Any]]:
+    """Events at frame offsets inside one shot. EVENT_WAIT fills the gaps so the shot lasts ``total``.
 
-    Every event listed here must be non-blocking except the shot's own walk. A
-    blocking event (fade, move-to) would stretch the shot past its budget.
+    Every event listed here must be non-blocking except the shot's own walk,
+    which sits at offset 0 and holds the thread ``walk`` frames; the waits
+    leave those out so the shot stays on the music's bar grid.
     """
     offsets = [at for at, _ in cues]
     if offsets != sorted(offsets) or len(set(offsets)) != len(offsets):
@@ -245,6 +256,8 @@ def timeline(total: int, cues: list[tuple[int, list[dict[str, Any]]]], key: str)
             out.append(wait(at - now, f"{key}:to{at}"))
             now = at
         out.extend(events)
+        if at == 0:
+            now += walk
     if total > now:
         out.append(wait(total - now, f"{key}:tail"))
     return out
@@ -337,7 +350,6 @@ def logo_script() -> list[dict[str, Any]]:
         hide_player("logo:hide-player"),
         text_sound("logo:text-voice"),
         set_value(intro.VAR_THEME, intro.THEMES.index(intro.DEFAULT_THEME), "logo:theme-index"),
-        music_play(intro.DEFAULT_THEME, "logo:theme"),
         wait(intro.LOGO_HOLD_FRAMES, "logo:hold"),
         fade_out("logo:fade"),
         switch_scene(intro.STORY_SCENE_ID, 0, 0, "right", "logo:to-story"),
@@ -380,7 +392,7 @@ def _shot_cues(name: str) -> list[tuple[int, list[dict[str, Any]]]]:
             cues += [
                 (at, [actor_show(bolt, f"{k}:bolt-show"),
                       palette_slots({SKY: "sky_flash"}, f"{k}:flash0"),
-                      camera_shake(intro.SHAKE_FRAMES, intro.SHAKE_MAGNITUDE, f"{k}:shake")]),
+                      shake_thread(intro.SHAKE_FRAMES, intro.SHAKE_MAGNITUDE, f"{k}:shake-thread")]),
                 (at + flash, [palette_slots({SKY: "sky_storm"}, f"{k}:storm0")]),
                 (at + 2 * flash, [palette_slots({SKY: "sky_flash"}, f"{k}:flash1")]),
                 (at + 3 * flash, [palette_slots({SKY: "sky_storm"}, f"{k}:storm1")]),
@@ -419,12 +431,16 @@ def _shot_cues(name: str) -> list[tuple[int, list[dict[str, Any]]]]:
 
 
 def story_script() -> list[dict[str, Any]]:
-    shots: list[dict[str, Any]] = []
+    # Restart the theme with the first shot on every pass (title attract loop
+    # included), so the song's sections land on their shots.
+    shots: list[dict[str, Any]] = [music_play(intro.DEFAULT_THEME, "story:theme")]
     for name, lines, frames in intro.SHOTS:
         caption = text_draw(intro.caption_text(lines), *intro.CAPTION_TEXT, "overlay",
                             f"story:{name}:caption")
         shots.append(caption)
-        shots.extend(timeline(frames, shot_cues(name), f"story:{name}"))
+        walk = intro.HERO_WALK_FRAMES if name == "hero" else 0
+        shots.extend(timeline(frames - intro.SHOT_OVERHEAD_FRAMES, shot_cues(name),
+                              f"story:{name}", walk))
     shots.extend(leave_to_title("story:end"))
     return [
         hide_player("story:hide-player"),

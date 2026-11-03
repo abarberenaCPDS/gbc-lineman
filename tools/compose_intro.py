@@ -2,9 +2,11 @@
 
 python3 tools/compose_intro.py --render
 
-Each variant follows the intro story in eight 4-bar sections: dusk, dusk
-answer, storm, storm answer, the snap, grey morning, the electrician's rise,
-the mission. They differ in key, tempo and groove so Abe can pick by ear:
+Each variant follows the intro story in 4-bar sections: dusk, dusk
+answer, storm, storm answer, the snap, grey morning, the lineman's rise, the
+mission. B, the chosen theme, has nine: one per story shot (dusk, storm,
+lightning, snap, morning, dark, offline, hero, mission); intro.SHOT_FRAMES is
+one of its sections, so the story stays in step with it. They differ in key, tempo and groove so Abe can pick by ear:
 
   a  "Evening on the Hill"   D major lullaby that darkens to D minor, tpr 5
   b  "Storm Front"           driving D minor with drums, lifts to D major, tpr 4
@@ -94,7 +96,7 @@ def song(name, title, comment, tpr, sections):
     result = {"name": title, "artist": "abe", "comment": comment, "ticks_per_row": tpr,
               "orders": orders, "patterns": patterns,
               "waves": {"0": [4, 5, 6, 7, 8, 9, 10, 11, 12, 11, 10, 9, 8, 7, 6, 5] * 2}}
-    validate(result)
+    validate(result, len(sections))
     return name, result
 
 
@@ -149,6 +151,7 @@ def variant_b():
         section([p[0], p[1], p[4], p[3]], [Dm, F, Gm, A], "storm"),
         section([p[5], p[5], p[5], p[5]], [Dm, Bb, Gm, A], "sombre"),
         section([p[1], p[5], p[1], p[5]], [Dm, C, Bb, A], "sombre"),
+        section([p[1], p[5], p[4], p[3]], [Dm, Bb, Gm, A], "sombre"),  # offline: lead-in
         section([p[6], p[7], p[6], p[7]], [D, G, D, A], "anthem"),
         section([p[6], p[7], p[6], p[7]], [D, Bm, G, A], "anthem"),
     ])
@@ -197,7 +200,7 @@ def main():
             "uge_gen", f"/music/{name}.json", f"/music/{name}.uge",
         ], check=True)
         destination = MUSIC / f"{name}.uge"
-        refine_instruments(destination)
+        refine_instruments(destination, len(data["orders"][0]))
         write_json(Path(str(destination) + ".gbsres"), {
             "_resourceType": "music", "id": intro.THEME_IDS[key], "name": name,
             "filename": destination.name, "symbol": f"song_{name}", "settings": {},

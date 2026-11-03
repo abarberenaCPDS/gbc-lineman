@@ -103,8 +103,8 @@ def song():
     return result
 
 
-def validate(value):
-    assert len(value["orders"]) == 4 and all(len(seq) == 8 for seq in value["orders"])
+def validate(value, sections=8):
+    assert len(value["orders"]) == 4 and all(len(seq) == sections for seq in value["orders"])
     for events in value["patterns"].values():
         rows = [e["row"] for e in events]
         assert len(rows) == len(set(rows)) and all(0 <= r < 64 for r in rows)
@@ -115,7 +115,7 @@ def validate(value):
                 assert normalized in uge_report.NOTE_NAMES, pitch
 
 
-def refine_instruments(path):
+def refine_instruments(path, sections=8):
     data = bytearray(path.read_bytes())
     assert struct.unpack_from("<i", data)[0] == 6, "only hUGETracker v6 is supported"
     # See uge_report's documented TInstrumentV3 offsets. Less piercing pulse
@@ -138,7 +138,7 @@ def refine_instruments(path):
     assert decoded["trailing_bytes"] == 0
     assert decoded["instruments"][1]["initial_volume"] == 10
     assert decoded["instruments"][15]["output_level"] == 2
-    assert decoded["orders"][0][:-1] == list(range(8))
+    assert decoded["orders"][0][:-1] == list(range(sections))
 
 
 def main():

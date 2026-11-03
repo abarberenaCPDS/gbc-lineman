@@ -114,6 +114,13 @@
       "children": {
         "true": [
           {
+            "command": "EVENT_MUSIC_PLAY",
+            "args": {
+              "musicId": "28224f5e-66bd-569b-9263-a26b30806f7f"
+            },
+            "id": "f47a8d96-acbe-5c86-8173-d02ab738367c"
+          },
+          {
             "command": "EVENT_TEXT_DRAW",
             "args": {
               "text": "A quiet evening  \non the hill...   ",
@@ -129,7 +136,7 @@
               "units": "frames",
               "frames": {
                 "type": "number",
-                "value": 210
+                "value": 234
               }
             },
             "id": "4601325a-2e44-5589-a0d5-ecaa34c7967a"
@@ -270,7 +277,7 @@
               "units": "frames",
               "frames": {
                 "type": "number",
-                "value": 60
+                "value": 84
               }
             },
             "id": "1b6a893a-898b-52d0-b6fd-dd16bb6a500c"
@@ -318,17 +325,28 @@
             "id": "8cfb9f7c-f831-580a-96c9-7efeb13f4b5b"
           },
           {
-            "command": "EVENT_CAMERA_SHAKE",
+            "command": "EVENT_THREAD_START",
             "args": {
-              "units": "frames",
-              "frames": 45,
-              "shakeDirection": "horizontal",
-              "magnitude": {
-                "type": "number",
-                "value": 3
-              }
+              "variable": "T1"
             },
-            "id": "f5ad9dc0-f48e-50e8-9f67-2cb9bebe104a"
+            "id": "fe67fefa-b6ac-5254-9ea2-6874f6671dbb",
+            "children": {
+              "true": [
+                {
+                  "command": "EVENT_CAMERA_SHAKE",
+                  "args": {
+                    "units": "frames",
+                    "frames": 45,
+                    "shakeDirection": "horizontal",
+                    "magnitude": {
+                      "type": "number",
+                      "value": 3
+                    }
+                  },
+                  "id": "7272c00c-7284-5894-9045-c2db1051705e"
+                }
+              ]
+            }
           },
           {
             "command": "EVENT_SOUND_PLAY_EFFECT",
@@ -470,17 +488,28 @@
             "id": "3944029a-4510-5c37-9031-def99cafcd08"
           },
           {
-            "command": "EVENT_CAMERA_SHAKE",
+            "command": "EVENT_THREAD_START",
             "args": {
-              "units": "frames",
-              "frames": 45,
-              "shakeDirection": "horizontal",
-              "magnitude": {
-                "type": "number",
-                "value": 3
-              }
+              "variable": "T1"
             },
-            "id": "b7260844-e881-5a86-97ed-0272cd2cc442"
+            "id": "eff76927-1f3d-54a3-97db-8df01931ed0b",
+            "children": {
+              "true": [
+                {
+                  "command": "EVENT_CAMERA_SHAKE",
+                  "args": {
+                    "units": "frames",
+                    "frames": 45,
+                    "shakeDirection": "horizontal",
+                    "magnitude": {
+                      "type": "number",
+                      "value": 3
+                    }
+                  },
+                  "id": "2c1fb536-cceb-5054-9c93-1c0e73734e91"
+                }
+              ]
+            }
           },
           {
             "command": "EVENT_SOUND_PLAY_EFFECT",
@@ -595,7 +624,7 @@
               "units": "frames",
               "frames": {
                 "type": "number",
-                "value": 85
+                "value": 109
               }
             },
             "id": "c85e6b49-c18e-51c1-8495-ce2b236ac373"
@@ -796,7 +825,7 @@
               "units": "frames",
               "frames": {
                 "type": "number",
-                "value": 90
+                "value": 84
               }
             },
             "id": "db1620f3-e1f4-5909-b467-bf99db0b08cd"
@@ -887,7 +916,7 @@
               "units": "frames",
               "frames": {
                 "type": "number",
-                "value": 210
+                "value": 234
               }
             },
             "id": "96f39248-6a7a-5c4c-8a6a-94c06abf48e5"
@@ -908,7 +937,7 @@
               "units": "frames",
               "frames": {
                 "type": "number",
-                "value": 210
+                "value": 234
               }
             },
             "id": "9ef09535-a141-5f9e-a4e8-581eff571992"
@@ -929,7 +958,7 @@
               "units": "frames",
               "frames": {
                 "type": "number",
-                "value": 210
+                "value": 234
               }
             },
             "id": "7d120581-c95e-552f-847a-6a6783012ba0"
@@ -994,7 +1023,7 @@
               "units": "frames",
               "frames": {
                 "type": "number",
-                "value": 240
+                "value": 90
               }
             },
             "id": "dcad545d-6385-5e34-9d93-2886d07ad388"
@@ -1015,7 +1044,7 @@
               "units": "frames",
               "frames": {
                 "type": "number",
-                "value": 210
+                "value": 234
               }
             },
             "id": "54b7bd64-d715-5914-98af-955e7a8437e2"
