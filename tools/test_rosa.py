@@ -324,7 +324,8 @@ class SceneTests(unittest.TestCase):
         self.assertTrue(is_var_if(reset, grid_chain.VAR_TICKET, rosa.JOB))
         zeroed = {e["args"]["variable"] for e in reset["children"]["true"] if e["command"] == "EVENT_SET_VALUE"}
         self.assertEqual(zeroed, {rosa.VAR_CARRYING_CABLE, rosa.VAR_LINES_LIVE, rosa.VAR_CHAIN_LIVE,
-                                  rosa.VAR_HOME_POWERED, *(l["live_var"] for l in rosa.LINES)})
+                                  rosa.VAR_HOME_POWERED, *(l["live_var"] for l in rosa.LINES),
+                                  *(v for v, _, _ in grid_chain.VARIABLES)})
         # Outside the reset, the init never clears the job (a carried cable survives the edge).
         top_sets = {e["args"]["variable"] for e in script if e["command"] == "EVENT_SET_VALUE"}
         self.assertTrue(top_sets.isdisjoint(zeroed), top_sets)

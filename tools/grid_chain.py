@@ -165,6 +165,28 @@ BOX_ZONE = 100
 NPC_ZONE = 200
 CARRY_TEXT_DROPPED = "Cable dropped."
 
+# Shared teaching state, reset by the fresh-job gate, retained across internal
+# edges. 46..49 belong to shaft culling; never borrow those scratch variables.
+VAR_RETURN_HINT_SHOWN = "50"
+VAR_RETURN_HINT_PENDING = "51"
+VAR_PICKUP_TAUGHT = "52"
+VAR_CONNECT_TAUGHT = "53"
+VARIABLES = [
+    (VAR_RETURN_HINT_SHOWN, "Cable Return Hint Shown", "var_cable_return_hint_shown"),
+    (VAR_RETURN_HINT_PENDING, "Cable Return Hint Pending", "var_cable_return_hint_pending"),
+    (VAR_PICKUP_TAUGHT, "Cable Pickup Taught", "var_cable_pickup_taught"),
+    (VAR_CONNECT_TAUGHT, "Cable Connection Taught", "var_cable_connection_taught"),
+]
+RETURN_DESTINATIONS = {
+    "storm_climb": "Storm Climb",
+    "wind_ridge": "Wind Ridge",
+    "signal_hill": "Signal Hill",
+    "signal_gully": "Signal Gully",
+    "pine_hollow": "Pine Hollow",
+    "pine_ladder": "Pine Ladder",
+}
+
+
 COL_EMPTY = climb.COL_EMPTY
 COL_TOP = climb.COL_TOP
 COL_SOLID = climb.COL_SOLID
@@ -499,6 +521,9 @@ class GridChain:
             pole_state = ([self.actor_state(self.actor_id(line["pole"]), "Snapped+Cable", f"{tag}:pole-cable")]
                           if self.pole_here(line) else [])
             events.append(self.if_value(self.carrying_var, line["number"], f"{tag}:cable-drop", [
+                *([self.if_value(VAR_RETURN_HINT_SHOWN, 0, f"{tag}:return-unseen", [
+                    self.set_value(VAR_RETURN_HINT_PENDING, line["number"], f"{tag}:return-pending"),
+                ])] if not self.pole_here(line) else []),
                 self.set_value(self.carrying_var, 0, f"{tag}:cable-clear"),
                 self.actor_state("player", "", f"{tag}:hero-empty-hands"),
                 *pole_state,
@@ -506,6 +531,38 @@ class GridChain:
                 *(self.say([text], f"{tag}:dropped") if text else []),
             ]))
         return events
+
+    def recovery_hint_events(self, key: str) -> list[Event]:
+        """Explain the first remote loss after the caller has moved to safety.
+
+        The pending value remembers which cable was lost before emptying hands.
+        Local drops never arm it. Reset at job start, not at scene entry.
+        """
+        events = []
+        for line in self.lines:
+            if self.pole_here(line):
+                continue
+            destination = RETURN_DESTINATIONS.get(line["pole_scene"], line["pole_scene"].replace("_", " ").title())
+            tag = f"{key}:return-{line['key']}"
+            events.append(self.if_value(VAR_RETURN_HINT_PENDING, line["number"], tag, [
+                self.set_value(VAR_RETURN_HINT_PENDING, 0, f"{tag}:clear"),
+                self.set_value(VAR_RETURN_HINT_SHOWN, 1, f"{tag}:shown"),
+                *self.say([f"Cable at pole.\nBack to\n{destination}."], f"{tag}:text"),
+            ]))
+        return events
+
+    def teaching_events(self, variable: str, text: str, key: str) -> list[Event]:
+        """One modal success per action per job; later successes use HUD + SFX.
+
+        Keep legacy single-scene builders unchanged. Error and final-direction
+        pages do not pass through this gate.
+        """
+        if self.scene is None:
+            return self.say([text], key)
+        return [self.if_value(variable, 0, f"{key}:first", [
+            self.set_value(variable, 1, f"{key}:taught"),
+            *self.say([text], key),
+        ], self.hud(f"{key}:quiet-hud"))]
 
     # -- multi-scene scene init (module docstring, rules 1, 2 and 6) ------------
     def if_not_value(self, variable_id: str, value: int, key: str,
@@ -527,6 +584,8 @@ class GridChain:
             *[self.set_value(line["live_var"], 0, f"{key}:{line['key']}-live") for line in self.lines],
             self.set_value(self.lines_var, 0, f"{key}:lines-live"),
             self.set_value(self.chain_var, 0, f"{key}:chain-live"),
+            *[self.set_value(variable, 0, f"{key}:feedback-{variable}")
+              for variable, _, _ in VARIABLES],
         ]
 
     def job_reset_events(self, job: int, *, extra: Sequence[Event] = (), key: str = "job-reset") -> list[Event]:
@@ -644,7 +703,7 @@ class GridChain:
                 self.actor_state("player", "Carry", f"{key}:hero-carry"),
                 self.actor_state(self.actor_id(line["pole"]), "Snapped", f"{key}:pole-snapped"),
                 self.sound_event(pickup_sound_id, f"{key}:sfx"),
-                *self.say([self.text["pickup"]], f"{key}:text"),
+                *self.teaching_events(VAR_PICKUP_TAUGHT, self.text["pickup"], f"{key}:text"),
             ]),
         ], [
             *self.say([self.text["hands_full"]], f"{key}:hands-full"),
@@ -681,7 +740,8 @@ class GridChain:
         no scratch/project variables.
         """
         drop = self.if_at_least(self.carrying_var, 1, f"{key}:drop",
-                                self.cable_drop_events(f"{key}:drop", CARRY_TEXT_DROPPED), [])
+                                [*self.cable_drop_events(f"{key}:drop", CARRY_TEXT_DROPPED),
+                                 *self.recovery_hint_events(f"{key}:drop")], [])
         npc_zone_events = [] if npc_actor_id else (npc_events or [])
         body: list[Event] = [self.if_value(self.near_var, NPC_ZONE, f"{key}:npc", npc_zone_events, [drop])]
         if npc_actor_id and npc_events:
@@ -741,7 +801,7 @@ class GridChain:
             *self.say([self.text["all_live"]], f"{key}:text-all"),
         ], [
             self.if_at_least(self.chain_var, line["number"], f"{key}:lit", [
-                *self.say([self.text["lit"]], f"{key}:text-lit"),
+                *self.teaching_events(VAR_CONNECT_TAUGHT, self.text["lit"], f"{key}:text-lit"),
             ], [
                 *self.say([self.text["dark"]], f"{key}:text-dark"),
             ]),

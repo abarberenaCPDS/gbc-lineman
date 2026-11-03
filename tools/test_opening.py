@@ -69,7 +69,7 @@ class OpeningTests(unittest.TestCase):
         self.assertFalse(any(e["command"] == "EVENT_IF" and e["args"]["condition"]["valueA"]["value"] == "5"
                              for e in entry))
         controls = [e["args"]["text"][0] for e in entry if e["command"] == "EVENT_TEXT"]
-        self.assertEqual(controls, ["B: repair panel"])
+        self.assertEqual(controls, ["D-pad: move.\nB: repair panel"])
 
     def test_repair_restores_24px_animation_speed(self):
         import make_opening_scene as scene

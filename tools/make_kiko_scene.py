@@ -44,6 +44,7 @@ GUST_SPRITE = "assets/sprites/climb_gust.png.gbsres"
 
 sys.path.insert(0, str(TOOLS_DIR))
 try:
+    import completion  # noqa: E402  (Emil's household completion cue)
     import climb  # noqa: E402  (shared palettes, grid sprites, near variable)
     import grid_chain  # noqa: E402  (the reusable grid chain: events, actors, palettes)
     import intro  # noqa: E402  (intro pole sprite and palette identities)
@@ -314,7 +315,7 @@ def box_script_resources(folder: str, audio_ids: dict[str, str]) -> list[tuple[s
 
 
 def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
-    """Death sound, shock, then drop any cable (home to its pole, wherever it stands), then respawn.
+    """One shock cue, then drop any cable (home to its pole, wherever it stands), then respawn.
 
     Respawn (rule 4): this scene's furthest repaired checkpoint, else its
     upstream entry; on the rim, the tile in front of the door once Emil's house
@@ -328,18 +329,18 @@ def respawn_events(key: str, death_sound_id: str) -> list[dict[str, Any]]:
             set_position(door_x - 1, door_y, f"{key}:respawn-door"),
         ])]
     return [
-        sound_event(death_sound_id, f"{key}:death-sfx"),
         *shock.shock_events(key),
         *chain().cable_drop_events(key),
         set_value(hazards.VAR_ON_BOARD, 0, f"{key}:clear-board"),
         *respawn,
+        *chain().recovery_hint_events(key),
     ]
 
 
 # ---------------------------------------------------------------------------
 # Scene init
 # ---------------------------------------------------------------------------
-INTRO_LINES = [f"{voices.name('kiko')}'s house is\ndark and hungry!", "Fix 5 lines,\nthen soup!", "Dinner's cold..."]
+INTRO_LINES = ["Fix 5 lines.\nOne cable a trip."]
 
 
 def scene_script(music_id: str, audio_ids: dict[str, str],
@@ -656,7 +657,7 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
     script = [if_value(VAR_LINES_LIVE, kiko.LINE_COUNT, "door:lines", [
         if_value(VAR_HOME_POWERED, 0, "door:power-on", [
             set_value(VAR_HOME_POWERED, 1, "door:set-powered"),
-            sound_event(connect_sound_id, "door:sfx"),
+            sound_event(completion.sound_id(), "door:sfx"),
             window_palette_event(True, "door:window-warm"),
             actor_state(actor_id(KIKO_KEY), "Relieved", "door:kiko-relieved"),
             actor_state(actor_id(STOVE_KEY), "On", "door:stove-on"),
@@ -767,7 +768,7 @@ def build_scene(folder: str, music_id: str, audio_ids: dict[str, str],
 def merged_variables(data: dict[str, Any], extra: tuple = ()) -> dict[str, Any]:
     """Append the job's variables without changing any existing entry (a renamed ID is refused)."""
     merged = json.loads(json.dumps(data))
-    for key, name, symbol in (*kiko.VARIABLES, *hazards.VARIABLES, climb.NEAR_VARIABLE, *extra):
+    for key, name, symbol in (*kiko.VARIABLES, *hazards.VARIABLES, *grid_chain.VARIABLES, climb.NEAR_VARIABLE, *extra):
         value = {"id": key, "name": name, "symbol": symbol}
         existing = next((v for v in merged["variables"] if v["id"] == key), None)
         if existing is not None and existing != value:

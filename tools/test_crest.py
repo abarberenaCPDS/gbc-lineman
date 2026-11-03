@@ -203,7 +203,9 @@ class CrestSceneTests(unittest.TestCase):
         [once] = gate["children"]["true"]
         self.assertEqual(once["args"]["condition"]["valueA"]["value"], crest.VAR_DOOR)
         self.assertEqual(once["children"]["false"], [])
-        self.assertIn(["Power's back!\nMy fridge hums.", *tickets.closed_lines(1)], texts(once["children"]["true"]))
+        self.assertEqual(texts(once["children"]["true"]), [
+            ["Amara:\nPower's back!\nMy fridge hums."], tickets.closed_lines(1),
+        ])
         [hint] = gate["children"]["false"]
         self.assertEqual(hint["args"]["condition"]["valueA"]["value"], climb.VAR_CARRYING_CABLE)
         self.assertEqual(texts(hint["children"]["true"]), [["Still no power.\nFix all 5 lines!"]])
@@ -251,7 +253,8 @@ class CrestSceneTests(unittest.TestCase):
         self.assertEqual(len(drops), 5, "a cable from any line goes home (Abe)")
         self.assertFalse([e for e in flatten(drops) if e["command"] == "EVENT_ACTOR_SET_STATE"
                           and e["args"]["actorId"] != "player"], "no pole stands on the crest")
-        check = hit[-1]
+        check = next(e for e in hit if e["command"] == "EVENT_IF"
+                     and e["args"]["condition"]["valueA"]["value"] == climb.VAR_LINE_LIVE)
         self.assertEqual(check["args"]["condition"]["valueA"]["value"], climb.VAR_LINE_LIVE)
         positions = [(e["args"]["x"]["value"], e["args"]["y"]["value"]) for e in flatten([check])
                      if e["command"] == "EVENT_ACTOR_SET_POSITION"]

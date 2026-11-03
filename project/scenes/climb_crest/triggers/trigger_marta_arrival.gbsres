@@ -61,7 +61,7 @@
                   "command": "EVENT_SOUND_PLAY_EFFECT",
                   "args": {
                     "units": "time",
-                    "type": "4aaccbc3-f775-5090-b007-bd5d189a487f",
+                    "type": "8fec2195-9897-55d4-91ca-94d61a9ad0e2",
                     "priority": "high",
                     "pitch": 4,
                     "frequency": 200,
@@ -106,11 +106,31 @@
                   "id": "a50aa721-853d-5b81-a31b-2ba1be9eb8f8"
                 },
                 {
+                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+                  "args": {
+                    "type": "tone",
+                    "frequency": 660,
+                    "duration": 0.03,
+                    "units": "time"
+                  },
+                  "id": "86916c95-ba31-5823-8b84-f20d041ec488"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 150
+                    }
+                  },
+                  "id": "4ecdd242-00c5-52af-84d0-43989c96c847"
+                },
+                {
                   "command": "EVENT_TEXT",
                   "args": {
                     "text": [
-                      "Power's back!\nMy fridge hums.",
-                      "WO-0412\nCLOSED. Nice!"
+                      "Amara:\nPower's back!\nMy fridge hums."
                     ],
                     "avatarId": "",
                     "minHeight": 4,
@@ -132,6 +152,16 @@
                   "id": "99524b68-592b-529e-b2f9-53e911f28175"
                 },
                 {
+                  "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+                  "args": {
+                    "type": "tone",
+                    "frequency": 880,
+                    "duration": 0.03,
+                    "units": "time"
+                  },
+                  "id": "71277cf3-cfce-504b-80bb-49cd22b9a9a3"
+                },
+                {
                   "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
                   "args": {
                     "units": "pixels",
@@ -140,7 +170,7 @@
                       "value": 16
                     }
                   },
-                  "id": "6f673924-abac-55bf-bcb7-09e0818cbdef"
+                  "id": "2f01b30f-4f31-5a80-8380-0b9ea21d2ec7"
                 },
                 {
                   "command": "EVENT_OVERLAY_SHOW",
@@ -149,7 +179,7 @@
                     "x": 0,
                     "y": 0
                   },
-                  "id": "fc092f46-f3bf-57e0-8951-02b595a5741a"
+                  "id": "6215ab76-4260-50cc-a068-ec915cdf86af"
                 },
                 {
                   "command": "EVENT_TEXT_DRAW",
@@ -159,7 +189,7 @@
                     "y": 0,
                     "location": "overlay"
                   },
-                  "id": "5e43a2d7-6d28-58b5-8c21-8c060d0a9977"
+                  "id": "913469ec-4f1e-5b25-ac18-4bf9b9449ce9"
                 },
                 {
                   "command": "EVENT_TEXT_DRAW",
@@ -169,7 +199,83 @@
                     "y": 1,
                     "location": "overlay"
                   },
-                  "id": "3f5ae283-3f59-586b-a3ab-415dfc0c6c68"
+                  "id": "9721f8c8-8118-553a-84da-fb77e81b683d"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 150
+                    }
+                  },
+                  "id": "8caeed46-f8d5-56cd-a04b-e77cd35a9ae3"
+                },
+                {
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": [
+                      "WO-0412\nCLOSED. Nice!"
+                    ],
+                    "avatarId": "",
+                    "minHeight": 4,
+                    "maxHeight": 7,
+                    "textX": 1,
+                    "textY": 1,
+                    "textHeight": 5,
+                    "position": "bottom",
+                    "clearPrevious": true,
+                    "showFrame": true,
+                    "speedIn": -1,
+                    "speedOut": -1,
+                    "closeWhen": "key",
+                    "closeButton": "a",
+                    "closeDelayUnits": "time",
+                    "closeDelayTime": 0.5,
+                    "closeDelayFrames": 30
+                  },
+                  "id": "b55e7afb-2921-5f58-9a80-e6ece43e2036"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+                  "args": {
+                    "units": "pixels",
+                    "y": {
+                      "type": "number",
+                      "value": 16
+                    }
+                  },
+                  "id": "845148e3-4f58-532a-b2ca-36566c58b5e9"
+                },
+                {
+                  "command": "EVENT_OVERLAY_SHOW",
+                  "args": {
+                    "color": "black",
+                    "x": 0,
+                    "y": 0
+                  },
+                  "id": "03840dde-6dfc-52e1-8f98-2f0916ac43ca"
+                },
+                {
+                  "command": "EVENT_TEXT_DRAW",
+                  "args": {
+                    "text": "LINE %D1$45$/5 HOME %D1$00$/1",
+                    "x": 0,
+                    "y": 0,
+                    "location": "overlay"
+                  },
+                  "id": "c0d4fc89-1c9b-5f66-953e-6c64059caf85"
+                },
+                {
+                  "command": "EVENT_TEXT_DRAW",
+                  "args": {
+                    "text": "v0.19.0-dev",
+                    "x": 9,
+                    "y": 1,
+                    "location": "overlay"
+                  },
+                  "id": "84c5ddbf-d7fe-5dd1-be49-65b9b064304b"
                 }
               ],
               "false": []

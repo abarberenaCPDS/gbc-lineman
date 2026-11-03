@@ -287,7 +287,9 @@ class ClimbSceneTests(unittest.TestCase):
         self.assertEqual(reset["args"]["condition"]["valueB"]["value"], 1)
         sets = [(e["args"]["variable"], e["args"]["value"]["value"]) for e in reset["children"]["true"]]
         self.assertEqual(sets, [("6", 0), ("40", 0), ("41", 0), ("42", 0), ("43", 0), ("7", 0),
-                                ("45", 0), ("44", 0), (scene.VARIABLE_CHECKPOINTS_REACHED, 0)])
+                                ("45", 0), ("44", 0),
+                                *[(v, 0) for v, _, _ in grid_chain.VARIABLES],
+                                (scene.VARIABLE_CHECKPOINTS_REACHED, 0)])
         written = {e["args"]["variable"] for e in flatten(Fixture.script) if e["command"] == "EVENT_SET_VALUE"}
         self.assertNotIn("4", written, "the climb must never clear Service Restored")
         self.assertFalse([e for e in Fixture.script if e["command"] == "EVENT_ACTOR_SET_DIRECTION"],
@@ -399,12 +401,15 @@ class ClimbSceneTests(unittest.TestCase):
     def test_respawn_drops_the_cable_then_returns_to_the_furthest_repaired_line(self):
         hit = Fixture.resource["playerHit1Script"]
         commands = [e["command"] for e in hit]
-        self.assertEqual(commands[0], "EVENT_SOUND_PLAY_EFFECT")
+        self.assertEqual(commands[0], "EVENT_ACTOR_SET_STATE")
+        self.assertEqual(hit[0]["args"]["spriteStateId"], "Shock")
+        self.assertEqual(commands[1], "EVENT_SOUND_PLAY_EFFECT")
         drops = [i for i, e in enumerate(hit) if e["command"] == "EVENT_IF"
                  and e["args"]["condition"]["valueA"]["value"] == climb.VAR_CARRYING_CABLE]
         self.assertEqual(len(drops), 5)
-        check = hit[-1]
-        self.assertGreater(len(hit) - 1, max(drops))
+        check = next(e for e in hit if e["command"] == "EVENT_IF"
+                     and e["args"]["condition"]["valueA"].get("value") == climb.LINES[3]["live_var"])
+        self.assertGreater(hit.index(check), max(drops))
         positions = [(e["args"]["x"]["value"], e["args"]["y"]["value"]) for e in flatten([check])
                      if e["command"] == "EVENT_ACTOR_SET_POSITION"]
         self.assertEqual(set(positions), {climb.START, *[line["checkpoint"] for line in climb.LINES[:4]]},

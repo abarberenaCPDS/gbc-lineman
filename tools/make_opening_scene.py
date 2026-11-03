@@ -274,7 +274,7 @@ def build_scene(backgrounds: list[str], sprites: list[str]) -> dict:
             }, "entry:face-right"),
             if_value(RESTORED, 0, "entry:power", [palette_state(False, "entry:cold")], [palette_state(True, "entry:powered")]),
             event("EVENT_MUSIC_PLAY", {"musicId": music}, "entry:music"),
-            dialogue("B: repair panel", "entry:controls"),
+            dialogue("D-pad: move.\nB: repair panel", "entry:controls"),
         ],
         "playerHit1Script": [], "playerHit2Script": [], "playerHit3Script": [],
     }

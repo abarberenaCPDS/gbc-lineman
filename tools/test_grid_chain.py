@@ -463,7 +463,8 @@ class MultiSceneTests(unittest.TestCase):
         self.assertEqual(reset["args"]["condition"]["valueB"]["value"], 1)
         cleared = {e["args"]["variable"] for e in reset["children"]["true"]}
         self.assertEqual(cleared, {"carrying", "lines-live", "chain-live", "home",
-                                   *[f"live-{i}" for i in range(1, 6)]})
+                                   *[f"live-{i}" for i in range(1, 6)],
+                                   *[v for v, _, _ in grid_chain.VARIABLES]})
         [fresh] = self.shaft.fresh_start_events(1, [self.shaft.music_event("song")])
         self.assertEqual([e["command"] for e in fresh["children"]["true"]],
                          ["EVENT_MUSIC_PLAY", "EVENT_SET_VALUE"])

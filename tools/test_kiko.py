@@ -234,7 +234,8 @@ class GeneratedSceneTests(unittest.TestCase):
         self.assertTrue(is_var_if(reset, grid_chain.VAR_TICKET, kiko.JOB))
         zeroed = {e["args"]["variable"] for e in reset["children"]["true"] if e["command"] == "EVENT_SET_VALUE"}
         self.assertEqual(zeroed, {line["live_var"] for line in kiko.LINES}
-                         | {kiko.VAR_CARRYING_CABLE, kiko.VAR_LINES_LIVE, kiko.VAR_CHAIN_LIVE, kiko.VAR_HOME_POWERED})
+                         | {kiko.VAR_CARRYING_CABLE, kiko.VAR_LINES_LIVE, kiko.VAR_CHAIN_LIVE, kiko.VAR_HOME_POWERED}
+                         | {v for v, _, _ in grid_chain.VARIABLES})
         fresh = init[-1]
         self.assertTrue(is_var_if(fresh, grid_chain.VAR_TICKET, kiko.JOB))
         inside = fresh["children"]["true"]
@@ -278,7 +279,8 @@ class GeneratedSceneTests(unittest.TestCase):
         for folder in FOLDERS:
             hit = BUILT[folder]["scene"]["playerHit1Script"]
             with self.subTest(folder=folder):
-                self.assertEqual(hit[0]["command"], "EVENT_SOUND_PLAY_EFFECT")
+                self.assertEqual(hit[0]["command"], "EVENT_ACTOR_SET_STATE")
+                self.assertEqual(hit[1]["command"], "EVENT_SOUND_PLAY_EFFECT")
                 drops = [i for i, e in enumerate(hit) if is_var_if(e, kiko.VAR_CARRYING_CABLE, 1)]
                 moves = [i for i, e in enumerate(hit) if set_positions([e])]
                 self.assertTrue(drops and moves and max(drops) < min(moves))
@@ -323,6 +325,12 @@ class GeneratedSceneTests(unittest.TestCase):
         self.assertEqual([t["symbol"] for t in rim[:3]],
                          ["trigger_rim_exit_pine_ladder", "trigger_rim_report_exit", scene.DOOR_TRIGGER_SYMBOL])
         self.assertEqual(rim[1]["id"], kiko.resource_id("trigger:report-exit"))
+
+    def test_entry_briefing_is_one_actionable_page(self):
+        events = scene.scene_script(FAKE_MUSIC, FAKE_AUDIO)
+        entry = [e["args"]["text"] for e in walk(events) if e["command"] == "EVENT_TEXT"]
+        self.assertEqual(scene.INTRO_LINES, ["Fix 5 lines.\nOne cable a trip."])
+        self.assertEqual(entry.count(scene.INTRO_LINES), 1)
 
     def test_door_powers_the_house_once_with_all_five_lines(self):
         door = next(t for t in BUILT[RIM]["triggers"] if t["symbol"] == scene.DOOR_TRIGGER_SYMBOL)

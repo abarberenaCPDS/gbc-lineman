@@ -47,7 +47,8 @@ PROFILES = {
 # Generators of scenes registered ahead of their work package (scenes.py "planned").
 PLANNED_GENERATORS = {entry["generator"] for folder, entry in scenes.REGISTRY.items()
                       if scenes.planned(folder) and not scenes.present(folder)}
-SHARED_TESTS = ["test_routes.py", "test_scene_links.py", "test_grid_chain.py"]
+SHARED_TESTS = ["test_routes.py", "test_scene_links.py", "test_grid_chain.py",
+                "test_experience.py", "test_completion.py", "test_shock.py"]
 
 
 def run(*arguments: str) -> None:
@@ -73,6 +74,8 @@ def main() -> None:
             "--render")
     elif args.profile != "lab" and not (ROOT / "assets/music/cfe_storm_climb.uge.gbsres").exists():
         parser.error("native music is missing; use --render-music with the installed uge-builder image")
+    if args.profile in {"climb", "ridge", "rosa", "kiko"}:
+        run("tools/make_completion_sfx.py")
     for script in PROFILES[args.profile]:
         if not (ROOT / "tools" / script).is_file():
             if script in PLANNED_GENERATORS:

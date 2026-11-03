@@ -134,6 +134,7 @@ def merged_variables(data: dict[str, Any]) -> dict[str, Any]:
         climb.NEAR_VARIABLE,
         *hazards.VARIABLES,
         *climb.VARIABLES,
+        *grid_chain.VARIABLES,
     ):
         value = {"id": key, "name": name, "symbol": symbol}
         existing = next((v for v in merged["variables"] if v["id"] == key), None)
@@ -546,12 +547,12 @@ def respawn_events(key: str, death_sound_id: str, chain: ClimbChain | None = Non
     """
     chain = chain or CHAIN
     return [
-        sound_event(death_sound_id, f"{key}:death-sfx"),
         *shock.shock_events(key),
         *chain.cable_drop_events(key),
         # The respawn teleports the hero without a leave event: forget the board.
         set_value(hazards.VAR_ON_BOARD, 0, f"{key}:clear-board"),
         *chain.checkpoint_chain(key, start),
+        *chain.recovery_hint_events(key),
     ]
 
 
@@ -1039,8 +1040,8 @@ def trigger_resource(index: int, lane: tuple[int, int, int], death_sound_id: str
         "prefabScriptOverrides": {},
         "width": x_end - x_start + 1,
         "height": 1,
-        "script": [sound_event(death_sound_id, f"{key}:death-sfx"), *shock.shock_events(key),
-                   *cable_drop_events(key), respawn],
+        "script": [*shock.shock_events(key),
+                   *cable_drop_events(key), respawn, *CHAIN.recovery_hint_events(key)],
         "leaveScript": [],
         "_index": index - 1,
     }

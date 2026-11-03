@@ -23,6 +23,7 @@ TOOLS_DIR = Path(__file__).resolve().parent
 sys.path.insert(0, str(TOOLS_DIR))
 
 import climb  # noqa: E402  (job 1 contract: CREST section)
+import completion  # noqa: E402  (Amara's household completion cue)
 import grid_chain  # noqa: E402
 import hazards  # noqa: E402
 import make_climb_scene as shared  # noqa: E402  (job 1 chain and generic helpers)
@@ -187,14 +188,14 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
     script = [if_value(climb.VAR_CHAIN_LIVE, climb.LINE_COUNT, "checkpoint-arrival:line", [
         if_value(VAR_DOOR, 0, "checkpoint-arrival", [
             set_value(VAR_DOOR, 1, "checkpoint-arrival:set"),
-            shared.sound_event(connect_sound_id, "checkpoint-arrival:sfx"),
+            shared.sound_event(completion.sound_id(), "checkpoint-arrival:sfx"),
             shared.background_palette_state(True, "checkpoint-arrival:summit-lit"),
             shared.actor_state(marta_actor_id(), "Powered", "checkpoint-arrival:marta-powered"),
             shared.cutoff_event(150, "checkpoint-arrival:cutoff"),
             # Second page: Amara's work order closes (tickets.py).
-            shared.text_event([*short_lines("Power's back!\nMy fridge hums."), *tickets.closed_lines(1)],
-                              "checkpoint-arrival:text"),
-            *shared.hud_events("checkpoint-arrival:hud"),
+            *say(short_lines("Power's back!\nMy fridge hums."),
+                  "checkpoint-arrival:text", "marta"),
+            *say(tickets.closed_lines(1), "checkpoint-arrival:closed"),
         ]),
     ], [
         if_value(shared.VAR_CARRYING_CABLE_ID, 0, "checkpoint-arrival:hint", [

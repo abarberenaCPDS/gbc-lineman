@@ -43,6 +43,7 @@ ARC_SPRITE = "assets/sprites/live_arc.png.gbsres"
 
 sys.path.insert(0, str(TOOLS_DIR))
 try:
+    import completion  # noqa: E402  (Hiroshi's household completion cue)
     import climb  # noqa: E402  (shared palettes, grid sprites and climb timings)
     import intro  # noqa: E402  (intro pole sprite and palette identities)
     import make_climb_scene as shared  # noqa: E402  (generic helpers only)
@@ -234,7 +235,7 @@ class SceneBuilder:
 
     # -- scene scripts ----------------------------------------------------------
     def respawn_events(self, key: str, death_sound_id: str) -> list[dict[str, Any]]:
-        """Death sound and shock, drop any cable (home to its pole, any scene), then respawn.
+        """One shock cue, drop any cable (home to its pole, any scene), then respawn.
 
         Respawn (§3 rule 4): Hiroshi's door once his power is on (2B), else the
         checkpoint of the furthest repaired line whose checkpoint is in this
@@ -247,12 +248,12 @@ class SceneBuilder:
                 self.set_position(door_x - 1, door_y, f"{key}:respawn-door"),
             ])]
         return [
-            self.sound_event(death_sound_id, f"{key}:death-sfx"),
             *shock.shock_events(key),
             *self.chain.cable_drop_events(key),
             # The respawn teleports the hero without a leave event: forget the board.
             self.set_value(hazards.VAR_ON_BOARD, 0, f"{key}:clear-board"),
             *chosen,
+            *self.chain.recovery_hint_events(key),
         ]
 
     def scene_script(self, music_id: str, audio_ids: dict[str, str]) -> list[dict[str, Any]]:
@@ -345,11 +346,11 @@ class SceneBuilder:
         script = [self.if_value(VAR_LINES_LIVE, ridge.LINE_COUNT, "door:line", [
             self.if_value(VAR_HOME_POWERED, 0, "door:power-on", [
                 self.set_value(VAR_HOME_POWERED, 1, "door:set-powered"),
-                self.sound_event(connect_sound_id, "door:sfx"),
+                self.sound_event(completion.sound_id(), "door:sfx"),
                 self.window_palette_event(True, "door:window-warm"),
                 self.actor_state(self.actor_id(TOMAS_KEY), "Relieved", "door:tomas-relieved"),
                 self.actor_state(self.actor_id(CONCENTRATOR_KEY), "On", "door:concentrator-on"),
-                *self.say(short_lines("Lights are on.\nI stayed calm."), "door:text", "tomas"),
+                *self.say(short_lines("It hums again.\nBreathing easier."), "door:text", "tomas"),
                 *self.say(tickets.closed_lines(2), "door:closed"),
             ]),
         ], [
@@ -639,7 +640,7 @@ def merged_variables(data: dict[str, Any]) -> dict[str, Any]:
     different name or symbol is refused rather than renamed.
     """
     merged = json.loads(json.dumps(data))
-    for key, name, symbol in (*ridge.VARIABLES, *hazards.VARIABLES, climb.NEAR_VARIABLE):
+    for key, name, symbol in (*ridge.VARIABLES, *hazards.VARIABLES, *grid_chain.VARIABLES, climb.NEAR_VARIABLE):
         value = {"id": key, "name": name, "symbol": symbol}
         existing = next((v for v in merged["variables"] if v["id"] == key), None)
         if existing is not None and existing != value:

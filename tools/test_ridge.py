@@ -438,7 +438,8 @@ class SceneTests(unittest.TestCase):
         """Abe (§9): a hit in another scene sends the carried cable back to its pole, as now."""
         for folder in FOLDERS:
             hit = built_scene(folder)["playerHit1Script"]
-            self.assertEqual(hit[0]["command"], "EVENT_SOUND_PLAY_EFFECT")
+            self.assertEqual(hit[0]["command"], "EVENT_ACTOR_SET_STATE")
+            self.assertEqual(hit[1]["command"], "EVENT_SOUND_PLAY_EFFECT")
             respawn = next(i for i, e in enumerate(hit) if positions([e]))
             for line in LINES:
                 drop = next(i for i, e in enumerate(hit) if is_var_if(e, ridge.VAR_CARRYING_CABLE, line["number"]))
@@ -486,7 +487,7 @@ class SceneTests(unittest.TestCase):
                   for e in reward if e["command"] == "EVENT_ACTOR_SET_STATE"}
         self.assertEqual(states, {(B[SADDLE].actor_id(scene.TOMAS_KEY), "Relieved"),
                                   (B[SADDLE].actor_id(scene.CONCENTRATOR_KEY), "On")})
-        self.assertIn("Hiroshi:\nLights are on.\nI stayed calm.", texts(reward)[0])
+        self.assertEqual(texts(reward)[0], ["Hiroshi:\nIt hums again.\nBreathing easier."])
         self.assertEqual(texts(line["children"]["false"]), [["Still no power.\nFix every line!"]])
         writers = [e for folder in FOLDERS for script in all_script_lists(folder) for e in walk(script)
                    if is_set(e, "9", 1)]
@@ -655,7 +656,8 @@ class SceneTests(unittest.TestCase):
                 [drop] = rest
                 self.assertTrue(is_var_if(drop, ridge.VAR_CARRYING_CABLE, 1, "gte"))
                 branches = {e["args"]["condition"]["valueB"]["value"]: e["children"]["true"]
-                            for e in drop["children"]["true"] if e["command"] == "EVENT_IF"}
+                            for e in drop["children"]["true"]
+                            if is_var_if(e, ridge.VAR_CARRYING_CABLE, e["args"]["condition"]["valueB"]["value"])}
                 self.assertEqual(set(branches), {line["number"] for line in LINES}, "any carried cable drops")
                 for line in LINES:
                     self.assertEqual(texts(branches[line["number"]]), [["Cable dropped."]])

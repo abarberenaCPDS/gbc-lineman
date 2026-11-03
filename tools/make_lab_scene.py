@@ -265,7 +265,6 @@ def respawn_events(folder: str, death_sound_id: str) -> list[dict[str, Any]]:
     """Group-1 hits (boards, cables, arcs, gusts) send the hero back to the room start."""
     key = f"{folder}:respawn"
     return [
-        shared.sound_event(death_sound_id, f"{key}:death-sfx"),
         *shock.shock_events(key),
         # The respawn teleports the hero without a leave event: forget the board.
         shared.set_value(hazards.VAR_ON_BOARD, 0, f"{key}:clear-board"),

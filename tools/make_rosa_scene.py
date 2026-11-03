@@ -62,6 +62,7 @@ try:
     import scenes  # noqa: E402  (scene registry: ids, names, editor positions)
     import shock  # noqa: E402  (electrocution beat before the respawn)
     import tickets  # noqa: E402  (work orders: CLOSED box)
+    import completion  # noqa: E402  (household completion cue)
     import voices  # noqa: E402  (speaker names and text blips)
 except ModuleNotFoundError as error:
     raise SystemExit(f"cannot generate Priya's scenes: tools/{error.name}.py is missing") from error
@@ -293,7 +294,7 @@ class RosaScene:
         script = [self.if_value(rosa.VAR_LINES_LIVE, rosa.LINE_COUNT, "door:lines", [
             self.if_value(rosa.VAR_HOME_POWERED, 0, "door:power-on", [
                 self.set_value(rosa.VAR_HOME_POWERED, 1, "door:set-powered"),
-                self.sound_event(connect_sound_id, "door:sfx"),
+                self.sound_event(completion.sound_id(), "door:sfx"),
                 self.window_palette_event(True, "door:window-warm"),
                 self.actor_state(self.actor_id(ROSA_KEY), "Relieved", "door:rosa-relieved"),
                 self.actor_state(self.actor_id(WORKSTATION_KEY), "On", "door:workstation-on"),
@@ -481,7 +482,7 @@ class RosaScene:
 
     # -- scene scripts -------------------------------------------------------------
     def respawn_events(self, key: str, death_sound_id: str) -> list[dict[str, Any]]:
-        """Death sound, shock, drop any cable (home to its pole, any scene), then respawn.
+        """One shock cue, drop any cable (home to its pole, any scene), then respawn.
 
         Respawn (rule 4): the furthest repaired line whose checkpoint is in this
         scene, else this scene's upstream entry. In 3C, once Priya's power is on,
@@ -494,11 +495,11 @@ class RosaScene:
                 self.set_position(door_x - 1, door_y, f"{key}:respawn-door"),
             ])]
         return [
-            self.sound_event(death_sound_id, f"{key}:death-sfx"),
             *self.shock_events(key),
             *self.chain.cable_drop_events(key),
             self.set_value(hazards.VAR_ON_BOARD, 0, f"{key}:clear-board"),
             *chosen,
+            *self.chain.recovery_hint_events(key),
         ]
 
     def shock_events(self, key: str) -> list[dict[str, Any]]:
@@ -650,7 +651,8 @@ CHAIN = HILL_SCENE.chain
 def merged_variables(data: dict[str, Any]) -> dict[str, Any]:
     """Append the job's variables without changing any existing entry (refuse a rename)."""
     merged = json.loads(json.dumps(data))
-    for key, name, symbol in (*rosa.VARIABLES, *hazards.VARIABLES, climb.NEAR_VARIABLE):
+    for key, name, symbol in (*rosa.VARIABLES, *hazards.VARIABLES, *grid_chain.VARIABLES,
+                               climb.NEAR_VARIABLE):
         value = {"id": key, "name": name, "symbol": symbol}
         existing = next((v for v in merged["variables"] if v["id"] == key), None)
         if existing is not None and existing != value:
