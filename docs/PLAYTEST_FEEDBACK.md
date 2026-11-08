@@ -1,3 +1,20 @@
+## Current direction — terrain review and full campaign (November 8)
+
+Abe rejected the experimental low ceilings and requested a terrain/mission design
+plan with consultant agents. Preserve jump physics. Priya descent and Emil layout
+are positive references; unused areas and scene seams need review. See
+[MAP_DESIGN_PLAN.md](MAP_DESIGN_PLAN.md) for the reconciled proposal and gates.
+The route prototype is not accepted for integration. Hub follows this design work.
+
+Full production campaign recompiled from the logo, without prototype geometry:
+`build/rom/lineman-full-campaign-2026-11-08.gbc`, SHA-256
+`2fd969ca59bd833cc0e19902371344b5648f7f4cd2704ccecfbb691974fd41e8`.
+Header and native opening boot passed; full human play remains pending. Flash is
+explicitly deferred until Abe says ready. Browser project switching hit UNKNOWN
+again; current preview is not the full-game build. Details in the new plan.
+
+---
+
 # Human playtest feedback — route design and dispatch hub
 
 November 7, 2026 · Abe played the dispatch-map prototype and its onward campaign.
@@ -71,3 +88,29 @@ Sources: <https://learn.chatgpt.com/docs/browser> and
 - The fixed dispatch map was reviewed; a walkable top-down hub is proposed.
 - Reopen the route-quality pass before map/ending expansion. No geometry, art,
   movement, input controls, scene resources or browser permissions changed here.
+
+## November 8 — further route feedback and design direction
+
+Abe reports that the experience is improving, but broad empty lower pockets
+still feel wasted. The praised example places the arc and gust on the actual
+walking route, with readable space around them. The empty-pocket screenshot
+most likely shows Pine Hollow's first catwalk; that scene identification remains
+provisional. Abe also explicitly invited gameplay proposals, targeting challenge
+that remains enjoyable.
+
+Next review criteria:
+
+- Give each section one main skill: a jump, a readable hazard cycle, or a
+  prompt crossing of unstable footing. Combine skills only after teaching them.
+- Provide generous, visible waiting and landing space around timed hazards.
+- Keep alternate routes when they offer a meaningful tradeoff; remove routes
+  that bypass an entire challenge without a decision.
+- Keep useful recovery floors, shorten empty recovery walks, and add a return
+  step where it makes a mistake less tedious. Do not fill every pocket with damage.
+- Preserve repaired lines after a hit and make the next action clear.
+
+Current priority remains Ridge gust/HUD corrections and route tuning, then the
+approved walkable hub. Revision2 native completion is documented in
+RIDGE_ROUTE_PILOT.md; production integration and human acceptance remain pending.
+The browser-connection diagnosis above is historical: Chrome now works, but the
+current preview listener has an unresolved recording-close acknowledgement.

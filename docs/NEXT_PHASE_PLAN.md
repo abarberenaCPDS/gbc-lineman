@@ -1,3 +1,47 @@
+## Current direction — terrain review and full campaign (November 8)
+
+Abe rejected the experimental low ceilings and requested a terrain/mission design
+plan with consultant agents. Preserve jump physics. Priya descent and Emil layout
+are positive references; unused areas and scene seams need review. See
+[MAP_DESIGN_PLAN.md](MAP_DESIGN_PLAN.md) for the reconciled proposal and gates.
+The route prototype is not accepted for integration. Hub follows this design work.
+
+Full production campaign recompiled from the logo, without prototype geometry:
+`build/rom/lineman-full-campaign-2026-11-08.gbc`, SHA-256
+`2fd969ca59bd833cc0e19902371344b5648f7f4cd2704ccecfbb691974fd41e8`.
+Header and native opening boot passed; full human play remains pending. Flash is
+explicitly deferred until Abe says ready. Browser project switching hit UNKNOWN
+again; current preview is not the full-game build. Details in the new plan.
+
+---
+
+## Preview connection restored — November 8
+
+User restarted the MCP connection; fresh selection succeeded. Revision3 cached
+web export opened successfully and its opening briefing was visibly verified in
+Chrome (tab2125938238). Listener15a91173ce4e657ec61ba9b517f1c9a6 is open.
+[Play revision3](http://127.0.0.1:55358/be7a6938267af796deffbe9339cb59396018cd10f9ddc2c8915505a8759028fc/). This supersedes the preview restart blocker below.
+Human route acceptance remains pending; browser gameplay was not automated.
+
+---
+
+## Latest update — November 8, route revision 3
+
+Widened the copied Saddle rest window from12px to36px without changing physics.
+Native full-route regression completed five repairs/home and returned to Wind.
+Forward and reverse240-frame rest checks passed; porch OAM peak6/10. Full Python
+suite passes. Native ROM and separate official web export built; exact evidence
+and remaining gates are in `RIDGE_ROUTE_PILOT.md`.
+
+Abe authorized discarding the old preview. No old players remain connected, but
+the MCP retains its UNKNOWN close state and offers no reset. Automated access to
+Codex settings is denied. User was asked to reconnect `lineman-workspace`; after
+reconnection select the normal route fixture and open cached `build/web-route-v3`.
+Do not call an old URL revision3. Hub remains next after the route human pass.
+
+---
+
+
 # Lineman — campaign polish and neighborhood map plan
 
 Approved direction: Abe accepted this plan and asked to resume implementation in
@@ -11,15 +55,28 @@ fixes, restored board performance, exact-ROM evidence and outstanding full-route
   playtest identifies upper/lower-lane bypasses and redundant hazards. Reopen
   route-quality design before further expansion; see [feedback](PLAYTEST_FEEDBACK.md).
 - 🔄 Step 2: the one-state dispatch map was played. Abe suggests a top-down
-  presentation; a small walkable hub is recommended. No expansion approval yet.
+  presentation; a small walkable hub is approved for isolated preparation after
+  the route pilot. Integration and human acceptance remain pending.
 - ⬜ Steps 3–5: restoration additions, ending map and hardware.
 - Branch `feat/campaign-polish`, sibling `../gb-mr-cfe-campaign-polish`,
   VERSION `0.20.1-dev`. Baseline tag `v0.20.0-dev` is preserved.
 - Recorded route reachability is complete; address the human route-quality
-  feedback and agree on hub interaction before expanding the map. The old copy-ready prompt
+  feedback before integrating the walkable hub. The old copy-ready prompt
   below describes the original kickoff; reuse this existing worktree.
 
 ## Starting point (tagged baseline)
+
+### November 8 implementation order
+
+Abe confirmed the 64×36 route pilot and small walkable top-down hub, requested
+parallel subagents, and specified route first, then validation/hub progression.
+The route worker owns an isolated Wind Ridge generator; the hub worker prepares
+an isolated map and directional hero derivative. Independent route review checks
+the easiest bypasses, recovery and both travel directions. Main owns integration,
+builds and runtime verification. Production stays unchanged until these pilots
+are reviewed. Browser access now works, but the current MCP session is scoped to
+the old dispatch-map fixture; configure its workspace before building the new
+prototypes. Abe requested help with that configuration after source work is ready.
 
 - Game: **Lineman: After the Storm**, VERSION `0.20.0-dev`.
 - Hero implementation: `6aeb34f`; accepted by Abe. Storm Worker is used throughout

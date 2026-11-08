@@ -1,3 +1,47 @@
+## Current direction — terrain review and full campaign (November 8)
+
+Abe rejected the experimental low ceilings and requested a terrain/mission design
+plan with consultant agents. Preserve jump physics. Priya descent and Emil layout
+are positive references; unused areas and scene seams need review. See
+[MAP_DESIGN_PLAN.md](MAP_DESIGN_PLAN.md) for the reconciled proposal and gates.
+The route prototype is not accepted for integration. Hub follows this design work.
+
+Full production campaign recompiled from the logo, without prototype geometry:
+`build/rom/lineman-full-campaign-2026-11-08.gbc`, SHA-256
+`2fd969ca59bd833cc0e19902371344b5648f7f4cd2704ccecfbb691974fd41e8`.
+Header and native opening boot passed; full human play remains pending. Flash is
+explicitly deferred until Abe says ready. Browser project switching hit UNKNOWN
+again; current preview is not the full-game build. Details in the new plan.
+
+---
+
+## Preview connection restored — November 8
+
+User restarted the MCP connection; fresh selection succeeded. Revision3 cached
+web export opened successfully and its opening briefing was visibly verified in
+Chrome (tab2125938238). Listener15a91173ce4e657ec61ba9b517f1c9a6 is open.
+[Play revision3](http://127.0.0.1:55358/be7a6938267af796deffbe9339cb59396018cd10f9ddc2c8915505a8759028fc/). This supersedes the preview restart blocker below.
+Human route acceptance remains pending; browser gameplay was not automated.
+
+---
+
+## Latest update — November 8, route revision 3
+
+Widened the copied Saddle rest window from12px to36px without changing physics.
+Native full-route regression completed five repairs/home and returned to Wind.
+Forward and reverse240-frame rest checks passed; porch OAM peak6/10. Full Python
+suite passes. Native ROM and separate official web export built; exact evidence
+and remaining gates are in `RIDGE_ROUTE_PILOT.md`.
+
+Abe authorized discarding the old preview. No old players remain connected, but
+the MCP retains its UNKNOWN close state and offers no reset. Automated access to
+Codex settings is denied. User was asked to reconnect `lineman-workspace`; after
+reconnection select the normal route fixture and open cached `build/web-route-v3`.
+Do not call an old URL revision3. Hub remains next after the route human pass.
+
+---
+
+
 # 🗺️ Lineman — Master Project Plan
 
 > **Goal:** turn the vertical slice into a complete, fun, memorable GBC game —
@@ -831,3 +875,33 @@ Keep entries newest-first, one per work burst, with build/test evidence.
   walkable neighborhood hub is recommended; expansion has not been approved.
 - Live browser discovery still reports unavailable host. Findings and setup
   guidance recorded in PLAYTEST_FEEDBACK.md. No gameplay/permission changes.
+
+### Desktop browser recovery — 2026-11-08
+
+- ✅ Chrome automation and visible dispatch-map preview verified after moving
+  out of CLI. Reopened the exact cached export without a rebuild; current URL
+  and listener recorded in HANDOFF.md. Paused player preserved.
+- 🔄 Human route-quality revision remains next; priority question offered for
+  route pilot versus walkable hub. No gameplay, art or geometry changes.
+- Gameplay input, audio, revised route acceptance and hardware remain unverified.
+
+### Route and hub source preparation — 2026-11-08
+
+- 🔄 Isolated 64×36 Wind Ridge pilot generated; connected terraces close the
+  empty lower bypass, optional board shelves create an alternate approach.
+  Independent source review complete; jump skipping and recovery need native play.
+- 🔄 Walkable 32×32 hub generator prepared in parallel; directional hero derivative,
+  true completion lighting, ticket-gated doors and once-only fixture initialization.
+- ✅ Full source suite: 547 tests pass. Production assets/resources unchanged.
+- 🚧 New prototypes not built: original MCP workspace is bound to old map fixture.
+  Dedicated lineman-workspace connection configured; desktop restart needed to
+  load it. User requested configuration now. See HANDOFF.md for exact resume steps.
+
+### Route pilot runtime pass — 2026-11-08
+
+- ✅ New workspace connection verified; 64×36 isolated route built and played
+  in a recorded native run0–3103. Repairs1/2, recovery, cable3 cross-scene
+  outward/return, optional board escape and standing shock observed.
+- ✅ Chrome preview opened and visible at briefing; see RIDGE_ROUTE_PILOT.md.
+- 🔄 Design review: long-jump gust bypass and summit HUD occlusion retained.
+  Human feel/audio/hardware acceptance open; production unchanged, hub not built.

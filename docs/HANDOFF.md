@@ -1,10 +1,124 @@
+## Current release and next work — November 8
+
+v0.21.0 prepared; see [release record](RELEASE_v0.21.0.md). Abe authorized commit
+and merge of accumulated work, then continuation of MAP_DESIGN_PLAN.md.
+Start with an annotated open-air crossing comparison; preserve jump physics and
+keep production geometry unchanged until the terrain proposal is reviewed.
+Historical advisory review from the preserved stash is incorporated by reference:
+GAME_EXPERIENCE_REVIEW.md records all fourteen roles and evidence boundaries.
+
+---
+
+## Current direction — terrain review and full campaign (November 8)
+
+Abe rejected the experimental low ceilings and requested a terrain/mission design
+plan with consultant agents. Preserve jump physics. Priya descent and Emil layout
+are positive references; unused areas and scene seams need review. See
+[MAP_DESIGN_PLAN.md](MAP_DESIGN_PLAN.md) for the reconciled proposal and gates.
+The route prototype is not accepted for integration. Hub follows this design work.
+
+Full production campaign recompiled from the logo, without prototype geometry:
+`build/rom/lineman-full-campaign-2026-11-08.gbc`, SHA-256
+`2fd969ca59bd833cc0e19902371344b5648f7f4cd2704ccecfbb691974fd41e8`.
+Header and native opening boot passed; full human play remains pending. Flash is
+explicitly deferred until Abe says ready. Browser project switching hit UNKNOWN
+again; current preview is not the full-game build. Details in the new plan.
+
+---
+
+## Preview connection restored — November 8
+
+User restarted the MCP connection; fresh selection succeeded. Revision3 cached
+web export opened successfully and its opening briefing was visibly verified in
+Chrome (tab2125938238). Listener15a91173ce4e657ec61ba9b517f1c9a6 is open.
+[Play revision3](http://127.0.0.1:55358/be7a6938267af796deffbe9339cb59396018cd10f9ddc2c8915505a8759028fc/). This supersedes the preview restart blocker below.
+Human route acceptance remains pending; browser gameplay was not automated.
+
+---
+
+## Latest update — November 8, route revision 3
+
+Widened the copied Saddle rest window from12px to36px without changing physics.
+Native full-route regression completed five repairs/home and returned to Wind.
+Forward and reverse240-frame rest checks passed; porch OAM peak6/10. Full Python
+suite passes. Native ROM and separate official web export built; exact evidence
+and remaining gates are in `RIDGE_ROUTE_PILOT.md`.
+
+Abe authorized discarding the old preview. No old players remain connected, but
+the MCP retains its UNKNOWN close state and offers no reset. Automated access to
+Codex settings is denied. User was asked to reconnect `lineman-workspace`; after
+reconnection select the normal route fixture and open cached `build/web-route-v3`.
+Do not call an old URL revision3. Hub remains next after the route human pass.
+
+---
+
+
+# Latest — route pilot built and played (November 8)
+
+New lineman-workspace MCP works; selected
+build/diagnostics/ridge-route-pilot/mr-cfe.gbsproj. Native build and recorded
+0–3103 frame playtest complete; see RIDGE_ROUTE_PILOT.md for hashes, frame table
+and limitations. Repairs1/2, safe-floor recovery, shock checkpoint retention,
+cable3 Saddle outward/return and optional-board escape/standing all observed.
+Needs human review: long-jump gust bypass, summit HUD occlusion, jump approach
+feel. Native recording stopped needs-review; emulator closed. Chrome preview
+opened and verified at briefing:
+http://127.0.0.1:61898/2d527650a503ba30b61142f180b9856cad91ca402209a8f11ece43ccf633cb87/
+Preserve player/recordings and inspect current status before updating. Hub remains
+source-prepared only. No source/gameplay edits in this build/playtest burst.
+Uncommitted prototype sources/docs remain; no merge/release/hardware action.
+
+---
+
+# Current handoff — route pilot and hub preparation (November 8)
+
+Abe approved one 64×36 route pilot followed by the walkable top-down hub,
+with parallel preparation. All workers have saved their changes; no runtime
+operations are active. Changes are uncommitted on feat/campaign-polish.
+
+## Resume after desktop restart
+
+Registered global MCP connection `lineman-workspace` with the existing installed
+ModRetro start-mcp.mjs, Node /opt/homebrew/bin/node, and
+GB_STUDIO_WORKSPACE_ROOT=/Users/abe/src/modretro-chromatic/gb-mr-cfe-campaign-polish.
+Verified config entry and server path. This chat has not loaded its tools yet.
+Restart the desktop app, resume, discover lineman-workspace tools, verify
+session_status workspace, then select the ROOT mr-cfe.gbsproj before a fixture.
+The old plugin connection is scoped only to build/diagnostics/dispatch-map and
+returned PATH_OUTSIDE_PROJECT for root selection. Do not retry against it or
+claim runtime verification from source tests.
+
+## Saved implementation
+
+- Route: tools/make_ridge_route_pilot.py + test_ridge_route_pilot.py;
+  docs/RIDGE_ROUTE_PILOT.md. Generated isolated project at
+  build/diagnostics/ridge-route-pilot/mr-cfe.gbsproj. Only Wind Ridge grows to
+  64×36; raised mandatory repair terraces, safe recovery, optional board shelves.
+  Other scenes and production assets/resources unchanged. 238 indexed tiles,
+  8 actors, repeat generation byte-identical across 650 fixture files. Independent
+  source review found no blocker; full-hold jumps may skip individual hazards.
+- Hub: tools/make_dispatch_hub.py + test_dispatch_hub.py. Separate 32×32
+  walkable prototype, actual dispatch/completion flags, once-only seed/help,
+  directional hero derivative. Original intro art stays unchanged. Project not
+  generated yet; run managed Python after route validation. Authored previews
+  are in artifacts/hub-source/. No production integration.
+- Main ran full suite: 547 tests pass. No native build, emulator, browser gameplay
+  or hardware acceptance for either new prototype. Next: build/play route FIRST,
+  test easiest bypasses, failed jumps/recovery, repair/checkpoints and cross-scene
+  carry/reentry. Then build/check hub. Human review remains necessary.
+- Preserve paused old browser state cd373353da971195966d9bc564ae5f94b3faebffc7ec50b496ee1f3bbe2a7b46
+  at frame20883, exact ROM a531f06e4256fe9d5144345f15a30ed918f21c3ec1739c4fe9d15c2d8149d13f.
+  Current preview details below; after restart check status instead of assuming
+  localhost listener survived. No release tag, merge, push or hardware action.
+
+---
+
 # Current handoff — campaign polish
 
 **Latest:** Abe played and supplied five screenshots. Route-quality revision is
 now the priority: upper/lower bypasses and redundant hazards, plus a proposed
 walkable top-down hub. See PLAYTEST_FEEDBACK.md. This was feedback/advice only;
-no geometry or map-control expansion has been implemented or approved. Browser
-inventory still reports unavailable host; desktop discovery works.
+no geometry or map-control expansion has been implemented or approved. Browser access is now working in the desktop session; see the recovery note below.
 
 Worktree `/Users/abe/src/modretro-chromatic/gb-mr-cfe-campaign-polish`, branch
 `feat/campaign-polish`, VERSION `0.20.1-dev`. Baseline tag `v0.20.0-dev` at
@@ -39,6 +153,22 @@ household state/launch for campaign progress or production integration. Source
 contracts/generator/tests and seven map resources are tracked; build outputs are
 ignored. Keep0.20.1-dev until production integration merits a version decision.
 No release tag/merge/push/flash.
+
+## Browser recovery — November 8, 2026
+
+Chrome automation is connected and the dispatch map was visually inspected.
+The old preview reported a lost connection after changing sessions. Selected
+`build/diagnostics/dispatch-map/mr-cfe.gbsproj` and reopened its verified
+`build/web-dispatch-map` export with `cacheOnly:true`; no compilation or game
+changes. Current URL:
+<http://127.0.0.1:60511/15da51dae6aead07d7062939b6f5f71444cf165fe50228cdcb248f6115115f64/>.
+ROM SHA `a531f06e4256fe9d5144345f15a30ed918f21c3ec1739c4fe9d15c2d8149d13f`.
+Listener `6ab2baf5138d62f7d4a4e331bbfdc36c`; latest status has a paused player,
+no active recording. Preserve it. Chrome shows the four-home map and Hiroshi
+work order without the lost-connection banner. This verifies preview visibility,
+not gameplay input, audio, route quality or hardware. User explicitly selected
+Chrome. A question is pending on whether to prioritize the route pilot or
+walkable hub; neither redesign has been implemented in this recovery burst.
 
 ---
 
