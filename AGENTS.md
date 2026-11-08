@@ -87,3 +87,24 @@ Reusable MCP capabilities, ownership rules and verification limits are in
   Plain `python3` can run only the stdlib-only `test_climb.py` subset.
 - ROM build success is not enough: headless gameplay evidence does not verify browser UI, human feel/audio taste, or physical hardware.
 - `docs/platformer-test-plan.md` is superseded: the old splice loop was rejected. Current prototype status and manual checks live in `docs/PROJECT_PLAN.md`.
+
+## Lakeside baseline implementation directive (November 8, 2026)
+
+User selected variant 1 in `docs/terrain/WORLD_VARIANTS.md` as the whole-game
+terrain and map baseline. Implement in order: intro mission, walkable lakeside
+town, then household mission routes. Preserve accepted jump physics exactly.
+Use parallel subagents for independent, bounded tasks with disjoint file ownership.
+Main owns integration and serializes builds, project selection, previews and emulator
+controls. Use a capable economical model (prefer gpt-6-luna when available) for
+scoped source inspection, routine coding and focused tests. Reserve the frontier
+model for design decisions, integration and difficult debugging; escalate only
+when the task requires it. Avoid duplicate audits, broad repo scans, full-history
+forks for narrow tasks, and repeated unchanged test runs. Give each agent a short
+brief, exact paths, output limits and a concrete completion condition. Model names
+are preferences subject to availability; use the closest capable available model.
+This directive governs this baseline pass over older generic worker preferences.
+
+Do not enlarge all maps or add new systems at once. Expand a route only to support
+specific crossings, work pads, recovery or views; keep four jobs and five repairs
+per job. Build a small playable intro-and-town increment before redesigning routes.
+See `docs/LAKESIDE_IMPLEMENTATION_HANDOFF.md` for the continuation prompt and gates.

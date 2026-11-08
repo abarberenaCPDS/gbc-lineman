@@ -1,3 +1,14 @@
+## Lakeside baseline selected — November 8, 2026
+
+Abe selected variant 1 for the entire game. Implementation order: intro mission,
+walkable lakeside town, then mission routes. Preserve jump physics. Increase map
+sizes selectively, only where meaningful gameplay requires room. Parallel agent
+and economical-model directives are recorded in AGENTS.md. Start the next session
+with [LAKESIDE_IMPLEMENTATION_HANDOFF.md](LAKESIDE_IMPLEMENTATION_HANDOFF.md).
+No gameplay changes made in this planning/handoff pass.
+
+---
+
 # Terrain and mission design review
 
 November 8, 2026. Planning only; no new terrain implementation approved here.

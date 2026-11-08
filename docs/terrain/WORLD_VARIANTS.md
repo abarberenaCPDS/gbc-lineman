@@ -1,6 +1,6 @@
 # Mountain community: three whole-game terrain proposals
 
-November 8, 2026. Proposal only, on `feat/terrain-design`. Fictional mountain
+November 8, 2026. Variant 1 selected by Abe as the implementation baseline, on `feat/terrain-design`. Fictional mountain
 community inspired by Big Bear: pine woods, cabins, exposed granite, creek gullies,
 lake views and utility trails. These are world/route diagrams, not collision maps.
 The earlier Saddle study is one local crossing example, not the scope of the plan.
@@ -26,7 +26,7 @@ Do not increase scene sizes uniformly: use wider scenes for traverses and tall
 scenes for actual descent/ascent. Time first attempts and retries before promising
 longer missions. More tiles are useful only when they support another meaningful beat.
 
-## 1. Lakeside neighborhood — recommended
+## 1. Lakeside neighborhood — selected baseline
 
 ![Lakeside neighborhood](world/01-lakeside-neighborhood.png)
 
@@ -115,7 +115,7 @@ retain the tutorial's movement, pickup, repair and visible payoff.
 
 Recommend **variant 1** as the whole-game structure, with the open terrain and
 view continuity common to all three. These alternatives are not three production
-builds. No world layout has been selected yet.
+builds. Abe selected variant 1; variants 2 and 3 remain comparison material.
 
 After selection, draw one side-view route sheet per household showing the easiest
 route, cable/work destinations, hazards, warnings, waiting pads, recovery, camera
