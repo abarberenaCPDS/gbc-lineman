@@ -1,3 +1,15 @@
+## v0.21.0 merged and flashed — November 8
+
+Release commit6cec3a7 fast-forwarded into main. 551 tests passed; version-only
+regeneration changed title art and removed dev HUD text, not physics or geometry.
+Player 01 flash succeeded with vendor/process closure evidence; physical play is
+not yet verified. Exact ROM and operation are in RELEASE_v0.21.0.md.
+Next: feat/terrain-design reuses the campaign-polish worktree for the annotated
+open-air comparison required by MAP_DESIGN_PLAN.md. Keep local OpenCode config,
+stash and build/evidence directories intact. Do not move stable without approval.
+
+---
+
 ## Current release and next work — November 8
 
 v0.21.0 prepared; see [release record](RELEASE_v0.21.0.md). Abe authorized commit

@@ -16,7 +16,11 @@ Abe reports manually flashing the prior full-campaign 0.20.1-dev build; that is
 user-reported installation, not approval of all gameplay or this new ROM.
 The v0.21.0 flash was explicitly authorized, including data loss, for Player 01;
 its original operation is `b63e040532cd93b44124771faf83502ce902ce75cc720ad0bad881abff35b558`.
-Outcome will be recorded after the original operation completes.
+Flash completed successfully on Chromatic Player 01, USB bus 00 / port 1.
+Vendor reported success for the exact SHA-256 above; write process exited and
+closed normally. Physical boot/play remains unverified. Explicit erase/write
+consent is recorded for this device and later user-requested writes to it.
+No new cartridge operation should be inferred merely from this release note.
 
 Worktree audit: experience-feedback has no unmerged commits or dirty files.
 Campaign work is merged into main for this release. Existing local OpenCode
