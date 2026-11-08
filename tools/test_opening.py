@@ -224,7 +224,8 @@ class OpeningTests(unittest.TestCase):
         import climb
         from make_climb_scene import resource_id as climb_id
         gate = scene.exit_trigger()["script"][0]
-        switches = [e for e in gate["children"]["true"] if e["command"] == "EVENT_SWITCH_SCENE"]
+        first_dispatch = gate["children"]["true"][0]["children"]["true"]
+        switches = [e for e in first_dispatch if e["command"] == "EVENT_SWITCH_SCENE"]
         self.assertEqual(len(switches), 1)
         args = switches[0]["args"]
         # Amara's work order first; ticket 1 then switches to the climb's start.
@@ -234,20 +235,70 @@ class OpeningTests(unittest.TestCase):
         self.assertEqual(tickets.TICKETS[1]["scene_id"], climb_id("scene:storm-climb"))
         self.assertEqual(tickets.TICKETS[1]["start"], climb.START)
 
-    def test_exit_restarts_job_one_only_while_no_line_is_live(self):
-        """Backtracking street -> awning keeps job 1's progress (LEVEL_REDESIGN §8)."""
+    @staticmethod
+    def follow_transition(events, state):
+        """Interpret the generated transition's variable branches; retain visible effects.
+
+        Input handlers and actor threads are installed, not executed by scene init.
+        This intentionally models only the transition commands used in these tests.
+        """
+        effects = []
+        def value(v):
+            return state.get(v["value"], 0) if v["type"] == "variable" else v["value"]
+        for e in events:
+            command, args = e["command"], e.get("args", {})
+            if command == "EVENT_IF":
+                condition = args["condition"]
+                a, b = value(condition["valueA"]), value(condition["valueB"])
+                matched = {"eq": a == b, "ne": a != b, "gte": a >= b}[condition["type"]]
+                effects += OpeningTests.follow_transition(e["children"]["true" if matched else "false"], state)
+            elif command == "EVENT_SET_VALUE":
+                state[args["variable"]] = value(args["value"])
+            elif command in ("EVENT_TEXT", "EVENT_SWITCH_SCENE", "EVENT_MUSIC_PLAY"):
+                effects.append(e)
+        return effects
+
+    def test_first_dispatch_initializes_job_and_briefing_once(self):
         import make_opening_scene as scene
-        import climb
+        import make_climb_scene as climb_scene
         import tickets
-        gate = scene.exit_trigger()["script"][0]
-        fresh, switch = gate["children"]["true"]
-        self.assertEqual(fresh["command"], "EVENT_IF")
-        self.assertEqual(fresh["args"]["condition"]["valueA"]["value"], climb.VAR_CHAIN_LIVE)
-        self.assertEqual(fresh["args"]["condition"]["valueB"]["value"], 0)
-        [ticket] = fresh["children"]["true"]
-        self.assertEqual((ticket["args"]["variable"], ticket["args"]["value"]["value"]), (tickets.VAR_TICKET, 1))
-        self.assertEqual(fresh["children"]["false"], [], "a job in progress leaves var 16 alone")
-        self.assertEqual(switch["command"], "EVENT_SWITCH_SCENE")
+        state = {opening.VAR_SERVICE_RESTORED: 1}
+        exit_effects = self.follow_transition(scene.exit_trigger()["script"], state)
+        self.assertEqual([e["args"]["sceneId"] for e in exit_effects
+                          if e["command"] == "EVENT_SWITCH_SCENE"], [tickets.WORK_ORDER_SCENE_ID])
+        self.assertEqual(state[opening.VAR_AMARA_DISPATCHED], 1)
+        self.assertEqual(state[tickets.VAR_TICKET], 1)
+        init = self.follow_transition(climb_scene.scene_script("music", {"pickup": "p", "connect": "c"}), state)
+        self.assertTrue(any(e["command"] == "EVENT_TEXT" for e in init))
+        self.assertEqual(state[tickets.VAR_TICKET], 0)
+        self.assertEqual(state[climb.VAR_LINES_LIVE], 0)
+
+    def test_street_round_trips_skip_dispatch_and_briefing_with_zero_or_completed_lines(self):
+        import make_opening_scene as scene
+        import make_climb_scene as climb_scene
+        import grid_chain
+        import tickets
+        for completed in (0, 1, climb.LINE_COUNT):
+            state = {opening.VAR_SERVICE_RESTORED: 1, opening.VAR_AMARA_DISPATCHED: 1,
+                     tickets.VAR_TICKET: 0, climb.VAR_CHAIN_LIVE: completed,
+                     climb.VAR_LINES_LIVE: completed, grid_chain.VAR_PICKUP_TAUGHT: 1}
+            state.update({line["live_var"]: int(line["number"] <= completed) for line in climb.LINES})
+            before = dict(state)
+            for repeat in range(2):
+                with self.subTest(completed=completed, repeat=repeat):
+                    effects = self.follow_transition(scene.exit_trigger()["script"], state)
+                    self.assertEqual(len(effects), 1)
+                    args = effects[0]["args"]
+                    self.assertEqual(args["sceneId"], tickets.CLIMB_SCENE_ID)
+                    self.assertEqual((args["x"]["value"], args["y"]["value"]), climb.START)
+                    init = self.follow_transition(climb_scene.scene_script("music", {"pickup": "p", "connect": "c"}), state)
+                    self.assertFalse(any(e["command"] in ("EVENT_TEXT", "EVENT_MUSIC_PLAY") for e in init))
+                    self.assertEqual({key: state[key] for key in before}, before)
+
+    def test_opening_variables_have_stable_unused_dispatch_id(self):
+        self.assertEqual(opening.VAR_AMARA_DISPATCHED, "54")
+        declared = {key: (name, symbol) for key, name, symbol in opening.VARIABLES}
+        self.assertEqual(declared["54"], ("Amara Dispatched", "var_amara_dispatched"))
 
     def test_exit_false_branch_has_no_scene_switch_and_nudges_back(self):
         import make_opening_scene as scene

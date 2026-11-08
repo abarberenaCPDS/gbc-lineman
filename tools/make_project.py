@@ -48,7 +48,8 @@ PROFILES = {
 PLANNED_GENERATORS = {entry["generator"] for folder, entry in scenes.REGISTRY.items()
                       if scenes.planned(folder) and not scenes.present(folder)}
 SHARED_TESTS = ["test_routes.py", "test_scene_links.py", "test_grid_chain.py",
-                "test_experience.py", "test_completion.py", "test_shock.py", "test_hero_integration.py"]
+                "test_experience.py", "test_completion.py", "test_shock.py", "test_hero_integration.py",
+                "test_board_timing.py"]
 
 
 def run(*arguments: str) -> None:

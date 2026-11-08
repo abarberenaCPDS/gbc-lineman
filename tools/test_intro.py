@@ -277,6 +277,41 @@ class TitleTests(unittest.TestCase):
         self.assertEqual(args["direction"], "right")
         self.assertEqual(args["fadeSpeed"], intro.FADE_SPEED)
 
+    def test_start_clears_completed_campaign_but_preserves_theme(self):
+        # A player finishes a campaign, reaches the title, then presses START.
+        # Execute the generated input body against dirty real global state.
+        body = next(e["children"]["true"] for e in scene.title_script()
+                    if e["command"] == "EVENT_SET_INPUT_SCRIPT"
+                    and e["args"]["input"] == ["start"])
+        registered = load(PROJECT_DIR / "project" / "variables.gbsres")["variables"]
+        values = {v["id"]: 5 for v in registered}
+        values.update({intro.VAR_THEME: 2, "54": 1, "T0": 123, "T1": 456})
+        for event in body:
+            if event["command"] == "EVENT_SET_VALUE":
+                values[event["args"]["variable"]] = event["args"]["value"]["value"]
+            if event["command"] == "EVENT_SWITCH_SCENE":
+                break
+        # Legacy Storm Night variables and the removed size comparator are not
+        # campaign state. Every other declared global belongs to this new run.
+        preserved = {"1", "2", "3", "5", intro.VAR_THEME}
+        for variable in registered:
+            if variable["id"] not in preserved:
+                self.assertEqual(values[variable["id"]], 0, variable["symbol"])
+        self.assertEqual(values["54"], 0)  # first Amara dispatch is taught again
+        self.assertEqual(values[intro.VAR_THEME], 2)
+        self.assertEqual((values["T0"], values["T1"]), (123, 456))
+        self.assertNotIn("EVENT_RESET_VARIABLES", str(body))
+        self.assertNotIn("EVENT_MUSIC_PLAY", str(body))
+
+    def test_attract_replay_does_not_clear_campaign_state(self):
+        script = scene.title_script()
+        # Inspect the title's direct init and its idle thread, excluding the
+        # START handler: report/title/idle replay is presentation, not a new run.
+        outside_start = [e for e in script if e["command"] != "EVENT_SET_INPUT_SCRIPT"]
+        writes = [e for e in walk(outside_start)
+                  if e["command"] in {"EVENT_SET_VALUE", "EVENT_RESET_VARIABLES"}]
+        self.assertEqual(writes, [])
+
     def test_title_switch_targets_opening_scene_file(self):
         opening_scene = load(SCENES_DIR / "service_opening" / "scene.gbsres")
         self.assertEqual(opening_scene["id"], intro.OPENING_SCENE_ID)

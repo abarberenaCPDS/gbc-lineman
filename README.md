@@ -2,14 +2,14 @@
 
 [![Platform: Game Boy Color](https://img.shields.io/badge/platform-Game%20Boy%20Color-326b4f)](https://modretro.com/products/chromatic)
 [![Engine: GB Studio](https://img.shields.io/badge/engine-GB%20Studio%204.2.0-4856a6)](https://www.gbstudio.dev/)
-[![Version](https://img.shields.io/badge/version-0.20.0--dev-orange)](VERSION)
+[![Version](https://img.shields.io/badge/version-0.20.1--dev-orange)](VERSION)
 [![Status: In development](https://img.shields.io/badge/status-in%20development-yellow)](docs/PROJECT_PLAN.md)
-[![Verified tests: 517](https://img.shields.io/badge/verified%20tests-517%20passed-brightgreen)](docs/HERO_VARIANTS.md#verified-evidence)
+[![Verified tests: 528](https://img.shields.io/badge/verified%20tests-528%20passed-brightgreen)](docs/CAMPAIGN_PLAYTEST.md#verification)
 
 A color-only Game Boy Color platformer about restoring power after a tropical
 storm, built with GB Studio for the ModRetro Chromatic.
 
-Current development version: **0.20.0-dev**. Storm Worker is the gameplay hero;
+Current development version: **0.20.1-dev**. Storm Worker is the gameplay hero;
 Neighborhood Hero introduces the story in the preserved storm cinematic. The
 classic intro appearance remains available as a build option. See the
 [hero variant guide](docs/HERO_VARIANTS.md) for native art, commands and evidence.

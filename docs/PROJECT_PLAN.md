@@ -20,12 +20,14 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Next session:** baseline tagged `v0.20.0-dev` at `0804abb`; implementation
-worktree prepared at `../gb-mr-cfe-campaign-polish` on `feat/campaign-polish`.
-Continue with the full-campaign playtest before feature work. Approved [campaign polish and neighborhood map plan](NEXT_PHASE_PLAN.md).
-Implementation deferred: full-campaign playtest first, then map prototype,
-restoration reactions, ending payoff and Chromatic review. Copy-ready handoff
-prompt is included in that plan.
+**Campaign polish 🔄 (2026-11-07):** implementation is active in
+`../gb-mr-cfe-campaign-polish`, branch `feat/campaign-polish`, VERSION
+`0.20.1-dev`, based on baseline tag `v0.20.0-dev` (`0804abb`). Three fixes:
+feet-based cracked-board timing, first-only Amara dispatch, true new-campaign
+reset. **528 tests pass** and focused native diagnostics pass, including exact
+before/after board inputs. Full campaign completion, map prototype and human
+feel/browser/hardware gates remain open. See [campaign investigation](CAMPAIGN_PLAYTEST.md)
+and the approved [next-phase plan](NEXT_PHASE_PLAN.md).
 
 **Hero art round (2026-11-07):** ✅ implemented, native-verified and accepted
 by Abe: “I love this.” Commit/merge/push requested; hardware acceptance remains open. Storm Worker replaces all 13 active
@@ -702,6 +704,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-11-07 | Campaign polish 🔄 | Recorded logo→opening→Amara repairs 1–2 and repeated carry-3 failures; fixed premature board countdown from body overlap, repeated street dispatch, and stale progress on title START. VERSION 0.20.1-dev. | 528 tests; ROM builds; seeded board before/after uses identical inputs (old loses cable, corrected keeps it), ~51-frame corrected visible warning; seeded zero-line street reentry and title reset pass. Full four-household route is still pending; see CAMPAIGN_PLAYTEST.md. No map/release/hardware claim. |
 | 2026-11-07 | Next-phase setup ✅ | Tagged accepted baseline `0804abb` as annotated prerelease `v0.20.0-dev`; created sibling `../gb-mr-cfe-campaign-polish` on `feat/campaign-polish` from main. | Git setup only; no game changes or new runtime checks. VERSION remains `0.20.0-dev`; stable tag, local opencode.jsonc, pre-merge stash and existing worktrees preserved. Full-campaign playtest is next per NEXT_PHASE_PLAN.md. |
 | 2026-11-07 | Next-phase planning ✅ | Abe approved full-campaign playtest, Neighborhood Hero map, household reactions, ending payoff and hardware polish. Saved NEXT_PHASE_PLAN.md with ordered work, acceptance criteria, boundaries and handoff prompt. | Planning only; implementation explicitly deferred to a new session. Current accepted work is already merged/pushed; prior 517-test evidence remains unchanged. |
 | 2026-11-07 | Documentation branding ✅ | Reviewed tracked Markdown for stale Mister CFE/MR CFE branding. Updated current headings/prose to Lineman; corrected completed rebrand status in LEVEL_REDESIGN; marked historical briefs and verbatim prompt quotes. | Descriptor/worktree paths, internal title key and historical ROM/stream identifiers preserved. Markdown-only changes; current title/header/release name checked against source and prior native evidence. |

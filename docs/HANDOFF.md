@@ -1,18 +1,27 @@
-# Current handoff — next session
+# Current handoff — campaign polish in progress
 
-The completed hero/experience work is accepted, merged into `main` and pushed to
-`origin` (`git@github.com:abarberenaCPDS/gbc-lineman.git`). The current game name
-is **Lineman: After the Storm**, VERSION `0.20.0-dev`.
+Continue in `/Users/abe/src/modretro-chromatic/gb-mr-cfe-campaign-polish`, branch
+`feat/campaign-polish`, VERSION `0.20.1-dev`. Baseline tag `v0.20.0-dev` points to
+`0804abb`; main and its local `opencode.jsonc`, stash and previous worktrees remain
+preserved. Do not recreate the worktree or implement the map ahead of the route pass.
 
-**Start with [NEXT_PHASE_PLAN.md](NEXT_PHASE_PLAN.md).** It contains the approved
-five-step plan, acceptance criteria and a copy-ready handoff prompt. Next work:
-full-campaign playtest → neighborhood map → restoration reactions → ending →
-Chromatic polish. Implementation is deferred to the new session.
+Read [CAMPAIGN_PLAYTEST.md](CAMPAIGN_PLAYTEST.md) for the three fixes, exact-ROM
+and recording identities, limitations and next checks. **528 tests pass.**
+The first normal campaign investigation repaired Amara lines 1–2 and exposed
+premature cracked-board timing on carry 3; it did not complete the campaign.
+Focused seeded diagnostics verify board timing/escape, zero-line street reentry
+and new-game reset. These do not establish uninterrupted campaign completion.
 
-Use a fresh sibling worktree from current `main`; preserve local `opencode.jsonc`
-and the `preserve pre-merge review documents` stash. Historical preview URLs and
-worktree instructions below are evidence, not current runtime state. Inspect
-MCP status before any preview operation. Earlier hardware gates remain open.
+Resume the full route from a fresh corrected production ROM. Keep the original
+baseline recording/checkpoint intact; it can only restore into its exact baseline
+ROM. Next comes the small map prototype, then player review before expanding it,
+as ordered in [NEXT_PHASE_PLAN.md](NEXT_PHASE_PLAN.md).
+
+Final production ROM `build/rom/lineman-campaign-polish.gbc` has SHA-256
+`cf91ae1454f6783a3602c6d29b4e7bb1bfd7065567035bde845177f85eaec6de`.
+The built-in browser host is unavailable; the served preview is separate from
+native evidence. Inspect current MCP status before any preview operation.
+All owned native sessions are closed at handoff. No hardware writes or new tags.
 
 ---
 

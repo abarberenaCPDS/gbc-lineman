@@ -450,6 +450,27 @@ def story_script() -> list[dict[str, Any]]:
     ]
 
 
+def new_campaign_events() -> list[dict[str, Any]]:
+    """Clear campaign state only when START begins a new game.
+
+    The native reset-all command also clears the theme preference. Reset only
+    authored gameplay variables, preserving theme and temporary thread values;
+    title idle replay and ordinary street/job reentry must retain progress.
+    """
+    contracts = (shared.opening, shared.climb, shared.ridge, shared.rosa, shared.tickets.kiko,
+                 shared.hazards, shared.grid_chain)
+    variables = {
+        shared.VARIABLE_CHECKPOINTS_REACHED,
+        shared.climb.VAR_CARRYING_CABLE,
+        shared.climb.VAR_LINE_LIVE,
+        shared.climb.VAR_NEAR,
+        shared.tickets.VAR_TICKET,
+        *(variable for contract in contracts for variable, _, _ in contract.VARIABLES),
+    }
+    return [set_value(variable, 0, f"title:start:reset-{variable}")
+            for variable in sorted(variables, key=int)]
+
+
 def title_script() -> list[dict[str, Any]]:
     return [
         hide_player("title:hide-player"),
@@ -461,6 +482,7 @@ def title_script() -> list[dict[str, Any]]:
             *([input_script_remove(["select"], "title:start:remove-audition")]
               if intro.AUDITION_THEMES else []),
             fade_out("title:start:fade"),
+            *new_campaign_events(),
             switch_scene(intro.OPENING_SCENE_ID, *intro.OPENING_START,
                          intro.OPENING_DIRECTION, "title:start:to-opening"),
         ], "title:start-input"),

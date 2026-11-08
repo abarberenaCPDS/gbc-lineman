@@ -20,7 +20,7 @@ from make_climb_scene import collision_rle
 ROOT = Path(__file__).resolve().parent.parent
 SCENE_DIR = ROOT / "project/scenes/service_opening"
 EXIT_SYMBOL = "trigger_service_exit"
-RESTORED = "4"
+RESTORED = opening.VAR_SERVICE_RESTORED
 
 
 def event(command: str, args: dict[str, Any], key: str, **children: list) -> dict:
@@ -91,7 +91,7 @@ def write_variables() -> None:
     # reads it now, and test_climb still checks that entry.
     path = ROOT / "project/variables.gbsres"
     data = json.loads(path.read_text())
-    for key, name, symbol in ((RESTORED, "Service Restored", "var_service_restored"),):
+    for key, name, symbol in opening.VARIABLES:
         value = {"id": key, "name": name, "symbol": symbol}
         existing = next((v for v in data["variables"] if v["id"] == key), None)
         if existing is not None and existing != value:
@@ -225,17 +225,21 @@ def hero_speed(size: int) -> int:
 
 
 def work_order_events() -> list[dict]:
-    """Amara's work order; its card switches on to the climb's start.
+    """Dispatch Amara once; a street round-trip returns directly to her job.
 
-    The ticket (var 16 = 1, which makes the climb reset job 1 once) is set only
-    while no line is live yet (climb.VAR_CHAIN_LIVE == 0): walking back down
-    through the street and out of the awning again must not restart the job
-    (docs/LEVEL_REDESIGN.md §8). Otherwise var 16 stays 0 (the climb's fresh
-    start cleared it): the card still shows ticket 1 (its fallback) and the
-    climb keeps every repaired line.
+    var 16 = 1 belongs only to the initial work-order handoff, so the climb's
+    fresh-start reset and briefing run once even before any line is repaired.
+    The campaign start resets the independent dispatched flag for a new run.
     """
-    ticket, switch = tickets.to_work_order(1, "exit", event, set_value, number)
-    return [if_value(climb.VAR_CHAIN_LIVE, 0, "exit:fresh-job", [ticket]), switch]
+    x, y = climb.START
+    resume = event("EVENT_SWITCH_SCENE", {
+        "x": number(x), "y": number(y), "direction": "right",
+        "sceneId": tickets.CLIMB_SCENE_ID, "fadeSpeed": "2",
+    }, "exit:resume-climb")
+    return [if_value(opening.VAR_AMARA_DISPATCHED, 0, "exit:first-dispatch", [
+        set_value(opening.VAR_AMARA_DISPATCHED, 1, "exit:record-dispatch"),
+        *tickets.to_work_order(1, "exit", event, set_value, number),
+    ], [resume])]
 
 
 def exit_trigger() -> dict:

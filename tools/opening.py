@@ -9,6 +9,14 @@ import uuid
 
 NAMESPACE = uuid.UUID("2765282c-9a26-5e6d-8c4f-d21f5904a3a9")
 MAP_W, MAP_H, TILE = 20, 18, 8
+VAR_SERVICE_RESTORED = "4"
+# A started job has no live lines until the first repair. Keep dispatch history
+# separate from line progress so street round-trips cannot restart its briefing.
+VAR_AMARA_DISPATCHED = "54"
+VARIABLES = [
+    (VAR_SERVICE_RESTORED, "Service Restored", "var_service_restored"),
+    (VAR_AMARA_DISPATCHED, "Amara Dispatched", "var_amara_dispatched"),
+]
 START = (1, 15)
 PANEL = (4, 15)
 MARTA = (8, 15)

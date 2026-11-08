@@ -627,9 +627,23 @@ class SceneTests(unittest.TestCase):
             for (number, board), actor in zip(B[folder].boards(), boards):
                 self.assertEqual(actor["symbol"], f"ridge_board_{number:02d}")
                 self.assertEqual((actor["x"], actor["y"]), hazards.board_actor_position(board))
-                [gate] = actor["updateScript"]
-                self.assertTrue(is_var_if(gate, hazards.VAR_ON_BOARD, number))
+                position, gate = actor["updateScript"]
+                self.assertEqual(position["command"], "EVENT_ACTOR_GET_POSITION")
+                self.assertEqual(position["args"], {
+                    "actorId": "player", "vectorX": hazards.BOARD_LOCAL_X,
+                    "vectorY": hazards.BOARD_LOCAL_Y, "units": "pixels"})
+                # Board overlap triggers are advisory: the actual foot anchor
+                # must be at this board's height before its warning can begin.
                 row, x0, x1 = board
+                foot_height = gate["args"]["condition"]["valueA"]
+                self.assertEqual(foot_height, {"type": "eq",
+                    "valueA": {"type": "variable", "value": hazards.BOARD_LOCAL_Y},
+                    "valueB": {"type": "number", "value": (row - 1) * 8}})
+                self.assertTrue(any(is_var_if(e, hazards.BOARD_LOCAL_TIMER, hazards.CREAK_FRAMES, "gte")
+                                    for e in walk(gate["children"]["true"])))
+                off = gate["children"]["false"]
+                self.assertTrue(any(is_set(e, hazards.BOARD_LOCAL_TIMER, 0) for e in walk(off)))
+                self.assertNotIn("EVENT_ACTOR_COLLISIONS_ENABLE", [e["command"] for e in walk(off)])
                 self.assertTrue(all(grid[row][x] == ridge.COL_TOP for x in range(x0, x1 + 1)))
                 trigger = trigger_by_symbol(folder, f"trigger_ridge_cracked_board_{number:02d}")
                 self.assertEqual(rect(trigger), hazards.board_trigger_rect(board))

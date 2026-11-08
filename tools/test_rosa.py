@@ -438,8 +438,18 @@ class SceneTests(unittest.TestCase):
                     self.assertEqual(waits[-3:], [rosa.WHIP_SWAY_FRAMES, rosa.WHIP_SWING_FRAMES,
                                                   rosa.WHIP_HANG_FRAMES])
                 if a["collisionGroup"] == "1":
-                    self.assertEqual(a["startScript"][0]["command"] in ("EVENT_ACTOR_COLLISIONS_DISABLE",), True,
-                                     a["symbol"])
+                    # A board now initializes its actor-local contact timer
+                    # before disabling collision. Every hazard still starts safe.
+                    setup = a["startScript"]
+                    collisions = [e["command"] for e in walk(setup)
+                                  if e["command"] in {"EVENT_ACTOR_COLLISIONS_DISABLE",
+                                                      "EVENT_ACTOR_COLLISIONS_ENABLE"}]
+                    self.assertTrue(collisions, a["symbol"])
+                    self.assertEqual(collisions[0], "EVENT_ACTOR_COLLISIONS_DISABLE", a["symbol"])
+                    if "_board_" in a["symbol"]:
+                        self.assertTrue(any(is_set(e, hazards.BOARD_LOCAL_TIMER, 0) for e in setup))
+                        self.assertEqual(a["updateScript"][0]["command"], "EVENT_ACTOR_GET_POSITION")
+                        self.assertEqual(a["updateScript"][0]["args"]["units"], "pixels")
 
     def test_span_arcs_wait_for_their_lines(self):
         for folder in FOLDERS:

@@ -228,8 +228,54 @@ class GeneratedTriggerTests(unittest.TestCase):
                     self.assertIn(rect, exits, "a switching trigger that is not in scene_links")
                     link = exits[rect]
                     found.add(rect)
-                    self.assertEqual(len(switches), 1)
-                    args = switches[0]["args"]
+                    if link.source == "service_opening":
+                        # This one handoff has two exclusive routes: first dispatch
+                        # opens the canonical card; street reentry resumes the job.
+                        self.assertEqual(link.ticket, 1)
+                        self.assertEqual(link.target, "storm_climb")
+                        gate = trigger["script"][0]
+                        [dispatch] = gate["children"]["true"]
+                        self.assertEqual(dispatch["command"], "EVENT_IF")
+                        self.assertEqual(dispatch["args"]["condition"], {
+                            "type": "eq",
+                            "valueA": {"type": "variable", "value": opening.VAR_AMARA_DISPATCHED},
+                            "valueB": {"type": "number", "value": 0},
+                        })
+                        first = dispatch["children"]["true"]
+                        self.assertEqual([e["command"] for e in first],
+                                         ["EVENT_SET_VALUE", "EVENT_SET_VALUE", "EVENT_SWITCH_SCENE"])
+                        self.assertEqual(first[0]["args"], {
+                            "variable": opening.VAR_AMARA_DISPATCHED,
+                            "value": {"type": "number", "value": 1},
+                        })
+                        self.assertEqual(first[1]["args"], {
+                            "variable": scene_links.VAR_TICKET,
+                            "value": {"type": "number", "value": link.ticket},
+                        })
+                        self.assertEqual(first[-1]["args"], {
+                            "sceneId": scene_links.scene_id(scene_links.WORK_ORDER),
+                            "x": {"type": "number", "value": scene_links.WORK_ORDER_POSITION[0]},
+                            "y": {"type": "number", "value": scene_links.WORK_ORDER_POSITION[1]},
+                            "direction": "down", "fadeSpeed": link.fade,
+                        })
+                        [resume] = dispatch["children"]["false"]
+                        self.assertEqual(resume["command"], "EVENT_SWITCH_SCENE")
+                        self.assertEqual(resume["args"], {
+                            "sceneId": scene_links.scene_id(link.target),
+                            "x": {"type": "number", "value": link.entry[0]},
+                            "y": {"type": "number", "value": link.entry[1]},
+                            "direction": link.facing, "fadeSpeed": link.fade,
+                        })
+                        # The normal table checks below still validate the first
+                        # dispatch and its ticket; no third switch is permitted.
+                        self.assertEqual(switches, [first[-1], resume])
+                        args = first[-1]["args"]
+                        self.assertTrue(grid_chain.stands(climb.collision_grid(), *link.entry))
+                        for exit_ in scene_links.from_scene(link.target, links):
+                            self.assertFalse(hero_box(link.entry) & rect_tiles(exit_.rect))
+                    else:
+                        self.assertEqual(len(switches), 1)
+                        args = switches[0]["args"]
                     self.assertEqual(args["fadeSpeed"], link.fade)
                     if link.ticket is not None:
                         self.assertEqual(args["sceneId"], scene_links.scene_id(scene_links.WORK_ORDER))

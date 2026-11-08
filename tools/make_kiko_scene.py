@@ -544,30 +544,12 @@ def board_actor(number: int, board: tuple[int, int, int]) -> dict[str, Any]:
     def own(command: str, suffix: str, **args: Any) -> dict[str, Any]:
         return event(command, {"actorId": "$self$", **args}, f"{key}:{suffix}")
 
-    give_way = [
-        own("EVENT_ACTOR_SET_STATE", "break-state", spriteStateId="Break", loopAnim=False),
-        own("EVENT_ACTOR_COLLISIONS_ENABLE", "break-hit"),
-        wait_event(hazards.BREAK_FRAMES, f"{key}:break-time"),
-        own("EVENT_ACTOR_COLLISIONS_DISABLE", "break-safe"),
-        # The respawn teleports the hero without a leave event; clear it here.
-        set_value(hazards.VAR_ON_BOARD, 0, f"{key}:clear"),
-        wait_event(hazards.BOARD_REST_FRAMES, f"{key}:rest-time"),
-    ]
-    creak = [
-        own("EVENT_ACTOR_COLLISIONS_DISABLE", "creak-safe"),
-        own("EVENT_ACTOR_SET_STATE", "creak-state", spriteStateId="Creak", loopAnim=True),
-        own("EVENT_ACTOR_SHOW", "creak-visible"),
-        wait_event(hazards.CREAK_FRAMES, f"{key}:creak-time"),
-        if_value(hazards.VAR_ON_BOARD, number, f"{key}:still-on", give_way, []),
-        own("EVENT_ACTOR_SET_STATE", "idle-state", spriteStateId="Idle", loopAnim=True),
-        own("EVENT_ACTOR_HIDE", "idle-hidden"),
-    ]
     actor = actor_resource(
         index=0, symbol=f"{sp()}board_{number:02d}", name=f"Cracked Board {number}",
         x=x, y=y, sprite_id=hazards.BOARD_SPRITE_ID, key=key,
         start_script=[*hazards.board_start_script(key, event), own("EVENT_ACTOR_HIDE", "init-hidden")],
-        update_script=[if_value(hazards.VAR_ON_BOARD, number, f"{key}:on-check", creak,
-                                [wait_event(1, f"{key}:idle-tick")])],
+        update_script=hazards.board_update_script(
+            number, key, event, wait_event, if_value, set_value, board, hide_idle=True),
         collision_group="1",
     )
     actor["animate"] = True

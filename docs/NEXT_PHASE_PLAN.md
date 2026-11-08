@@ -1,10 +1,21 @@
 # Lineman — campaign polish and neighborhood map plan
 
 Approved direction: Abe accepted this plan and asked to resume implementation in
-a new session. This document plans future work; none of the additions below has
-been implemented in this session.
+a new session. Implementation has begun in the campaign-polish worktree. Step 1 remains in
+progress; see [campaign investigation](CAMPAIGN_PLAYTEST.md) for the first three
+fixes, exact-ROM evidence and outstanding full-route checks.
 
-## Starting point
+## Current progress
+
+- 🔄 Step 1: first recorded campaign investigation and three targeted fixes;
+  full four-household route and ending remain unverified on this branch.
+- ⬜ Steps 2–5: dispatch-map prototype, restoration polish, ending map and hardware.
+- Branch `feat/campaign-polish`, sibling `../gb-mr-cfe-campaign-polish`,
+  VERSION `0.20.1-dev`. Baseline tag `v0.20.0-dev` is preserved.
+- Continue the full route before building the map. The old copy-ready prompt
+  below describes the original kickoff; reuse this existing worktree.
+
+## Starting point (tagged baseline)
 
 - Game: **Lineman: After the Storm**, VERSION `0.20.0-dev`.
 - Hero implementation: `6aeb34f`; accepted by Abe. Storm Worker is used throughout
