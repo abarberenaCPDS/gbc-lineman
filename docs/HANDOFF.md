@@ -1,27 +1,36 @@
-# Current handoff — campaign polish in progress
+# Current handoff — campaign polish
 
-Continue in `/Users/abe/src/modretro-chromatic/gb-mr-cfe-campaign-polish`, branch
-`feat/campaign-polish`, VERSION `0.20.1-dev`. Baseline tag `v0.20.0-dev` points to
-`0804abb`; main and its local `opencode.jsonc`, stash and previous worktrees remain
-preserved. Do not recreate the worktree or implement the map ahead of the route pass.
+Worktree `/Users/abe/src/modretro-chromatic/gb-mr-cfe-campaign-polish`, branch
+`feat/campaign-polish`, VERSION `0.20.1-dev`. Baseline tag `v0.20.0-dev` at
+`0804abb` remains. Main, local `opencode.jsonc`, stash and previous worktrees are
+preserved. Initial fixes commit: `238f645`; final board performance revision follows.
 
-Read [CAMPAIGN_PLAYTEST.md](CAMPAIGN_PLAYTEST.md) for the three fixes, exact-ROM
-and recording identities, limitations and next checks. **528 tests pass.**
-The first normal campaign investigation repaired Amara lines 1–2 and exposed
-premature cracked-board timing on carry 3; it did not complete the campaign.
-Focused seeded diagnostics verify board timing/escape, zero-line street reentry
-and new-game reset. These do not establish uninterrupted campaign completion.
+**533 tests pass;647 outputs regenerate identically; MCP health0/0/0.**
+Read [CAMPAIGN_PLAYTEST.md](CAMPAIGN_PLAYTEST.md) for exact artifacts and evidence.
+Three fixes: foot-armed/cancellable native board warnings; first-only Amara
+work order; actual new-campaign reset on title START. Final board performance
+matches baseline range in quiet and standing fixtures, with no continuous polling.
 
-Resume the full route from a fresh corrected production ROM. Keep the original
-baseline recording/checkpoint intact; it can only restore into its exact baseline
-ROM. Next comes the small map prototype, then player review before expanding it,
-as ordered in [NEXT_PHASE_PLAN.md](NEXT_PHASE_PLAN.md).
+The normal `de0b3594...` run completes Amara and reaches Hiroshi's WO-0413 at8179.
+Its checkpoint is `checkpoint-f91d2087ab3b49d6a90c34d7c09a1eef` in
+`artifacts/playtests/campaign-optimized-run`. Keep the exact old ROM and worker:
+`build/rom/lineman-campaign-polish-optimized.gbc`. The final source has since
+changed board implementation, so source-debug binding of that older ROM is no
+longer current. Use ROM mode and its captured symbols if continuing that recorded
+campaign; never restore it into a new ROM. This is real prior progress, not a
+seeded completion or full-campaign proof for the final cartridge.
 
-Final production ROM `build/rom/lineman-campaign-polish.gbc` has SHA-256
-`cf91ae1454f6783a3602c6d29b4e7bb1bfd7065567035bde845177f85eaec6de`.
-The built-in browser host is unavailable; the served preview is separate from
-native evidence. Inspect current MCP status before any preview operation.
-All owned native sessions are closed at handoff. No hardware writes or new tags.
+Latest production: `build/rom/lineman-campaign-polish-events.gbc`, SHA-256
+`44c1eb40271257b35bc5ba8ff6d1b75f0f5db01b8e9c6dfacf140d240bff55f5`.
+Native final-component fixtures and a fresh production boot/repair pass. Hiroshi,
+Priya, Emil, ending and the complete final-ROM campaign still need verification.
+Map/household/ending additions have not started. Follow NEXT_PHASE_PLAN.md in order.
+
+Preview is served from `build/web-campaign-events`; the built-in browser host
+remains unavailable. URL is in the evidence report. Preserve listener/saves and
+inspect current status before changes. All owned native sessions are closed at
+this handoff; stopped intermediate recordings were archived via MCP with intact
+original-path mappings. No evidence deletion, hardware writes or new tags.
 
 ---
 

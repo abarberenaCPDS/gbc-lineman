@@ -341,7 +341,8 @@ class RosaScene:
 
     def board_trigger(self, number: int, board: tuple[int, int, int]) -> dict[str, Any]:
         key = f"board:{number}"
-        on_script, leave_script = hazards.board_trigger_scripts(number, f"{key}:trigger", self.set_value)
+        on_script, leave_script = hazards.board_trigger_scripts(
+            number, f"{key}:trigger", self.set_value, self.event, self.actor_id(key), hide_idle=True)
         return self.trigger(key, f"Cracked Board {number} Stand", f"trigger_{self.sym}_cracked_board_{number:02d}",
                             hazards.board_trigger_rect(board), on_script, leave_script)
 

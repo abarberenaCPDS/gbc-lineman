@@ -20,6 +20,43 @@
         }
       },
       "id": "4c83714e-f58a-5a6c-801b-a58820da7cc5"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "3ed34577-43f2-5acd-841e-a7b879c918f8"
+      },
+      "id": "b8407436-a719-5670-949e-b89e019c3c90"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "3ed34577-43f2-5acd-841e-a7b879c918f8"
+      },
+      "id": "954e99a9-91c6-509d-9b84-49f33a73a70c"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "3ed34577-43f2-5acd-841e-a7b879c918f8",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "0e2ba7ad-64e7-5fe3-9baa-0eb847d107a4"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "3ed34577-43f2-5acd-841e-a7b879c918f8"
+      },
+      "id": "76a68a8d-685d-50ec-8889-5ed919e53531"
+    },
+    {
+      "command": "EVENT_ACTOR_START_UPDATE",
+      "args": {
+        "actorId": "3ed34577-43f2-5acd-841e-a7b879c918f8"
+      },
+      "id": "66487b1d-fe7c-5132-ad3f-6aedcc65260b"
     }
   ],
   "leaveScript": [
@@ -33,6 +70,36 @@
         }
       },
       "id": "0d7528f7-6925-5398-a400-9cc148aff62a"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "3ed34577-43f2-5acd-841e-a7b879c918f8"
+      },
+      "id": "94d4aa24-1de4-51b5-b1fb-d7dc99377947"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "3ed34577-43f2-5acd-841e-a7b879c918f8"
+      },
+      "id": "bf6d5ca7-57e9-565d-b691-482383dd5625"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "3ed34577-43f2-5acd-841e-a7b879c918f8",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "38287dd4-4d78-5d5e-a96b-23f3eaf66f92"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "3ed34577-43f2-5acd-841e-a7b879c918f8"
+      },
+      "id": "490ee602-6e1d-502b-9d9c-54d971b5b9b1"
     }
   ],
   "_index": 1

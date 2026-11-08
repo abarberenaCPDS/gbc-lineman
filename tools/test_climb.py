@@ -431,11 +431,9 @@ class ClimbSceneTests(unittest.TestCase):
             self.assertEqual(actor["startScript"][-1]["command"], "EVENT_ACTOR_HIDE", "idle plank is background")
             cmds = [e["command"] for e in flatten(actor["updateScript"])]
             self.assertLess(cmds.index("EVENT_ACTOR_SHOW"), cmds.index("EVENT_ACTOR_COLLISIONS_ENABLE"))
-            thresholds = [e["args"]["condition"]["valueB"]["value"]
-                          for e in flatten(actor["updateScript"])
-                          if e["command"] == "EVENT_IF"
-                          and e["args"]["condition"]["type"] == "gte"]
-            self.assertIn(hazards.CREAK_FRAMES, thresholds)
+            waits = [e["args"]["frames"]["value"] for e in flatten(actor["updateScript"])
+                     if e["command"] == "EVENT_WAIT"]
+            self.assertIn(hazards.CREAK_FRAMES, waits)
         for n in (1, 2):
             gust = a[f"gust_{n:02d}"]
             row, x0, _ = climb.GUST_LANES[n - 1]

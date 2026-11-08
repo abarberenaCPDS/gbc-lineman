@@ -660,7 +660,8 @@ def door_trigger(connect_sound_id: str) -> dict[str, Any]:
 def board_trigger(number: int, board: tuple[int, int, int]) -> dict[str, Any]:
     key = f"{kp()}board:{number}"
     x, y, width, height = hazards.board_trigger_rect(board)
-    on_script, leave_script = hazards.board_trigger_scripts(number, f"{key}:trigger", set_value)
+    on_script, leave_script = hazards.board_trigger_scripts(
+        number, f"{key}:trigger", set_value, event, actor_id(key), hide_idle=True)
     return {
         "_resourceType": "trigger", "id": kiko.resource_id(f"trigger:{key}"),
         "name": f"Cracked Board {number} Stand", "prefabId": "", "x": x, "y": y,

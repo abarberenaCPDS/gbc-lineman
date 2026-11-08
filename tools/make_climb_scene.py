@@ -661,10 +661,11 @@ def hazard_actors(first_index: int, scene: str = "storm_climb") -> list[dict[str
 
 
 def board_trigger(number: int, board: tuple[int, int, int], index: int,
-                  key_prefix: str = "", symbol_prefix: str = "") -> dict[str, Any]:
+                  key_prefix: str = "", symbol_prefix: str = "", *, hide_idle: bool = False) -> dict[str, Any]:
     key = f"{key_prefix}board:{number}"
     x, y, width, height = hazards.board_trigger_rect(board)
-    on_script, leave_script = hazards.board_trigger_scripts(number, f"{key}:trigger", set_value)
+    on_script, leave_script = hazards.board_trigger_scripts(
+        number, f"{key}:trigger", set_value, event, resource_id(f"actor:{key}"), hide_idle=hide_idle)
     return {
         "_resourceType": "trigger",
         "id": resource_id(f"trigger:{key}"),
@@ -685,7 +686,8 @@ def board_trigger(number: int, board: tuple[int, int, int], index: int,
 def hazard_triggers(scene: str = "storm_climb") -> list[dict[str, Any]]:
     key_prefix, symbol_prefix = hazard_key_prefix(scene), hazard_symbol_prefix(scene)
     return [
-        board_trigger(number, board, BOARD_TRIGGER_BASE_INDEX + number - 1, key_prefix, symbol_prefix)
+        board_trigger(number, board, BOARD_TRIGGER_BASE_INDEX + number - 1, key_prefix, symbol_prefix,
+                      hide_idle=scene == "storm_climb")
         for number, board in enumerate(hazards.BOARDS[scene], start=1)
     ]
 

@@ -6,9 +6,10 @@ Two hazards, both delivered through each scene's existing group-1 contact reset
 (``playerHit1Script`` respawns the hero), so neither freezes the player:
 
 * **Cracked board**: a plank sprite on a shelf. A trigger over the plank sets
-  ``VAR_ON_BOARD`` as an advisory body-overlap flag (its leave script clears
-  it). Each board measures actual foot contact with actor-local position and
-  timer variables; after ``CREAK_FRAMES`` continuous contacts it gives way: Break state plus
+  ``VAR_ON_BOARD`` as an advisory body-overlap flag. Enter/leave restart/stop
+  that board's update script and restore its safe Idle state. A full pixel
+  foot check starts a native ``CREAK_FRAMES`` wait; a fresh check at its end
+  permits Break state plus
   a few frames of group-1 collision, which respawns the hero. Collision tiles
   never change at runtime (GB Studio can't), so the plank "breaks" by animation
   and respawn. Keep moving and it is safe.
@@ -206,15 +207,27 @@ def board_actor_position(board: tuple[int, int, int]) -> tuple[int, int]:
 Event = Callable[[str, dict[str, Any], str], dict[str, Any]]
 
 
-def board_trigger_scripts(number: int, key: str, set_value: Callable[..., dict[str, Any]]
+def board_trigger_scripts(number: int, key: str, set_value: Callable[..., dict[str, Any]],
+                          event: Event, actor_id: str, *, hide_idle: bool = False
                           ) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
-    """(script, leaveScript) for the trigger over board ``number`` (1-based)."""
-    return ([set_value(VAR_ON_BOARD, number, f"{key}:on")],
-            [set_value(VAR_ON_BOARD, 0, f"{key}:off")])
+    """Enter starts a fresh owner update; leave cancels any pending warning.
 
-
-# Actor-local storage: independent per board; never borrow shaft scratch 46..49.
-BOARD_LOCAL_X, BOARD_LOCAL_Y, BOARD_LOCAL_TIMER = "L0", "L1", "L2"
+    Official STOP_UPDATE terminates/detaches the old context immediately, so
+    START_UPDATE in the same trigger starts a clean warning rather than resuming
+    an earlier wait. Scene culling may also restart updates; the foot gate still
+    guards those starts. Stable trigger/actor IDs remain owned by each generator.
+    """
+    def reset(tag: str) -> list[dict[str, Any]]:
+        return [
+            event("EVENT_ACTOR_STOP_UPDATE", {"actorId": actor_id}, f"{key}:{tag}-stop"),
+            event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": actor_id}, f"{key}:{tag}-safe"),
+            event("EVENT_ACTOR_SET_STATE", {"actorId": actor_id, "spriteStateId": "Idle", "loopAnim": True},
+                  f"{key}:{tag}-idle"),
+            *([event("EVENT_ACTOR_HIDE", {"actorId": actor_id}, f"{key}:{tag}-hidden")] if hide_idle else []),
+        ]
+    return ([set_value(VAR_ON_BOARD, number, f"{key}:on"), *reset("enter"),
+             event("EVENT_ACTOR_START_UPDATE", {"actorId": actor_id}, f"{key}:enter-start")],
+            [set_value(VAR_ON_BOARD, 0, f"{key}:off"), *reset("leave")])
 
 
 def board_update_script(number: int, key: str, event: Event, wait: Callable[[int, str], dict[str, Any]],
@@ -222,41 +235,36 @@ def board_update_script(number: int, key: str, event: Event, wait: Callable[[int
                         set_value: Callable[..., dict[str, Any]],
                         board: tuple[int, int, int], *, hide_idle: bool = False,
                         creak_sound: dict[str, Any] | None = None) -> list[dict[str, Any]]:
-    """Count consecutive actual foot-contact polls, never the head/body trigger.
+    """Arm from real feet, wait cheaply, then recheck feet before a hit.
 
-    The 24px worker's unchanged bounds are x=2..13, y=-16..7 relative to
-    its actor anchor. At rest above shelf row R, the pixel y anchor is 8*(R-1).
-    A jump can cross that y briefly, but any next non-contact poll resets the
-    countdown. Actor update loops already yield once per pass; an explicit
-    contact wait here would double the intended warning. VM scheduling can
-    still lengthen the measured wall-clock interval slightly.
+    Body-trigger enter/leave cancels and restarts the warning through official
+    actor-update events. The native wait avoids per-frame script-value polling
+    during a warning. Full X/Y checks at arm and deadline reject overlap from
+    below and stale flags after a teleport. This is a body-visit cancellation
+    contract, not a proof of every unsampled subpixel foot movement.
     """
     row, x0, x1 = board
 
     def own(command: str, suffix: str, **args: Any) -> dict[str, Any]:
         return event(command, {"actorId": "$self$", **args}, f"{key}:{suffix}")
 
-    def number_value(value: int) -> dict[str, Any]:
-        return {"type": "number", "value": value}
-
-    def variable(value: str) -> dict[str, Any]:
-        return {"type": "variable", "value": value}
-
-    def compare(operator: str, name: str, value: int) -> dict[str, Any]:
-        return {"type": operator, "valueA": variable(name), "valueB": number_value(value)}
+    def position_compare(operator: str, axis: str, value: int) -> dict[str, Any]:
+        return {"type": operator,
+                "valueA": {"type": "property", "target": "player", "property": axis},
+                "valueB": {"type": "number", "value": value}}
 
     def branch(condition: dict[str, Any], suffix: str, yes: list, no: list) -> dict[str, Any]:
         node = event("EVENT_IF", {"condition": condition}, f"{key}:{suffix}")
         node["children"] = {"true": yes, "false": no}
         return node
 
-    def reset_idle(tag: str) -> list[dict[str, Any]]:
-        return [
-            set_value(BOARD_LOCAL_TIMER, 0, f"{key}:{tag}-timer"),
-            own("EVENT_ACTOR_COLLISIONS_DISABLE", f"{tag}-safe"),
-            own("EVENT_ACTOR_SET_STATE", f"{tag}-state", spriteStateId="Idle", loopAnim=True),
-            *([own("EVENT_ACTOR_HIDE", f"{tag}-hidden")] if hide_idle else []),
-        ]
+    # The unchanged 24px worker has collision bounds x=2..13, y=-16..7.
+    # Pixel y=(R-1)*8 is the anchor of feet resting above shelf row R.
+    contact = {"type": "and",
+               "valueA": position_compare("eq", "pypos", (row - 1) * 8),
+               "valueB": {"type": "and",
+                          "valueA": position_compare("gte", "pxpos", x0 * 8 - 13),
+                          "valueB": position_compare("lte", "pxpos", (x1 + 1) * 8 - 3)}}
     give_way = [
         own("EVENT_ACTOR_SET_STATE", "break-state", spriteStateId="Break", loopAnim=False),
         own("EVENT_ACTOR_COLLISIONS_ENABLE", "break-hit"),
@@ -264,42 +272,26 @@ def board_update_script(number: int, key: str, event: Event, wait: Callable[[int
         own("EVENT_ACTOR_COLLISIONS_DISABLE", "break-safe"),
         set_value(VAR_ON_BOARD, 0, f"{key}:clear"),
         wait(BOARD_REST_FRAMES, f"{key}:rest-time"),
-        *reset_idle("after-break"),
     ]
-    first_contact = [
+    creak = [
         own("EVENT_ACTOR_COLLISIONS_DISABLE", "creak-safe"),
         own("EVENT_ACTOR_SET_STATE", "creak-state", spriteStateId="Creak", loopAnim=True),
         *([own("EVENT_ACTOR_SHOW", "creak-visible")] if hide_idle else []),
         *([creak_sound] if creak_sound else []),
+        wait(CREAK_FRAMES, f"{key}:creak-time"),
+        if_value(VAR_ON_BOARD, number, f"{key}:still-candidate", [
+            branch(contact, "still-foot-contact", give_way, []),
+        ], []),
+        own("EVENT_ACTOR_SET_STATE", "idle-state", spriteStateId="Idle", loopAnim=True),
+        *([own("EVENT_ACTOR_HIDE", "idle-hidden")] if hide_idle else []),
     ]
-    creak = [
-        if_value(BOARD_LOCAL_TIMER, 0, f"{key}:first-contact", first_contact, []),
-        branch(compare("gte", BOARD_LOCAL_TIMER, CREAK_FRAMES), "elapsed", give_way, [
-            event("EVENT_SET_VALUE", {"variable": BOARD_LOCAL_TIMER, "value": {
-                "type": "add", "valueA": variable(BOARD_LOCAL_TIMER), "valueB": number_value(1),
-            }}, f"{key}:count-contact"),
-        ]),
-    ]
-    contact = {"type": "and",
-               "valueA": compare("eq", BOARD_LOCAL_Y, (row - 1) * 8),
-               "valueB": {"type": "and",
-                          "valueA": compare("gte", BOARD_LOCAL_X, x0 * 8 - 13),
-                          "valueB": compare("lte", BOARD_LOCAL_X, (x1 + 1) * 8 - 3)}}
-    return [
-        event("EVENT_ACTOR_GET_POSITION", {"actorId": "player", "vectorX": BOARD_LOCAL_X,
-              "vectorY": BOARD_LOCAL_Y, "units": "pixels"}, f"{key}:player-feet"),
-        branch(contact, "foot-contact", creak, [
-            # Idle boards need only a position read and comparisons. Restore
-            # visual state once on departure, rather than every update frame.
-            if_value(BOARD_LOCAL_TIMER, 0, f"{key}:already-idle", [], reset_idle("off")),
-        ]),
-    ]
+    return [if_value(VAR_ON_BOARD, number, f"{key}:candidate", [
+        branch(contact, "foot-contact", creak, [wait(3, f"{key}:candidate-tick")]),
+    ], [wait(1, f"{key}:inactive-tick")])]
 
 
 def board_start_script(key: str, event: Event) -> list[dict[str, Any]]:
     return [
-        event("EVENT_SET_VALUE", {"variable": BOARD_LOCAL_TIMER, "value": {"type": "number", "value": 0}},
-              f"{key}:init-timer"),
         event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": "$self$"}, f"{key}:init-safe"),
         event("EVENT_ACTOR_SET_STATE", {"actorId": "$self$", "spriteStateId": "Idle", "loopAnim": True},
               f"{key}:init-idle"),

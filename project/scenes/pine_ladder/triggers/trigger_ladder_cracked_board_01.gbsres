@@ -20,6 +20,43 @@
         }
       },
       "id": "3aca4f53-9161-52ec-bae4-b31c69931393"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "e57865b5-52a4-5ecb-b377-75cd4ac62ebf"
+      },
+      "id": "ae682338-29c5-5e30-b5e2-d270cae7a33c"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "e57865b5-52a4-5ecb-b377-75cd4ac62ebf"
+      },
+      "id": "e07c61db-ec3e-5e23-850e-cd24bba36d70"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "e57865b5-52a4-5ecb-b377-75cd4ac62ebf",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "15b68f71-1b76-5b71-ac7d-bb7eaaea885a"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "e57865b5-52a4-5ecb-b377-75cd4ac62ebf"
+      },
+      "id": "ab889190-8eec-58c9-8140-2309636b84e6"
+    },
+    {
+      "command": "EVENT_ACTOR_START_UPDATE",
+      "args": {
+        "actorId": "e57865b5-52a4-5ecb-b377-75cd4ac62ebf"
+      },
+      "id": "67b6ed0a-6ca5-501e-9e94-5b6497eca1b5"
     }
   ],
   "leaveScript": [
@@ -33,6 +70,36 @@
         }
       },
       "id": "66eaedb5-5e6a-5a79-9de9-71a21492ddd8"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "e57865b5-52a4-5ecb-b377-75cd4ac62ebf"
+      },
+      "id": "af142628-bb0b-5e6f-a38b-0c95746e74a5"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "e57865b5-52a4-5ecb-b377-75cd4ac62ebf"
+      },
+      "id": "fcbc02ce-3992-5b77-95c2-925bd02352fa"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "e57865b5-52a4-5ecb-b377-75cd4ac62ebf",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "f5fc52d3-3aa2-572e-bc92-f31a0d7d468e"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "e57865b5-52a4-5ecb-b377-75cd4ac62ebf"
+      },
+      "id": "3c447e0a-3721-5f39-aebc-b2d9021196bb"
     }
   ],
   "_index": 2

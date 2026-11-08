@@ -20,6 +20,43 @@
         }
       },
       "id": "e0b47106-97f3-5859-9b0a-32480204e1bf"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "2226c5fc-69fa-5755-9b2e-45051b68a26f"
+      },
+      "id": "674e91ad-ba6e-55e8-b7c3-cf8cd051700f"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "2226c5fc-69fa-5755-9b2e-45051b68a26f"
+      },
+      "id": "8345a833-a2b1-5153-8cdd-3b5cbcb0915a"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "2226c5fc-69fa-5755-9b2e-45051b68a26f",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "166c33bc-9725-5ad6-a096-45e4215fc94e"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "2226c5fc-69fa-5755-9b2e-45051b68a26f"
+      },
+      "id": "76cd6957-7f8b-5351-a29b-53eae7b12af0"
+    },
+    {
+      "command": "EVENT_ACTOR_START_UPDATE",
+      "args": {
+        "actorId": "2226c5fc-69fa-5755-9b2e-45051b68a26f"
+      },
+      "id": "cd686338-4a27-51c9-9c46-17621945f3f4"
     }
   ],
   "leaveScript": [
@@ -33,6 +70,36 @@
         }
       },
       "id": "e03559e8-60f8-5447-8441-9149fb4b0389"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "2226c5fc-69fa-5755-9b2e-45051b68a26f"
+      },
+      "id": "2245d7de-b11a-5c30-b446-0abf55b8fd72"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "2226c5fc-69fa-5755-9b2e-45051b68a26f"
+      },
+      "id": "dc51d479-1f73-5f99-8f4f-96edaec6ae0c"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "2226c5fc-69fa-5755-9b2e-45051b68a26f",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "f84b75b2-5b2e-582a-a437-3b933b734f16"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "2226c5fc-69fa-5755-9b2e-45051b68a26f"
+      },
+      "id": "e6c9d3a2-1c47-51bd-b6a3-2321b4d24eff"
     }
   ],
   "_index": 1

@@ -4,7 +4,7 @@
 [![Engine: GB Studio](https://img.shields.io/badge/engine-GB%20Studio%204.2.0-4856a6)](https://www.gbstudio.dev/)
 [![Version](https://img.shields.io/badge/version-0.20.1--dev-orange)](VERSION)
 [![Status: In development](https://img.shields.io/badge/status-in%20development-yellow)](docs/PROJECT_PLAN.md)
-[![Verified tests: 528](https://img.shields.io/badge/verified%20tests-528%20passed-brightgreen)](docs/CAMPAIGN_PLAYTEST.md#verification)
+[![Verified tests: 533](https://img.shields.io/badge/verified%20tests-533%20passed-brightgreen)](docs/CAMPAIGN_PLAYTEST.md#verification)
 
 A color-only Game Boy Color platformer about restoring power after a tropical
 storm, built with GB Studio for the ModRetro Chromatic.

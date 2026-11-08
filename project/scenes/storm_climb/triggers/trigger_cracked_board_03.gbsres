@@ -20,6 +20,43 @@
         }
       },
       "id": "92ed3af9-6b45-5980-8fb1-a48a0ee26d27"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "497422b1-60dd-51b2-a2f6-deecfbbb997b"
+      },
+      "id": "8c1fd998-f369-5f97-ae24-bb98c1c5128a"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "497422b1-60dd-51b2-a2f6-deecfbbb997b"
+      },
+      "id": "2ab58cfe-b810-55a9-af4f-2f55e0c3c707"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "497422b1-60dd-51b2-a2f6-deecfbbb997b",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "591cfed9-8bd4-58bb-8a22-5f12622fbdf0"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "497422b1-60dd-51b2-a2f6-deecfbbb997b"
+      },
+      "id": "e0e9adb2-716c-5fdd-bee6-1f2b5e57eeec"
+    },
+    {
+      "command": "EVENT_ACTOR_START_UPDATE",
+      "args": {
+        "actorId": "497422b1-60dd-51b2-a2f6-deecfbbb997b"
+      },
+      "id": "d82f7546-71d4-5be4-b473-612312bfd999"
     }
   ],
   "leaveScript": [
@@ -33,6 +70,36 @@
         }
       },
       "id": "ada89491-854b-58f9-bdc6-498f1bb94737"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "497422b1-60dd-51b2-a2f6-deecfbbb997b"
+      },
+      "id": "6f1c23f6-37f4-523b-ae13-619f2414e1f0"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "497422b1-60dd-51b2-a2f6-deecfbbb997b"
+      },
+      "id": "6453acff-6bfb-5910-8a2c-0f768b94f3ee"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "497422b1-60dd-51b2-a2f6-deecfbbb997b",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "9396631c-02ba-57c6-95fb-623b2557ead6"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "497422b1-60dd-51b2-a2f6-deecfbbb997b"
+      },
+      "id": "6c8cb5fd-26aa-5c9b-82a9-991230a4801e"
     }
   ],
   "_index": 4

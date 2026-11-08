@@ -20,14 +20,14 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Campaign polish 🔄 (2026-11-07):** implementation is active in
-`../gb-mr-cfe-campaign-polish`, branch `feat/campaign-polish`, VERSION
-`0.20.1-dev`, based on baseline tag `v0.20.0-dev` (`0804abb`). Three fixes:
-feet-based cracked-board timing, first-only Amara dispatch, true new-campaign
-reset. **528 tests pass** and focused native diagnostics pass, including exact
-before/after board inputs. Full campaign completion, map prototype and human
-feel/browser/hardware gates remain open. See [campaign investigation](CAMPAIGN_PLAYTEST.md)
-and the approved [next-phase plan](NEXT_PHASE_PLAN.md).
+**Campaign polish 🔄 (2026-11-07):** active in `../gb-mr-cfe-campaign-polish`,
+branch `feat/campaign-polish`, VERSION `0.20.1-dev`, baseline tag `v0.20.0-dev`.
+Three fixes: foot-armed native board waits with visit cancellation, first-only
+Amara dispatch, true new-campaign reset. **533 tests;647 deterministic outputs;
+health0/0/0.** Final board quiet/standing load matches baseline range. A normal
+recorded run completes Amara and reaches WO-0413. The remaining three households,
+ending, map prototype and human/browser/hardware gates remain open. See
+[CAMPAIGN_PLAYTEST.md](CAMPAIGN_PLAYTEST.md) and [NEXT_PHASE_PLAN.md](NEXT_PHASE_PLAN.md).
 
 **Hero art round (2026-11-07):** ✅ implemented, native-verified and accepted
 by Abe: “I love this.” Commit/merge/push requested; hardware acceptance remains open. Storm Worker replaces all 13 active
@@ -704,6 +704,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-11-07 | Amara route ✅ / campaign 🔄 | Normal recorded run completes all5 Amara lines, fridge/window payoff, CLOSED and WO-0413. Replaced expensive board polling with native update STOP/START visit cancellation and WAIT50. | 533 tests;647 repeat-identical outputs; health0/0/0. Quiet load116/118/118 matches original; standing111/115/113 versus111/115/112 original. Native short-hop reentry cancels old warning, deliberate standing still hits. Exact ROMs/checkpoint in CAMPAIGN_PLAYTEST.md; three households/ending remain. |
 | 2026-11-07 | Campaign polish 🔄 | Recorded logo→opening→Amara repairs 1–2 and repeated carry-3 failures; fixed premature board countdown from body overlap, repeated street dispatch, and stale progress on title START. VERSION 0.20.1-dev. | 528 tests; ROM builds; seeded board before/after uses identical inputs (old loses cable, corrected keeps it), ~51-frame corrected visible warning; seeded zero-line street reentry and title reset pass. Full four-household route is still pending; see CAMPAIGN_PLAYTEST.md. No map/release/hardware claim. |
 | 2026-11-07 | Next-phase setup ✅ | Tagged accepted baseline `0804abb` as annotated prerelease `v0.20.0-dev`; created sibling `../gb-mr-cfe-campaign-polish` on `feat/campaign-polish` from main. | Git setup only; no game changes or new runtime checks. VERSION remains `0.20.0-dev`; stable tag, local opencode.jsonc, pre-merge stash and existing worktrees preserved. Full-campaign playtest is next per NEXT_PHASE_PLAN.md. |
 | 2026-11-07 | Next-phase planning ✅ | Abe approved full-campaign playtest, Neighborhood Hero map, household reactions, ending payoff and hardware polish. Saved NEXT_PHASE_PLAN.md with ordered work, acceptance criteria, boundaries and handoff prompt. | Planning only; implementation explicitly deferred to a new session. Current accepted work is already merged/pushed; prior 517-test evidence remains unchanged. |

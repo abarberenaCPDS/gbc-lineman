@@ -447,9 +447,12 @@ class SceneTests(unittest.TestCase):
                     self.assertTrue(collisions, a["symbol"])
                     self.assertEqual(collisions[0], "EVENT_ACTOR_COLLISIONS_DISABLE", a["symbol"])
                     if "_board_" in a["symbol"]:
-                        self.assertTrue(any(is_set(e, hazards.BOARD_LOCAL_TIMER, 0) for e in setup))
-                        self.assertEqual(a["updateScript"][0]["command"], "EVENT_ACTOR_GET_POSITION")
-                        self.assertEqual(a["updateScript"][0]["args"]["units"], "pixels")
+                        [candidate] = a["updateScript"]
+                        [foot] = candidate["children"]["true"]
+                        vertical = foot["args"]["condition"]["valueA"]
+                        self.assertEqual(vertical["valueA"], {
+                            "type": "property", "target": "player", "property": "pypos"})
+                        self.assertNotIn("EVENT_ACTOR_GET_POSITION", json.dumps(a["updateScript"]))
 
     def test_span_arcs_wait_for_their_lines(self):
         for folder in FOLDERS:

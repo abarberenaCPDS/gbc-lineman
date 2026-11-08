@@ -20,6 +20,43 @@
         }
       },
       "id": "38c9d824-d04e-5dea-baab-e63058af36d7"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a"
+      },
+      "id": "58ecf5d1-533b-5342-8ac0-09cd6753a5f5"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a"
+      },
+      "id": "90c75880-f28a-59b7-b14c-d31990d9b13d"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "dc19cb7d-cbd6-563a-835d-ac986fa7b312"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a"
+      },
+      "id": "07778e9c-d9b4-5395-9aa2-c369c01d0843"
+    },
+    {
+      "command": "EVENT_ACTOR_START_UPDATE",
+      "args": {
+        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a"
+      },
+      "id": "6f3052e9-4a00-59e0-a217-372dd9c25931"
     }
   ],
   "leaveScript": [
@@ -33,6 +70,36 @@
         }
       },
       "id": "62ee75d4-56dd-5003-bea5-054b8e184a31"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a"
+      },
+      "id": "00d077fc-ca38-5883-87c3-97a51f89cf6e"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a"
+      },
+      "id": "348c71bf-b436-5624-9299-a077f79551e9"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "0fd1095b-46d7-5c1b-8f1d-b000febe3ee1"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a"
+      },
+      "id": "92ec4d26-3ec6-5f9e-91a5-d479c0a1256e"
     }
   ],
   "_index": 3

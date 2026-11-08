@@ -20,6 +20,43 @@
         }
       },
       "id": "12e3ae42-5535-5efb-9db1-dad186e2d87e"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "30064c27-8bf8-5774-8f2d-a80774d75748"
+      },
+      "id": "3819f6d7-3f4c-5ce6-8776-85e279a5b4fb"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "30064c27-8bf8-5774-8f2d-a80774d75748"
+      },
+      "id": "28b1c1cb-9b98-5745-8dcd-ffe92e42cc43"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "30064c27-8bf8-5774-8f2d-a80774d75748",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "813a128c-baa5-5706-b6d4-834e48e3366b"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "30064c27-8bf8-5774-8f2d-a80774d75748"
+      },
+      "id": "cebbdc8a-0612-540f-b8df-68ed480f8729"
+    },
+    {
+      "command": "EVENT_ACTOR_START_UPDATE",
+      "args": {
+        "actorId": "30064c27-8bf8-5774-8f2d-a80774d75748"
+      },
+      "id": "0d439950-bb7f-5a2d-b402-d0579c2f5478"
     }
   ],
   "leaveScript": [
@@ -33,6 +70,36 @@
         }
       },
       "id": "323f50b8-16b8-5618-b204-f0ac1a09d483"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "30064c27-8bf8-5774-8f2d-a80774d75748"
+      },
+      "id": "de4e0219-8cf0-5afe-a14a-0cbf1c2851a1"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "30064c27-8bf8-5774-8f2d-a80774d75748"
+      },
+      "id": "df915542-1da0-5499-bffd-bb3a5ce191a4"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "30064c27-8bf8-5774-8f2d-a80774d75748",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "34520aac-f126-5c75-a96a-8607a9dc434c"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "30064c27-8bf8-5774-8f2d-a80774d75748"
+      },
+      "id": "a625dab5-a6cc-52e1-855a-ee8431c04db4"
     }
   ],
   "_index": 3

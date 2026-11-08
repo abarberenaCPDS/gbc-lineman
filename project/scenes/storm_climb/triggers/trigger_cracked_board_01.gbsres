@@ -20,6 +20,43 @@
         }
       },
       "id": "31c40a95-db83-5be9-87da-9f64745d231a"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "01370cb0-b4b7-5591-a84f-b26b00cb2797"
+      },
+      "id": "a27c5290-a33e-5b4e-b80e-302dbd145c4e"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "01370cb0-b4b7-5591-a84f-b26b00cb2797"
+      },
+      "id": "95c770c6-1ff6-50c9-9b1c-32fd29f9280c"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "01370cb0-b4b7-5591-a84f-b26b00cb2797",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "7c7dcd4d-816c-571e-9948-6a795efc3e8d"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "01370cb0-b4b7-5591-a84f-b26b00cb2797"
+      },
+      "id": "7e506f3f-141d-5170-a072-ad22670480e6"
+    },
+    {
+      "command": "EVENT_ACTOR_START_UPDATE",
+      "args": {
+        "actorId": "01370cb0-b4b7-5591-a84f-b26b00cb2797"
+      },
+      "id": "96986a3c-80d5-586f-845d-1db129e0693d"
     }
   ],
   "leaveScript": [
@@ -33,6 +70,36 @@
         }
       },
       "id": "b39ec5f4-383a-58fd-8efd-fb20ac3cf107"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "01370cb0-b4b7-5591-a84f-b26b00cb2797"
+      },
+      "id": "adec849a-2e29-5ca1-9f64-7c0e20d3367e"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "01370cb0-b4b7-5591-a84f-b26b00cb2797"
+      },
+      "id": "56ec8b74-2b52-5f82-99af-4372bc4287b5"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "01370cb0-b4b7-5591-a84f-b26b00cb2797",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "275fe043-3796-556f-b8f2-6132317b4a04"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "01370cb0-b4b7-5591-a84f-b26b00cb2797"
+      },
+      "id": "899750ac-fe0e-58a2-87ce-e2b2aed82c97"
     }
   ],
   "_index": 2

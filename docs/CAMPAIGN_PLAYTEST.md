@@ -1,126 +1,144 @@
-# Campaign investigation — first implementation burst
+# Campaign playtest and first fixes
 
 November 7, 2026 · `feat/campaign-polish` · VERSION `0.20.1-dev`.
 Baseline: annotated tag `v0.20.0-dev` at `0804abb`.
 
-## Status
+## Current status
 
-Step 1 is **in progress**. The normal recorded run reached Amara's first two
-repairs and repeated carry-3 failures. It did **not** finish Amara, the four
-households, or the ending. The focused fixtures below are seeded diagnostics,
-not uninterrupted campaign completion. Map work has not started.
+Step 1 is **in progress**. A normal recorded run completed all five Amara lines,
+her household restoration, WO-0412 CLOSED and the handoff to WO-0413. Hiroshi,
+Priya, Emil and the ending still need this campaign pass. Map work has not started.
+
+The completed Amara route uses the earlier candidate ROM `de0b3594...`; the
+final board implementation below was then checked separately in native fixtures
+and a fresh production boot. Do not describe that combination as a complete
+campaign on the final ROM, or seeded fixtures as uninterrupted play.
 
 ## Changes
 
-1. **Cracked boards measure footing rather than body-trigger overlap.** The
-   24px worker could overlap a board trigger during an ascent from below. The
-   old timer waited 50 frames, then accepted a subsequently rearmed trigger as
-   continuous standing. A following jump could therefore land on an almost
-   expired board. The shared board helper now checks player pixel position and
-   counts consecutive foot-contact updates. Leaving resets the warning; board
-   timers use independent actor-local variables. All job and lab generators use
-   the helper; stable actor/trigger IDs, geometry, collision bounds and the
-   nominal 50-frame warning remain intact. Native visible warning measured
-   approximately 51 frames. The first candidate doubled that interval through
-   redundant WAITs; it was rejected and corrected before finalization.
-2. **Amara dispatch runs once per campaign.** Flag 54 records dispatch separately
-   from repaired-line count. First entry still shows WO-0412 and initializes the
-   job. A street round-trip returns directly to the climb even with zero lines
-   repaired, preserving progress and skipping the card and climb briefing.
-   Service Opening's own controls page still appears on street entry.
+1. **Boards start their warning from foot contact.** A tall hero could overlap a
+   body trigger from below; an earlier warning could expire after a following
+   jump rearmed that trigger. Each board now checks full player pixel X/Y before
+   arming and again before breaking. Its body-trigger enter/leave scripts use
+   official `EVENT_ACTOR_STOP_UPDATE` / `EVENT_ACTOR_START_UPDATE` events to cancel
+   the old wait and start a fresh update on reentry. Warning uses the native
+   50-frame wait; Break8 and uninterrupted Rest60 remain. No polling timer or
+   new global variable is needed. Ordinary jumps leaving the body trigger cancel
+   the warning; this is not a mathematical claim about every subpixel foot motion.
+2. **Amara dispatch runs once per campaign.** Flag54 records dispatch separately
+   from line progress. First entry still shows WO-0412 and initializes the job.
+   Street reentry returns directly to the climb even before the first repair,
+   preserving progress and skipping the card and climb briefing. Service Opening's
+   own controls page still appears on street entry.
 3. **Title START begins a fresh campaign.** It clears real household, line,
    service, carry, dispatch, checkpoint and feedback state before entering the
-   opening. Intro theme 14 and thread temporaries are preserved. Title idle
-   replay does not reset gameplay state.
+   opening. Intro theme14 and temporary thread values are preserved; idle story
+   replay does not reset progress.
 
-Contracts/generators own every production change. VERSION and its generated
-HUD/title labels are updated to `0.20.1-dev`; intro sequence/art selection,
-music, household payoffs, movement settings and hardware remain unchanged.
+Edit the generators/contracts, not generated resources. All20 boards share the
+helper; actor/trigger IDs, palettes, geometry, movement and hero bounds remain.
+Only VERSION's generated HUD/title labels change art. Existing music, opening
+sequence, household effects and physical hardware are unchanged.
 
 ## Verification
 
-- **528 tests pass** with managed Python: `-m unittest discover -s tools`.
-- Repeat generation matches all **647 tracked asset/resource files** byte for
-  byte. Production launch remains the logo.
-- Final production ROM builds, has valid checksums, and boots logo → story →
-  title → Service Opening. Native B repair sets service variable 4 to 1; household
-  and pending-job state remains zero. This is a boot/tutorial check, not a full run.
-- Exact before/after board comparison uses identical controls: neutral boot to
-  frame 300, A8, neutral20, left42, neutral100. Other hazards are disabled only
-  in these isolated fixture copies. Before: cable 6 becomes 0 and player returns
-  to checkpoint 2. After: cable 6 stays 3, player reaches box-3 zone 103, no reset.
-- Corrected standing fixture: neutral180 below the board stays safe; A8 +
-  neutral20 lands on it; continued standing produces Break/Shock and the expected
-  checkpoint/cable reset. Retained frames show creak around frame333 and break
-  around384. Moving off instead preserves the cable through frame470.
-- Seeded new-run fixture: at title, homes 0/9/11/13 are 1, chain44=5,
-  carry6=5, ticket16=4, service4=1, dispatch54=1 and feedback50=1.
-  START120 reaches opening with these all 0, while theme14 remains 2.
-- Seeded street fixture: service4=1, dispatch54=1, chain44=0, ticket16=0.
-  After dismissing opening controls and moving right, frame386 is Storm Climb
-  with gameplay HUD visible, no work-order/briefing, and unchanged zero progress.
-- Sampled fixture OAM peaks at 7 objects per scanline, none over 10. This does
-  not establish sustained whole-campaign performance or physical-device behavior.
+- **533 tests pass** with managed Python: `-m unittest discover -s tools`.
+- All **647 tracked asset/resource files** reproduce byte-for-byte on repeat
+  generation. Production starts at the logo. MCP health: **0 errors/warnings/info**.
+- Final production ROM builds with valid cartridge checksums and boots
+  logo→story→title→Service Opening; B repair sets service4=1 at frame2824 while
+  all household flags and pending ticket remain0. This is a boot/tutorial check.
+- Final board fixture: wait below, jump up, short-hop off and back before the old
+  deadline. Cable6 remains3 at frame457; deliberate standing then produces the
+  expected Shock, cable loss and checkpoint reset by527. This verifies native
+  stop/start cancellation and successful restart, not just authored event shapes.
+- Identical escape controls: boot neutral to300, A8, neutral20, left42, neutral100.
+  The original board loses the cable and resets. Final board keeps cable3 and
+  reaches box-3 zone103 at470. Other hazards are disabled only in this fixture.
+- Seeded title START: homes0/9/11/13=1, chain44=5, carry6=5, ticket16=4,
+  service4=1, dispatch54=1 and feedback50=1 become0; theme14 stays2.
+- Seeded zero-line street reentry: service4=1, dispatch54=1, chain44=0, ticket16=0.
+  At386 the player is in Storm Climb with gameplay HUD and unchanged zero progress,
+  without the work-order or climb briefing.
+- Sampled fixture OAM peaks at7 objects/scanline, none above10. This is not a
+  sustained whole-campaign, listening, browser or hardware acceptance claim.
 
-Tests exercise leaving/relanding, from-below overlap, independent board timers,
-first dispatch versus repeated zero/one/five-line reentry, and new-game versus
-attract-loop reset behavior. Existing hazard/route checks remain enabled.
+Tests cover body overlap from below, body departure/reentry, restart after a
+single-frame trigger visit, fresh full-coordinate deadline checks, stale flags,
+scene/culling restart, safe initialization, board ownership/visibility, first-only
+street dispatch and new-campaign versus attract-loop state reset.
 
-## Exact ROMs and recordings
+## Native performance checks
 
-All ROMs are 524,288 bytes. Recordings are stopped and retained beneath
-`artifacts/playtests/`; no unknown recording was closed or restored.
+The first per-frame footing implementation slowed the game and was replaced.
+The final implementation uses ordinary engine waits and only checks coordinates
+at arm/deadline (with a cheap candidate check while approaching a board).
+
+These are completed engine updates per120 native emulator frames, in three
+neutral-input windows, using each exact ROM's captured `_game_time` symbol:
+
+| Matched pose | Original board wait loop | Rejected polling | Final event-driven wait |
+| --- | --- | --- | --- |
+| Quiet shaft, anchor14/20 | 116 / 118 / 118 | 60 / 60 / 60 | 116 / 118 / 118 |
+| Standing on board2, anchor11/14 | 111 / 115 / 112 | 93 / 91 / 90 (four-frame polling) | 111 / 115 / 113 |
+
+Standing fixtures extend only board warning waits to10000, keeping the player
+alive and all other hazards active. This isolates script load. It is neither a
+physical-device FPS measurement nor proof of every busy scene's performance.
+Use `tools/diagnose_board_load.py` to generate matched copies, then select/build
+through MCP; counters must use the matching captured symbol addresses.
+
+## Exact cartridges and recordings
+
+All native ROMs are524288 bytes. Recordings are stopped and retained under
+`artifacts/playtests/`; selected stopped intermediates were archived through MCP
+when the reservation quota filled. Original-path mappings and all evidence bytes
+remain intact. Use recording status/review/retrieve, or restore before making clips.
 
 | Evidence | Recording folder | Native ROM SHA-256 |
 | --- | --- | --- |
-| Normal baseline investigation, frames0–9808 | `campaign-baseline` | `15b7e2517ee04e976a16537d17ac8657d090085a21f82509fd5f16d34d1ad401` |
-| Old board, identical escape inputs | `board-before-escape` | `a0b92ea8b6b291a47774c4a3af751d926c80143b0381609bb84eae1ac3318233` |
-| Corrected board, escape succeeds | `board-escape` | `b9ced473fd338e118b1a00f2efd4c89808eb57ba796a9d928d8f2d42da040f8a` |
-| Corrected board, deliberate standing failure | `board-footing-corrected` | `b9ced473fd338e118b1a00f2efd4c89808eb57ba796a9d928d8f2d42da040f8a` |
+| Initial normal investigation,0–9808 | `campaign-baseline` | `15b7e2517ee04e976a16537d17ac8657d090085a21f82509fd5f16d34d1ad401` |
+| Normal Amara completion,0–8179 | `campaign-optimized-run` | `de0b3594fbc5b7cbc14068965eebf969fe5629f6b2652e7b624d3b2f49ce6c93` |
+| Original board escape failure | `board-before-escape` | `a0b92ea8b6b291a47774c4a3af751d926c80143b0381609bb84eae1ac3318233` |
+| Final board escape/reentry | `board-events-escape`, `board-events-reentry` | `e436343f441b29039c2de6433a91a9d3d7b8c480cabe14f8a1ada5765a79fb4f` |
+| Final production boot/tutorial,0–2824 | `campaign-events-production` | `44c1eb40271257b35bc5ba8ff6d1b75f0f5db01b8e9c6dfacf140d240bff55f5` |
+| Quiet final load fixture | `load-events` | `bf713b169c4bcd6187faa8c82518c66bff9e2a902deac17746598ac897c89e3f` |
+| Standing final load fixture | `standing-load-events` | `60a978d484e0db943272d2222240b00b2fa2aa18ea649fbaa09b6e9de77f2cd1` |
 | Seeded title START reset | `new-campaign-reset` | `a441a5fad13437455b66432d251fe35c29521b67c3648fafdb4e714b6e054092` |
-| Seeded zero-line street reentry | `street-reentry-verified` | `4636f8b76cab6924cb7eb0f4d87205be14aa6d72eb29bc5ee9390731984633fb` |
-| Final production boot/tutorial, frames0–2824 | `campaign-polish-production` | `cf91ae1454f6783a3602c6d29b4e7bb1bfd7065567035bde845177f85eaec6de` |
+| Seeded street reentry | `street-reentry-verified` | `4636f8b76cab6924cb7eb0f4d87205be14aa6d72eb29bc5ee9390731984633fb` |
 
-Production ROM: `build/rom/lineman-campaign-polish.gbc`.
-Diagnostic ROMs remain under their respective `build/diagnostics/*/build/rom/`
-copies. They preceded the patch-version label regeneration; they establish the
-specified logic only. The final production check uses the new version labels.
-Baseline session `6303ec072899420190512adb14cdad32` includes a checkpoint at9808
-(`checkpoint-b1bb1ea8977447bebdfab89997e4da69`); it is valid only with baseline ROM.
-Reviewed board failure: actions1241–1252, frames9648–9727, on branch0001.
+Latest production: `build/rom/lineman-campaign-polish-events.gbc`. Earlier ROMs
+and their debug artifacts remain; do not overwrite them or restore a checkpoint
+into a different cartridge. Diagnostic cartridges are under `build/diagnostics/`.
+`tools/make_campaign_diagnostics.py` regenerates board/reset/street copies using
+the intro owner for launch settings, without changing production launch settings.
 
-To reproduce isolated copies, run managed Python on
-`tools/make_campaign_diagnostics.py`, select the desired copy's `.gbsproj`, then
-build/debug through MCP. The utility delegates launch settings to the intro
-owner and never alters production settings. For the old-board comparison,
-copy the board fixture and replace only its `board_02.gbsres` with that resource
-from tag `v0.20.0-dev`; keep other fixture inputs identical.
+Normal Amara completion: home0=1/chain44=5 at7838; CLOSED then WO-0413 at8179,
+with ticket16=2 and Hiroshi home9=0. Checkpoint
+`checkpoint-f91d2087ab3b49d6a90c34d7c09a1eef` belongs to `de0b3594...` only.
+The initial baseline checkpoint at9808 belongs to `15b7e251...` only. Reviewed
+initial board failure: baseline session `6303ec072899420190512adb14cdad32`,
+branch0001, actions1241–1252, frames9648–9727.
 
-## Preview and acceptance
+## Preview and remaining gates
 
-Web export `build/web-campaign-polish` uses a separate Binjgb ROM:
-`af20b48f10e9d12554922c4d731f635fa10a305cf09925f3b65bdf4e3034fba7`.
-Current listener, open with no attached players at final check:
+Latest web export: `build/web-campaign-events`; separate Binjgb ROM SHA-256
+`c6970182614235a0b3c5e4e39a4b9fd3a276716bd3e954da9b5a5e575e7dfd0d`.
 
-<http://127.0.0.1:53104/a181cb4de94e9273b28a472d189a433c6f42a3b9041274b89266a37515d45194/>
+<http://127.0.0.1:53104/7f79e9980aed67b2a58e2fb2750d31b57f8494252c56d7651d08dbee59c7e2f7/>
 
-Opening the built-in browser failed with “The browser access host is unavailable.”
-Browser UI, human feel/listening and physical Chromatic acceptance remain open.
-No external-browser fallback, release tag, merge, push, stream or flash occurred.
+The built-in browser still reports “The browser access host is unavailable.”
+URL/state are retained; no external browser was used. Human feel/listening and
+physical Chromatic acceptance remain open. No new release tag, merge, push,
+stream or flash occurred.
 
-## Continue in order
+Continue Hiroshi, Priya, Emil and report before the map prototype. Check cross-scene
+cable loss/backtracking, Priya's gully return ascent, repeated gully hints, exit
+refusals and a real second run. Then prototype within existing `work_order`,
+using household flags0/9/11/13 for lights and ticket16 only as a pending dispatch.
+Abe must review the playable map before expansion, per NEXT_PHASE_PLAN.md.
 
-1. Resume a fresh corrected production campaign and retain inputs. Finish Amara,
-   Hiroshi, Priya, Emil and report; count deaths/return trips and check exits.
-2. Probe cross-scene cable loss/backtracking, especially Priya's gully ascent,
-   repeated gully hints, premature exit refusals and actual second-loop play.
-3. Reassess the most consequential remaining frustrations after the full pass.
-4. Only then prototype the map within existing `work_order`, using homes
-   0/9/11/13 for lights and ticket16 only as a one-shot pending job. Request
-   Abe's playable prototype review before expansion.
-
-Source audit: three households already have device Off→On transformations;
-Amara currently has fridge dialogue/window lighting but no visible fridge actor.
-Avoid duplicating existing reactions and CLOSED pages. Full details remain in
-NEXT_PHASE_PLAN.md. Two read-only/coding agents verified direct MCP status access
-but had no selected project; main owned selection, builds, native checks and preview.
+Source audit: three homes already have device transformations. Amara has fridge
+dialogue/window lighting but no fridge actor. Avoid duplicate reactions/CLOSED
+pages. Two workers verified direct MCP status; main owned project selection,
+builds, native evidence, preview and recording maintenance throughout.

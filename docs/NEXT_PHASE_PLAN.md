@@ -2,13 +2,14 @@
 
 Approved direction: Abe accepted this plan and asked to resume implementation in
 a new session. Implementation has begun in the campaign-polish worktree. Step 1 remains in
-progress; see [campaign investigation](CAMPAIGN_PLAYTEST.md) for the first three
-fixes, exact-ROM evidence and outstanding full-route checks.
+progress; see [campaign investigation](CAMPAIGN_PLAYTEST.md) for the three
+fixes, restored board performance, exact-ROM evidence and outstanding full-route checks.
 
 ## Current progress
 
 - 🔄 Step 1: first recorded campaign investigation and three targeted fixes;
-  full four-household route and ending remain unverified on this branch.
+  Amara completes to WO-0413 in a normal recorded run; the other three homes
+  and ending remain unverified in this campaign pass.
 - ⬜ Steps 2–5: dispatch-map prototype, restoration polish, ending map and hardware.
 - Branch `feat/campaign-polish`, sibling `../gb-mr-cfe-campaign-polish`,
   VERSION `0.20.1-dev`. Baseline tag `v0.20.0-dev` is preserved.

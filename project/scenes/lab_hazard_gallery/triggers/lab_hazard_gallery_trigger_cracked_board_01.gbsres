@@ -20,6 +20,36 @@
         }
       },
       "id": "1ed34282-21ee-5855-b9b7-3e2a975f8f8a"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "1510b97a-1472-5755-ba48-4b12481377c0"
+      },
+      "id": "2c4b4888-98a7-5a8e-a930-2ad7579caddb"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "1510b97a-1472-5755-ba48-4b12481377c0"
+      },
+      "id": "ce8fe8d3-4e4a-5c97-8713-952d3527d8a2"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "1510b97a-1472-5755-ba48-4b12481377c0",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "a1f4ef28-bc32-5bf8-a9cc-19dad065846c"
+    },
+    {
+      "command": "EVENT_ACTOR_START_UPDATE",
+      "args": {
+        "actorId": "1510b97a-1472-5755-ba48-4b12481377c0"
+      },
+      "id": "5e784c6c-e0b7-5eec-b43f-a83815ca89a1"
     }
   ],
   "leaveScript": [
@@ -33,6 +63,29 @@
         }
       },
       "id": "3abe5e8d-00b7-5098-bb95-96469facd58f"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "1510b97a-1472-5755-ba48-4b12481377c0"
+      },
+      "id": "c02b07dd-2ca9-520b-86fb-3db95b76d988"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "1510b97a-1472-5755-ba48-4b12481377c0"
+      },
+      "id": "097f10de-9a84-50ab-8b98-ba554f5800d3"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "1510b97a-1472-5755-ba48-4b12481377c0",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "8748adc4-e418-56f9-aba1-9bf03cc25dfc"
     }
   ],
   "_index": 102

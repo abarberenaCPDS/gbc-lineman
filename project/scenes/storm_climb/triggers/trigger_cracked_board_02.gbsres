@@ -20,6 +20,43 @@
         }
       },
       "id": "287ca893-8453-544a-878d-3e5b82d5d2f5"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "cf68cb71-9bb2-5f88-8620-f9ec2f7ec6d2"
+      },
+      "id": "05164087-0a43-5985-bfe0-c94b2f5245ad"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "cf68cb71-9bb2-5f88-8620-f9ec2f7ec6d2"
+      },
+      "id": "d53dcbd5-93dd-5555-a0b9-942e4bde7dd9"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "cf68cb71-9bb2-5f88-8620-f9ec2f7ec6d2",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "3308d63b-a82d-50d9-a814-4e5c113ca13c"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "cf68cb71-9bb2-5f88-8620-f9ec2f7ec6d2"
+      },
+      "id": "c849abdc-e4b2-5368-ad41-8c51e9ab1b78"
+    },
+    {
+      "command": "EVENT_ACTOR_START_UPDATE",
+      "args": {
+        "actorId": "cf68cb71-9bb2-5f88-8620-f9ec2f7ec6d2"
+      },
+      "id": "48c30f9d-873d-5165-9ea1-0c26c7c13e40"
     }
   ],
   "leaveScript": [
@@ -33,6 +70,36 @@
         }
       },
       "id": "c9ad18d1-68e4-5fcf-9da5-8509c799f7a4"
+    },
+    {
+      "command": "EVENT_ACTOR_STOP_UPDATE",
+      "args": {
+        "actorId": "cf68cb71-9bb2-5f88-8620-f9ec2f7ec6d2"
+      },
+      "id": "eac8ad83-3806-50d0-a553-8a0d62302631"
+    },
+    {
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "cf68cb71-9bb2-5f88-8620-f9ec2f7ec6d2"
+      },
+      "id": "f4bae04e-6b45-52d4-95c3-788145e7ced5"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "cf68cb71-9bb2-5f88-8620-f9ec2f7ec6d2",
+        "spriteStateId": "Idle",
+        "loopAnim": true
+      },
+      "id": "eb3503a6-d938-529a-8683-c24b736137aa"
+    },
+    {
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "cf68cb71-9bb2-5f88-8620-f9ec2f7ec6d2"
+      },
+      "id": "85ee071c-15d8-5d49-b105-1c2b9653ee67"
     }
   ],
   "_index": 3

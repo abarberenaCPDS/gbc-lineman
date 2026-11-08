@@ -627,27 +627,32 @@ class SceneTests(unittest.TestCase):
             for (number, board), actor in zip(B[folder].boards(), boards):
                 self.assertEqual(actor["symbol"], f"ridge_board_{number:02d}")
                 self.assertEqual((actor["x"], actor["y"]), hazards.board_actor_position(board))
-                position, gate = actor["updateScript"]
-                self.assertEqual(position["command"], "EVENT_ACTOR_GET_POSITION")
-                self.assertEqual(position["args"], {
-                    "actorId": "player", "vectorX": hazards.BOARD_LOCAL_X,
-                    "vectorY": hazards.BOARD_LOCAL_Y, "units": "pixels"})
+                [candidate] = actor["updateScript"]
+                self.assertTrue(is_var_if(candidate, hazards.VAR_ON_BOARD, number))
+                [gate] = candidate["children"]["true"]
+                self.assertNotIn("EVENT_ACTOR_GET_POSITION", json.dumps(actor["updateScript"]))
                 # Board overlap triggers are advisory: the actual foot anchor
                 # must be at this board's height before its warning can begin.
                 row, x0, x1 = board
                 foot_height = gate["args"]["condition"]["valueA"]
                 self.assertEqual(foot_height, {"type": "eq",
-                    "valueA": {"type": "variable", "value": hazards.BOARD_LOCAL_Y},
+                    "valueA": {"type": "property", "target": "player", "property": "pypos"},
                     "valueB": {"type": "number", "value": (row - 1) * 8}})
-                self.assertTrue(any(is_var_if(e, hazards.BOARD_LOCAL_TIMER, hazards.CREAK_FRAMES, "gte")
-                                    for e in walk(gate["children"]["true"])))
+                waits = [e["args"]["frames"]["value"] for e in walk(gate["children"]["true"])
+                         if e["command"] == "EVENT_WAIT"]
+                self.assertIn(hazards.CREAK_FRAMES, waits)
                 off = gate["children"]["false"]
-                self.assertTrue(any(is_set(e, hazards.BOARD_LOCAL_TIMER, 0) for e in walk(off)))
                 self.assertNotIn("EVENT_ACTOR_COLLISIONS_ENABLE", [e["command"] for e in walk(off)])
                 self.assertTrue(all(grid[row][x] == ridge.COL_TOP for x in range(x0, x1 + 1)))
                 trigger = trigger_by_symbol(folder, f"trigger_ridge_cracked_board_{number:02d}")
                 self.assertEqual(rect(trigger), hazards.board_trigger_rect(board))
                 self.assertTrue(is_set(trigger["script"][0], hazards.VAR_ON_BOARD, number))
+                enter = trigger["script"]
+                self.assertEqual([e["args"]["actorId"] for e in enter
+                                  if e["command"] == "EVENT_ACTOR_STOP_UPDATE"], [actor["id"]])
+                self.assertEqual(enter[-1]["command"], "EVENT_ACTOR_START_UPDATE")
+                self.assertEqual(enter[-1]["args"]["actorId"], actor["id"])
+                self.assertIn("EVENT_ACTOR_STOP_UPDATE", [e["command"] for e in trigger["leaveScript"]])
 
     def test_b_dispatch_pickups_and_boxes_are_local(self):
         for folder in FOLDERS:
