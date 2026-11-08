@@ -23,11 +23,11 @@
 **Campaign polish 🔄 (2026-11-07):** active in `../gb-mr-cfe-campaign-polish`,
 branch `feat/campaign-polish`, VERSION `0.20.1-dev`, baseline tag `v0.20.0-dev`.
 Three fixes: foot-armed native board waits with visit cancellation, first-only
-Amara dispatch, true new-campaign reset. **533 tests;647 deterministic outputs;
+Amara dispatch, true new-campaign reset. **537 tests;647 earlier deterministic outputs plus7 map outputs;
 health0/0/0.** Final board quiet/standing load matches baseline range. A normal
 recorded campaign reaches all four homes,20 repairs, report/title/idle replay
 and a real next START. Cross-scene cable recovery and gully ascent pass with
-retained failed attempts. Map prototype, full final-cartridge campaign and
+retained failed attempts. One map prototype is ready for playable review. Full final-cartridge campaign and
 human/browser/hardware gates remain open. See
 [CAMPAIGN_PLAYTEST.md](CAMPAIGN_PLAYTEST.md) and [NEXT_PHASE_PLAN.md](NEXT_PHASE_PLAN.md).
 
@@ -804,3 +804,15 @@ Keep entries newest-first, one per work burst, with build/test evidence.
   in CAMPAIGN_PLAYTEST.md. Final board cartridge has separate regressions.
 - Step1 investigation complete; proceed to one dispatch-map prototype state and
   require Abe's playable review before expansion.
+
+### Dispatch-map prototype ready — 2026-11-07
+
+- One WO-0413 state replaces work_order only in an isolated test copy. Four named
+  homes, actual completion-driven window slots, Neighborhood Hero and one A to
+  Hiroshi. Production work orders/report/launch unchanged; no new globals.
+- 537 tests pass;7 new outputs reproduce exactly. Native lit/unlit comparison
+  changes only Amara's window; one A plus existing briefing reaches gameplay
+  with progress intact.62 effective BG tiles; sampled peak2 OAM objects/scanline.
+- Playable export served; built-in browser host unavailable. Evidence, link and
+  reproduction in DISPATCH_MAP_PROTOTYPE.md. Stop here for Abe's requested
+  playable approval before variants/restoration/ending expansion. No hardware.

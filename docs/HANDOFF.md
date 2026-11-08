@@ -4,7 +4,8 @@ Worktree `/Users/abe/src/modretro-chromatic/gb-mr-cfe-campaign-polish`, branch
 `feat/campaign-polish`, VERSION `0.20.1-dev`. Baseline tag `v0.20.0-dev` at
 `0804abb` preserved. Main/local config/stash unchanged. Fixes `238f645`, `abd18b5`.
 
-**533 tests;647 deterministic outputs; MCP health0/0/0** at last source verification.
+**537 tests** now pass;647 earlier campaign outputs plus7 new deterministic map
+outputs. Production scenes/launch unchanged.
 Recorded route now reaches all four homes,20 lines, report/title/idle replay and
 actual next START. Cross-scene cable recovery and gully return ascent pass;
 failed attempts retained. See CAMPAIGN_PLAYTEST.md for exact frames/checkpoints.
@@ -18,10 +19,20 @@ regressed/performance checked. Final production ROM SHA
 `44c1eb40271257b35bc5ba8ff6d1b75f0f5db01b8e9c6dfacf140d240bff55f5`.
 Full final-cartridge route and human difficulty/listening/hardware remain open.
 
-Step2 next: one playable neighborhood dispatch-map state in existing work_order,
-using Neighborhood Hero and real household flags. Abe reviews before variants.
-Household/ending expansion and hardware wait. Browser access host unavailable;
-owned preview/listener and evidence retained. No release tag/merge/push/flash.
+Step2 one-state prototype is now ready: see DISPATCH_MAP_PROTOTYPE.md for the
+live preview, exact ROMs and native capture. Selected project is the isolated
+`build/diagnostics/dispatch-map/mr-cfe.gbsproj`, not the production root. It opens
+WO-0413 with Amara lit and Neighborhood Hero; one A enters Hiroshi's existing
+briefing. Final native SHA c38e235f...; all native recordings stopped/sessions
+closed. The preview remains live with no player at last status. Browser host
+still unavailable; human feel/listening/hardware remain open.
+
+Wait for Abe's playable map approval before variants or household/ending expansion,
+as NEXT_PHASE_PLAN.md explicitly requires. Do not mistake the fixture's seeded
+household state/launch for campaign progress or production integration. Source
+contracts/generator/tests and seven map resources are tracked; build outputs are
+ignored. Keep0.20.1-dev until production integration merits a version decision.
+No release tag/merge/push/flash.
 
 ---
 

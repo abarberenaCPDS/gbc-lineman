@@ -8,7 +8,7 @@ Baseline: annotated tag `v0.20.0-dev` at `0804abb`.
 Step 1 route investigation is **complete with acceptance limits**. The recorded
 campaign reaches all four household payoffs, all20 repairs, the report, title,
 idle story replay and a real next START. Human feel, listening and final-cartridge
-whole-route acceptance remain open. The map prototype is next.
+whole-route acceptance remain open. The [one-state map prototype](DISPATCH_MAP_PROTOTYPE.md) is ready for playable review.
 
 The completed campaign route uses the earlier candidate ROM `de0b3594...`; the
 final board implementation below was then checked separately in native fixtures

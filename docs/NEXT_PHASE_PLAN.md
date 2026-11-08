@@ -11,7 +11,9 @@ fixes, restored board performance, exact-ROM evidence and outstanding full-route
   START reached in a checkpoint-linked recorded campaign. Three targeted fixes
   verified; final board has separate native regression/performance evidence.
   Human difficulty/audio and a full final-cartridge pass remain acceptance gates.
-- 🔄 Step 2: one dispatch-map state; playable review required before expansion.
+- 🔄 Step 2: [one playable dispatch-map state is ready](DISPATCH_MAP_PROTOTYPE.md);
+  native lighting/transition checks and537 tests pass. Await Abe's playable
+  review before expanding to other jobs or the ending.
 - ⬜ Steps 3–5: restoration additions, ending map and hardware.
 - Branch `feat/campaign-polish`, sibling `../gb-mr-cfe-campaign-polish`,
   VERSION `0.20.1-dev`. Baseline tag `v0.20.0-dev` is preserved.
