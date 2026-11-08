@@ -1,0 +1,37 @@
+{
+  "_resourceType": "trigger",
+  "id": "a2a1607d-75d6-5ed6-868f-0f0e2b49c119",
+  "_index": 1,
+  "name": "HIROSHI district trail",
+  "symbol": "trigger_hub_hiroshi",
+  "x": 24,
+  "y": 20,
+  "width": 4,
+  "height": 2,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 2
+        }
+      },
+      "id": "4686ac0b-a774-56e2-b538-a67ade94bb34"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "91b4074c-00d0-5b20-ba4b-fc33ebe4f893"
+    }
+  ]
+}

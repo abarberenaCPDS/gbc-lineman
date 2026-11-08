@@ -94,19 +94,19 @@ class SceneBuildTests(unittest.TestCase):
     def setUpClass(cls):
         cls.built = scene.build_scenes()
 
-    def test_scenes_are_topdown_20_by_18_with_contract_ids(self):
+    def test_town_and_report_have_their_native_dimensions(self):
         self.assertEqual(set(self.built), {"work_order", "storm_report"})
         for folder, resource in self.built.items():
             self.assertEqual(resource["type"], "TOPDOWN", folder)
-            self.assertEqual((resource["width"], resource["height"]), (20, 18), folder)
-            self.assertEqual(resource["backgroundId"], tickets.BACKGROUND_ID, folder)
+            expected = (32, 32) if folder == "work_order" else (20, 18)
+            self.assertEqual((resource["width"], resource["height"]), expected, folder)
         self.assertEqual(self.built["work_order"]["id"], tickets.WORK_ORDER_SCENE_ID)
         self.assertEqual(self.built["storm_report"]["id"], tickets.REPORT_SCENE_ID)
-        self.assertEqual(self.built["work_order"]["name"], "Work Order")
+        self.assertEqual(self.built["work_order"]["name"], "Lakeside Town")
         self.assertEqual(self.built["storm_report"]["name"], "Storm Report")
 
-    def test_scenes_hide_player_and_overlay_first(self):
-        for folder, resource in self.built.items():
+    def test_report_hides_player_and_overlay_first(self):
+        for folder, resource in [("storm_report", self.built["storm_report"])]:
             first = [entry["command"] for entry in resource["script"][:3]]
             self.assertEqual(first[:2], ["EVENT_ACTOR_HIDE", "EVENT_OVERLAY_HIDE"], folder)
             self.assertEqual(resource["script"][0]["args"], {"actorId": "player"}, folder)
@@ -131,53 +131,29 @@ class SceneBuildTests(unittest.TestCase):
 
 
 class WorkOrderTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls):
-        cls.script = scene.build_scenes()["work_order"]["script"]
+    def test_town_has_no_automatic_dispatch_or_progress_reset(self):
+        import make_dispatch_hub as hub
+        script = scene.build_scenes()["work_order"]["script"]
+        self.assertFalse(any(e["command"] in {"EVENT_SWITCH_SCENE", "EVENT_TEXT"}
+                             for e in script))
+        writes = commands(script, "EVENT_SET_VALUE")
+        self.assertEqual({e["args"]["variable"] for e in writes}, {"27"})
+        self.assertEqual(tickets.HERO_POSITION, hub.START)
+        x, y = tickets.HERO_POSITION
+        self.assertEqual(hub.collision_grid()[y][x:x+2], [0, 0])
 
-    def test_each_ticket_shows_its_card_then_switches_to_its_job(self):
-        for number, ticket in tickets.TICKETS.items():
-            branch = branch_for(self.script, number)
-            texts = commands(branch, "EVENT_TEXT")
-            self.assertEqual(len(texts), 1, number)
-            self.assertEqual(texts[0]["args"]["text"], ticket["pages"], number)
-            self.assertEqual(texts[0]["args"]["closeWhen"], "key", number)
-            self.assertEqual(texts[0]["args"]["closeButton"], "a", number)
-            self.assertEqual(texts[0]["args"]["position"], "bottom", number)
-            switches = commands(branch, "EVENT_SWITCH_SCENE")
-            self.assertEqual(len(switches), 1, number)
-            args = switches[0]["args"]
-            self.assertEqual(args["sceneId"], ticket["scene_id"], number)
-            self.assertEqual((args["x"]["value"], args["y"]["value"]), tuple(ticket["start"]), number)
-            self.assertEqual(args["direction"], "right", number)
-            self.assertEqual(args["fadeSpeed"], "2", number)
-
-    def test_destinations_are_the_job_scenes(self):
-        self.assertEqual(tickets.TICKETS[1]["scene_id"], tickets.CLIMB_SCENE_ID)
-        destinations = {n: t["scene_id"] for n, t in tickets.TICKETS.items()}
-        self.assertEqual(len(set(destinations.values())), 4)
-
-    def test_fallback_is_ticket_one_with_its_card(self):
-        top = [entry for entry in self.script if entry["command"] == "EVENT_IF"]
-        self.assertEqual(len(top), 1)
-        node = top[0]
-        while True:
-            false = node["children"]["false"]
-            inner = [e for e in false if e["command"] == "EVENT_IF"]
-            if not inner:
-                break
-            node = inner[0]
-        switches = commands(false, "EVENT_SWITCH_SCENE")
-        self.assertEqual(len(switches), 1)
-        self.assertEqual(switches[0]["args"]["sceneId"], tickets.TICKETS[1]["scene_id"])
-        # Ticket 1 and any unset value share the fallback: Amara's card.
-        self.assertEqual([e["args"]["text"] for e in commands(false, "EVENT_TEXT")],
-                         [tickets.TICKETS[1]["pages"]])
-
-    def test_variable_branches_only_test_ticket_variable(self):
-        for entry in walk(self.script):
-            if entry["command"] == "EVENT_IF":
-                self.assertEqual(entry["args"]["condition"]["valueA"]["value"], tickets.VAR_TICKET)
+    def test_each_available_trail_reaches_its_original_job(self):
+        script = scene.build_scenes()["work_order"]["script"]
+        switches = commands(script, "EVENT_SWITCH_SCENE")
+        self.assertEqual(len(switches), 4)
+        for target in tickets.TICKETS.values():
+            switch = next(e["args"] for e in switches if e["args"]["sceneId"] == target["scene_id"])
+            self.assertEqual((switch["x"]["value"], switch["y"]["value"]), tuple(target["start"]))
+        # The modal work-order context is still available at the selected trail.
+        pages = text_pages(script)
+        for target in tickets.TICKETS.values():
+            for page in target["pages"]:
+                self.assertIn(page, pages)
 
 
 class StormReportTests(unittest.TestCase):

@@ -98,7 +98,8 @@ def write_art():
 
 
 def prototype_scene():
-    scene=ticket_scene.build_scenes()['work_order']
+    scene=ticket_scene.scene_resource(contract.tickets.WORK_ORDER_SCENE_ID,
+        'work_order', 'Dispatch Map Prototype', 0, 720, -240, [])
     scene['backgroundId']=contract.BACKGROUND_ID
     scene['paletteIds']=contract.PALETTE_IDS
     script=ticket_scene.setup('dispatch-prototype')

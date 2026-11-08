@@ -105,7 +105,7 @@ def main() -> None:
                     "rosa": ["test_rosa*.py", "test_ridge.py", "test_scenes.py", *SHARED_TESTS],
                     "kiko": ["test_kiko*.py", "test_rosa.py", "test_scenes.py", *SHARED_TESTS],
                     "intro": ["test_intro*.py", "test_opening.py", "test_scenes.py"],
-                    "tickets": ["test_tickets.py", "test_ending.py", "test_scenes.py"],
+                    "tickets": ["test_tickets.py", "test_dispatch_hub.py", "test_ending.py", "test_scenes.py"],
                     "lab": ["test_lab*.py", "test_scenes.py"]}
         for pattern in patterns[args.profile]:
             if not any((ROOT / "tools").glob(pattern)):

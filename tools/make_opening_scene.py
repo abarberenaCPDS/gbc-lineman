@@ -11,8 +11,10 @@ from pathlib import Path
 from typing import Any
 
 import climb
+import intro
 import opening
 import scenes
+import shock
 import tickets
 import voices
 from make_climb_scene import collision_rle
@@ -83,7 +85,10 @@ def write_palettes() -> tuple[list[str], list[str]]:
             ids.append(resource["id"])
     resource = palette("bg", "powered_window", opening.POWERED_WINDOW)
     write_owned(ROOT / "project/palettes/service_opening_bg_powered_window.gbsres", resource)
-    return backgrounds + ["default-ui"], sprites + ["default-sprite"] * 5
+    sprite_slots = sprites + ["default-sprite"] * 5
+    sprite_slots[5] = intro.palette_id("rain")
+    sprite_slots[7] = intro.palette_id("pole")
+    return backgrounds + ["default-ui"], sprite_slots
 
 
 def write_variables() -> None:
@@ -207,6 +212,7 @@ def repair_script() -> list[dict]:
         wait(8, "repair:wait0"),
         event("EVENT_ACTOR_SET_FRAME", {"actorId": "player", "frame": number(1)}, "repair:pose1"),
         wait(8, "repair:wait1"),
+        set_value(opening.VAR_CARRYING_CABLE, 0, "repair:consume-cable"),
         set_value(RESTORED, 1, "repair:record-power"),
         palette_state(True, "repair:local-amber"),
         actor_state(marta_id, "Powered", "repair:marta-relieved"),
@@ -214,10 +220,75 @@ def repair_script() -> list[dict]:
         # The gate opens on the same beat as the existing connect sound; no second sound.
         actor_state(gate_id(), "Open", "repair:gate-open"),
         sound("connect", "repair:connect-sound"),
+        dialogue("Breeze ahead.\nWait for calm.", "repair:wind-tip"),
         actor_state("player", "", "repair:resume-default"),
         actor_speed("player", hero_speed(24), "repair:resume-speed"),
     ]
     return [if_value(RESTORED, 0, "repair:once", work)]
+
+
+def cable_actor() -> dict:
+    """The cable end is an explicit B pickup; the existing pole art supplies its cue."""
+    cable = actor("tutorial_cable", "Loose service cable", opening.CABLE, "unused", 3,
+                  sprite_id=json.loads((ROOT / "assets/sprites/intro_pole.png.gbsres").read_text())["id"])
+    cable["startScript"] = [actor_state("$self$", "Snapped+Cable", "cable:initial")]
+    pickup = if_value(opening.VAR_CARRYING_CABLE, 0, "cable:pickup", [
+        set_value(opening.VAR_CARRYING_CABLE, 1, "cable:carry-value"),
+        actor_state("$self$", "Snapped", "cable:empty-pole"),
+        actor_state("player", "Carry", "cable:hero-carry"),
+        sound("pickup", "cable:pickup-sound"),
+        dialogue("Got the cable!\nB at the panel.", "cable:pickup-text"),
+    ], [dialogue("Cable is in hand.", "cable:already-held")])
+    cable["script"] = [if_value(RESTORED, 0, "cable:unrepaired", [pickup], [
+        dialogue("Service is on.", "cable:service-on"),
+    ])]
+    return cable
+
+
+def repair_interaction() -> list[dict]:
+    return [if_value(RESTORED, 0, "repair:not-restored", [
+        if_value(opening.VAR_CARRYING_CABLE, 1, "repair:has-cable", repair_script(), [
+            dialogue("B: pick up cable.\nThen B at panel.", "repair:needs-cable"),
+        ]),
+    ], [dialogue("Lights are on.", "repair:already-restored")])]
+
+
+def wind_actor() -> dict:
+    """Telegraphed, recoverable gust; its collision is active only during Burst."""
+    gust_id = json.loads((ROOT / "assets/sprites/climb_gust.png.gbsres").read_text())["id"]
+    breeze = actor("tutorial_wind", "Gentle breeze", opening.WIND, "unused", 4,
+                   sprite_id=gust_id)
+    breeze["collisionGroup"] = "1"
+    breeze["startScript"] = [event("EVENT_ACTOR_COLLISIONS_DISABLE", {
+        "actorId": "$self$",
+    }, "wind:always-safe"), event("EVENT_ACTOR_HIDE", {"actorId": "$self$"}, "wind:initially-hidden")]
+    breeze["updateScript"] = [if_value(RESTORED, 1, "wind:after-repair", [
+        event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": "$self$"}, "wind:warning-safe"),
+        actor_state("$self$", "Warning", "wind:warning"),
+        event("EVENT_ACTOR_SHOW", {"actorId": "$self$"}, "wind:warning-visible"),
+        wait(40, "wind:warning-time"),
+        actor_state("$self$", "Burst", "wind:burst"),
+        event("EVENT_ACTOR_COLLISIONS_ENABLE", {"actorId": "$self$"}, "wind:burst-active"),
+        wait(20, "wind:burst-time"),
+        event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": "$self$"}, "wind:calm-safe"),
+        event("EVENT_ACTOR_HIDE", {"actorId": "$self$"}, "wind:calm"),
+        wait(60, "wind:rest-time"),
+    ], [wait(30, "wind:disabled-wait")])]
+    return breeze
+
+
+def wind_recovery_events() -> list[dict]:
+    """A gust hit returns the player to the repaired panel, without resetting service."""
+    return [
+        event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": opening.resource_id("actor:tutorial_wind")},
+              "wind-hit:disable"),
+        *shock.shock_events("wind-hit"),
+        set_value(opening.VAR_CARRYING_CABLE, 0, "wind-hit:clear-carry"),
+        event("EVENT_ACTOR_SET_POSITION", {
+            "actorId": "player", "units": "tiles",
+            "x": number(opening.PANEL[0]), "y": number(opening.PANEL[1]),
+        }, "wind-hit:panel-checkpoint"),
+    ]
 
 
 def hero_speed(size: int) -> int:
@@ -278,9 +349,14 @@ def build_scene(backgrounds: list[str], sprites: list[str]) -> dict:
             }, "entry:face-right"),
             if_value(RESTORED, 0, "entry:power", [palette_state(False, "entry:cold")], [palette_state(True, "entry:powered")]),
             event("EVENT_MUSIC_PLAY", {"musicId": music}, "entry:music"),
-            dialogue("D-pad: move.\nB: repair panel", "entry:controls"),
+            if_value(RESTORED, 0, "entry:tutorial", [
+                set_value(opening.VAR_CARRYING_CABLE, 0, "entry:empty-hands"),
+                dialogue("D-pad: move.\nTap A: short hop", "entry:move-and-tap"),
+                dialogue("Hold A: rise.\nClear overhead.", "entry:hold-a"),
+                dialogue("B: pick up cable.\nB: use cable.", "entry:cable-controls"),
+            ]),
         ],
-        "playerHit1Script": [], "playerHit2Script": [], "playerHit3Script": [],
+        "playerHit1Script": wind_recovery_events(), "playerHit2Script": [], "playerHit3Script": [],
     }
 
 
@@ -305,7 +381,7 @@ def main() -> None:
     terminal["startScript"] = [if_value(RESTORED, 0, "terminal:entry", [
         actor_state("$self$", "Off", "terminal:off"),
     ], [actor_state("$self$", "On", "terminal:on")])]
-    terminal["script"] = repair_script()
+    terminal["script"] = repair_interaction()
     if GATE_SPRITE_PATH.exists():
         # The gate sprite may be generated separately; when present its ID must match.
         sprite_id = json.loads(GATE_SPRITE_PATH.read_text())["id"]
@@ -314,6 +390,8 @@ def main() -> None:
     write_owned(SCENE_DIR / "scene.gbsres", build_scene(backgrounds, sprites))
     write_owned(SCENE_DIR / "actors/marta.gbsres", marta)
     write_owned(SCENE_DIR / "actors/terminal.gbsres", terminal)
+    write_owned(SCENE_DIR / "actors/tutorial_cable.gbsres", cable_actor())
+    write_owned(SCENE_DIR / "actors/tutorial_wind.gbsres", wind_actor())
     write_owned(SCENE_DIR / "actors/service_gate.gbsres", service_gate_actor())
     write_owned(SCENE_DIR / "triggers" / f"{EXIT_SYMBOL}.gbsres", exit_trigger())
     print("generated isolated M-V1 opening; launch scene unchanged")

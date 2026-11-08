@@ -50,7 +50,7 @@ FADE_SPEED = "2"
 VAR_TICKET = "16"                   # tickets.VAR_TICKET (literal: tickets imports the contracts)
 WORK_ORDER = "work_order"
 REPORT = "storm_report"
-WORK_ORDER_POSITION = (0, 0)        # tickets.HERO_POSITION: the card scene hides the hero
+WORK_ORDER_POSITION = (15, 13)      # tickets.HERO_POSITION: safe lakeside town arrival
 
 
 @dataclass(frozen=True)

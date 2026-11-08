@@ -55,9 +55,19 @@ class OpeningTests(unittest.TestCase):
         self.assertEqual(script[0]["args"]["condition"]["valueA"]["value"], scene.RESTORED)
         self.assertEqual(script[0]["children"]["false"], [])
         writes = [e for e in script[0]["children"]["true"] if e["command"] == "EVENT_SET_VALUE"]
-        self.assertEqual([(e["args"]["variable"], e["args"]["value"]["value"]) for e in writes], [(scene.RESTORED, 1)])
+        self.assertEqual([(e["args"]["variable"], e["args"]["value"]["value"]) for e in writes], [
+            (opening.VAR_CARRYING_CABLE, 0), (scene.RESTORED, 1),
+        ])
         entry = scene.build_scene([], [])["script"]
-        self.assertFalse(any(e["command"] == "EVENT_SET_VALUE" for e in entry))
+        self.assertFalse(any(e["command"] == "EVENT_SET_VALUE" and e["args"]["variable"] == scene.RESTORED
+                             for e in entry))
+        def walk(events):
+            for e in events:
+                yield e
+                for branch in e.get("children", {}).values():
+                    yield from walk(branch)
+        self.assertTrue(any(e["command"] == "EVENT_SET_VALUE" and e["args"]["variable"] == opening.VAR_CARRYING_CABLE
+                            for e in walk(entry)))
 
     def test_entry_uses_only_the_24px_hero_and_no_select_input(self):
         import make_opening_scene as scene
@@ -68,8 +78,70 @@ class OpeningTests(unittest.TestCase):
         self.assertNotIn("EVENT_SET_INPUT_SCRIPT", list(self.all_commands(entry)))
         self.assertFalse(any(e["command"] == "EVENT_IF" and e["args"]["condition"]["valueA"]["value"] == "5"
                              for e in entry))
-        controls = [e["args"]["text"][0] for e in entry if e["command"] == "EVENT_TEXT"]
-        self.assertEqual(controls, ["D-pad: move.\nB: repair panel"])
+        def walk(events):
+            for e in events:
+                yield e
+                for branch in e.get("children", {}).values():
+                    yield from walk(branch)
+        controls = [e["args"]["text"][0] for e in walk(entry) if e["command"] == "EVENT_TEXT"]
+        self.assertEqual(controls, [
+            "D-pad: move.\nTap A: short hop",
+            "Hold A: rise.\nClear overhead.",
+            "B: pick up cable.\nB: use cable.",
+        ])
+
+    def test_tutorial_requires_explicit_cable_pickup_before_repair(self):
+        import make_opening_scene as scene
+        cable = scene.cable_actor()
+        self.assertEqual(cable["id"], opening.resource_id("actor:tutorial_cable"))
+        self.assertEqual((cable["x"], cable["y"]), opening.CABLE)
+        pickup = cable["script"][0]["children"]["true"][0]["children"]["true"]
+        self.assertEqual(pickup[0]["args"]["variable"], opening.VAR_CARRYING_CABLE)
+        self.assertEqual(pickup[0]["args"]["value"]["value"], 1)
+        terminal = scene.repair_interaction()[0]
+        carry_gate = terminal["children"]["true"][0]
+        self.assertEqual(carry_gate["args"]["condition"]["valueA"]["value"], opening.VAR_CARRYING_CABLE)
+        repair = carry_gate["children"]["true"][0]["children"]["true"]
+        consume = next(e for e in repair if e["command"] == "EVENT_SET_VALUE"
+                       and e["args"]["variable"] == opening.VAR_CARRYING_CABLE)
+        self.assertEqual(consume["args"]["value"]["value"], 0)
+        self.assertTrue(any(e["command"] == "EVENT_SET_VALUE" and e["args"]["variable"] == scene.RESTORED
+                            for e in repair))
+
+    def test_tutorial_pad_reachable_after_pickup_without_changing_physics(self):
+        reach = opening.reachable(opening.START, body_rows=3)
+        self.assertIn(opening.CABLE, reach)
+        self.assertIn(opening.PANEL, reach)
+        self.assertEqual(opening.CABLE, (14, 12))  # cable follows the one-shelf rise
+        self.assertEqual(opening.PANEL, (4, 15))  # cabinet art and repair pad remain aligned
+
+    def test_wind_is_post_repair_and_recovers_to_panel_checkpoint(self):
+        import make_opening_scene as scene
+        wind = scene.wind_actor()
+        commands = list(self.all_commands(wind["updateScript"]))
+        self.assertEqual(wind["id"], opening.resource_id("actor:tutorial_wind"))
+        self.assertIn("EVENT_ACTOR_COLLISIONS_DISABLE", self.all_commands(wind["startScript"]))
+        self.assertEqual(wind["collisionGroup"], "1")
+        self.assertIn("EVENT_ACTOR_COLLISIONS_ENABLE", commands)
+        self.assertIn("EVENT_ACTOR_SHOW", commands)
+        self.assertIn("EVENT_ACTOR_HIDE", commands)
+        self.assertEqual(wind["updateScript"][0]["args"]["condition"]["valueA"]["value"], scene.RESTORED)
+        self.assertEqual(wind["updateScript"][0]["args"]["condition"]["valueB"]["value"], 1)
+        hit = scene.wind_recovery_events()
+        self.assertEqual(hit[0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
+        self.assertEqual(hit[-1]["command"], "EVENT_ACTOR_SET_POSITION")
+        self.assertEqual((hit[-1]["args"]["x"]["value"], hit[-1]["args"]["y"]["value"]), opening.PANEL)
+        self.assertNotIn("EVENT_TEXT", list(self.all_commands(hit)))
+        scene_events = scene.build_scene([], [])["playerHit1Script"]
+        self.assertFalse(any(e["command"] == "EVENT_SET_VALUE" and e["args"]["variable"] == scene.RESTORED
+                             for e in scene_events))
+
+    def test_opening_sprite_palette_slots_match_pole_and_gust_art(self):
+        import make_opening_scene as scene
+        _, sprites = scene.write_palettes()
+        import intro
+        self.assertEqual(sprites[5], intro.palette_id("rain"))
+        self.assertEqual(sprites[7], intro.palette_id("pole"))
 
     def test_repair_restores_24px_animation_speed(self):
         import make_opening_scene as scene
@@ -370,6 +442,12 @@ class OpeningTests(unittest.TestCase):
         import make_opening_scene as scene
         path = ROOT / "project/scenes/service_opening/actors/service_gate.gbsres"
         self.assertEqual(json.loads(path.read_text()), scene.service_gate_actor())
+
+    def test_tutorial_actor_files_match_generator(self):
+        import make_opening_scene as scene
+        for name, expected in (("tutorial_cable", scene.cable_actor()), ("tutorial_wind", scene.wind_actor())):
+            path = ROOT / "project/scenes/service_opening/actors" / f"{name}.gbsres"
+            self.assertEqual(json.loads(path.read_text()), expected)
 
     def test_exit_unpowered_text_references_gate_and_fits(self):
         import make_opening_scene as scene

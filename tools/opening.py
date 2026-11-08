@@ -10,6 +10,7 @@ import uuid
 NAMESPACE = uuid.UUID("2765282c-9a26-5e6d-8c4f-d21f5904a3a9")
 MAP_W, MAP_H, TILE = 20, 18, 8
 VAR_SERVICE_RESTORED = "4"
+VAR_CARRYING_CABLE = "6"  # Existing project variable; cleared when this tutorial begins.
 # A started job has no live lines until the first repair. Keep dispatch history
 # separate from line progress so street round-trips cannot restart its briefing.
 VAR_AMARA_DISPATCHED = "54"
@@ -17,9 +18,11 @@ VARIABLES = [
     (VAR_SERVICE_RESTORED, "Service Restored", "var_service_restored"),
     (VAR_AMARA_DISPATCHED, "Amara Dispatched", "var_amara_dispatched"),
 ]
-START = (1, 15)
+START = (8, 15)
 PANEL = (4, 15)
-MARTA = (8, 15)
+MARTA = (6, 15)
+CABLE = (14, 12)
+WIND = (12, 12)
 SOLID_BLOCKS = [(0, 19, 16, 17), (17, 19, 13, 15)]
 PLATFORMS = [(13, 13, 16), (10, 11, 18)]
 SOLID, ONE_WAY = 15, 1
@@ -121,7 +124,7 @@ def reachable(start: tuple[int, int], body_rows: int = 3,
 def _self_check() -> None:
     grid = collision_grid()
     assert len(grid) == 18 and all(len(row) == 20 for row in grid)
-    for x, y in (START, PANEL, MARTA):
+    for x, y in (START, MARTA, PANEL):
         assert grid[y][x] == 0 and grid[y + 1][x] == 15
     assert all(len(colors) == 4 for _, colors in BG_PALETTES + SPRITE_PALETTES)
     assert len(BG_PALETTES) == 7  # UI slot 7 reserved
@@ -132,6 +135,8 @@ def _self_check() -> None:
     tiles = {(x, y) for x in range(x0, x0 + w) for y in range(y0, y0 + h)}
     assert all(grid[y][x] == 0 for x, y in tiles), "exit must sit in open air"
     assert not tiles & {START, PANEL, MARTA}
+    assert standing(*START, 3, grid) and standing(*PANEL, 3, grid)
+    assert standing(*CABLE, 3, grid) and standing(*MARTA, 3, grid)
     sx, sy = EXIT_STAND
     assert sx == x0 - 1 and y0 <= sy - 2 and sy < y0 + h, "stand tile must abut the exit"
     assert standing(sx, sy, 3, grid) and standing(sx, sy, 2, grid)

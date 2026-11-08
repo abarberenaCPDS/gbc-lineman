@@ -233,6 +233,8 @@ def build_scenes() -> dict[str, dict[str, Any]]:
     built: dict[str, dict[str, Any]] = {}
     for index, (scene_id, folder, name, _stem, x, y) in enumerate(tickets.SCENES):
         built[folder] = scene_resource(scene_id, folder, name, index, x, y, scripts[scene_id])
+    import make_dispatch_hub
+    built["work_order"] = make_dispatch_hub.build_scene()
     return built
 
 
@@ -312,6 +314,8 @@ def main() -> None:
     for folder, scene in built.items():
         shared.write_json(SCENES_DIR / folder / "scene.gbsres", scene)
     write_variables()
+    import make_dispatch_hub
+    make_dispatch_hub.write_production()
     print(f"generated {len(built)} ticket scenes")
 
 

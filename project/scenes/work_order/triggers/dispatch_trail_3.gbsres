@@ -1,0 +1,37 @@
+{
+  "_resourceType": "trigger",
+  "id": "ca16df9b-6935-5aa9-8b59-9a6b1667f6c6",
+  "_index": 3,
+  "name": "EMIL district trail",
+  "symbol": "trigger_hub_emil",
+  "x": 24,
+  "y": 25,
+  "width": 4,
+  "height": 2,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 4
+        }
+      },
+      "id": "793912d4-7d09-5778-beb1-caf10b6afa8a"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "2f0e21fd-d030-5a0b-9735-0d81f568bd9c"
+    }
+  ]
+}

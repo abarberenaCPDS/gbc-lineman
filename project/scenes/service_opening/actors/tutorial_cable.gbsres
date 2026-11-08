@@ -1,0 +1,201 @@
+{
+  "_resourceType": "actor",
+  "id": "22457e80-2559-5b24-b3e8-fd96d37cccd6",
+  "_index": 3,
+  "symbol": "opening_tutorial_cable",
+  "name": "Loose service cable",
+  "prefabId": "",
+  "coordinateType": "tiles",
+  "x": 14,
+  "y": 12,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "616a294b-fae9-5c68-965a-9a1db4b273d0",
+  "paletteId": "",
+  "direction": "left",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [
+    {
+      "id": "fe0ec31b-3b3c-5a2c-a462-5fd1f46f7089",
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "4"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 0
+          }
+        }
+      },
+      "children": {
+        "true": [
+          {
+            "id": "c22f4eda-f4c1-5a07-8fdc-65daac27a636",
+            "command": "EVENT_IF",
+            "args": {
+              "condition": {
+                "type": "eq",
+                "valueA": {
+                  "type": "variable",
+                  "value": "6"
+                },
+                "valueB": {
+                  "type": "number",
+                  "value": 0
+                }
+              }
+            },
+            "children": {
+              "true": [
+                {
+                  "id": "ba5a5707-c0e2-5fbd-b664-d1add6d04162",
+                  "command": "EVENT_SET_VALUE",
+                  "args": {
+                    "variable": "6",
+                    "value": {
+                      "type": "number",
+                      "value": 1
+                    }
+                  }
+                },
+                {
+                  "id": "ee343d1b-0688-5cf3-9fe3-647a148489a5",
+                  "command": "EVENT_ACTOR_SET_STATE",
+                  "args": {
+                    "actorId": "$self$",
+                    "spriteStateId": "Snapped",
+                    "loopAnim": true
+                  }
+                },
+                {
+                  "id": "9d383d8f-816b-51a4-8b48-59aadfea054e",
+                  "command": "EVENT_ACTOR_SET_STATE",
+                  "args": {
+                    "actorId": "player",
+                    "spriteStateId": "Carry",
+                    "loopAnim": true
+                  }
+                },
+                {
+                  "id": "5650cf49-692c-50a4-a916-caad4371331e",
+                  "command": "EVENT_SOUND_PLAY_EFFECT",
+                  "args": {
+                    "units": "time",
+                    "type": "09e8b512-afe8-5b4a-a5b1-c53609e43ad6",
+                    "priority": "high",
+                    "wait": false,
+                    "pitch": 4,
+                    "frequency": 200,
+                    "duration": 0.1,
+                    "effect": 0
+                  }
+                },
+                {
+                  "id": "50c55ae6-bf35-5e24-ae19-cedca77aa52f",
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": [
+                      "Got the cable!\nB at the panel."
+                    ],
+                    "avatarId": "",
+                    "minHeight": 4,
+                    "maxHeight": 5,
+                    "textX": 1,
+                    "textY": 1,
+                    "textHeight": 3,
+                    "position": "bottom",
+                    "clearPrevious": true,
+                    "showFrame": true,
+                    "speedIn": -1,
+                    "speedOut": -1,
+                    "closeWhen": "key",
+                    "closeButton": "a",
+                    "closeDelayUnits": "frames",
+                    "closeDelayFrames": 8
+                  }
+                }
+              ],
+              "false": [
+                {
+                  "id": "6761af9d-cf8e-5d55-ae92-841871710ccf",
+                  "command": "EVENT_TEXT",
+                  "args": {
+                    "text": [
+                      "Cable is in hand."
+                    ],
+                    "avatarId": "",
+                    "minHeight": 4,
+                    "maxHeight": 5,
+                    "textX": 1,
+                    "textY": 1,
+                    "textHeight": 3,
+                    "position": "bottom",
+                    "clearPrevious": true,
+                    "showFrame": true,
+                    "speedIn": -1,
+                    "speedOut": -1,
+                    "closeWhen": "key",
+                    "closeButton": "a",
+                    "closeDelayUnits": "frames",
+                    "closeDelayFrames": 8
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "false": [
+          {
+            "id": "b6226046-8023-5b2b-b400-2a15080eeb8a",
+            "command": "EVENT_TEXT",
+            "args": {
+              "text": [
+                "Service is on."
+              ],
+              "avatarId": "",
+              "minHeight": 4,
+              "maxHeight": 5,
+              "textX": 1,
+              "textY": 1,
+              "textHeight": 3,
+              "position": "bottom",
+              "clearPrevious": true,
+              "showFrame": true,
+              "speedIn": -1,
+              "speedOut": -1,
+              "closeWhen": "key",
+              "closeButton": "a",
+              "closeDelayUnits": "frames",
+              "closeDelayFrames": 8
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "startScript": [
+    {
+      "id": "a27e7e6d-e448-5ab2-a84b-6ad6abdbf6ee",
+      "command": "EVENT_ACTOR_SET_STATE",
+      "args": {
+        "actorId": "$self$",
+        "spriteStateId": "Snapped+Cable",
+        "loopAnim": true
+      }
+    }
+  ],
+  "updateScript": [],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

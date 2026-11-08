@@ -273,7 +273,7 @@ class TitleTests(unittest.TestCase):
         self.assertEqual(len(switches), 1)
         args = switches[0]["args"]
         self.assertEqual(args["sceneId"], intro.OPENING_SCENE_ID)
-        self.assertEqual((args["x"]["value"], args["y"]["value"]), (1, 15))
+        self.assertEqual((args["x"]["value"], args["y"]["value"]), intro.OPENING_START)
         self.assertEqual(args["direction"], "right")
         self.assertEqual(args["fadeSpeed"], intro.FADE_SPEED)
 

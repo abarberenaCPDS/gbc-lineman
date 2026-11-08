@@ -2,22 +2,22 @@
   "_resourceType": "scene",
   "id": "6d76ca16-f510-5fd7-bb1c-c915a1367045",
   "_index": 0,
-  "name": "Work Order",
+  "name": "Lakeside Town",
   "symbol": "scene_work_order",
-  "backgroundId": "03197e36-bd9e-5364-94dc-553056ba2bc8",
+  "backgroundId": "b8b1f0ba-5270-589d-b231-a6ce9c79acb3",
   "tilesetId": "",
-  "width": 20,
-  "height": 18,
+  "width": 32,
+  "height": 32,
   "type": "TOPDOWN",
   "colorModeOverride": "none",
   "paletteIds": [
-    "b89262f0-2914-5dff-8e14-0c54976ff608",
-    "19c5a231-8d4b-5c9b-8337-72d1898eade6",
-    "e9e46e1f-56f5-52de-b77f-56a6e323e0f9",
-    "2abb3267-9996-5ee3-980f-f7e5995a1346",
-    "d168e519-971e-519e-b3f4-fe59fd7b4163",
-    "b89262f0-2914-5dff-8e14-0c54976ff608",
-    "b89262f0-2914-5dff-8e14-0c54976ff608",
+    "16b51dee-ef76-5d12-9584-422c1d1f9f58",
+    "d70afdc5-d784-52a5-91c3-21c452943672",
+    "cafe8c75-8340-5ed5-a773-404fa537a45d",
+    "0ddf1093-0f10-5fce-a5fc-b0e738a83406",
+    "0ddf1093-0f10-5fce-a5fc-b0e738a83406",
+    "0ddf1093-0f10-5fce-a5fc-b0e738a83406",
+    "0ddf1093-0f10-5fce-a5fc-b0e738a83406",
     "default-ui"
   ],
   "spritePaletteIds": [
@@ -30,32 +30,52 @@
     "default-sprite",
     "0f42aecb-f04b-5823-8a3f-212ef9df444a"
   ],
-  "collisions": "00168+",
+  "collisions": "0f121+001e+0f2+0012+0f6+006+0f2+0012+0f6+006+0f2+0012+0f6+006+0f2+0012+0f6+006+0f2+001e+0f2+001e+0f2+001e+0f2+001e+0f2+003+0f4+0010+0f4+003+0f2+003+0f4+0010+0f4+003+0f2+001e+0f2+001e+0f2+001e+0f2+003+0f4+0010+0f4+003+0f2+003+0f4+0010+0f4+003+0f2+001e+0f2+001e+0f2+001e+0f2+001e+0f2+001e+0f2+001e+0f21+",
   "autoFadeSpeed": 1,
   "x": 720,
   "y": -240,
   "script": [
     {
-      "command": "EVENT_ACTOR_HIDE",
+      "command": "EVENT_OVERLAY_HIDE",
+      "args": {},
+      "id": "ccb557f3-120d-52a1-9eee-e9b206596a67"
+    },
+    {
+      "command": "EVENT_OVERLAY_SET_SCANLINE_CUTOFF",
+      "args": {
+        "units": "pixels",
+        "y": {
+          "type": "number",
+          "value": 150
+        }
+      },
+      "id": "63161d98-f33b-58a9-9ca6-aa896605a7ed"
+    },
+    {
+      "command": "EVENT_ACTOR_SHOW",
       "args": {
         "actorId": "player"
       },
-      "id": "1145ef64-3128-52b6-8d1b-98e29afd4367"
+      "id": "88eaf51c-e9b7-5b96-9f4a-8734f8f31429"
     },
     {
-      "command": "EVENT_OVERLAY_HIDE",
-      "args": {},
-      "id": "a97e519e-7a20-5fee-94c7-80501d77ac87"
-    },
-    {
-      "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+      "command": "EVENT_ACTOR_SET_MOVEMENT_SPEED",
       "args": {
-        "type": "tone",
-        "frequency": 880,
-        "duration": 0.03,
-        "units": "time"
+        "actorId": "player",
+        "speed": 1
       },
-      "id": "b3548f8e-8327-57c7-8ccf-5d34f99f35e2"
+      "id": "46986c98-457e-59ba-a520-2a6634fcf13e"
+    },
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "9f01d35b-5b73-57d4-ac46-5d381ceaa498"
     },
     {
       "command": "EVENT_IF",
@@ -64,70 +84,214 @@
           "type": "eq",
           "valueA": {
             "type": "variable",
-            "value": "16"
+            "value": "0"
           },
           "valueB": {
             "type": "number",
-            "value": 2
+            "value": 1
           }
         }
       },
-      "id": "9128e88a-3b5e-5a74-bd3a-b5eab517f1a7",
+      "id": "1b93c17d-3cb5-5b38-be79-095ec76c0a50",
       "children": {
         "true": [
           {
-            "command": "EVENT_TEXT",
+            "command": "EVENT_PALETTE_SET_BACKGROUND",
             "args": {
-              "text": [
-                "WORK ORDER\nWO-0413",
-                "Hiroshi, ridge:\noxygen machine\nhas no power.",
-                "Urgent: medical.\nWatch the wind."
-              ],
-              "avatarId": "",
-              "minHeight": 4,
-              "maxHeight": 7,
-              "textX": 1,
-              "textY": 1,
-              "textHeight": 5,
-              "position": "bottom",
-              "clearPrevious": true,
-              "showFrame": true,
-              "speedIn": -1,
-              "speedOut": -1,
-              "closeWhen": "key",
-              "closeButton": "a",
-              "closeDelayUnits": "time",
-              "closeDelayTime": 0.5,
-              "closeDelayFrames": 30
+              "palette0": "keep",
+              "palette1": "keep",
+              "palette2": "keep",
+              "palette3": "7a07fc89-acd4-5a56-9af6-21d9c65f98c7",
+              "palette4": "keep",
+              "palette5": "keep",
+              "palette6": "keep",
+              "palette7": "keep"
             },
-            "id": "a56a7129-5f88-5667-ada5-21e87eeb3480"
-          },
-          {
-            "command": "EVENT_FADE_OUT",
-            "args": {
-              "speed": "2"
-            },
-            "id": "369bef6b-ab03-58b0-a771-3dad9fa13278"
-          },
-          {
-            "command": "EVENT_SWITCH_SCENE",
-            "args": {
-              "sceneId": "20ae4686-7e62-5a4d-b3ab-0fddf0ad0d19",
-              "x": {
-                "type": "number",
-                "value": 2
-              },
-              "y": {
-                "type": "number",
-                "value": 14
-              },
-              "direction": "right",
-              "fadeSpeed": "2"
-            },
-            "id": "7da03c29-23ee-58a5-86a9-453c2cd40c7d"
+            "id": "69531adb-72af-5a40-a26c-4e390fa2ad66"
           }
         ],
         "false": [
+          {
+            "command": "EVENT_PALETTE_SET_BACKGROUND",
+            "args": {
+              "palette0": "keep",
+              "palette1": "keep",
+              "palette2": "keep",
+              "palette3": "0ddf1093-0f10-5fce-a5fc-b0e738a83406",
+              "palette4": "keep",
+              "palette5": "keep",
+              "palette6": "keep",
+              "palette7": "keep"
+            },
+            "id": "4e00bf88-9ef0-590b-9613-e8fef7fa8f1f"
+          }
+        ]
+      }
+    },
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "9"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "7b49c984-4c54-564c-a7ee-3b667c2c53e2",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_PALETTE_SET_BACKGROUND",
+            "args": {
+              "palette0": "keep",
+              "palette1": "keep",
+              "palette2": "keep",
+              "palette3": "keep",
+              "palette4": "7a07fc89-acd4-5a56-9af6-21d9c65f98c7",
+              "palette5": "keep",
+              "palette6": "keep",
+              "palette7": "keep"
+            },
+            "id": "ee58e073-48c6-57dd-b64a-763a41ffc32e"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_PALETTE_SET_BACKGROUND",
+            "args": {
+              "palette0": "keep",
+              "palette1": "keep",
+              "palette2": "keep",
+              "palette3": "keep",
+              "palette4": "0ddf1093-0f10-5fce-a5fc-b0e738a83406",
+              "palette5": "keep",
+              "palette6": "keep",
+              "palette7": "keep"
+            },
+            "id": "8e46f23c-3822-5565-b6a1-7412537c210b"
+          }
+        ]
+      }
+    },
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "11"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "63d7bd56-b5d0-5259-ae69-7ab80bb7550b",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_PALETTE_SET_BACKGROUND",
+            "args": {
+              "palette0": "keep",
+              "palette1": "keep",
+              "palette2": "keep",
+              "palette3": "keep",
+              "palette4": "keep",
+              "palette5": "7a07fc89-acd4-5a56-9af6-21d9c65f98c7",
+              "palette6": "keep",
+              "palette7": "keep"
+            },
+            "id": "5cd1a919-8019-5670-907d-4b6889c87534"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_PALETTE_SET_BACKGROUND",
+            "args": {
+              "palette0": "keep",
+              "palette1": "keep",
+              "palette2": "keep",
+              "palette3": "keep",
+              "palette4": "keep",
+              "palette5": "0ddf1093-0f10-5fce-a5fc-b0e738a83406",
+              "palette6": "keep",
+              "palette7": "keep"
+            },
+            "id": "61c0dbf8-8c44-5b8c-9cb7-fb58600467e8"
+          }
+        ]
+      }
+    },
+    {
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "13"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "id": "a6850c61-e2cf-5c59-a999-53e2c4aee791",
+      "children": {
+        "true": [
+          {
+            "command": "EVENT_PALETTE_SET_BACKGROUND",
+            "args": {
+              "palette0": "keep",
+              "palette1": "keep",
+              "palette2": "keep",
+              "palette3": "keep",
+              "palette4": "keep",
+              "palette5": "keep",
+              "palette6": "7a07fc89-acd4-5a56-9af6-21d9c65f98c7",
+              "palette7": "keep"
+            },
+            "id": "cc1490b8-fe63-5ffb-aa85-2a02178eb91d"
+          }
+        ],
+        "false": [
+          {
+            "command": "EVENT_PALETTE_SET_BACKGROUND",
+            "args": {
+              "palette0": "keep",
+              "palette1": "keep",
+              "palette2": "keep",
+              "palette3": "keep",
+              "palette4": "keep",
+              "palette5": "keep",
+              "palette6": "0ddf1093-0f10-5fce-a5fc-b0e738a83406",
+              "palette7": "keep"
+            },
+            "id": "a0b9372f-f0b0-5352-8b31-57ad261047fa"
+          }
+        ]
+      }
+    },
+    {
+      "command": "EVENT_SET_INPUT_SCRIPT",
+      "args": {
+        "input": [
+          "a"
+        ],
+        "override": true
+      },
+      "id": "b0685e77-ee95-58ff-a513-eec24e0b9774",
+      "children": {
+        "true": [
           {
             "command": "EVENT_IF",
             "args": {
@@ -135,67 +299,400 @@
                 "type": "eq",
                 "valueA": {
                   "type": "variable",
-                  "value": "16"
+                  "value": "27"
                 },
                 "valueB": {
                   "type": "number",
-                  "value": 3
+                  "value": 1
                 }
               }
             },
-            "id": "af70ed57-83a8-5e99-b755-666be842c0d2",
+            "id": "8b6297ce-a169-5aa1-8127-16a3fdde4f0b",
             "children": {
               "true": [
                 {
-                  "command": "EVENT_TEXT",
+                  "command": "EVENT_IF",
                   "args": {
-                    "text": [
-                      "WORK ORDER\nWO-0414",
-                      "Priya, hill:\nno internet,\nwork is due.",
-                      "Live wires down.\nStep carefully."
+                    "condition": {
+                      "type": "eq",
+                      "valueA": {
+                        "type": "variable",
+                        "value": "0"
+                      },
+                      "valueB": {
+                        "type": "number",
+                        "value": 1
+                      }
+                    }
+                  },
+                  "id": "08838c0b-369d-5065-a373-000c15ca326e",
+                  "children": {
+                    "true": [
+                      {
+                        "command": "EVENT_TEXT",
+                        "args": {
+                          "text": [
+                            "AMARA\nPower restored."
+                          ],
+                          "avatarId": "",
+                          "minHeight": 4,
+                          "maxHeight": 7,
+                          "textX": 1,
+                          "textY": 1,
+                          "textHeight": 5,
+                          "position": "bottom",
+                          "clearPrevious": true,
+                          "showFrame": true,
+                          "speedIn": -1,
+                          "speedOut": -1,
+                          "closeWhen": "key",
+                          "closeButton": "a",
+                          "closeDelayUnits": "time",
+                          "closeDelayTime": 0.5,
+                          "closeDelayFrames": 30
+                        },
+                        "id": "f5166192-399b-557b-b036-d081c3b312e3"
+                      }
                     ],
-                    "avatarId": "",
-                    "minHeight": 4,
-                    "maxHeight": 7,
-                    "textX": 1,
-                    "textY": 1,
-                    "textHeight": 5,
-                    "position": "bottom",
-                    "clearPrevious": true,
-                    "showFrame": true,
-                    "speedIn": -1,
-                    "speedOut": -1,
-                    "closeWhen": "key",
-                    "closeButton": "a",
-                    "closeDelayUnits": "time",
-                    "closeDelayTime": 0.5,
-                    "closeDelayFrames": 30
-                  },
-                  "id": "71f8f225-e83f-5778-809c-74667c6ddcbe"
-                },
-                {
-                  "command": "EVENT_FADE_OUT",
-                  "args": {
-                    "speed": "2"
-                  },
-                  "id": "5a25ea1e-1ee1-5ae0-9506-017c6561b302"
-                },
-                {
-                  "command": "EVENT_SWITCH_SCENE",
-                  "args": {
-                    "sceneId": "7c856987-bbdf-5d75-a97e-327259a90956",
-                    "x": {
-                      "type": "number",
-                      "value": 2
-                    },
-                    "y": {
-                      "type": "number",
-                      "value": 14
-                    },
-                    "direction": "right",
-                    "fadeSpeed": "2"
-                  },
-                  "id": "0f77b631-1d2a-5012-abd3-49bc370981a5"
+                    "false": [
+                      {
+                        "command": "EVENT_IF",
+                        "args": {
+                          "condition": {
+                            "type": "eq",
+                            "valueA": {
+                              "type": "variable",
+                              "value": "16"
+                            },
+                            "valueB": {
+                              "type": "number",
+                              "value": 1
+                            }
+                          }
+                        },
+                        "id": "6d7b4f03-efc6-5a0f-9d38-bd1e01c6f9ff",
+                        "children": {
+                          "true": [
+                            {
+                              "command": "EVENT_TEXT",
+                              "args": {
+                                "text": [
+                                  "WORK ORDER\nWO-0412",
+                                  "Amara, hilltop:\nfridge is out.",
+                                  "Climb the hill,\nrestore the line."
+                                ],
+                                "avatarId": "",
+                                "minHeight": 4,
+                                "maxHeight": 7,
+                                "textX": 1,
+                                "textY": 1,
+                                "textHeight": 5,
+                                "position": "bottom",
+                                "clearPrevious": true,
+                                "showFrame": true,
+                                "speedIn": -1,
+                                "speedOut": -1,
+                                "closeWhen": "key",
+                                "closeButton": "a",
+                                "closeDelayUnits": "time",
+                                "closeDelayTime": 0.5,
+                                "closeDelayFrames": 30
+                              },
+                              "id": "cb158da2-5a20-5a5b-b491-30c80a0cfa68"
+                            },
+                            {
+                              "command": "EVENT_SET_VALUE",
+                              "args": {
+                                "variable": "27",
+                                "value": {
+                                  "type": "number",
+                                  "value": 0
+                                }
+                              },
+                              "id": "343f6a7b-39a2-532b-8987-71eb117b5e17"
+                            },
+                            {
+                              "command": "EVENT_REMOVE_INPUT_SCRIPT",
+                              "args": {
+                                "input": [
+                                  "a"
+                                ]
+                              },
+                              "id": "f4c43295-af94-5318-867b-2340ffc8a018"
+                            },
+                            {
+                              "command": "EVENT_FADE_OUT",
+                              "args": {
+                                "speed": "2"
+                              },
+                              "id": "a219e6ca-7974-584e-a06f-92aac3a0eaca"
+                            },
+                            {
+                              "command": "EVENT_SWITCH_SCENE",
+                              "args": {
+                                "sceneId": "e8778f37-44a7-5d3a-ad39-49d52fe4c5c7",
+                                "x": {
+                                  "type": "number",
+                                  "value": 2
+                                },
+                                "y": {
+                                  "type": "number",
+                                  "value": 32
+                                },
+                                "direction": "right",
+                                "fadeSpeed": "2"
+                              },
+                              "id": "a585ea95-1852-54b5-97aa-2489239f4c95"
+                            }
+                          ],
+                          "false": [
+                            {
+                              "command": "EVENT_TEXT",
+                              "args": {
+                                "text": [
+                                  "AMARA\nStill waiting."
+                                ],
+                                "avatarId": "",
+                                "minHeight": 4,
+                                "maxHeight": 7,
+                                "textX": 1,
+                                "textY": 1,
+                                "textHeight": 5,
+                                "position": "bottom",
+                                "clearPrevious": true,
+                                "showFrame": true,
+                                "speedIn": -1,
+                                "speedOut": -1,
+                                "closeWhen": "key",
+                                "closeButton": "a",
+                                "closeDelayUnits": "time",
+                                "closeDelayTime": 0.5,
+                                "closeDelayFrames": 30
+                              },
+                              "id": "cf333942-02df-5f14-91ce-ca874ee32e6e"
+                            },
+                            {
+                              "command": "EVENT_IF",
+                              "args": {
+                                "condition": {
+                                  "type": "eq",
+                                  "valueA": {
+                                    "type": "variable",
+                                    "value": "16"
+                                  },
+                                  "valueB": {
+                                    "type": "number",
+                                    "value": 1
+                                  }
+                                }
+                              },
+                              "id": "0ce08de6-a1c1-5aa0-8f13-1ee03e88c044",
+                              "children": {
+                                "true": [
+                                  {
+                                    "command": "EVENT_TEXT",
+                                    "args": {
+                                      "text": [
+                                        "Next: AMARA\nGo to trail sign.\nPress A there."
+                                      ],
+                                      "avatarId": "",
+                                      "minHeight": 4,
+                                      "maxHeight": 7,
+                                      "textX": 1,
+                                      "textY": 1,
+                                      "textHeight": 5,
+                                      "position": "bottom",
+                                      "clearPrevious": true,
+                                      "showFrame": true,
+                                      "speedIn": -1,
+                                      "speedOut": -1,
+                                      "closeWhen": "key",
+                                      "closeButton": "a",
+                                      "closeDelayUnits": "time",
+                                      "closeDelayTime": 0.5,
+                                      "closeDelayFrames": 30
+                                    },
+                                    "id": "d35e371d-fbd4-5237-9002-dfa4facb6d79"
+                                  }
+                                ],
+                                "false": [
+                                  {
+                                    "command": "EVENT_IF",
+                                    "args": {
+                                      "condition": {
+                                        "type": "eq",
+                                        "valueA": {
+                                          "type": "variable",
+                                          "value": "16"
+                                        },
+                                        "valueB": {
+                                          "type": "number",
+                                          "value": 2
+                                        }
+                                      }
+                                    },
+                                    "id": "ef285b71-10ec-56bf-92ed-8029ff0ffbd2",
+                                    "children": {
+                                      "true": [
+                                        {
+                                          "command": "EVENT_TEXT",
+                                          "args": {
+                                            "text": [
+                                              "Next: HIROSHI\nGo to trail sign.\nPress A there."
+                                            ],
+                                            "avatarId": "",
+                                            "minHeight": 4,
+                                            "maxHeight": 7,
+                                            "textX": 1,
+                                            "textY": 1,
+                                            "textHeight": 5,
+                                            "position": "bottom",
+                                            "clearPrevious": true,
+                                            "showFrame": true,
+                                            "speedIn": -1,
+                                            "speedOut": -1,
+                                            "closeWhen": "key",
+                                            "closeButton": "a",
+                                            "closeDelayUnits": "time",
+                                            "closeDelayTime": 0.5,
+                                            "closeDelayFrames": 30
+                                          },
+                                          "id": "19e00809-75ef-5af1-96d8-e0c33749b8a3"
+                                        }
+                                      ],
+                                      "false": [
+                                        {
+                                          "command": "EVENT_IF",
+                                          "args": {
+                                            "condition": {
+                                              "type": "eq",
+                                              "valueA": {
+                                                "type": "variable",
+                                                "value": "16"
+                                              },
+                                              "valueB": {
+                                                "type": "number",
+                                                "value": 3
+                                              }
+                                            }
+                                          },
+                                          "id": "fd12858f-9a07-5c60-925e-9d2d9daf7c81",
+                                          "children": {
+                                            "true": [
+                                              {
+                                                "command": "EVENT_TEXT",
+                                                "args": {
+                                                  "text": [
+                                                    "Next: PRIYA\nGo to trail sign.\nPress A there."
+                                                  ],
+                                                  "avatarId": "",
+                                                  "minHeight": 4,
+                                                  "maxHeight": 7,
+                                                  "textX": 1,
+                                                  "textY": 1,
+                                                  "textHeight": 5,
+                                                  "position": "bottom",
+                                                  "clearPrevious": true,
+                                                  "showFrame": true,
+                                                  "speedIn": -1,
+                                                  "speedOut": -1,
+                                                  "closeWhen": "key",
+                                                  "closeButton": "a",
+                                                  "closeDelayUnits": "time",
+                                                  "closeDelayTime": 0.5,
+                                                  "closeDelayFrames": 30
+                                                },
+                                                "id": "7ddc1005-fa4c-5b4c-bd72-9b9159f6c0f4"
+                                              }
+                                            ],
+                                            "false": [
+                                              {
+                                                "command": "EVENT_IF",
+                                                "args": {
+                                                  "condition": {
+                                                    "type": "eq",
+                                                    "valueA": {
+                                                      "type": "variable",
+                                                      "value": "16"
+                                                    },
+                                                    "valueB": {
+                                                      "type": "number",
+                                                      "value": 4
+                                                    }
+                                                  }
+                                                },
+                                                "id": "9f20c94b-e83b-5147-aa4c-dd5080f4c5d6",
+                                                "children": {
+                                                  "true": [
+                                                    {
+                                                      "command": "EVENT_TEXT",
+                                                      "args": {
+                                                        "text": [
+                                                          "Next: EMIL\nGo to trail sign.\nPress A there."
+                                                        ],
+                                                        "avatarId": "",
+                                                        "minHeight": 4,
+                                                        "maxHeight": 7,
+                                                        "textX": 1,
+                                                        "textY": 1,
+                                                        "textHeight": 5,
+                                                        "position": "bottom",
+                                                        "clearPrevious": true,
+                                                        "showFrame": true,
+                                                        "speedIn": -1,
+                                                        "speedOut": -1,
+                                                        "closeWhen": "key",
+                                                        "closeButton": "a",
+                                                        "closeDelayUnits": "time",
+                                                        "closeDelayTime": 0.5,
+                                                        "closeDelayFrames": 30
+                                                      },
+                                                      "id": "139f25b9-bf98-51f8-94b7-c0853c5805f2"
+                                                    }
+                                                  ],
+                                                  "false": [
+                                                    {
+                                                      "command": "EVENT_TEXT",
+                                                      "args": {
+                                                        "text": [
+                                                          "No active order."
+                                                        ],
+                                                        "avatarId": "",
+                                                        "minHeight": 4,
+                                                        "maxHeight": 7,
+                                                        "textX": 1,
+                                                        "textY": 1,
+                                                        "textHeight": 5,
+                                                        "position": "bottom",
+                                                        "clearPrevious": true,
+                                                        "showFrame": true,
+                                                        "speedIn": -1,
+                                                        "speedOut": -1,
+                                                        "closeWhen": "key",
+                                                        "closeButton": "a",
+                                                        "closeDelayUnits": "time",
+                                                        "closeDelayTime": 0.5,
+                                                        "closeDelayFrames": 30
+                                                      },
+                                                      "id": "dd0ac6cb-ad18-55fc-ae96-8642b3bcc2bf"
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      }
+                    ]
+                  }
                 }
               ],
               "false": [
@@ -206,120 +703,1433 @@
                       "type": "eq",
                       "valueA": {
                         "type": "variable",
-                        "value": "16"
+                        "value": "27"
                       },
                       "valueB": {
                         "type": "number",
-                        "value": 4
+                        "value": 2
                       }
                     }
                   },
-                  "id": "1380181e-3e72-5cfa-8ba6-f270327c44d1",
+                  "id": "eff23e6d-5b8e-53ef-b6e6-14fb8a1ea36c",
                   "children": {
                     "true": [
                       {
-                        "command": "EVENT_TEXT",
+                        "command": "EVENT_IF",
                         "args": {
-                          "text": [
-                            "WORK ORDER\nWO-0415",
-                            "Emil, hollow:\nstove is dead,\ndinner's cold.",
-                            "Worst damage yet.\nStay sharp."
+                          "condition": {
+                            "type": "eq",
+                            "valueA": {
+                              "type": "variable",
+                              "value": "9"
+                            },
+                            "valueB": {
+                              "type": "number",
+                              "value": 1
+                            }
+                          }
+                        },
+                        "id": "9b8e179d-75b4-5264-85c3-85f006851e92",
+                        "children": {
+                          "true": [
+                            {
+                              "command": "EVENT_TEXT",
+                              "args": {
+                                "text": [
+                                  "HIROSHI\nPower restored."
+                                ],
+                                "avatarId": "",
+                                "minHeight": 4,
+                                "maxHeight": 7,
+                                "textX": 1,
+                                "textY": 1,
+                                "textHeight": 5,
+                                "position": "bottom",
+                                "clearPrevious": true,
+                                "showFrame": true,
+                                "speedIn": -1,
+                                "speedOut": -1,
+                                "closeWhen": "key",
+                                "closeButton": "a",
+                                "closeDelayUnits": "time",
+                                "closeDelayTime": 0.5,
+                                "closeDelayFrames": 30
+                              },
+                              "id": "cd814f99-5771-5c1f-a2d7-17bec3a47f49"
+                            }
                           ],
-                          "avatarId": "",
-                          "minHeight": 4,
-                          "maxHeight": 7,
-                          "textX": 1,
-                          "textY": 1,
-                          "textHeight": 5,
-                          "position": "bottom",
-                          "clearPrevious": true,
-                          "showFrame": true,
-                          "speedIn": -1,
-                          "speedOut": -1,
-                          "closeWhen": "key",
-                          "closeButton": "a",
-                          "closeDelayUnits": "time",
-                          "closeDelayTime": 0.5,
-                          "closeDelayFrames": 30
-                        },
-                        "id": "b1dc7ae3-f815-57b6-9fd2-15607cdc6c0b"
-                      },
-                      {
-                        "command": "EVENT_FADE_OUT",
-                        "args": {
-                          "speed": "2"
-                        },
-                        "id": "a7f79f7b-6880-556b-b5b2-d9dfac6555f6"
-                      },
-                      {
-                        "command": "EVENT_SWITCH_SCENE",
-                        "args": {
-                          "sceneId": "4d9329db-9c79-52dd-8372-d215a891bcb8",
-                          "x": {
-                            "type": "number",
-                            "value": 2
-                          },
-                          "y": {
-                            "type": "number",
-                            "value": 14
-                          },
-                          "direction": "right",
-                          "fadeSpeed": "2"
-                        },
-                        "id": "d3ca6750-e85e-5dfb-9f82-070d47055033"
+                          "false": [
+                            {
+                              "command": "EVENT_IF",
+                              "args": {
+                                "condition": {
+                                  "type": "eq",
+                                  "valueA": {
+                                    "type": "variable",
+                                    "value": "16"
+                                  },
+                                  "valueB": {
+                                    "type": "number",
+                                    "value": 2
+                                  }
+                                }
+                              },
+                              "id": "3ea7233c-113a-53ac-a355-f494675a27d8",
+                              "children": {
+                                "true": [
+                                  {
+                                    "command": "EVENT_TEXT",
+                                    "args": {
+                                      "text": [
+                                        "WORK ORDER\nWO-0413",
+                                        "Hiroshi, ridge:\noxygen machine\nhas no power.",
+                                        "Urgent: medical.\nWatch the wind."
+                                      ],
+                                      "avatarId": "",
+                                      "minHeight": 4,
+                                      "maxHeight": 7,
+                                      "textX": 1,
+                                      "textY": 1,
+                                      "textHeight": 5,
+                                      "position": "bottom",
+                                      "clearPrevious": true,
+                                      "showFrame": true,
+                                      "speedIn": -1,
+                                      "speedOut": -1,
+                                      "closeWhen": "key",
+                                      "closeButton": "a",
+                                      "closeDelayUnits": "time",
+                                      "closeDelayTime": 0.5,
+                                      "closeDelayFrames": 30
+                                    },
+                                    "id": "dab408ef-5c03-5096-bbcf-7c173c7fbf4f"
+                                  },
+                                  {
+                                    "command": "EVENT_SET_VALUE",
+                                    "args": {
+                                      "variable": "27",
+                                      "value": {
+                                        "type": "number",
+                                        "value": 0
+                                      }
+                                    },
+                                    "id": "bc9f34a4-c0f4-5585-a8c6-51c4768964b7"
+                                  },
+                                  {
+                                    "command": "EVENT_REMOVE_INPUT_SCRIPT",
+                                    "args": {
+                                      "input": [
+                                        "a"
+                                      ]
+                                    },
+                                    "id": "c3206a71-3897-561c-833c-c62f0c590392"
+                                  },
+                                  {
+                                    "command": "EVENT_FADE_OUT",
+                                    "args": {
+                                      "speed": "2"
+                                    },
+                                    "id": "8a73405d-cf64-5379-b811-fe45eeed58bc"
+                                  },
+                                  {
+                                    "command": "EVENT_SWITCH_SCENE",
+                                    "args": {
+                                      "sceneId": "20ae4686-7e62-5a4d-b3ab-0fddf0ad0d19",
+                                      "x": {
+                                        "type": "number",
+                                        "value": 2
+                                      },
+                                      "y": {
+                                        "type": "number",
+                                        "value": 14
+                                      },
+                                      "direction": "right",
+                                      "fadeSpeed": "2"
+                                    },
+                                    "id": "8a363807-6bee-563d-9b27-0a426d02efd8"
+                                  }
+                                ],
+                                "false": [
+                                  {
+                                    "command": "EVENT_TEXT",
+                                    "args": {
+                                      "text": [
+                                        "HIROSHI\nStill waiting."
+                                      ],
+                                      "avatarId": "",
+                                      "minHeight": 4,
+                                      "maxHeight": 7,
+                                      "textX": 1,
+                                      "textY": 1,
+                                      "textHeight": 5,
+                                      "position": "bottom",
+                                      "clearPrevious": true,
+                                      "showFrame": true,
+                                      "speedIn": -1,
+                                      "speedOut": -1,
+                                      "closeWhen": "key",
+                                      "closeButton": "a",
+                                      "closeDelayUnits": "time",
+                                      "closeDelayTime": 0.5,
+                                      "closeDelayFrames": 30
+                                    },
+                                    "id": "4251a5f5-e4c6-5eca-b269-a5f20ef42fc6"
+                                  },
+                                  {
+                                    "command": "EVENT_IF",
+                                    "args": {
+                                      "condition": {
+                                        "type": "eq",
+                                        "valueA": {
+                                          "type": "variable",
+                                          "value": "16"
+                                        },
+                                        "valueB": {
+                                          "type": "number",
+                                          "value": 1
+                                        }
+                                      }
+                                    },
+                                    "id": "56b33b5e-5b84-54f9-b747-8baa8095111d",
+                                    "children": {
+                                      "true": [
+                                        {
+                                          "command": "EVENT_TEXT",
+                                          "args": {
+                                            "text": [
+                                              "Next: AMARA\nGo to trail sign.\nPress A there."
+                                            ],
+                                            "avatarId": "",
+                                            "minHeight": 4,
+                                            "maxHeight": 7,
+                                            "textX": 1,
+                                            "textY": 1,
+                                            "textHeight": 5,
+                                            "position": "bottom",
+                                            "clearPrevious": true,
+                                            "showFrame": true,
+                                            "speedIn": -1,
+                                            "speedOut": -1,
+                                            "closeWhen": "key",
+                                            "closeButton": "a",
+                                            "closeDelayUnits": "time",
+                                            "closeDelayTime": 0.5,
+                                            "closeDelayFrames": 30
+                                          },
+                                          "id": "1d12a16d-a934-56de-a29e-dbc51d31affc"
+                                        }
+                                      ],
+                                      "false": [
+                                        {
+                                          "command": "EVENT_IF",
+                                          "args": {
+                                            "condition": {
+                                              "type": "eq",
+                                              "valueA": {
+                                                "type": "variable",
+                                                "value": "16"
+                                              },
+                                              "valueB": {
+                                                "type": "number",
+                                                "value": 2
+                                              }
+                                            }
+                                          },
+                                          "id": "b55b1f19-8cc2-5f15-96c1-4c6d3f91c2d0",
+                                          "children": {
+                                            "true": [
+                                              {
+                                                "command": "EVENT_TEXT",
+                                                "args": {
+                                                  "text": [
+                                                    "Next: HIROSHI\nGo to trail sign.\nPress A there."
+                                                  ],
+                                                  "avatarId": "",
+                                                  "minHeight": 4,
+                                                  "maxHeight": 7,
+                                                  "textX": 1,
+                                                  "textY": 1,
+                                                  "textHeight": 5,
+                                                  "position": "bottom",
+                                                  "clearPrevious": true,
+                                                  "showFrame": true,
+                                                  "speedIn": -1,
+                                                  "speedOut": -1,
+                                                  "closeWhen": "key",
+                                                  "closeButton": "a",
+                                                  "closeDelayUnits": "time",
+                                                  "closeDelayTime": 0.5,
+                                                  "closeDelayFrames": 30
+                                                },
+                                                "id": "3ee1171b-055a-51b3-b0e7-7387770d3fff"
+                                              }
+                                            ],
+                                            "false": [
+                                              {
+                                                "command": "EVENT_IF",
+                                                "args": {
+                                                  "condition": {
+                                                    "type": "eq",
+                                                    "valueA": {
+                                                      "type": "variable",
+                                                      "value": "16"
+                                                    },
+                                                    "valueB": {
+                                                      "type": "number",
+                                                      "value": 3
+                                                    }
+                                                  }
+                                                },
+                                                "id": "52b28a16-c58e-5b14-b47a-67e9fdd35ccd",
+                                                "children": {
+                                                  "true": [
+                                                    {
+                                                      "command": "EVENT_TEXT",
+                                                      "args": {
+                                                        "text": [
+                                                          "Next: PRIYA\nGo to trail sign.\nPress A there."
+                                                        ],
+                                                        "avatarId": "",
+                                                        "minHeight": 4,
+                                                        "maxHeight": 7,
+                                                        "textX": 1,
+                                                        "textY": 1,
+                                                        "textHeight": 5,
+                                                        "position": "bottom",
+                                                        "clearPrevious": true,
+                                                        "showFrame": true,
+                                                        "speedIn": -1,
+                                                        "speedOut": -1,
+                                                        "closeWhen": "key",
+                                                        "closeButton": "a",
+                                                        "closeDelayUnits": "time",
+                                                        "closeDelayTime": 0.5,
+                                                        "closeDelayFrames": 30
+                                                      },
+                                                      "id": "6b0b5ee7-e87b-5e3f-971f-99ba720fdea4"
+                                                    }
+                                                  ],
+                                                  "false": [
+                                                    {
+                                                      "command": "EVENT_IF",
+                                                      "args": {
+                                                        "condition": {
+                                                          "type": "eq",
+                                                          "valueA": {
+                                                            "type": "variable",
+                                                            "value": "16"
+                                                          },
+                                                          "valueB": {
+                                                            "type": "number",
+                                                            "value": 4
+                                                          }
+                                                        }
+                                                      },
+                                                      "id": "79ab3cd4-44bf-55a4-9b35-9a14cef7e52c",
+                                                      "children": {
+                                                        "true": [
+                                                          {
+                                                            "command": "EVENT_TEXT",
+                                                            "args": {
+                                                              "text": [
+                                                                "Next: EMIL\nGo to trail sign.\nPress A there."
+                                                              ],
+                                                              "avatarId": "",
+                                                              "minHeight": 4,
+                                                              "maxHeight": 7,
+                                                              "textX": 1,
+                                                              "textY": 1,
+                                                              "textHeight": 5,
+                                                              "position": "bottom",
+                                                              "clearPrevious": true,
+                                                              "showFrame": true,
+                                                              "speedIn": -1,
+                                                              "speedOut": -1,
+                                                              "closeWhen": "key",
+                                                              "closeButton": "a",
+                                                              "closeDelayUnits": "time",
+                                                              "closeDelayTime": 0.5,
+                                                              "closeDelayFrames": 30
+                                                            },
+                                                            "id": "6b4801c0-0a9f-5cca-8c3d-6e401697d656"
+                                                          }
+                                                        ],
+                                                        "false": [
+                                                          {
+                                                            "command": "EVENT_TEXT",
+                                                            "args": {
+                                                              "text": [
+                                                                "No active order."
+                                                              ],
+                                                              "avatarId": "",
+                                                              "minHeight": 4,
+                                                              "maxHeight": 7,
+                                                              "textX": 1,
+                                                              "textY": 1,
+                                                              "textHeight": 5,
+                                                              "position": "bottom",
+                                                              "clearPrevious": true,
+                                                              "showFrame": true,
+                                                              "speedIn": -1,
+                                                              "speedOut": -1,
+                                                              "closeWhen": "key",
+                                                              "closeButton": "a",
+                                                              "closeDelayUnits": "time",
+                                                              "closeDelayTime": 0.5,
+                                                              "closeDelayFrames": 30
+                                                            },
+                                                            "id": "6db8528b-b505-5cf4-8021-762c8a245ff1"
+                                                          }
+                                                        ]
+                                                      }
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
                       }
                     ],
                     "false": [
                       {
-                        "command": "EVENT_TEXT",
+                        "command": "EVENT_IF",
                         "args": {
-                          "text": [
-                            "WORK ORDER\nWO-0412",
-                            "Amara, hilltop:\nfridge is out.",
-                            "Climb the hill,\nrestore the line."
+                          "condition": {
+                            "type": "eq",
+                            "valueA": {
+                              "type": "variable",
+                              "value": "27"
+                            },
+                            "valueB": {
+                              "type": "number",
+                              "value": 3
+                            }
+                          }
+                        },
+                        "id": "9b4b3748-d4c4-5abe-97fc-f4d9fee93be9",
+                        "children": {
+                          "true": [
+                            {
+                              "command": "EVENT_IF",
+                              "args": {
+                                "condition": {
+                                  "type": "eq",
+                                  "valueA": {
+                                    "type": "variable",
+                                    "value": "11"
+                                  },
+                                  "valueB": {
+                                    "type": "number",
+                                    "value": 1
+                                  }
+                                }
+                              },
+                              "id": "6e203ba1-7c6b-58d6-ae1e-9f2a9c730f41",
+                              "children": {
+                                "true": [
+                                  {
+                                    "command": "EVENT_TEXT",
+                                    "args": {
+                                      "text": [
+                                        "PRIYA\nPower restored."
+                                      ],
+                                      "avatarId": "",
+                                      "minHeight": 4,
+                                      "maxHeight": 7,
+                                      "textX": 1,
+                                      "textY": 1,
+                                      "textHeight": 5,
+                                      "position": "bottom",
+                                      "clearPrevious": true,
+                                      "showFrame": true,
+                                      "speedIn": -1,
+                                      "speedOut": -1,
+                                      "closeWhen": "key",
+                                      "closeButton": "a",
+                                      "closeDelayUnits": "time",
+                                      "closeDelayTime": 0.5,
+                                      "closeDelayFrames": 30
+                                    },
+                                    "id": "5dddc540-d781-5ef3-9e09-ff426bff0522"
+                                  }
+                                ],
+                                "false": [
+                                  {
+                                    "command": "EVENT_IF",
+                                    "args": {
+                                      "condition": {
+                                        "type": "eq",
+                                        "valueA": {
+                                          "type": "variable",
+                                          "value": "16"
+                                        },
+                                        "valueB": {
+                                          "type": "number",
+                                          "value": 3
+                                        }
+                                      }
+                                    },
+                                    "id": "d49bcae7-59ef-5cee-a5e0-42dbce02573e",
+                                    "children": {
+                                      "true": [
+                                        {
+                                          "command": "EVENT_TEXT",
+                                          "args": {
+                                            "text": [
+                                              "WORK ORDER\nWO-0414",
+                                              "Priya, hill:\nno internet,\nwork is due.",
+                                              "Live wires down.\nStep carefully."
+                                            ],
+                                            "avatarId": "",
+                                            "minHeight": 4,
+                                            "maxHeight": 7,
+                                            "textX": 1,
+                                            "textY": 1,
+                                            "textHeight": 5,
+                                            "position": "bottom",
+                                            "clearPrevious": true,
+                                            "showFrame": true,
+                                            "speedIn": -1,
+                                            "speedOut": -1,
+                                            "closeWhen": "key",
+                                            "closeButton": "a",
+                                            "closeDelayUnits": "time",
+                                            "closeDelayTime": 0.5,
+                                            "closeDelayFrames": 30
+                                          },
+                                          "id": "5d58ae28-fa88-5f90-8431-b63c7587369b"
+                                        },
+                                        {
+                                          "command": "EVENT_SET_VALUE",
+                                          "args": {
+                                            "variable": "27",
+                                            "value": {
+                                              "type": "number",
+                                              "value": 0
+                                            }
+                                          },
+                                          "id": "cc066e33-8ecd-549d-9a74-7665f3495db1"
+                                        },
+                                        {
+                                          "command": "EVENT_REMOVE_INPUT_SCRIPT",
+                                          "args": {
+                                            "input": [
+                                              "a"
+                                            ]
+                                          },
+                                          "id": "5a8f19ef-1df9-5f04-8252-516b0267a859"
+                                        },
+                                        {
+                                          "command": "EVENT_FADE_OUT",
+                                          "args": {
+                                            "speed": "2"
+                                          },
+                                          "id": "28d8d1b8-98e6-5f44-9b68-241caad47978"
+                                        },
+                                        {
+                                          "command": "EVENT_SWITCH_SCENE",
+                                          "args": {
+                                            "sceneId": "7c856987-bbdf-5d75-a97e-327259a90956",
+                                            "x": {
+                                              "type": "number",
+                                              "value": 2
+                                            },
+                                            "y": {
+                                              "type": "number",
+                                              "value": 14
+                                            },
+                                            "direction": "right",
+                                            "fadeSpeed": "2"
+                                          },
+                                          "id": "e3543999-8845-5f57-9133-fa60adcaa82e"
+                                        }
+                                      ],
+                                      "false": [
+                                        {
+                                          "command": "EVENT_TEXT",
+                                          "args": {
+                                            "text": [
+                                              "PRIYA\nStill waiting."
+                                            ],
+                                            "avatarId": "",
+                                            "minHeight": 4,
+                                            "maxHeight": 7,
+                                            "textX": 1,
+                                            "textY": 1,
+                                            "textHeight": 5,
+                                            "position": "bottom",
+                                            "clearPrevious": true,
+                                            "showFrame": true,
+                                            "speedIn": -1,
+                                            "speedOut": -1,
+                                            "closeWhen": "key",
+                                            "closeButton": "a",
+                                            "closeDelayUnits": "time",
+                                            "closeDelayTime": 0.5,
+                                            "closeDelayFrames": 30
+                                          },
+                                          "id": "91e2f3a7-d0e4-5919-ae2b-73e73392468f"
+                                        },
+                                        {
+                                          "command": "EVENT_IF",
+                                          "args": {
+                                            "condition": {
+                                              "type": "eq",
+                                              "valueA": {
+                                                "type": "variable",
+                                                "value": "16"
+                                              },
+                                              "valueB": {
+                                                "type": "number",
+                                                "value": 1
+                                              }
+                                            }
+                                          },
+                                          "id": "f1742de0-403f-5405-83ba-1d5867abbb54",
+                                          "children": {
+                                            "true": [
+                                              {
+                                                "command": "EVENT_TEXT",
+                                                "args": {
+                                                  "text": [
+                                                    "Next: AMARA\nGo to trail sign.\nPress A there."
+                                                  ],
+                                                  "avatarId": "",
+                                                  "minHeight": 4,
+                                                  "maxHeight": 7,
+                                                  "textX": 1,
+                                                  "textY": 1,
+                                                  "textHeight": 5,
+                                                  "position": "bottom",
+                                                  "clearPrevious": true,
+                                                  "showFrame": true,
+                                                  "speedIn": -1,
+                                                  "speedOut": -1,
+                                                  "closeWhen": "key",
+                                                  "closeButton": "a",
+                                                  "closeDelayUnits": "time",
+                                                  "closeDelayTime": 0.5,
+                                                  "closeDelayFrames": 30
+                                                },
+                                                "id": "843674ee-4ee0-5400-9620-9eb3fe87c54f"
+                                              }
+                                            ],
+                                            "false": [
+                                              {
+                                                "command": "EVENT_IF",
+                                                "args": {
+                                                  "condition": {
+                                                    "type": "eq",
+                                                    "valueA": {
+                                                      "type": "variable",
+                                                      "value": "16"
+                                                    },
+                                                    "valueB": {
+                                                      "type": "number",
+                                                      "value": 2
+                                                    }
+                                                  }
+                                                },
+                                                "id": "50067e9d-5d7b-5b6a-b4dc-cb90a3c1312a",
+                                                "children": {
+                                                  "true": [
+                                                    {
+                                                      "command": "EVENT_TEXT",
+                                                      "args": {
+                                                        "text": [
+                                                          "Next: HIROSHI\nGo to trail sign.\nPress A there."
+                                                        ],
+                                                        "avatarId": "",
+                                                        "minHeight": 4,
+                                                        "maxHeight": 7,
+                                                        "textX": 1,
+                                                        "textY": 1,
+                                                        "textHeight": 5,
+                                                        "position": "bottom",
+                                                        "clearPrevious": true,
+                                                        "showFrame": true,
+                                                        "speedIn": -1,
+                                                        "speedOut": -1,
+                                                        "closeWhen": "key",
+                                                        "closeButton": "a",
+                                                        "closeDelayUnits": "time",
+                                                        "closeDelayTime": 0.5,
+                                                        "closeDelayFrames": 30
+                                                      },
+                                                      "id": "ea1dfeba-e118-57e3-9cd1-a0b217f62709"
+                                                    }
+                                                  ],
+                                                  "false": [
+                                                    {
+                                                      "command": "EVENT_IF",
+                                                      "args": {
+                                                        "condition": {
+                                                          "type": "eq",
+                                                          "valueA": {
+                                                            "type": "variable",
+                                                            "value": "16"
+                                                          },
+                                                          "valueB": {
+                                                            "type": "number",
+                                                            "value": 3
+                                                          }
+                                                        }
+                                                      },
+                                                      "id": "104f71ab-1b98-5aec-87c2-a26b2fc3a8fb",
+                                                      "children": {
+                                                        "true": [
+                                                          {
+                                                            "command": "EVENT_TEXT",
+                                                            "args": {
+                                                              "text": [
+                                                                "Next: PRIYA\nGo to trail sign.\nPress A there."
+                                                              ],
+                                                              "avatarId": "",
+                                                              "minHeight": 4,
+                                                              "maxHeight": 7,
+                                                              "textX": 1,
+                                                              "textY": 1,
+                                                              "textHeight": 5,
+                                                              "position": "bottom",
+                                                              "clearPrevious": true,
+                                                              "showFrame": true,
+                                                              "speedIn": -1,
+                                                              "speedOut": -1,
+                                                              "closeWhen": "key",
+                                                              "closeButton": "a",
+                                                              "closeDelayUnits": "time",
+                                                              "closeDelayTime": 0.5,
+                                                              "closeDelayFrames": 30
+                                                            },
+                                                            "id": "5bd62947-abed-5b45-9fcc-ba3a93a1cfdb"
+                                                          }
+                                                        ],
+                                                        "false": [
+                                                          {
+                                                            "command": "EVENT_IF",
+                                                            "args": {
+                                                              "condition": {
+                                                                "type": "eq",
+                                                                "valueA": {
+                                                                  "type": "variable",
+                                                                  "value": "16"
+                                                                },
+                                                                "valueB": {
+                                                                  "type": "number",
+                                                                  "value": 4
+                                                                }
+                                                              }
+                                                            },
+                                                            "id": "6e61cd6d-6d37-5f63-ba7a-08886813ef04",
+                                                            "children": {
+                                                              "true": [
+                                                                {
+                                                                  "command": "EVENT_TEXT",
+                                                                  "args": {
+                                                                    "text": [
+                                                                      "Next: EMIL\nGo to trail sign.\nPress A there."
+                                                                    ],
+                                                                    "avatarId": "",
+                                                                    "minHeight": 4,
+                                                                    "maxHeight": 7,
+                                                                    "textX": 1,
+                                                                    "textY": 1,
+                                                                    "textHeight": 5,
+                                                                    "position": "bottom",
+                                                                    "clearPrevious": true,
+                                                                    "showFrame": true,
+                                                                    "speedIn": -1,
+                                                                    "speedOut": -1,
+                                                                    "closeWhen": "key",
+                                                                    "closeButton": "a",
+                                                                    "closeDelayUnits": "time",
+                                                                    "closeDelayTime": 0.5,
+                                                                    "closeDelayFrames": 30
+                                                                  },
+                                                                  "id": "0b9c70de-f3a5-5de1-a2bb-ff5086fe63c6"
+                                                                }
+                                                              ],
+                                                              "false": [
+                                                                {
+                                                                  "command": "EVENT_TEXT",
+                                                                  "args": {
+                                                                    "text": [
+                                                                      "No active order."
+                                                                    ],
+                                                                    "avatarId": "",
+                                                                    "minHeight": 4,
+                                                                    "maxHeight": 7,
+                                                                    "textX": 1,
+                                                                    "textY": 1,
+                                                                    "textHeight": 5,
+                                                                    "position": "bottom",
+                                                                    "clearPrevious": true,
+                                                                    "showFrame": true,
+                                                                    "speedIn": -1,
+                                                                    "speedOut": -1,
+                                                                    "closeWhen": "key",
+                                                                    "closeButton": "a",
+                                                                    "closeDelayUnits": "time",
+                                                                    "closeDelayTime": 0.5,
+                                                                    "closeDelayFrames": 30
+                                                                  },
+                                                                  "id": "2f99f844-8120-5c7e-8330-a07afc395f3a"
+                                                                }
+                                                              ]
+                                                            }
+                                                          }
+                                                        ]
+                                                      }
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }
                           ],
-                          "avatarId": "",
-                          "minHeight": 4,
-                          "maxHeight": 7,
-                          "textX": 1,
-                          "textY": 1,
-                          "textHeight": 5,
-                          "position": "bottom",
-                          "clearPrevious": true,
-                          "showFrame": true,
-                          "speedIn": -1,
-                          "speedOut": -1,
-                          "closeWhen": "key",
-                          "closeButton": "a",
-                          "closeDelayUnits": "time",
-                          "closeDelayTime": 0.5,
-                          "closeDelayFrames": 30
-                        },
-                        "id": "b30b699a-cbd5-5998-bce0-47f718cd0a8b"
-                      },
-                      {
-                        "command": "EVENT_FADE_OUT",
-                        "args": {
-                          "speed": "2"
-                        },
-                        "id": "b4cea33c-0b93-5021-b98b-45a5fc1f36b7"
-                      },
-                      {
-                        "command": "EVENT_SWITCH_SCENE",
-                        "args": {
-                          "sceneId": "e8778f37-44a7-5d3a-ad39-49d52fe4c5c7",
-                          "x": {
-                            "type": "number",
-                            "value": 2
-                          },
-                          "y": {
-                            "type": "number",
-                            "value": 32
-                          },
-                          "direction": "right",
-                          "fadeSpeed": "2"
-                        },
-                        "id": "f47241f7-11a3-56d9-b563-a7ebde4c1636"
+                          "false": [
+                            {
+                              "command": "EVENT_IF",
+                              "args": {
+                                "condition": {
+                                  "type": "eq",
+                                  "valueA": {
+                                    "type": "variable",
+                                    "value": "27"
+                                  },
+                                  "valueB": {
+                                    "type": "number",
+                                    "value": 4
+                                  }
+                                }
+                              },
+                              "id": "01db2e78-b9af-5278-8b66-0eccb059bda6",
+                              "children": {
+                                "true": [
+                                  {
+                                    "command": "EVENT_IF",
+                                    "args": {
+                                      "condition": {
+                                        "type": "eq",
+                                        "valueA": {
+                                          "type": "variable",
+                                          "value": "13"
+                                        },
+                                        "valueB": {
+                                          "type": "number",
+                                          "value": 1
+                                        }
+                                      }
+                                    },
+                                    "id": "4e61d638-75a7-5884-93ce-c55cd0c1a0c4",
+                                    "children": {
+                                      "true": [
+                                        {
+                                          "command": "EVENT_TEXT",
+                                          "args": {
+                                            "text": [
+                                              "EMIL\nPower restored."
+                                            ],
+                                            "avatarId": "",
+                                            "minHeight": 4,
+                                            "maxHeight": 7,
+                                            "textX": 1,
+                                            "textY": 1,
+                                            "textHeight": 5,
+                                            "position": "bottom",
+                                            "clearPrevious": true,
+                                            "showFrame": true,
+                                            "speedIn": -1,
+                                            "speedOut": -1,
+                                            "closeWhen": "key",
+                                            "closeButton": "a",
+                                            "closeDelayUnits": "time",
+                                            "closeDelayTime": 0.5,
+                                            "closeDelayFrames": 30
+                                          },
+                                          "id": "deed6f13-e5d5-5fcf-b597-7a40dc9fa68d"
+                                        }
+                                      ],
+                                      "false": [
+                                        {
+                                          "command": "EVENT_IF",
+                                          "args": {
+                                            "condition": {
+                                              "type": "eq",
+                                              "valueA": {
+                                                "type": "variable",
+                                                "value": "16"
+                                              },
+                                              "valueB": {
+                                                "type": "number",
+                                                "value": 4
+                                              }
+                                            }
+                                          },
+                                          "id": "449612eb-7e5c-5cba-bce2-49c55fa4689d",
+                                          "children": {
+                                            "true": [
+                                              {
+                                                "command": "EVENT_TEXT",
+                                                "args": {
+                                                  "text": [
+                                                    "WORK ORDER\nWO-0415",
+                                                    "Emil, hollow:\nstove is dead,\ndinner's cold.",
+                                                    "Worst damage yet.\nStay sharp."
+                                                  ],
+                                                  "avatarId": "",
+                                                  "minHeight": 4,
+                                                  "maxHeight": 7,
+                                                  "textX": 1,
+                                                  "textY": 1,
+                                                  "textHeight": 5,
+                                                  "position": "bottom",
+                                                  "clearPrevious": true,
+                                                  "showFrame": true,
+                                                  "speedIn": -1,
+                                                  "speedOut": -1,
+                                                  "closeWhen": "key",
+                                                  "closeButton": "a",
+                                                  "closeDelayUnits": "time",
+                                                  "closeDelayTime": 0.5,
+                                                  "closeDelayFrames": 30
+                                                },
+                                                "id": "4b64e8a9-644d-56d0-a418-047824282ea2"
+                                              },
+                                              {
+                                                "command": "EVENT_SET_VALUE",
+                                                "args": {
+                                                  "variable": "27",
+                                                  "value": {
+                                                    "type": "number",
+                                                    "value": 0
+                                                  }
+                                                },
+                                                "id": "1dfaf0f4-2dc6-5f0b-8107-f821d6b0de5a"
+                                              },
+                                              {
+                                                "command": "EVENT_REMOVE_INPUT_SCRIPT",
+                                                "args": {
+                                                  "input": [
+                                                    "a"
+                                                  ]
+                                                },
+                                                "id": "fe34a3a6-0b12-5d99-8e8b-8a133f188902"
+                                              },
+                                              {
+                                                "command": "EVENT_FADE_OUT",
+                                                "args": {
+                                                  "speed": "2"
+                                                },
+                                                "id": "87ab05d1-327b-52e2-ab9a-b8823c9fe1b9"
+                                              },
+                                              {
+                                                "command": "EVENT_SWITCH_SCENE",
+                                                "args": {
+                                                  "sceneId": "4d9329db-9c79-52dd-8372-d215a891bcb8",
+                                                  "x": {
+                                                    "type": "number",
+                                                    "value": 2
+                                                  },
+                                                  "y": {
+                                                    "type": "number",
+                                                    "value": 14
+                                                  },
+                                                  "direction": "right",
+                                                  "fadeSpeed": "2"
+                                                },
+                                                "id": "2883dbe1-19c5-5cce-9f1e-8e43b11875d4"
+                                              }
+                                            ],
+                                            "false": [
+                                              {
+                                                "command": "EVENT_TEXT",
+                                                "args": {
+                                                  "text": [
+                                                    "EMIL\nStill waiting."
+                                                  ],
+                                                  "avatarId": "",
+                                                  "minHeight": 4,
+                                                  "maxHeight": 7,
+                                                  "textX": 1,
+                                                  "textY": 1,
+                                                  "textHeight": 5,
+                                                  "position": "bottom",
+                                                  "clearPrevious": true,
+                                                  "showFrame": true,
+                                                  "speedIn": -1,
+                                                  "speedOut": -1,
+                                                  "closeWhen": "key",
+                                                  "closeButton": "a",
+                                                  "closeDelayUnits": "time",
+                                                  "closeDelayTime": 0.5,
+                                                  "closeDelayFrames": 30
+                                                },
+                                                "id": "9cd9739d-443e-5aa2-b98c-c7a3628b4865"
+                                              },
+                                              {
+                                                "command": "EVENT_IF",
+                                                "args": {
+                                                  "condition": {
+                                                    "type": "eq",
+                                                    "valueA": {
+                                                      "type": "variable",
+                                                      "value": "16"
+                                                    },
+                                                    "valueB": {
+                                                      "type": "number",
+                                                      "value": 1
+                                                    }
+                                                  }
+                                                },
+                                                "id": "511542e0-6498-5456-a454-49fc49f04ca0",
+                                                "children": {
+                                                  "true": [
+                                                    {
+                                                      "command": "EVENT_TEXT",
+                                                      "args": {
+                                                        "text": [
+                                                          "Next: AMARA\nGo to trail sign.\nPress A there."
+                                                        ],
+                                                        "avatarId": "",
+                                                        "minHeight": 4,
+                                                        "maxHeight": 7,
+                                                        "textX": 1,
+                                                        "textY": 1,
+                                                        "textHeight": 5,
+                                                        "position": "bottom",
+                                                        "clearPrevious": true,
+                                                        "showFrame": true,
+                                                        "speedIn": -1,
+                                                        "speedOut": -1,
+                                                        "closeWhen": "key",
+                                                        "closeButton": "a",
+                                                        "closeDelayUnits": "time",
+                                                        "closeDelayTime": 0.5,
+                                                        "closeDelayFrames": 30
+                                                      },
+                                                      "id": "ec714d2b-c413-5cd3-9e71-8628ebfcb82e"
+                                                    }
+                                                  ],
+                                                  "false": [
+                                                    {
+                                                      "command": "EVENT_IF",
+                                                      "args": {
+                                                        "condition": {
+                                                          "type": "eq",
+                                                          "valueA": {
+                                                            "type": "variable",
+                                                            "value": "16"
+                                                          },
+                                                          "valueB": {
+                                                            "type": "number",
+                                                            "value": 2
+                                                          }
+                                                        }
+                                                      },
+                                                      "id": "f6245a20-54bb-5d3f-b280-53c7faf82f2b",
+                                                      "children": {
+                                                        "true": [
+                                                          {
+                                                            "command": "EVENT_TEXT",
+                                                            "args": {
+                                                              "text": [
+                                                                "Next: HIROSHI\nGo to trail sign.\nPress A there."
+                                                              ],
+                                                              "avatarId": "",
+                                                              "minHeight": 4,
+                                                              "maxHeight": 7,
+                                                              "textX": 1,
+                                                              "textY": 1,
+                                                              "textHeight": 5,
+                                                              "position": "bottom",
+                                                              "clearPrevious": true,
+                                                              "showFrame": true,
+                                                              "speedIn": -1,
+                                                              "speedOut": -1,
+                                                              "closeWhen": "key",
+                                                              "closeButton": "a",
+                                                              "closeDelayUnits": "time",
+                                                              "closeDelayTime": 0.5,
+                                                              "closeDelayFrames": 30
+                                                            },
+                                                            "id": "0baabf31-e508-585a-b66d-da77019f34ff"
+                                                          }
+                                                        ],
+                                                        "false": [
+                                                          {
+                                                            "command": "EVENT_IF",
+                                                            "args": {
+                                                              "condition": {
+                                                                "type": "eq",
+                                                                "valueA": {
+                                                                  "type": "variable",
+                                                                  "value": "16"
+                                                                },
+                                                                "valueB": {
+                                                                  "type": "number",
+                                                                  "value": 3
+                                                                }
+                                                              }
+                                                            },
+                                                            "id": "5d4e7cbf-697b-585a-b29d-bd0bbeb6cdb3",
+                                                            "children": {
+                                                              "true": [
+                                                                {
+                                                                  "command": "EVENT_TEXT",
+                                                                  "args": {
+                                                                    "text": [
+                                                                      "Next: PRIYA\nGo to trail sign.\nPress A there."
+                                                                    ],
+                                                                    "avatarId": "",
+                                                                    "minHeight": 4,
+                                                                    "maxHeight": 7,
+                                                                    "textX": 1,
+                                                                    "textY": 1,
+                                                                    "textHeight": 5,
+                                                                    "position": "bottom",
+                                                                    "clearPrevious": true,
+                                                                    "showFrame": true,
+                                                                    "speedIn": -1,
+                                                                    "speedOut": -1,
+                                                                    "closeWhen": "key",
+                                                                    "closeButton": "a",
+                                                                    "closeDelayUnits": "time",
+                                                                    "closeDelayTime": 0.5,
+                                                                    "closeDelayFrames": 30
+                                                                  },
+                                                                  "id": "c383b0d7-c448-5b4b-8779-ac5abd4c5ba0"
+                                                                }
+                                                              ],
+                                                              "false": [
+                                                                {
+                                                                  "command": "EVENT_IF",
+                                                                  "args": {
+                                                                    "condition": {
+                                                                      "type": "eq",
+                                                                      "valueA": {
+                                                                        "type": "variable",
+                                                                        "value": "16"
+                                                                      },
+                                                                      "valueB": {
+                                                                        "type": "number",
+                                                                        "value": 4
+                                                                      }
+                                                                    }
+                                                                  },
+                                                                  "id": "ee7eb10d-93ba-555e-9ced-442aac7b6557",
+                                                                  "children": {
+                                                                    "true": [
+                                                                      {
+                                                                        "command": "EVENT_TEXT",
+                                                                        "args": {
+                                                                          "text": [
+                                                                            "Next: EMIL\nGo to trail sign.\nPress A there."
+                                                                          ],
+                                                                          "avatarId": "",
+                                                                          "minHeight": 4,
+                                                                          "maxHeight": 7,
+                                                                          "textX": 1,
+                                                                          "textY": 1,
+                                                                          "textHeight": 5,
+                                                                          "position": "bottom",
+                                                                          "clearPrevious": true,
+                                                                          "showFrame": true,
+                                                                          "speedIn": -1,
+                                                                          "speedOut": -1,
+                                                                          "closeWhen": "key",
+                                                                          "closeButton": "a",
+                                                                          "closeDelayUnits": "time",
+                                                                          "closeDelayTime": 0.5,
+                                                                          "closeDelayFrames": 30
+                                                                        },
+                                                                        "id": "b2bcdf33-c2fa-50a2-9ac6-b3856485b895"
+                                                                      }
+                                                                    ],
+                                                                    "false": [
+                                                                      {
+                                                                        "command": "EVENT_TEXT",
+                                                                        "args": {
+                                                                          "text": [
+                                                                            "No active order."
+                                                                          ],
+                                                                          "avatarId": "",
+                                                                          "minHeight": 4,
+                                                                          "maxHeight": 7,
+                                                                          "textX": 1,
+                                                                          "textY": 1,
+                                                                          "textHeight": 5,
+                                                                          "position": "bottom",
+                                                                          "clearPrevious": true,
+                                                                          "showFrame": true,
+                                                                          "speedIn": -1,
+                                                                          "speedOut": -1,
+                                                                          "closeWhen": "key",
+                                                                          "closeButton": "a",
+                                                                          "closeDelayUnits": "time",
+                                                                          "closeDelayTime": 0.5,
+                                                                          "closeDelayFrames": 30
+                                                                        },
+                                                                        "id": "382e77b4-707b-5c92-acb7-e1362b43b01e"
+                                                                      }
+                                                                    ]
+                                                                  }
+                                                                }
+                                                              ]
+                                                            }
+                                                          }
+                                                        ]
+                                                      }
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ],
+                                "false": [
+                                  {
+                                    "command": "EVENT_IF",
+                                    "args": {
+                                      "condition": {
+                                        "type": "eq",
+                                        "valueA": {
+                                          "type": "variable",
+                                          "value": "16"
+                                        },
+                                        "valueB": {
+                                          "type": "number",
+                                          "value": 1
+                                        }
+                                      }
+                                    },
+                                    "id": "07719706-630f-53c7-9f80-330f68f75962",
+                                    "children": {
+                                      "true": [
+                                        {
+                                          "command": "EVENT_TEXT",
+                                          "args": {
+                                            "text": [
+                                              "Next: AMARA\nGo to trail sign.\nPress A there."
+                                            ],
+                                            "avatarId": "",
+                                            "minHeight": 4,
+                                            "maxHeight": 7,
+                                            "textX": 1,
+                                            "textY": 1,
+                                            "textHeight": 5,
+                                            "position": "bottom",
+                                            "clearPrevious": true,
+                                            "showFrame": true,
+                                            "speedIn": -1,
+                                            "speedOut": -1,
+                                            "closeWhen": "key",
+                                            "closeButton": "a",
+                                            "closeDelayUnits": "time",
+                                            "closeDelayTime": 0.5,
+                                            "closeDelayFrames": 30
+                                          },
+                                          "id": "6cb17dc4-6a5a-55d8-85df-3b59c8742e85"
+                                        }
+                                      ],
+                                      "false": [
+                                        {
+                                          "command": "EVENT_IF",
+                                          "args": {
+                                            "condition": {
+                                              "type": "eq",
+                                              "valueA": {
+                                                "type": "variable",
+                                                "value": "16"
+                                              },
+                                              "valueB": {
+                                                "type": "number",
+                                                "value": 2
+                                              }
+                                            }
+                                          },
+                                          "id": "fe979799-cf72-59c8-a66b-c58f0899f3f8",
+                                          "children": {
+                                            "true": [
+                                              {
+                                                "command": "EVENT_TEXT",
+                                                "args": {
+                                                  "text": [
+                                                    "Next: HIROSHI\nGo to trail sign.\nPress A there."
+                                                  ],
+                                                  "avatarId": "",
+                                                  "minHeight": 4,
+                                                  "maxHeight": 7,
+                                                  "textX": 1,
+                                                  "textY": 1,
+                                                  "textHeight": 5,
+                                                  "position": "bottom",
+                                                  "clearPrevious": true,
+                                                  "showFrame": true,
+                                                  "speedIn": -1,
+                                                  "speedOut": -1,
+                                                  "closeWhen": "key",
+                                                  "closeButton": "a",
+                                                  "closeDelayUnits": "time",
+                                                  "closeDelayTime": 0.5,
+                                                  "closeDelayFrames": 30
+                                                },
+                                                "id": "430f3d96-a4ff-5348-ac54-9c5f4e85ccb6"
+                                              }
+                                            ],
+                                            "false": [
+                                              {
+                                                "command": "EVENT_IF",
+                                                "args": {
+                                                  "condition": {
+                                                    "type": "eq",
+                                                    "valueA": {
+                                                      "type": "variable",
+                                                      "value": "16"
+                                                    },
+                                                    "valueB": {
+                                                      "type": "number",
+                                                      "value": 3
+                                                    }
+                                                  }
+                                                },
+                                                "id": "2c54fae9-8d6d-519d-b054-eff958979d5b",
+                                                "children": {
+                                                  "true": [
+                                                    {
+                                                      "command": "EVENT_TEXT",
+                                                      "args": {
+                                                        "text": [
+                                                          "Next: PRIYA\nGo to trail sign.\nPress A there."
+                                                        ],
+                                                        "avatarId": "",
+                                                        "minHeight": 4,
+                                                        "maxHeight": 7,
+                                                        "textX": 1,
+                                                        "textY": 1,
+                                                        "textHeight": 5,
+                                                        "position": "bottom",
+                                                        "clearPrevious": true,
+                                                        "showFrame": true,
+                                                        "speedIn": -1,
+                                                        "speedOut": -1,
+                                                        "closeWhen": "key",
+                                                        "closeButton": "a",
+                                                        "closeDelayUnits": "time",
+                                                        "closeDelayTime": 0.5,
+                                                        "closeDelayFrames": 30
+                                                      },
+                                                      "id": "283648e0-da1b-5947-99b0-2d0e335b5878"
+                                                    }
+                                                  ],
+                                                  "false": [
+                                                    {
+                                                      "command": "EVENT_IF",
+                                                      "args": {
+                                                        "condition": {
+                                                          "type": "eq",
+                                                          "valueA": {
+                                                            "type": "variable",
+                                                            "value": "16"
+                                                          },
+                                                          "valueB": {
+                                                            "type": "number",
+                                                            "value": 4
+                                                          }
+                                                        }
+                                                      },
+                                                      "id": "c48ba160-beb6-5078-80bc-d7ab4ed7d031",
+                                                      "children": {
+                                                        "true": [
+                                                          {
+                                                            "command": "EVENT_TEXT",
+                                                            "args": {
+                                                              "text": [
+                                                                "Next: EMIL\nGo to trail sign.\nPress A there."
+                                                              ],
+                                                              "avatarId": "",
+                                                              "minHeight": 4,
+                                                              "maxHeight": 7,
+                                                              "textX": 1,
+                                                              "textY": 1,
+                                                              "textHeight": 5,
+                                                              "position": "bottom",
+                                                              "clearPrevious": true,
+                                                              "showFrame": true,
+                                                              "speedIn": -1,
+                                                              "speedOut": -1,
+                                                              "closeWhen": "key",
+                                                              "closeButton": "a",
+                                                              "closeDelayUnits": "time",
+                                                              "closeDelayTime": 0.5,
+                                                              "closeDelayFrames": 30
+                                                            },
+                                                            "id": "e73e13a0-d6e6-5499-9197-3c75746ad729"
+                                                          }
+                                                        ],
+                                                        "false": [
+                                                          {
+                                                            "command": "EVENT_TEXT",
+                                                            "args": {
+                                                              "text": [
+                                                                "No active order."
+                                                              ],
+                                                              "avatarId": "",
+                                                              "minHeight": 4,
+                                                              "maxHeight": 7,
+                                                              "textX": 1,
+                                                              "textY": 1,
+                                                              "textHeight": 5,
+                                                              "position": "bottom",
+                                                              "clearPrevious": true,
+                                                              "showFrame": true,
+                                                              "speedIn": -1,
+                                                              "speedOut": -1,
+                                                              "closeWhen": "key",
+                                                              "closeButton": "a",
+                                                              "closeDelayUnits": "time",
+                                                              "closeDelayTime": 0.5,
+                                                              "closeDelayFrames": 30
+                                                            },
+                                                            "id": "273558f8-e19a-54f0-8d6a-dd2c92c05f06"
+                                                          }
+                                                        ]
+                                                      }
+                                                    }
+                                                  ]
+                                                }
+                                              }
+                                            ]
+                                          }
+                                        }
+                                      ]
+                                    }
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
                       }
                     ]
                   }
@@ -334,5 +2144,5 @@
   "playerHit1Script": [],
   "playerHit2Script": [],
   "playerHit3Script": [],
-  "playerSpriteSheetId": "a8179eaa-d52a-5074-b27c-55a31c549589"
+  "playerSpriteSheetId": "4d7af777-a44f-5235-b3e5-1009f0e6c6e9"
 }

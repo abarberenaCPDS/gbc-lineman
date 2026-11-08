@@ -1,3 +1,28 @@
+## Lakeside intro and town implemented — November 8, 2026
+
+✅ Intro cable pickup/repair/gust recovery and walkable 32×32 lakeside town are
+implemented on `feat/terrain-design`, `0.22.0-dev`. Four gated district trails,
+completion lamps, directional hero, and safe town returns retain all four jobs
+and five repairs per job. Jump physics files are byte-identical to the baseline.
+Three GPT-6 Luna workers handled intro, town logic and focused tests; GPT-6.1 Sol
+handled a bounded town art pass. Main integrated and serialized runtime checks.
+
+✅ Full suite: **560 tests passed**; final hero adjustment: **7 focused tests
+passed**. Final official ROM build and strong project health pass (0/0/0).
+Native final-ROM replay reaches town through pickup, repair and gust recovery.
+Seeded return gates depart correctly into Hiroshi, Priya and Emil. Earlier real
+opening play also reached Amara's first main-job repair. Exact hashes and retained
+recordings are in [LAKESIDE_IMPLEMENTATION_HANDOFF.md](LAKESIDE_IMPLEMENTATION_HANDOFF.md).
+
+🚧 Final web export built, but preview replacement reports **recording close
+acknowledgement UNKNOWN**. Old preview/save preserved and paused; visible browser
+is not the final build. Resolve plugin closure/reconnect, open the cached final
+export, and obtain human acceptance before redesigning household routes.
+Full final-campaign, save/restore and hardware acceptance remain open. No flash,
+cloud work, push or remote change performed.
+
+---
+
 ## Lakeside baseline selected — November 8, 2026
 
 Abe selected variant 1 for the entire game. Implementation order: intro mission,

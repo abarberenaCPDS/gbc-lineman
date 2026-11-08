@@ -1,0 +1,37 @@
+{
+  "_resourceType": "trigger",
+  "id": "98daf12e-544f-585d-a0d5-05228211ea27",
+  "_index": 2,
+  "name": "PRIYA district trail",
+  "symbol": "trigger_hub_priya",
+  "x": 4,
+  "y": 25,
+  "width": 4,
+  "height": 2,
+  "script": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 3
+        }
+      },
+      "id": "132b9299-2066-53bc-9322-bed1fe63c6d8"
+    }
+  ],
+  "leaveScript": [
+    {
+      "command": "EVENT_SET_VALUE",
+      "args": {
+        "variable": "27",
+        "value": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "822c3dcd-69f1-55f6-bb4d-ac22894c28a0"
+    }
+  ]
+}

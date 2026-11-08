@@ -1,0 +1,165 @@
+{
+  "_resourceType": "actor",
+  "id": "8eeeac98-eb91-55c6-a2c8-6c4e33cbcd7f",
+  "_index": 4,
+  "symbol": "opening_tutorial_wind",
+  "name": "Gentle breeze",
+  "prefabId": "",
+  "coordinateType": "tiles",
+  "x": 12,
+  "y": 12,
+  "frame": 0,
+  "animate": true,
+  "spriteSheetId": "31b39167-ad7a-5152-8387-976ca2d50655",
+  "paletteId": "",
+  "direction": "left",
+  "moveSpeed": 1,
+  "animSpeed": 15,
+  "isPinned": false,
+  "persistent": false,
+  "collisionGroup": "1",
+  "collisionExtraFlags": [],
+  "prefabScriptOverrides": {},
+  "script": [],
+  "startScript": [
+    {
+      "id": "7b02f53c-0239-5658-bc06-36a067492c77",
+      "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+      "args": {
+        "actorId": "$self$"
+      }
+    },
+    {
+      "id": "22c11936-e436-5892-9ea8-fae5d91dba2b",
+      "command": "EVENT_ACTOR_HIDE",
+      "args": {
+        "actorId": "$self$"
+      }
+    }
+  ],
+  "updateScript": [
+    {
+      "id": "1c55ef0c-bcb2-5bcb-aaf2-6c14701a121b",
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "4"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "children": {
+        "true": [
+          {
+            "id": "934a37b6-92fa-5cf2-be77-beba51ee8160",
+            "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+            "args": {
+              "actorId": "$self$"
+            }
+          },
+          {
+            "id": "0be78086-507c-541a-94c1-5e051678d5e0",
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "$self$",
+              "spriteStateId": "Warning",
+              "loopAnim": true
+            }
+          },
+          {
+            "id": "c6636b09-e580-5d95-922b-a70cc2f36e5f",
+            "command": "EVENT_ACTOR_SHOW",
+            "args": {
+              "actorId": "$self$"
+            }
+          },
+          {
+            "id": "fcf828a9-f05e-5cb6-bb90-2e418e61b2dc",
+            "command": "EVENT_WAIT",
+            "args": {
+              "units": "frames",
+              "frames": {
+                "type": "number",
+                "value": 40
+              }
+            }
+          },
+          {
+            "id": "9d73a0a9-4da4-5db2-b2e4-6833e1d7055b",
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "$self$",
+              "spriteStateId": "Burst",
+              "loopAnim": true
+            }
+          },
+          {
+            "id": "229ff7ec-cf34-542f-bebc-d2dd25e80081",
+            "command": "EVENT_ACTOR_COLLISIONS_ENABLE",
+            "args": {
+              "actorId": "$self$"
+            }
+          },
+          {
+            "id": "c274fc1d-fe6c-5d3e-8b7a-7d3d9aebef27",
+            "command": "EVENT_WAIT",
+            "args": {
+              "units": "frames",
+              "frames": {
+                "type": "number",
+                "value": 20
+              }
+            }
+          },
+          {
+            "id": "f7f3fd42-6f19-5967-a848-8f0aab2645f0",
+            "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
+            "args": {
+              "actorId": "$self$"
+            }
+          },
+          {
+            "id": "863938c0-3129-5af3-a0b9-acf4870089bd",
+            "command": "EVENT_ACTOR_HIDE",
+            "args": {
+              "actorId": "$self$"
+            }
+          },
+          {
+            "id": "a1f66303-eed7-5b36-895a-c166f5b1545b",
+            "command": "EVENT_WAIT",
+            "args": {
+              "units": "frames",
+              "frames": {
+                "type": "number",
+                "value": 60
+              }
+            }
+          }
+        ],
+        "false": [
+          {
+            "id": "35be6ad2-4b58-5064-82bb-63783ba2fe9d",
+            "command": "EVENT_WAIT",
+            "args": {
+              "units": "frames",
+              "frames": {
+                "type": "number",
+                "value": 30
+              }
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "hit1Script": [],
+  "hit2Script": [],
+  "hit3Script": []
+}

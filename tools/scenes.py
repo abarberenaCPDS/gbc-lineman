@@ -56,7 +56,7 @@ REGISTRY: dict[str, dict] = {
         "tag": GAME, "editor": (480, -240), "generator": "make_intro_scene.py",
     },
     "work_order": {
-        "id": "6d76ca16-f510-5fd7-bb1c-c915a1367045", "name": "Work Order",
+        "id": "6d76ca16-f510-5fd7-bb1c-c915a1367045", "name": "Lakeside Town",
         "tag": GAME, "editor": (720, -240), "generator": "make_ticket_scene.py",
     },
     "storm_report": {

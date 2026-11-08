@@ -98,7 +98,7 @@ BACKGROUND_IDS = {stem: resource_id(f"background:{stem}") for _, _, _, stem, *_ 
 
 # Where START on the title sends the player.
 OPENING_SCENE_ID = opening.resource_id("scene:service-opening")
-OPENING_START = opening.START            # (1, 15)
+OPENING_START = opening.START            # Tutorial contract owns the arrival.
 OPENING_DIRECTION = "right"
 FADE_SPEED = "2"
 

@@ -5,10 +5,9 @@ option A in docs/DESIGN_OPTIONS.md).
 Each job opens with a work-order card and ends with the ticket stamped CLOSED;
 after Emil's house a storm report thanks everyone and returns to the title.
 
-* ``work_order``: one TOPDOWN, screen-sized scene for every ticket. The exit
-  that leads into a job sets ``VAR_TICKET`` to the job number (1-4) and switches
-  here; the scene shows the clipboard card art, types that ticket as dispatch
-  (narrator voice) and, on the last A, switches to the job's start.
+* ``work_order``: walkable lakeside town. The preceding completed job sets
+  ``VAR_TICKET`` to the next job (1-4) and returns here. The player walks to its
+  signed trailhead and presses A for the work-order context and departure.
 * Closing: right after a house's power payoff, the job's own scene shows a
   CLOSED box (``closed_lines``) with the victory jingle. It stays in-scene:
   re-entering a job scene re-runs its init and would reset its variables.
@@ -57,7 +56,7 @@ BACKGROUND_NAME = "ticket_card"                 # assets/backgrounds/ticket_card
 BACKGROUND_ID = resource_id("background:ticket_card")
 # Card art occupies rows 0..11; the dialogue box (bottom, up to 6 rows) covers 12..17.
 CARD_ROWS = 12
-HERO_POSITION = (0, 0)   # TOPDOWN needs a player position; the hero sprite is hidden
+HERO_POSITION = (15, 13)  # Safe central arrival in the walkable lakeside town.
 
 # make_climb_scene.resource_id("scene:storm-climb"); a literal because the scene
 # generators import this module (test_tickets checks it against the generator).
@@ -121,7 +120,7 @@ TITLE_SCENE_ID = intro.TITLE_SCENE_ID
 
 
 def to_work_order(ticket: int, key: str, event, set_value, number) -> list[dict]:
-    """Events that open ticket ``ticket``: set VAR_TICKET, switch to the card scene.
+    """Events that open ticket ``ticket``: set VAR_TICKET, arrive on the town path.
 
     ``event(command, args, key)``, ``set_value(variable, value, key)`` and
     ``number(value)`` are the calling generator's own builders.

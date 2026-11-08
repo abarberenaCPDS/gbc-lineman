@@ -44,7 +44,7 @@ class DispatchMapTests(unittest.TestCase):
         scene=generator.prototype_scene()
         self.assertEqual(scene['type'],'TOPDOWN')
         self.assertEqual(scene['id'],contract.tickets.WORK_ORDER_SCENE_ID)
-        self.assertEqual(tickets.build_scenes()['work_order']['backgroundId'],contract.tickets.BACKGROUND_ID)
+        self.assertEqual(scene['backgroundId'],contract.BACKGROUND_ID)
         self.assertEqual(tickets.build_scenes()['storm_report']['backgroundId'],contract.tickets.BACKGROUND_ID)
 
 if __name__=='__main__': unittest.main()
