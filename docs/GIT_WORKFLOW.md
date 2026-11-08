@@ -1,7 +1,7 @@
-# 🧭 Local Git workflow
+# 🧭 Git workflow
 
-This project is kept local for now. Do not add or change a remote unless Abe
-explicitly requests it. The repository uses one-line Conventional Commit
+The authorized GitHub remote is `git@github.com:abarberenaCPDS/gbc-lineman.git`
+(`origin`). Do not add or change other remotes unless Abe explicitly requests it. The repository uses one-line Conventional Commit
 messages, feature worktrees, and SemVer in the root `VERSION` file.
 
 ## ✅ One-line commits
