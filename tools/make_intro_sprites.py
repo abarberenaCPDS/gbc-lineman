@@ -3,9 +3,10 @@
 Run with the managed Python (Pillow):
 
     "$HOME/Library/Application Support/modretro-chromatic/toolchain/.local/pyboy-venv/bin/python" \
-        tools/make_intro_sprites.py [--preview]
+        tools/make_intro_sprites.py [--hero-variant neighborhood|classic] [--preview]
 
-Writes ``assets/sprites/intro_{rain,bolt,pole,hero}.png`` plus native GB Studio sidecars.
+Writes ``assets/sprites/intro_{rain,bolt,pole,hero}.png`` and the reusable
+``neighborhood_hero.png`` plus native GB Studio sidecars.
 IDs, sizes, pole states and palette slots come from ``tools/intro.py``.
 
 Art is procedural/ASCII: ``.`` transparent, ``1``/``2``/``3`` are the proxy colours
@@ -16,6 +17,7 @@ Frames sit side by side in the PNG; each 8px column is one 8x16 OBJ per 16 rows.
 """
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import sys
@@ -29,6 +31,7 @@ ROOT = TOOLS_DIR.parent
 OUT_DIR = ROOT / "assets" / "sprites"
 sys.path.insert(0, str(TOOLS_DIR))
 import intro  # noqa: E402
+import neighborhood_hero  # noqa: E402
 
 W = 16
 ENGINE_SLOTS = 8
@@ -167,16 +170,6 @@ def pole_snapped(f: int, cable: bool = True) -> list[str]:
     return _rows(g)
 
 
-HERO_GLYPHS = {(0, 255, 0): ".", (255, 255, 255): "1", (160, 160, 160): "2", (0, 0, 0): "3"}
-
-
-def hero_frame(source_x: int) -> list[str]:
-    """One 16x32 frame copied from opening_worker24 (its proxy colours match ours)."""
-    src = Image.open(intro.HERO_SOURCE).convert("RGB")
-    return ["".join(HERO_GLYPHS[src.getpixel((source_x + x, y))] for x in range(W))
-            for y in range(32)]
-
-
 ASSETS = {
     "intro_rain": dict(sprite_id=intro.RAIN_SPRITE_ID, h=16, slot="rain", speed=6,
                        states=[("Default", [rain_frame(f) for f in range(4)])]),
@@ -187,8 +180,9 @@ ASSETS = {
                                ("Snapped+Cable", [pole_snapped(f, cable=True) for f in range(3)]),
                                ("Snapped", [pole_snapped(f, cable=False) for f in range(3)])]),
     "intro_hero": dict(sprite_id=intro.HERO_SPRITE_ID, h=32, slot="worker", speed=10,
-                       states=[(state, [hero_frame(x) for x in xs])
-                               for state, xs in intro.HERO_STATES.items()]),
+                       states=[]),
+    "neighborhood_hero": dict(sprite_id=intro.NEIGHBORHOOD_HERO_SPRITE_ID, h=32,
+                              slot="worker", speed=10, states=[]),
 }
 
 
@@ -294,7 +288,23 @@ def preview(path: Path) -> None:
     sheet.resize((sheet.width * S, sheet.height * S), Image.NEAREST).save(path)
 
 
+def configure_heroes(variant: str) -> None:
+    def states(frames):
+        return [("Idle", list(frames[:2])), ("Walk", list(frames[2:]))]
+    ASSETS["intro_hero"]["states"] = states(neighborhood_hero.VARIANTS[variant])
+    ASSETS["neighborhood_hero"]["states"] = states(neighborhood_hero.NEIGHBORHOOD_FRAMES)
+
+
+configure_heroes(intro.DEFAULT_HERO_VARIANT)
+
+
 def main() -> None:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--hero-variant", choices=intro.HERO_VARIANTS,
+                        default=intro.DEFAULT_HERO_VARIANT)
+    parser.add_argument("--preview", action="store_true")
+    args = parser.parse_args()
+    configure_heroes(args.hero_variant)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
     for name in ASSETS:
         sheet, meta, _ = build(name)
@@ -307,7 +317,7 @@ def main() -> None:
         meta["checksum"] = hashlib.sha1(png.read_bytes()).hexdigest()
         side.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
         print(f"generated assets/sprites/{name}.png + .gbsres ({sheet.width}x{sheet.height})")
-    if "--preview" in sys.argv:
+    if args.preview:
         preview(ROOT / "build" / "intro_preview" / "sprites.png")
 
 

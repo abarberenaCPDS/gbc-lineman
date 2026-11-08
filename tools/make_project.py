@@ -48,7 +48,7 @@ PROFILES = {
 PLANNED_GENERATORS = {entry["generator"] for folder, entry in scenes.REGISTRY.items()
                       if scenes.planned(folder) and not scenes.present(folder)}
 SHARED_TESTS = ["test_routes.py", "test_scene_links.py", "test_grid_chain.py",
-                "test_experience.py", "test_completion.py", "test_shock.py"]
+                "test_experience.py", "test_completion.py", "test_shock.py", "test_hero_integration.py"]
 
 
 def run(*arguments: str) -> None:
@@ -62,7 +62,11 @@ def main() -> None:
     parser.add_argument("--render-music", action="store_true", help="offline local uge-builder render before scene generation")
     parser.add_argument("--fixtures", action="store_true", help="opening only: authored size/power comparison PNGs")
     parser.add_argument("--verify", action="store_true", help="run focused profile unit tests after generation")
+    parser.add_argument("--intro-hero", choices=("neighborhood", "classic"),
+                        help="intro only: hero art variant; default is Neighborhood Hero")
     args = parser.parse_args()
+    if args.intro_hero and args.profile != "intro":
+        parser.error("--intro-hero applies only to the intro profile")
     if args.fixtures and args.profile != "opening":
         parser.error("--fixtures applies only to the opening profile")
     try:
@@ -87,12 +91,15 @@ def main() -> None:
                 print(f"skip tools/{script} (planned scene, not written yet)", flush=True)
                 continue
             parser.error(f"tools/{script} is missing")
-        run("tools/" + script)
+        if script == "make_intro_sprites.py" and args.intro_hero:
+            run("tools/" + script, "--hero-variant", args.intro_hero)
+        else:
+            run("tools/" + script)
     if args.fixtures:
         run("tools/preview_opening.py")
     if args.verify:
         patterns = {"climb": ["test_climb*.py", "test_crest*.py", "test_engine_*.py", "test_scenes.py", *SHARED_TESTS],
-                    "opening": ["test_opening.py", "test_scenes.py"],
+                    "opening": ["test_opening.py", "test_storm_worker_art.py", "test_hero_integration.py", "test_scenes.py"],
                     "ridge": ["test_ridge*.py", "test_tomas_sprites.py", "test_climb.py", "test_scenes.py", *SHARED_TESTS],
                     "rosa": ["test_rosa*.py", "test_ridge.py", "test_scenes.py", *SHARED_TESTS],
                     "kiko": ["test_kiko*.py", "test_rosa.py", "test_scenes.py", *SHARED_TESTS],

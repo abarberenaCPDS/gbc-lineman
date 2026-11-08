@@ -1,3 +1,34 @@
+# Session handoff: hero variants (November 7, 2026)
+
+Continue in `/Users/abe/src/modretro-chromatic/gb-mr-cfe-experience`, branch
+`feat/experience-feedback`, VERSION `0.20.0-dev`. Main checkout remains untouched.
+
+Storm Worker is the active gameplay hero everywhere in the campaign/labs.
+Neighborhood Hero is the default intro art and an independent reusable story
+sprite. The original intro hero remains available with `--intro-hero classic`.
+The nine-shot sequence, captions/music/timing and gameplay hitboxes are preserved.
+
+**517 tests pass**, 647 deterministic generated files; native intro, title,
+opening repair/movement, carried jump, Shock and respawn checks passed. Both
+variant ROMs built. Production logo launch and Neighborhood default are restored.
+See [HERO_VARIANTS.md](HERO_VARIANTS.md) for exact commands, hashes and captures.
+
+Current preview:
+<http://127.0.0.1:50913/398fbd351b218eff07550b104a16dfe9de07be63989710d25c07c14f5c2e0d9e/>.
+It serves the new hero build; open listener, no players attached at final check.
+Browser automation failed with “The browser access host is unavailable.”
+Human motion/visual review and hardware checks remain open. All task-owned
+native emulator sessions are closed; preview is left open.
+
+The historical unresolved preview/save below belongs to its old owner. A fresh
+MCP session had no live preview and created the new listener without retrying or
+closing the old uncertain operation. Old export and saved-state files are kept.
+No merge, tags, remotes or hardware flash were changed.
+
+---
+
+## Previous handoff (retained evidence)
+
 # Session handoff: experience pilots (November 3, 2026)
 
 Continue in `/Users/abe/src/modretro-chromatic/gb-mr-cfe-experience`, branch

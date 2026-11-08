@@ -1,11 +1,11 @@
-"""Generate the isolated M-V1 opening character sprite candidates.
+"""Generate Storm Worker and the opening scene character sprites.
 
 Run with the project's managed Python (Pillow):
 
     "$HOME/Library/Application Support/modretro-chromatic/toolchain/.local/pyboy-venv/bin/python" \
         tools/make_opening_characters.py
 
-This generator owns only the four ``opening_*`` sprite PNGs and their native
+This generator owns the three ``opening_*`` sprite PNGs and their native
 GB Studio sidecars.  Sprite colors are strict source proxies: white, gray 160,
 and black map to opaque indices 1, 2, and 3; green is transparent.
 """
@@ -149,28 +149,31 @@ def _worker_frame(
         _draw_index(draw, (x, y + top), shade)
 
     if body_height == 24:
-        # Rounded hardhat, short brim, cheek/face profile and a visible ear.
-        poly([(5, 0), (10, 0), (12, 2), (12, 3), (13, 3), (13, 4),
-              (3, 4), (3, 3), (4, 3), (4, 1)], 3)
-        poly([(6, 1), (9, 1), (11, 2), (11, 3), (5, 3), (5, 2)], 1)
-        rect((3, 4, 13, 4), 3)  # dark brim separates helmet from face
-        rect((7, 5, 11, 7), 3)
-        rect((8, 5, 10, 7), 1)
-        point(10, 6, 3)  # eye in profile
-        point(11, 6, 3)  # nose/visor edge
-        rect((7, 8, 9, 9), 3)  # neck and collar
+        # Storm Worker: a broad cream hardhat and a stout rain jacket.
+        # The three opaque proxy shades map to cream, orange, and dark.
+        poly([(5, 0), (10, 0), (12, 2), (12, 3), (13, 3),
+              (13, 4), (2, 4), (2, 3), (3, 3), (3, 2)], 3)
+        poly([(5, 1), (10, 1), (11, 2), (11, 3), (4, 3), (4, 2)], 1)
+        rect((3, 4, 12, 4), 1)  # bright, full-width brim
+        rect((6, 5, 11, 7), 3)
+        rect((7, 5, 10, 7), 1)
+        point(10, 5, 3)  # profile eye
+        rect((6, 8, 10, 9), 3)  # collar
 
-        # Jacket outline and hi-vis orange panels; a broken pale reflective band
-        # gives the jacket a recognizable workwear cue at native resolution.
-        poly([(5, 8), (10, 8), (12, 10), (12, 15), (11, 17),
-              (4, 17), (3, 15), (3, 10)], 3)
-        rect((5, 9, 10, 15), 2)
-        rect((4, 10, 4, 14), 2)
-        rect((11, 10, 11, 14), 2)
-        rect((6, 11, 7, 11), 1)
-        rect((9, 12, 10, 12), 1)
-        rect((5, 16, 10, 17), 3)  # tool belt
-        rect((7, 16, 8, 16), 1)  # buckle
+        # Wide jacket with shoulders, solid orange panels, and a continuous
+        # reflective band.  Dark seams keep the high-contrast silhouette clear.
+        poly([(4, 8), (10, 8), (12, 9), (13, 11), (13, 16),
+              (12, 17), (3, 17), (2, 16), (2, 11), (3, 9)], 3)
+        poly([(4, 9), (10, 9), (11, 10), (12, 11), (12, 15),
+              (11, 16), (4, 16), (3, 15), (3, 11)], 2)
+        rect((4, 12, 11, 13), 1)  # cream reflective stripe
+        point(8, 10, 3)  # jacket zipper/collar seam
+        point(8, 11, 3)
+        rect((8, 14, 8, 15), 3)
+        rect((4, 16, 11, 17), 3)  # tool belt
+        rect((8, 16, 9, 16), 1)  # buckle
+        point(4, 17, 2)  # hanging tool pouch
+        point(5, 17, 2)
 
         # Rear arm hangs close; the leading arm swings or reaches with the pose.
         if pose == "walk":
@@ -214,8 +217,12 @@ def _worker_frame(
                 point(12, 14, 1)  # glove
             if pose == "idle" and phase:
                 # One-pixel vest glint is a quiet breathing beat; feet stay put.
-                point(8, 13, 1)
+                point(7, 15, 1)
 
+        # The outer sleeve shares the jacket's reflective band; keep the
+        # arm's silhouette and repair tool readable around it.
+        if pose not in ("walk", "jump"):
+            point(3, 12, 1)
         if carry:
             _carry_art(variant or CARRY_VARIANT, pose, phase, rect, point)
 
@@ -248,6 +255,23 @@ def _worker_frame(
                 # Subtle sole changes preserve the fixed floor/feet anchor.
                 point(6 + (phase % 2), 23, 1)
                 point(10 + (phase % 2), 23, 1)
+        # Broad boots, orange-gray cuff highlights and a low-hanging belt pouch.
+        # Keep the original gait and fixed floor anchor in every pose.
+        rect((4, 17, 5, 19), 3)
+        point(4, 18, 2)
+        if pose == "walk":
+            boots = (((2, 22, 6, 23), (10, 22, 13, 23)),
+                     ((4, 22, 7, 23), (9, 21, 12, 23)),
+                     ((3, 22, 6, 23), (10, 22, 13, 23)),
+                     ((4, 21, 7, 23), (9, 22, 12, 23)))[phase]
+        elif pose == "jump":
+            boots = ((3, 21, 6, 22), (10, 21, 13, 22))
+        else:
+            boots = ((3, 22, 7, 23), (9, 22, 13, 23))
+        for x1, y1, x2, y2 in boots:
+            rect((x1, y1, x2, y2), 3)
+            rect((x1 + 1, y1, x2 - 1, y1), 2)
+
     else:
         # Small fixture: preserve the same silhouette cues while reserving
         # enough pixels for a clean hat, profile, high-vis torso and boots.

@@ -8,6 +8,8 @@ from PIL import Image
 TOOLS = Path(__file__).resolve().parent
 sys.path.insert(0, str(TOOLS))
 import intro  # noqa: E402
+import neighborhood_hero  # noqa: E402
+import make_intro_sprites  # noqa: E402
 
 SPR = TOOLS.parent / "assets" / "sprites"
 CASES = {
@@ -43,6 +45,34 @@ class IntroSpriteTests(unittest.TestCase):
                 for fr in s["animations"][0]["frames"]:
                     self.assertTrue(fr["tiles"])
         self.assertEqual([s["name"] for s in _meta("intro_pole")["states"]], intro.POLE_STATES)
+
+    def test_hero_variants_are_independent_and_preserve_contract(self):
+        self.assertEqual(set(neighborhood_hero.VARIANTS), set(intro.HERO_VARIANTS))
+        for variant, frames in neighborhood_hero.VARIANTS.items():
+            self.assertEqual(len(frames), 6)
+            self.assertTrue(all(len(frame) == 32 and all(len(row) == 16 and
+                            set(row) <= set(".123") for row in frame) for frame in frames))
+            make_intro_sprites.configure_heroes(variant)
+            _, meta, built = make_intro_sprites.build("intro_hero")
+            self.assertEqual(meta["id"], intro.HERO_SPRITE_ID)
+            self.assertEqual([s["name"] for s in meta["states"]], ["Idle", "Walk"])
+            self.assertEqual(built, list(frames))
+        self.assertNotEqual(neighborhood_hero.CLASSIC_FRAMES, neighborhood_hero.NEIGHBORHOOD_FRAMES)
+        make_intro_sprites.configure_heroes(intro.DEFAULT_HERO_VARIANT)
+        _, intro_meta, intro_frames = make_intro_sprites.build("intro_hero")
+        _, reusable_meta, reusable_frames = make_intro_sprites.build("neighborhood_hero")
+        self.assertEqual(intro_frames, reusable_frames)
+        self.assertNotEqual(intro_meta["id"], reusable_meta["id"])
+        generated = [frame.tobytes() for frame in _frames("intro_hero")]
+        known = [[make_intro_sprites._render(frame, 32).tobytes() for frame in frames]
+                 for frames in neighborhood_hero.VARIANTS.values()]
+        self.assertIn(generated, known)
+        self.assertEqual([frame.tobytes() for frame in _frames("neighborhood_hero")],
+                         [make_intro_sprites._render(frame, 32).tobytes()
+                          for frame in neighborhood_hero.NEIGHBORHOOD_FRAMES])
+        walk = neighborhood_hero.NEIGHBORHOOD_FRAMES[2:]
+        self.assertEqual(len(set(walk)), 4)
+        self.assertTrue(all(frame[:17] == walk[0][:17] for frame in walk))
 
     def test_tile_y_counts_up_from_the_canvas_bottom(self):
         # GB Studio convention, as in the approved opening_worker24 sidecar.

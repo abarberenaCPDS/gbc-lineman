@@ -220,11 +220,11 @@ CAPTION_OVERLAY_COLOR = "white"  # fills with UI index 0 (dark): verify in build
 # ---------------------------------------------------------------------------
 # Story actors and sprites (OBJ palette slots in brackets)
 # ---------------------------------------------------------------------------
-# The hero is drawn from opening_worker24's pixels but packed as a fixed-type
-# intro sprite, so its facing and walk cycle never depend on worker24's
-# platform_player slot order (an actor picks slots by direction). Frames are
-# 16px source columns.
-HERO_SOURCE = ROOT / "assets/sprites/opening_worker24.png"
+# The hero uses independent native cels and a fixed-type intro sprite.
+# The classic variant preserves the original pixels, independent of gameplay.
+HERO_VARIANTS = ("neighborhood", "classic")
+DEFAULT_HERO_VARIANT = "neighborhood"
+NEIGHBORHOOD_HERO_SPRITE_ID = resource_id("sprite:neighborhood_hero")
 HERO_SPRITE_ID = resource_id("sprite:intro_hero")       # 16x32, states below
 HERO_STATES = {"Idle": [0, 16], "Walk": [96, 112, 128, 144]}   # facing right
 HERO_ENTER = (0, 13)            # hidden until shot 7

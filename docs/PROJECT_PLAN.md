@@ -20,7 +20,17 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Current gameplay round (2026-11-03):** experience pilots 🔄 on
+**Hero art round (2026-11-07):** ✅ implemented and native-verified; human
+visual/motion acceptance remains open. Storm Worker replaces all 13 active
+platform/lab heroes. Neighborhood Hero is a reusable story asset and default
+intro variant; original intro hero is preserved as `--intro-hero classic`.
+Existing nine-shot sequence, captions, music, timing and gameplay hitboxes stay
+unchanged. **517 tests pass; 647 outputs regenerate identically.** Both intro
+ROMs build; native intro, opening repair, movement, Carry and Shock checks pass.
+New web preview is served; browser automation host unavailable. See
+[hero variant guide](HERO_VARIANTS.md). VERSION `0.20.0-dev`.
+
+**Prior gameplay round (2026-11-03):** experience pilots 🔄 on
 `feat/experience-feedback` in sibling `../gb-mr-cfe-experience`. R1–R4/R7 are
 implemented at `32f3ba1`; continued with crest safe-span R8 and resolved ending
 reprise R10 candidates. **512 tests pass**, 645 deterministic outputs; native
@@ -30,8 +40,8 @@ replacement returned an UNKNOWN recording-close acknowledgement; old saved playe
 and listener preserved. See current `docs/HANDOFF.md` and the experience review's
 continuation record. VERSION stays `0.19.0-dev`; existing tags unchanged.
 
-**Last updated:** 2026-11-03 · **R8/R10 candidates implemented and native-checked;
-512 tests pass; preview close unresolved; human acceptance open.**
+**Last updated:** 2026-11-07 · **Hero variants implemented; native checks passed;
+new preview served; browser/human/hardware acceptance open.**
 
 **Character names (2026-10-26, Abe: "use names from all different countries"):** Marta → **Amara** (Nigeria), Tomás → **Hiroshi** (Japan), Rosa → **Priya** (India), Kiko → **Emil** (Denmark). Only player-visible text changed; resource keys, file names, symbols and editor variable names keep the old names (`opening_marta`, `tomas.png`, `var_rosa_home_powered`…) so stable IDs hold. Older log entries below keep the names used at the time.
 
@@ -685,6 +695,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-11-07 | Hero art ✅ / acceptance 🔄 | Storm Worker native gameplay sheet replaces the shared hero in 13 platform/lab scenes. Neighborhood Hero separate story sprite and default intro variant; classic pixels preserved. Terra art tracks + Luna integration audit. VERSION 0.20.0-dev. | 517 tests; 647 deterministic outputs; two variant ROM builds; native intro, title, opening repair, walking/jumping, Carry, Shock and respawn verified. Sampled OAM within limits. New web listener served; browser host unavailable. See HERO_VARIANTS.md for hashes, recordings and commands. |
 | 2026-11-03 | R8/R10 experience pilots | After reading Abe's linked review task, continued from `32f3ba1`: crest line-5 repair persistently disables one span with queued-phase guards and explicit custom-script actor binding; separate 8s D-major reprise carries report→title and idle replay restarts normal Intro B. Existing intro/gameplay scores, other hazards, geometry and art unchanged. | 512 tests; 645 deterministic files; native warning/active/rest repair + real reentry and music pointer traces. Final ROM `a61696ce...`, web export `98c45eae...`. Old Chrome state saved at10600 before replacement; plugin reported UNKNOWN recording-close acknowledgement, old listener/export preserved. Human taste and physical acceptance open; see review continuation and HANDOFF. |
 | 2026-11-03 | Session summary saved | At Abe's request, saved [SESSION_SUMMARY_2026-11-03.md](SESSION_SUMMARY_2026-11-03.md): implementation commit/worktree, delivered proposals, verification, artifact identities, preview state, and remaining human gates. | Documentation only; implementation remains `32f3ba1`. |
 | 2026-11-03 | Experience advice implementation | Abe approved the review and requested sibling worktree/branch. Built `feat/experience-feedback`: R1 named/need-specific rewards, R2 once-per-job remote cable-return guidance after respawn, R3 one shock cue, R4 first-use teaching then quiet routine success + shorter Emil briefing + movement on existing opening page, R7 220ms home-completion replacement cue. Conditional recognition/safe-span/score changes remain staged behind player/listening evidence per the review. VERSION/tags, geometry, intro/music and accepted art retained. | 502 tests; 642 deterministic asset/resource files; project health 0/0/0; native recovery/retrieval and Amara speech/CLOSED/re-entry recordings; final logo-start ROM `8ee9a676...`, 512 KiB; separate web ROM `3f53f857...`. Preview served; browser host unavailable; listening and hardware acceptance unverified. See review implementation record for exact hashes, recordings and URL. |
