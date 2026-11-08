@@ -20,8 +20,8 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
-**Hero art round (2026-11-07):** ✅ implemented and native-verified; human
-visual/motion acceptance remains open. Storm Worker replaces all 13 active
+**Hero art round (2026-11-07):** ✅ implemented, native-verified and accepted
+by Abe: “I love this.” Commit/merge/push requested; hardware acceptance remains open. Storm Worker replaces all 13 active
 platform/lab heroes. Neighborhood Hero is a reusable story asset and default
 intro variant; original intro hero is preserved as `--intro-hero classic`.
 Existing nine-shot sequence, captions, music, timing and gameplay hitboxes stay
