@@ -1,4 +1,4 @@
-# 🗺️ Mister CFE — Master Project Plan
+# 🗺️ Lineman — Master Project Plan
 
 > **Goal:** turn the vertical slice into a complete, fun, memorable GBC game —
 > real characters, multi-scene structure, distinctive music, tight feel — and
@@ -478,7 +478,7 @@ direct read-only MCP; main owned selection, builds, emulator and preview.
 
 ### First repair job: Marta's line (Storm Run + Live Wire + Blackout Grid) 🔄
 
-Game structure approved by Abe (2026-10-25): Mister CFE repairs the storm-
+Game structure approved by Abe (2026-10-25): Lineman repairs the storm-
 damaged grid household by household; each job = reach the damage, carry the
 snapped cable to a junction box, power returns visibly (see
 [redesign brief](redesign-brief.md) household/needs table).
@@ -695,6 +695,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-11-07 | Documentation branding ✅ | Reviewed tracked Markdown for stale Mister CFE/MR CFE branding. Updated current headings/prose to Lineman; corrected completed rebrand status in LEVEL_REDESIGN; marked historical briefs and verbatim prompt quotes. | Descriptor/worktree paths, internal title key and historical ROM/stream identifiers preserved. Markdown-only changes; current title/header/release name checked against source and prior native evidence. |
 | 2026-11-07 | GitHub publication ✅ | Approved hero/experience commits merged into main and pushed to abarberenaCPDS/gbc-lineman. Repository description, README, current version/status/test badges and Git workflow updated. | Verified remote main equals the merged commit before documentation update. Badges distinguish the documented 517-test local run from CI; native screenshots and intro-variant guide linked. Local opencode.jsonc remains uncommitted; pre-merge review stash retained. |
 | 2026-11-07 | Hero art ✅ / acceptance 🔄 | Storm Worker native gameplay sheet replaces the shared hero in 13 platform/lab scenes. Neighborhood Hero separate story sprite and default intro variant; classic pixels preserved. Terra art tracks + Luna integration audit. VERSION 0.20.0-dev. | 517 tests; 647 deterministic outputs; two variant ROM builds; native intro, title, opening repair, walking/jumping, Carry, Shock and respawn verified. Sampled OAM within limits. New web listener served; browser host unavailable. See HERO_VARIANTS.md for hashes, recordings and commands. |
 | 2026-11-03 | R8/R10 experience pilots | After reading Abe's linked review task, continued from `32f3ba1`: crest line-5 repair persistently disables one span with queued-phase guards and explicit custom-script actor binding; separate 8s D-major reprise carries report→title and idle replay restarts normal Intro B. Existing intro/gameplay scores, other hazards, geometry and art unchanged. | 512 tests; 645 deterministic files; native warning/active/rest repair + real reentry and music pointer traces. Final ROM `a61696ce...`, web export `98c45eae...`. Old Chrome state saved at10600 before replacement; plugin reported UNKNOWN recording-close acknowledgement, old listener/export preserved. Human taste and physical acceptance open; see review continuation and HANDOFF. |

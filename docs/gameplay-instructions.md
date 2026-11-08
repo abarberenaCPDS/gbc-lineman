@@ -1,8 +1,10 @@
-# Abe's "Mister CFE"
+# Lineman — original gameplay brief
+
+> Archived original brief, with the game name updated to Lineman. The connector/cut loop below is historical; current controls and repair jobs are documented in [README](../README.md).
 
 ## Concept
 
-"Mister CFE" is a 2D platformer puzzle experience where you try to reestablish the electric network on a lonely mountain after a tropical storm has left its inhabitants without a connection.
+"Lineman" is a 2D platformer puzzle experience where you try to reestablish the electric network on a lonely mountain after a tropical storm has left its inhabitants without a connection.
 
 Platform your way up to the top of the mountain, stretch cables between houses and have a chat with the locals. 
 

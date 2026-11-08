@@ -680,21 +680,20 @@ Every scene stays at 14 actors or fewer (limit 20) and 22 triggers or fewer
   4x6 glyphs (`make_intro_art.WORDMARK`, `WORDMARK_FONT`), between the same
   bolts, same slots (gold logotype band, metal subtitle "After the Storm",
   PRESS START blink slot 6, version slot 5). The title is 209 tiles of 256.
-  `intro.TITLE_ROWS["MR CFE"]` keeps its key for now (another session owns
-  `intro.py`); rename it to `"LINEMAN"` with `test_intro_background.py` later.
-- **Story**: "One lineman." (already in `intro.SHOTS`).
-- **Player-visible "CFE" left to rewrite** (owner: coordinator):
-  `tools/tickets.py:111` "Thank you,\nMister CFE!" (storm report) and
-  `tools/make_climb_scene.py:885` "Thank you, CFE!" (Amara; it moves to 1B).
-  Suggestions: "Thank you,\nLineman!" and "Thanks, lineman!" (both <= 17
-  chars). Legacy only, not shipped: `tools/village.py:194`.
+  `intro.TITLE_ROWS["MR CFE"]` is still an internal layout key; the renderer
+  draws LINEMAN. It is not player-facing branding.
+- **Story**: "One lineman." (in `intro.SHOTS`).
+- **Dialogue rebrand completed**: the storm report says "Thank you,\nLineman!"
+  (`tools/tickets.py`); the old active-game CFE dialogue was replaced. Historical
+  prompt quotations and legacy scene sources are retained as historical material.
 - **HUD**: keep `LINE n/5 HOME n/1`, the line-crew vocabulary itself.
 - **Work order card**: the dispatch page could read "LINE CREW\nWO-0412";
   the card's bolt badge already brands it without text.
 - **Logo**: Abe's Games logo unchanged.
-- Not player-facing but visible on a cart menu/file list: ROM header title
-  `MRCFE` (project name) and release file names `mr-cfe-<ver>.gbc`
-  (`make_release.py`). Renaming is an open question.
+- **ROM identity rebrand completed**: the project name is `Lineman`, the native
+  cartridge header reads `LINEMAN`, and `tools/make_release.py` writes
+  `build/rom/lineman-release.gbc`. The descriptor filename `mr-cfe.gbsproj`
+  remains unchanged for tooling compatibility.
 
 ## 7. Implementation plan (work packages)
 
@@ -806,7 +805,7 @@ Then the web preview for Abe.
 - *Validator vs engine*: the jump model is coarse (no arc trace). Every new tap
   and drop still needs one native pass.
 
-**Open questions for Abe**
+**Original questions for Abe (answered in §9)**
 
 1. OK to move Amara's house to a short crest scene above the climb (the climb
    itself stays as he liked it)?

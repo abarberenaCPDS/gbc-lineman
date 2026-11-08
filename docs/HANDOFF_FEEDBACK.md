@@ -1,4 +1,6 @@
-# Session handoff: Mister CFE — post-playtest feedback (2026-10-29)
+# Session handoff: Lineman — post-playtest feedback (2026-10-29)
+
+> Historical feedback from October 29, 2026, with the game name updated to Lineman. Build names and worktree paths below identify that session; use [HANDOFF](HANDOFF.md) for the latest state.
 
 Start a new session in the worktree `../gb-mr-cfe-wind-ridge` with:
 **"Read docs/HANDOFF_FEEDBACK.md and start the next round."**

@@ -1,5 +1,7 @@
 # Art director subagent prompt (2026-10-30)
 
+> Archived prompts, quoted as originally issued. References to the former game name describe the rebrand history; the current name is **Lineman: After the Storm**. Do not reuse old names or worktree paths as current instructions.
+
 Prompt used to produce `docs/LEVEL_REDESIGN.md` and the LINEMAN title
 (`tools/make_intro_art.py`). Agent: Claude Code `general-purpose` subagent,
 model Opus, effort "higher". It had read-only MCP access (session_status,

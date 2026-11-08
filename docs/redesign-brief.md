@@ -8,7 +8,7 @@
 | Decision | Value |
 | --- | --- |
 | Core | **Action platformer** — the climbing and dodging IS the game; each repair is the payoff |
-| Fiction | **Keep** storm + mountain + five households + Mister CFE the electrician |
+| Fiction | **Keep** storm + mountain + five households + Lineman the electrician |
 | Difficulty | **Friendly expert** — easy to learn, hazards grow teeth with altitude; no permanent fail state |
 | Process | **Prototype-first** — playable slice each milestone, tested by Abe in the browser preview |
 | Structure | **Repair jobs** — one per household, 2–3 linked scenes, three phases (see Structure) |
@@ -24,7 +24,7 @@ acceptance are not verified. See `PROJECT_PLAN.md` for exact build/preview statu
 ## Pitch
 
 The storm snapped poles and lines across the mountain, and the households on it
-have gone dark. Mister CFE, the electrician, climbs out to repair the grid so
+have gone dark. Lineman, the electrician, climbs out to repair the grid so
 each home gets its power back. Electricity matters beyond appliances: food in
 the fridge, Internet for work and study, home medical devices, cooking, and
 heat and light at night. Each restored house is someone's life coming back on.

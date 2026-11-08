@@ -1,4 +1,6 @@
-# Mister CFE — vertical-slice design
+# Lineman — archived vertical-slice design
+
+> Historical design for the retired Storm Night slice. Its splice loop and five-house layout are superseded; see [README](../README.md) and [PROJECT_PLAN](PROJECT_PLAN.md) for current Lineman gameplay.
 
 ## Player-facing concept
 

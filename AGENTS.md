@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Game Boy Color game "Mister CFE: After the Storm", built with GB Studio 4.2.0 (`mr-cfe.gbsproj`), currently mid-conversion to a 2D platformer. All data lives in GB Studio resource files (`project/**/*.gbsres`, JSON); there is no hand-written C/game code in this repo. The one engine change is a generated one-line overlay, `assets/engine/src/states/platform.c` (B-07 drop-through window, `tools/make_engine_patch.py`, climb profile); rerun it after a GB Studio upgrade, never edit it by hand.
+Game Boy Color game "Lineman: After the Storm", built with GB Studio 4.2.0 (`mr-cfe.gbsproj`), a 2D platformer. All data lives in GB Studio resource files (`project/**/*.gbsres`, JSON); there is no hand-written C/game code in this repo. The one engine change is a generated one-line overlay, `assets/engine/src/states/platform.c` (B-07 drop-through window, `tools/make_engine_patch.py`, climb profile); rerun it after a GB Studio upgrade, never edit it by hand.
 
 ## Authoring and building
 
@@ -9,7 +9,7 @@ Game Boy Color game "Mister CFE: After the Storm", built with GB Studio 4.2.0 (`
 
   ```sh
   CLI="$HOME/Library/Application Support/modretro-chromatic/toolchain/.local/vendor/gb-studio/out/cli/gb-studio-cli.js"
-  TMPDIR="$(getconf DARWIN_USER_TEMP_DIR)gbsb-cfe" node "$CLI" -v make:rom ./mr-cfe.gbsproj build/rom/mr-cfe.gbc
+  TMPDIR="$(getconf DARWIN_USER_TEMP_DIR)gbsb-cfe" node "$CLI" -v make:rom ./mr-cfe.gbsproj build/rom/lineman.gbc
   ```
 
 ## Generated content

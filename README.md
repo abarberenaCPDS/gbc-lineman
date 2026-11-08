@@ -1,4 +1,4 @@
-# 🎮 Mister CFE: After the Storm
+# 🎮 Lineman: After the Storm
 
 [![Platform: Game Boy Color](https://img.shields.io/badge/platform-Game%20Boy%20Color-326b4f)](https://modretro.com/products/chromatic)
 [![Engine: GB Studio](https://img.shields.io/badge/engine-GB%20Studio%204.2.0-4856a6)](https://www.gbstudio.dev/)
@@ -24,7 +24,7 @@ this development build.
 
 ## 🌧️ The game
 
-A tropical storm has knocked out the power on the hill. Mister CFE, the
+A tropical storm has knocked out the power on the hill. Lineman, the
 village electrician, takes one work order at a time: reach the broken pole,
 pick up the dangling cable end, carry it to the matching transformer and make
 the line live. Repair the five-line chain for each household, then visit its door.
@@ -58,6 +58,10 @@ they arc. Each neighbor speaks with their own name and voice pitch.
 | A or START | Skip the cinematic |
 
 ## 🧱 Project layout
+
+The game is **Lineman: After the Storm**. The existing `mr-cfe.gbsproj`
+filename and `gb-mr-cfe` checkout paths are retained technical identifiers,
+not the current game title.
 
 ```text
 mr-cfe.gbsproj       GB Studio project descriptor
@@ -105,7 +109,7 @@ build directory whose path does not contain `src`:
 TS="$HOME/Library/Application Support/modretro-chromatic/toolchain/.local/vendor/gb-studio"
 CLI="$TS/out/cli/gb-studio-cli.js"
 TMPDIR="$(getconf DARWIN_USER_TEMP_DIR)gbsb-cfe" \
-  node "$CLI" -v make:rom ./mr-cfe.gbsproj build/rom/mr-cfe.gbc
+  node "$CLI" -v make:rom ./mr-cfe.gbsproj build/rom/lineman.gbc
 ```
 
 Test ROMs that start in a specific scene use
