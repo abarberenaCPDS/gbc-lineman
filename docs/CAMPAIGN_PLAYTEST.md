@@ -5,11 +5,12 @@ Baseline: annotated tag `v0.20.0-dev` at `0804abb`.
 
 ## Current status
 
-Step 1 is **in progress**. A normal recorded run completed all five Amara lines,
-her household restoration, WO-0412 CLOSED and the handoff to WO-0413. Hiroshi,
-Priya, Emil and the ending still need this campaign pass. Map work has not started.
+Step 1 route investigation is **complete with acceptance limits**. The recorded
+campaign reaches all four household payoffs, all20 repairs, the report, title,
+idle story replay and a real next START. Human feel, listening and final-cartridge
+whole-route acceptance remain open. The map prototype is next.
 
-The completed Amara route uses the earlier candidate ROM `de0b3594...`; the
+The completed campaign route uses the earlier candidate ROM `de0b3594...`; the
 final board implementation below was then checked separately in native fixtures
 and a fresh production boot. Do not describe that combination as a complete
 campaign on the final ROM, or seeded fixtures as uninterrupted play.
@@ -90,8 +91,8 @@ through MCP; counters must use the matching captured symbol addresses.
 
 ## Exact cartridges and recordings
 
-All native ROMs are524288 bytes. Recordings are stopped and retained under
-`artifacts/playtests/`; selected stopped intermediates were archived through MCP
+All native ROMs are524288 bytes. Recordings are retained under
+`artifacts/playtests/`; all campaign recordings are stopped. Selected stopped intermediates were archived through MCP
 when the reservation quota filled. Original-path mappings and all evidence bytes
 remain intact. Use recording status/review/retrieve, or restore before making clips.
 
@@ -99,6 +100,7 @@ remain intact. Use recording status/review/retrieve, or restore before making cl
 | --- | --- | --- |
 | Initial normal investigation,0–9808 | `campaign-baseline` | `15b7e2517ee04e976a16537d17ac8657d090085a21f82509fd5f16d34d1ad401` |
 | Normal Amara completion,0–8179 | `campaign-optimized-run` | `de0b3594fbc5b7cbc14068965eebf969fe5629f6b2652e7b624d3b2f49ce6c93` |
+| Earned-state continuation,8179–29768 | `campaign-after-amara` | `de0b3594fbc5b7cbc14068965eebf969fe5629f6b2652e7b624d3b2f49ce6c93` |
 | Original board escape failure | `board-before-escape` | `a0b92ea8b6b291a47774c4a3af751d926c80143b0381609bb84eae1ac3318233` |
 | Final board escape/reentry | `board-events-escape`, `board-events-reentry` | `e436343f441b29039c2de6433a91a9d3d7b8c480cabe14f8a1ada5765a79fb4f` |
 | Final production boot/tutorial,0–2824 | `campaign-events-production` | `44c1eb40271257b35bc5ba8ff6d1b75f0f5db01b8e9c6dfacf140d240bff55f5` |
@@ -120,6 +122,71 @@ The initial baseline checkpoint at9808 belongs to `15b7e251...` only. Reviewed
 initial board failure: baseline session `6303ec072899420190512adb14cdad32`,
 branch0001, actions1241–1252, frames9648–9727.
 
+## Hiroshi continuation and cable recovery
+
+The exact `de0b3594...` campaign continues from the earned frame8179 checkpoint
+in `campaign-after-amara`, session `cc4f6244e81e43eea252e3fdf21d529a`, branch0002.
+No campaign variables were seeded and no diagnostic checkpoint was restored.
+
+- After two repairs, carried cable3 into Ridge Saddle, then deliberately lost it.
+  At10712 carry6=0, chain20=2/lines18=2 remain, and the visible hint says
+  "Cable at pole. / Back to / Wind Ridge." Local respawn is safe.
+- Walked back into Wind Ridge, crossed the upper whip/gust/cable lanes in reverse,
+  retrieved cable3 at its original pole and recrossed to Saddle by11751. No replay
+  of the job introduction or loss of repaired lines occurred.
+- Line3 repaired12154, line4 by12631, line5 by13066. The all-lines notice
+  precedes Hiroshi's concentrator reaction; home9=1 at13372.
+- WO-0413 CLOSED is visible13505; onward work order WO-0414 at13811.
+  Checkpoint `checkpoint-31a6b79b5c2341fc97bd28a295c1733e` at13631 retains
+  the earned handoff state. It belongs only to the exact same ROM/runtime.
+
+This is a checkpoint-linked campaign continuation, not one uninterrupted worker
+session and not a full route on the final event-driven board cartridge. Hazard
+phase observations used bounded read-only native actor flags; movement and
+repairs used ordinary controller inputs. This proves reachability/recovery,
+not unaided player recognition or subjective difficulty.
+
+## Priya, Emil, report and actual next START
+
+Same branch0002 continues without further checkpoint restores:
+
+- Priya: line3 at16649; four controlled2-frame Down+A taps each land one shelf
+  at17028/17072/17116/17160 (feet17/20/23/26). Line4 at17249. Optional
+  return-ascent probes include failed hazard timings, followed by successful
+  long-jump recovery26→20 at17830 and20→14 at17954. Progress remains four lines.
+- Lower gully failures preserve that progress. Narrow safe columns, solid deck
+  edges and premature inputs before landing complicate the final drops. A valid
+  landing sequence at anchor79.1875 reaches feet29 at18880 and floor32 at18924;
+  cable5 picked at18992 and carried into Signal Porch at19353. This is a
+  reachability result, not a claim of comfortable unaided difficulty.
+- Priya's line5 notice at19969; workstation/home reaction and home11=1 at20156;
+  CLOSED at20284; WO-0415 at20547. Checkpoint
+  `checkpoint-8323b00c742b47768fe1a3e83e09ee63` retains that earned handoff.
+- Emil: line1 by21692, line2 by22247, cable3 carried into Pine Ladder22619;
+  line3 by22979, line4 at23445. Final cable crosses the summit into Rim23950.
+  Early entry jump falls to the floor; a normal long jump recovers the catwalk
+  without cable loss. Line5 at24649; stove reaction/home13=1 at24827; CLOSED24955.
+- Report entered25218; all four homes=1 and each job chain=5. Visible report:
+  tickets4/4, lines20/20, all four named outcomes, thanks and credits. Title26460.
+  Earned all-home checkpoint `checkpoint-ba74fc934eab476a83d3e5cb6a72172f`.
+- Idle story replay at27960 retains all four homes and all four chain counts.
+  Return to title29610; actual START opens Service Opening29768 and clears
+  homes0/9/11/13, service4, carry6, ticket16, all chains/counts, feedback50–53
+  and dispatch54. Theme14 remains1. This tests a real second start after a
+  completed campaign, rather than only a seeded reset fixture.
+
+Recording finalized `needs-review` at29768: session
+`cc4f6244e81e43eea252e3fdf21d529a`, event digest
+`7cbdc0c5a9cdce9f38185b54c9aac8c2fab4a2ee43b9015c486010b826749ee1`.
+Final reset checkpoint `checkpoint-e015531047e14feb96ffd9870544647d`.
+All checkpoints in this section belong only to `de0b3594...` and its recorded worker.
+
+Remaining difficulty concerns: long versus short jumps, precise gully descent
+columns, tall-body contact above shelves, and early rim jumps. Automated phase
+reads aided traversal; failed attempts remain recorded. No additional geometry
+or movement changes were made on this evidence alone. The event-driven board
+fix separately removes the candidate's measured board slowdown.
+
 ## Preview and remaining gates
 
 Latest web export: `build/web-campaign-events`; separate Binjgb ROM SHA-256
@@ -132,9 +199,9 @@ URL/state are retained; no external browser was used. Human feel/listening and
 physical Chromatic acceptance remain open. No new release tag, merge, push,
 stream or flash occurred.
 
-Continue Hiroshi, Priya, Emil and report before the map prototype. Check cross-scene
-cable loss/backtracking, Priya's gully return ascent, repeated gully hints, exit
-refusals and a real second run. Then prototype within existing `work_order`,
+Route, cross-scene cable recovery, gully return ascent and actual second START
+are now covered on the candidate. Full final-ROM campaign, exit-refusal probes
+and human difficulty review remain. Prototype within existing `work_order`,
 using household flags0/9/11/13 for lights and ticket16 only as a pending dispatch.
 Abe must review the playable map before expansion, per NEXT_PHASE_PLAN.md.
 

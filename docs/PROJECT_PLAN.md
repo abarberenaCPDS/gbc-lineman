@@ -25,8 +25,10 @@ branch `feat/campaign-polish`, VERSION `0.20.1-dev`, baseline tag `v0.20.0-dev`.
 Three fixes: foot-armed native board waits with visit cancellation, first-only
 Amara dispatch, true new-campaign reset. **533 tests;647 deterministic outputs;
 health0/0/0.** Final board quiet/standing load matches baseline range. A normal
-recorded run completes Amara and reaches WO-0413. The remaining three households,
-ending, map prototype and human/browser/hardware gates remain open. See
+recorded campaign reaches all four homes,20 repairs, report/title/idle replay
+and a real next START. Cross-scene cable recovery and gully ascent pass with
+retained failed attempts. Map prototype, full final-cartridge campaign and
+human/browser/hardware gates remain open. See
 [CAMPAIGN_PLAYTEST.md](CAMPAIGN_PLAYTEST.md) and [NEXT_PHASE_PLAN.md](NEXT_PHASE_PLAN.md).
 
 **Hero art round (2026-11-07):** ✅ implemented, native-verified and accepted
@@ -780,3 +782,25 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 | 2026-10-25 | 0 | **Phase 0 complete.** `project_select` + `project_inspect` (0 errors, 0 warnings; 2 scenes · 39 actors · 6 triggers). Toolchain ready (CLI 4.3.2, GBDK 4.5.0, PyBoy 2.7.0). First MCP ROM build OK: 131,072 B, MBC5+RUMBLE+RAM+BATTERY, GBC-only, headers valid. Headless CGB boot verified (Storm Night, "Move: D-pad"). Browser preview opened and left running for the user. | Baseline table above · boot frame sha256 `2b8e13b3…` |
 | 2026-10-25 | Pre-0 | Plan doc created from session decisions: pure GB Studio + generators, full-game scope, memorable themes. | docs/PROJECT_PLAN.md |
 | — | — | — | — |
+
+### Campaign continuation — 2026-11-07
+
+- Recorded earned-state continuation on exact candidate ROM `de0b3594...`: all
+  Hiroshi lines, concentrator reaction, CLOSED and WO-0414 reached. Deliberate
+  cable3 loss in Saddle preserves two repairs and shows the correct remote-pole
+  hint; actual backtrack/retrieval/forward return succeeds without a rewind.
+- Evidence and checkpoint identities: `docs/CAMPAIGN_PLAYTEST.md`. Priya, Emil
+  and ending remain open before map work; final event-driven board cartridge
+  retains separate native regression/performance evidence.
+
+### Full recorded route reached — 2026-11-07
+
+- Earned-state `de0b3594...` campaign completes Priya and Emil, report4/4 and20/20,
+  title, idle story replay (progress retained), and actual next START (campaign
+  state cleared). No additional seeded variables or checkpoint rewinds.
+- Gully mistakes preserve progress; timed return ascent and lower drops succeed.
+  Tall-body hazards, narrow safe columns, variable jump height and early rim jumps
+  remain human difficulty concerns. Exact frames/checkpoints/limits are retained
+  in CAMPAIGN_PLAYTEST.md. Final board cartridge has separate regressions.
+- Step1 investigation complete; proceed to one dispatch-map prototype state and
+  require Abe's playable review before expansion.

@@ -7,13 +7,15 @@ fixes, restored board performance, exact-ROM evidence and outstanding full-route
 
 ## Current progress
 
-- 🔄 Step 1: first recorded campaign investigation and three targeted fixes;
-  Amara completes to WO-0413 in a normal recorded run; the other three homes
-  and ending remain unverified in this campaign pass.
-- ⬜ Steps 2–5: dispatch-map prototype, restoration polish, ending map and hardware.
+- ✅ Step 1 investigation: all four jobs/report/title/idle replay and real next
+  START reached in a checkpoint-linked recorded campaign. Three targeted fixes
+  verified; final board has separate native regression/performance evidence.
+  Human difficulty/audio and a full final-cartridge pass remain acceptance gates.
+- 🔄 Step 2: one dispatch-map state; playable review required before expansion.
+- ⬜ Steps 3–5: restoration additions, ending map and hardware.
 - Branch `feat/campaign-polish`, sibling `../gb-mr-cfe-campaign-polish`,
   VERSION `0.20.1-dev`. Baseline tag `v0.20.0-dev` is preserved.
-- Continue the full route before building the map. The old copy-ready prompt
+- The recorded route is complete; prototype the map next. The old copy-ready prompt
   below describes the original kickoff; reuse this existing worktree.
 
 ## Starting point (tagged baseline)

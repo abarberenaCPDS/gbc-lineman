@@ -2,35 +2,26 @@
 
 Worktree `/Users/abe/src/modretro-chromatic/gb-mr-cfe-campaign-polish`, branch
 `feat/campaign-polish`, VERSION `0.20.1-dev`. Baseline tag `v0.20.0-dev` at
-`0804abb` remains. Main, local `opencode.jsonc`, stash and previous worktrees are
-preserved. Initial fixes commit: `238f645`; final board performance revision follows.
+`0804abb` preserved. Main/local config/stash unchanged. Fixes `238f645`, `abd18b5`.
 
-**533 tests pass;647 outputs regenerate identically; MCP health0/0/0.**
-Read [CAMPAIGN_PLAYTEST.md](CAMPAIGN_PLAYTEST.md) for exact artifacts and evidence.
-Three fixes: foot-armed/cancellable native board warnings; first-only Amara
-work order; actual new-campaign reset on title START. Final board performance
-matches baseline range in quiet and standing fixtures, with no continuous polling.
+**533 tests;647 deterministic outputs; MCP health0/0/0** at last source verification.
+Recorded route now reaches all four homes,20 lines, report/title/idle replay and
+actual next START. Cross-scene cable recovery and gully return ascent pass;
+failed attempts retained. See CAMPAIGN_PLAYTEST.md for exact frames/checkpoints.
 
-The normal `de0b3594...` run completes Amara and reaches Hiroshi's WO-0413 at8179.
-Its checkpoint is `checkpoint-f91d2087ab3b49d6a90c34d7c09a1eef` in
-`artifacts/playtests/campaign-optimized-run`. Keep the exact old ROM and worker:
-`build/rom/lineman-campaign-polish-optimized.gbc`. The final source has since
-changed board implementation, so source-debug binding of that older ROM is no
-longer current. Use ROM mode and its captured symbols if continuing that recorded
-campaign; never restore it into a new ROM. This is real prior progress, not a
-seeded completion or full-campaign proof for the final cartridge.
-
-Latest production: `build/rom/lineman-campaign-polish-events.gbc`, SHA-256
+Campaign is on earlier candidate `de0b3594...`, ROM
+`build/rom/lineman-campaign-polish-optimized.gbc`; its exact worker/checkpoints
+must never be restored into a changed cartridge. Continuation recording
+`artifacts/playtests/campaign-after-amara` stopped at29768 as needs-review.
+Final source board uses event-driven native waits (`abd18b5`), independently
+regressed/performance checked. Final production ROM SHA
 `44c1eb40271257b35bc5ba8ff6d1b75f0f5db01b8e9c6dfacf140d240bff55f5`.
-Native final-component fixtures and a fresh production boot/repair pass. Hiroshi,
-Priya, Emil, ending and the complete final-ROM campaign still need verification.
-Map/household/ending additions have not started. Follow NEXT_PHASE_PLAN.md in order.
+Full final-cartridge route and human difficulty/listening/hardware remain open.
 
-Preview is served from `build/web-campaign-events`; the built-in browser host
-remains unavailable. URL is in the evidence report. Preserve listener/saves and
-inspect current status before changes. All owned native sessions are closed at
-this handoff; stopped intermediate recordings were archived via MCP with intact
-original-path mappings. No evidence deletion, hardware writes or new tags.
+Step2 next: one playable neighborhood dispatch-map state in existing work_order,
+using Neighborhood Hero and real household flags. Abe reviews before variants.
+Household/ending expansion and hardware wait. Browser access host unavailable;
+owned preview/listener and evidence retained. No release tag/merge/push/flash.
 
 ---
 
