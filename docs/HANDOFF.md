@@ -1,5 +1,11 @@
 # Current handoff — campaign polish
 
+**Latest:** Abe played and supplied five screenshots. Route-quality revision is
+now the priority: upper/lower bypasses and redundant hazards, plus a proposed
+walkable top-down hub. See PLAYTEST_FEEDBACK.md. This was feedback/advice only;
+no geometry or map-control expansion has been implemented or approved. Browser
+inventory still reports unavailable host; desktop discovery works.
+
 Worktree `/Users/abe/src/modretro-chromatic/gb-mr-cfe-campaign-polish`, branch
 `feat/campaign-polish`, VERSION `0.20.1-dev`. Baseline tag `v0.20.0-dev` at
 `0804abb` preserved. Main/local config/stash unchanged. Fixes `238f645`, `abd18b5`.

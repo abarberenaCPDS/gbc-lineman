@@ -7,17 +7,16 @@ fixes, restored board performance, exact-ROM evidence and outstanding full-route
 
 ## Current progress
 
-- ✅ Step 1 investigation: all four jobs/report/title/idle replay and real next
-  START reached in a checkpoint-linked recorded campaign. Three targeted fixes
-  verified; final board has separate native regression/performance evidence.
-  Human difficulty/audio and a full final-cartridge pass remain acceptance gates.
-- 🔄 Step 2: [one playable dispatch-map state is ready](DISPATCH_MAP_PROTOTYPE.md);
-  native lighting/transition checks and537 tests pass. Await Abe's playable
-  review before expanding to other jobs or the ending.
+- 🔄 Step 1: automated full-route investigation is complete, but Abe's human
+  playtest identifies upper/lower-lane bypasses and redundant hazards. Reopen
+  route-quality design before further expansion; see [feedback](PLAYTEST_FEEDBACK.md).
+- 🔄 Step 2: the one-state dispatch map was played. Abe suggests a top-down
+  presentation; a small walkable hub is recommended. No expansion approval yet.
 - ⬜ Steps 3–5: restoration additions, ending map and hardware.
 - Branch `feat/campaign-polish`, sibling `../gb-mr-cfe-campaign-polish`,
   VERSION `0.20.1-dev`. Baseline tag `v0.20.0-dev` is preserved.
-- The recorded route is complete; prototype the map next. The old copy-ready prompt
+- Recorded route reachability is complete; address the human route-quality
+  feedback and agree on hub interaction before expanding the map. The old copy-ready prompt
   below describes the original kickoff; reuse this existing worktree.
 
 ## Starting point (tagged baseline)

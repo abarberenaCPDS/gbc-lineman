@@ -27,7 +27,8 @@ Amara dispatch, true new-campaign reset. **537 tests;647 earlier deterministic o
 health0/0/0.** Final board quiet/standing load matches baseline range. A normal
 recorded campaign reaches all four homes,20 repairs, report/title/idle replay
 and a real next START. Cross-scene cable recovery and gully ascent pass with
-retained failed attempts. One map prototype is ready for playable review. Full final-cartridge campaign and
+retained failed attempts. Abe has played the map and reported avoidable/redundant hazard routes; route-quality
+revision is now the priority. A walkable top-down hub is proposed. Full final-cartridge campaign and
 human/browser/hardware gates remain open. See
 [CAMPAIGN_PLAYTEST.md](CAMPAIGN_PLAYTEST.md) and [NEXT_PHASE_PLAN.md](NEXT_PHASE_PLAN.md).
 
@@ -816,3 +817,17 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 - Playable export served; built-in browser host unavailable. Evidence, link and
   reproduction in DISPATCH_MAP_PROTOTYPE.md. Stop here for Abe's requested
   playable approval before variants/restoration/ending expansion. No hardware.
+
+### Human prototype feedback — 2026-11-07
+
+- Abe supplied five screenshots after playing: hanging wires below catwalks,
+  upper/lower lane bypasses, an empty lower route, and a request for advice on
+  top-down map interaction. Human route-design acceptance remains unmet.
+- Read-only gb-rom comparison confirms larger scrolling scenes are possible;
+  map area and unique art tile budget are separate. Recommend one vertically
+  richer route pilot with purposeful repairs/hazards and forgiving recovery,
+  then a human pass before copying the pattern to all jobs.
+- Existing map is technically TOPDOWN but fixed/hidden-player dispatch. A small
+  walkable neighborhood hub is recommended; expansion has not been approved.
+- Live browser discovery still reports unavailable host. Findings and setup
+  guidance recorded in PLAYTEST_FEEDBACK.md. No gameplay/permission changes.
