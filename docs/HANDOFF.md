@@ -1,3 +1,23 @@
+# Current handoff — next session
+
+The completed hero/experience work is accepted, merged into `main` and pushed to
+`origin` (`git@github.com:abarberenaCPDS/gbc-lineman.git`). The current game name
+is **Lineman: After the Storm**, VERSION `0.20.0-dev`.
+
+**Start with [NEXT_PHASE_PLAN.md](NEXT_PHASE_PLAN.md).** It contains the approved
+five-step plan, acceptance criteria and a copy-ready handoff prompt. Next work:
+full-campaign playtest → neighborhood map → restoration reactions → ending →
+Chromatic polish. Implementation is deferred to the new session.
+
+Use a fresh sibling worktree from current `main`; preserve local `opencode.jsonc`
+and the `preserve pre-merge review documents` stash. Historical preview URLs and
+worktree instructions below are evidence, not current runtime state. Inspect
+MCP status before any preview operation. Earlier hardware gates remain open.
+
+---
+
+## Previous handoff (historical)
+
 # Session handoff: hero variants (November 7, 2026)
 
 Continue in `/Users/abe/src/modretro-chromatic/gb-mr-cfe-experience`, branch

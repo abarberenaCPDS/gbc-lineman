@@ -20,6 +20,11 @@
 | ✅ | Done and verified |
 | 🚧 | Blocked / needs decision |
 
+**Next session:** approved [campaign polish and neighborhood map plan](NEXT_PHASE_PLAN.md).
+Implementation deferred: full-campaign playtest first, then map prototype,
+restoration reactions, ending payoff and Chromatic review. Copy-ready handoff
+prompt is included in that plan.
+
 **Hero art round (2026-11-07):** ✅ implemented, native-verified and accepted
 by Abe: “I love this.” Commit/merge/push requested; hardware acceptance remains open. Storm Worker replaces all 13 active
 platform/lab heroes. Neighborhood Hero is a reusable story asset and default
@@ -695,6 +700,7 @@ Keep entries newest-first, one per work burst, with build/test evidence.
 
 | Date | Phase | Done | Evidence / notes |
 | --- | --- | --- | --- |
+| 2026-11-07 | Next-phase planning ✅ | Abe approved full-campaign playtest, Neighborhood Hero map, household reactions, ending payoff and hardware polish. Saved NEXT_PHASE_PLAN.md with ordered work, acceptance criteria, boundaries and handoff prompt. | Planning only; implementation explicitly deferred to a new session. Current accepted work is already merged/pushed; prior 517-test evidence remains unchanged. |
 | 2026-11-07 | Documentation branding ✅ | Reviewed tracked Markdown for stale Mister CFE/MR CFE branding. Updated current headings/prose to Lineman; corrected completed rebrand status in LEVEL_REDESIGN; marked historical briefs and verbatim prompt quotes. | Descriptor/worktree paths, internal title key and historical ROM/stream identifiers preserved. Markdown-only changes; current title/header/release name checked against source and prior native evidence. |
 | 2026-11-07 | GitHub publication ✅ | Approved hero/experience commits merged into main and pushed to abarberenaCPDS/gbc-lineman. Repository description, README, current version/status/test badges and Git workflow updated. | Verified remote main equals the merged commit before documentation update. Badges distinguish the documented 517-test local run from CI; native screenshots and intro-variant guide linked. Local opencode.jsonc remains uncommitted; pre-merge review stash retained. |
 | 2026-11-07 | Hero art ✅ / acceptance 🔄 | Storm Worker native gameplay sheet replaces the shared hero in 13 platform/lab scenes. Neighborhood Hero separate story sprite and default intro variant; classic pixels preserved. Terra art tracks + Luna integration audit. VERSION 0.20.0-dev. | 517 tests; 647 deterministic outputs; two variant ROM builds; native intro, title, opening repair, walking/jumping, Carry, Shock and respawn verified. Sampled OAM within limits. New web listener served; browser host unavailable. See HERO_VARIANTS.md for hashes, recordings and commands. |
