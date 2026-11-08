@@ -1,3 +1,14 @@
+## Whole-game mountain terrain proposals — November 8
+
+Prepared three world diagrams and an intro-job flow in
+[terrain/WORLD_VARIANTS.md](terrain/WORLD_VARIANTS.md). Scope is the entire game,
+not just Hiroshi. Lakeside neighborhood recommended; awaiting user selection.
+Jump physics and production resources unchanged. Walkable hub stays in scope.
+Four diagrams rendered and visually reviewed; no new gameplay build required.
+Release v0.21.0 remains the flashed baseline; details in RELEASE_v0.21.0.md.
+
+---
+
 ## Terrain branch started — November 8
 
 First planning deliverable: terrain/SADDLE_OPTIONS.md and its annotated diagram.

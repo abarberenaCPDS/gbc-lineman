@@ -2,7 +2,14 @@
 
 November 8, 2026. Planning only; no new terrain implementation approved here.
 
-## First deliverable ready
+## Whole-game scope clarified — November 8
+
+[Three mountain-community variants](terrain/WORLD_VARIANTS.md) now cover the
+entire campaign, the walkable town and a proposed learn-by-doing Service Opening.
+Recommend the lakeside neighborhood; no variant selected yet. Keep jump physics.
+Choose world structure before implementing local route changes.
+
+## Earlier local study
 
 [Annotated Saddle comparison](terrain/SADDLE_OPTIONS.md) shows the current route
 and two open-air proposals. Candidate B relocates the existing fourth repair to
