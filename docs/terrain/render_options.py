@@ -1,0 +1,55 @@
+from PIL import Image,ImageDraw,ImageFont
+from pathlib import Path
+out=Path(__file__).resolve().parent
+im=Image.new('RGB',(1400,1050),'#101c24'); d=ImageDraw.Draw(im)
+f='/System/Library/Fonts/Supplemental/Arial.ttf'
+font=lambda n:ImageFont.truetype(f,n)
+def txt(x,y,t,n=20,c='#dce9eb'):d.text((x,y),t,font=font(n),fill=c)
+def arrow(points,c='#73d4bb'):
+ d.line(points,fill=c,width=4);x,y=points[-1];d.polygon([(x,y),(x-9,y-5),(x-9,y+5)],fill=c)
+def pad(x,y,w,label,color='#526c75'):
+ d.rectangle((x,y,x+w,y+18),fill=color);txt(x,y+24,label,17)
+def mark(x,y,t,c):
+ d.ellipse((x-8,y-8,x+8,y+8),fill=c);txt(x-20,y-35,t,17,c)
+txt(40,24,'HIROSHI / SADDLE — terrain before hazard density',32)
+txt(40,69,'Design comparison only • Jump physics unchanged • No low ceilings • Not implemented',21,'#73d4bb')
+# Existing baseline schema
+for y in [110,410,710]:d.rounded_rectangle((25,y,1375,y+285),radius=12,outline='#3b5662',width=2)
+txt(48,126,'CURRENT: high launch, upper catwalk, unused lower threats',25)
+pad(90,215,190,'T4 + cable 5 / summit')
+pad(310,245,410,'Upper catwalk')
+pad(890,280,390,'Porch / T5 / home')
+d.line((65,340,1320,340),fill='#526c75',width=14)
+mark(520,222,'Whip','#f5be74');mark(550,320,'Arc','#ff8b72');mark(750,320,'Gust','#ff8b72')
+arrow([(230,202),(365,180),(610,180),(935,266)])
+txt(840,175,'Preferred route stays high.',19)
+txt(840,202,'Lower threats rarely shape that choice.',19)
+# A
+
+txt(48,426,'A — exposed ridge ledges',25)
+pad(90,525,190,'T4 / pickup')
+pad(390,525,150,'Launch / optional landing')
+pad(680,480,150,'Upper landing')
+pad(900,480,380,'Porch / T5 / home')
+mark(805,455,'Wind at rejoin','#f5be74')
+arrow([(250,506),(340,460),(465,506)])
+arrow([(485,505),(620,470),(715,461)])
+d.line((65,650,1320,650),fill='#526c75',width=12)
+pad(300,615,100,'', '#354b57');pad(420,580,100,'', '#354b57');pad(610,615,100,'', '#354b57')
+txt(700,595,'Recovery floor + return steps; no damage pit.',19)
+txt(700,624,'Test: does the longest jump skip every decision?',19)
+txt(48,726,'B — service island with an existing repair (recommended)',25)
+pad(90,840,190,'Cable 4 approach')
+pad(400,810,220,'T4 / rest / cable 5')
+pad(790,780,180,'Second landing')
+pad(1060,780,240,'Porch / T5')
+mark(385,785,'Cracked board','#f5be74');mark(945,755,'Landing gust','#f5be74')
+arrow([(245,820),(350,778),(440,790)])
+arrow([(590,790),(715,758),(845,760)])
+d.line((65,965,1320,965),fill='#526c75',width=12)
+txt(80,1000,'Schematic spacing / arcs, not simulated trajectories. Quiet space must earn its role; human review precedes implementation.',18,'#9db5bf')
+txt(700,890,'Open sky preserves full jumps.',19)
+txt(700,919,'Higher density is optional, not the starting goal.',19)
+pad(390,930,110,'', '#354b57'); pad(510,895,110,'', '#354b57')
+txt(70,923,'Recovery scaffolding',17,'#9db5bf')
+im.save(out/'saddle-options.png')

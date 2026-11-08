@@ -2,6 +2,14 @@
 
 November 8, 2026. Planning only; no new terrain implementation approved here.
 
+## First deliverable ready
+
+[Annotated Saddle comparison](terrain/SADDLE_OPTIONS.md) shows the current route
+and two open-air proposals. Candidate B relocates the existing fourth repair to
+a service island; five repairs and jump physics remain unchanged. Await terrain
+feedback before gameplay implementation. Work continues on `feat/terrain-design`.
+The walkable neighborhood hub remains pending after this route-design pass.
+
 ## Decision and scope
 
 Abe wants harder, well-placed hazards and missions with purpose. He likes the

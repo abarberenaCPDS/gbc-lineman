@@ -1,3 +1,13 @@
+## Terrain branch started — November 8
+
+First planning deliverable: terrain/SADDLE_OPTIONS.md and its annotated diagram.
+Recommend open service-island option B for review, with T4 moved onto the middle
+working pad and no low ceiling. Production resources remain unchanged. Walkable
+town hub is still prepared source, awaiting build/play after the route review.
+Release main/tag v0.21.0 and successful Player 01 write remain intact.
+
+---
+
 ## v0.21.0 merged and flashed — November 8
 
 Release commit6cec3a7 fast-forwarded into main. 551 tests passed; version-only
