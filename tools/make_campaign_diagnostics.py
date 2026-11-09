@@ -32,7 +32,18 @@ def seed(values):
     ]
 
 
-def fixture(name, folder, x, y, values):
+def seed_once(values):
+    """Initialize a route fixture once; preserve earned state on scene returns."""
+    import make_ticket_scene as ticket
+    if '56' in values:
+        raise ValueError('variable 56 is reserved for diagnostic initialization')
+    initialized = event('EVENT_SET_VALUE', {
+        'variable': '56', 'value': {'type': 'number', 'value': 1},
+    }, 'route-fixture-initialized')
+    return [ticket.if_value('56', 0, 'route-fixture-first-entry', [*seed(values), initialized])]
+
+
+def fixture(name, folder, x, y, values, *, seed_once_only=False):
     """Copy production inputs, seed one scene, and delegate the test start."""
     destination = ROOT / 'build/diagnostics' / name
     destination.mkdir(parents=True, exist_ok=True)
@@ -41,7 +52,7 @@ def fixture(name, folder, x, y, values):
     shutil.copy2(ROOT / 'mr-cfe.gbsproj', destination / 'mr-cfe.gbsproj')
     scene_path = destination / 'project/scenes' / folder / 'scene.gbsres'
     scene = json.loads(scene_path.read_text())
-    scene['script'] = seed(values) + scene['script']
+    scene['script'] = (seed_once(values) if seed_once_only else seed(values)) + scene['script']
     scene_path.write_text(json.dumps(scene, indent=2) + '\n')
     original_settings = launch.SETTINGS_PATH
     try:

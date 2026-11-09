@@ -3,16 +3,13 @@
 Run with ``python3 tools/make_gully_scene.py`` (after ``make_rosa_scene.py``,
 which writes the job's shared palettes and variables). docs/LEVEL_REDESIGN.md
 §2 Job 3: the hero enters at the top-left carrying cable 3, plugs it into T3 on
-deck 9, then drops deck by deck with Down+A (every deck is slab plus one-way
-timber wall to wall; B-07 keeps each tap to one shelf): pole 4 on deck 15, T4
-on deck 27, pole 5 on the floor, whose cable leaves through the bottom-right
-exit into 3C. Going back up uses the climb's moves (the 4-row leap onto the
-arrival shelf).
+deck 9, then uses a deliberate Down+A drop followed by alternating eroded
+banks and catch shelves. The first bridge remains wall to wall; lower openings
+allow visible falls and recovery. Pole 4 is on deck15, T4 on deck27 and pole5
+on the dry floor; cable5 leaves through the bottom-right exit into3C.
 
-The geometry is the climb's shaft template (``shaft.py`` decks and slabs, via
-``rosa.collision_grid``); the scene, actors, triggers and scripts come from
-``make_rosa_scene.RosaScene`` with the gully's namespace. The worst OAM window
-is 32+4 objects (spec §5), so no culling thread.
+Geometry comes from rosa.collision_grid. Actors and scripts come from
+make_rosa_scene.RosaScene; current route and budget gates are in test_routes.
 """
 
 from __future__ import annotations

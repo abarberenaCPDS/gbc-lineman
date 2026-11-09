@@ -119,14 +119,14 @@ CABLE_START_DELAYS = {
 # Listed in route order (upstream entry first).
 # ---------------------------------------------------------------------------
 _NEW_SCENES = {
-    # 1B: hidden cable before rock B, board on catwalk C's landing.
-    "climb_crest": {"boards": [(9, 26, 28)], "cables": [(13, 16, 17)], "delays": [60]},
+    # 1B lakeside: cracked cabin walkway; the visible live span owns electrical teaching.
+    "climb_crest": {"boards": [(9, 24, 26)], "cables": [], "delays": []},
     # 2B: cable at the foot of the arrival drop; boards on catwalks C and E.
     "ridge_saddle": {"boards": [(9, 21, 23), (9, 38, 40)], "cables": [(13, 9, 10)], "delays": [40]},
     # 3B: boards on decks 15 and 27, cable on the deck-21 ledge.
     "signal_gully": {"boards": [(15, 8, 10), (27, 9, 11)], "cables": [(22, 10, 11)], "delays": [50]},
     # 3C: one board on the first catwalk, no hidden cable.
-    "signal_porch": {"boards": [(9, 9, 11)], "cables": [], "delays": []},
+    "signal_porch": {"boards": [(12, 7, 9)], "cables": [], "delays": []},
     # 4B: two hidden cables in one shaft (bottom ledge and the arrival shelf), three boards.
     "pine_ladder": {"boards": [(27, 7, 9), (15, 9, 11), (9, 11, 13)], "cables": [(28, 8, 9), (3, 11, 12)],
                     "delays": [30, 90]},

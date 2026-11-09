@@ -33,8 +33,11 @@ def configure_contract():
     ridge.LINES = copy.deepcopy(ridge.LINES)
     ridge.LINES[0].update(pole=(6, 29), box=(16, 26), checkpoint=(18, 26))
     ridge.LINES[1].update(pole=(20, 26), box=(36, 17), checkpoint=(38, 17))
-    ridge.LINES[2].update(pole=(40, 17))
-    ridge.LINES[3].update(box=(33, 11), checkpoint=(35, 11))
+    # This rejected pilot is a historical fixture. Keep its original approach
+    # and pads explicit so the production lakeside redesign cannot move them.
+    ridge.LINES[2].update(pole=(40, 17), box=(14, 11), checkpoint=(16, 11))
+    ridge.LINES[3].update(pole=(18, 11), box=(33, 11), checkpoint=(35, 11))
+    ridge.LINES[3].pop("reach", None)
     ridge.LINES[4].update(pole=(37, 14), box=(54, 11), checkpoint=(56, 11))
     for line in ridge.LINES:
         for field in ('pole', 'box', 'checkpoint'):
@@ -92,12 +95,12 @@ def configure_contract():
     saddle.BLOCKS = [(a,b,c+18,d+18) for a,b,c,d in relative_blocks] + [SADDLE_ROOF]
     saddle.SOLID_BLOCKS = [(0,0,2,32),(63,63,2,32),*saddle.BLOCKS]
     saddle.LEDGES = [(27,1,4),(27,20,31)]
-    saddle.BOARDS = [(row+18,x0,x1) for row,x0,x1 in saddle.BOARDS if x0 < 32]
+    saddle.BOARDS = [(27,21,23)]
     saddle.GUST_LANES = [(25,26,28), (31,49,51)]
     saddle.WHIP_LANES, saddle.WHIP_START_DELAYS = [], []
-    saddle.HIDDEN_CABLES = [(row+18,x0,x1) for row,x0,x1 in saddle.HIDDEN_CABLES]
-    saddle.FALLEN_SPANS = [{**span, 'arcs': [(row+18,a-1,b-1) for row,a,b in span['arcs']]}
-                           for span in saddle.FALLEN_SPANS]
+    saddle.HIDDEN_CABLES, saddle.CABLE_START_DELAYS = [(31,9,10)], [40]
+    saddle.FALLEN_SPANS = [{'columns': (40,46), 'live_after': 4, 'arcs': [(31,41,42)], 'delays': [40]}]
+    saddle.first_hazard = {'gust': 3, 'whip': 3, 'span': 2, 'cable': 3, 'board': 3}
     saddle.START, saddle.ENTRIES = (2,26), [(2,26)]
     saddle.HOUSE_WINDOWS = ridge.HOUSE_WINDOWS
     routes = [
@@ -112,6 +115,7 @@ def configure_contract():
     # wall before joining the copied Saddle wire run.
     saddle.WIRE_ROUTES[0] = (3,[(0,3),(1,3),(1,21),(14,21),(14,26)])
     for current in (layout, saddle):
+        current.LAKESIDE = False
         current.LINES = grid_chain.scene_lines(ridge.LINES, current.folder)
         current.links = scene_links.from_scene(current.folder, scene_links.table('redesign'))
         current.arrivals = scene_links.into_scene(current.folder, scene_links.table('redesign'))

@@ -1,11 +1,11 @@
 {
   "_resourceType": "trigger",
-  "id": "c3337b5d-d923-5cdc-9393-b4605f930907",
-  "name": "Cracked Board 3 Stand",
+  "id": "9cdc5b61-395d-5b76-b4cd-b49a67d75179",
+  "name": "Cracked Board 2 Stand",
   "prefabId": "",
-  "x": 21,
-  "y": 8,
-  "symbol": "trigger_ridge_cracked_board_03",
+  "x": 24,
+  "y": 11,
+  "symbol": "trigger_ridge_cracked_board_02",
   "prefabScriptOverrides": {},
   "width": 3,
   "height": 1,
@@ -16,47 +16,47 @@
         "variable": "15",
         "value": {
           "type": "number",
-          "value": 3
+          "value": 2
         }
       },
-      "id": "38c9d824-d04e-5dea-baab-e63058af36d7"
+      "id": "a691a473-9ef1-575e-804d-8f72f7857fbb"
     },
     {
       "command": "EVENT_ACTOR_STOP_UPDATE",
       "args": {
-        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a"
+        "actorId": "5987aea2-3595-52eb-a8a1-64adf98fd14a"
       },
-      "id": "58ecf5d1-533b-5342-8ac0-09cd6753a5f5"
+      "id": "6f053076-4de8-51f2-b122-ef91b68b323a"
     },
     {
       "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
       "args": {
-        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a"
+        "actorId": "5987aea2-3595-52eb-a8a1-64adf98fd14a"
       },
-      "id": "90c75880-f28a-59b7-b14c-d31990d9b13d"
+      "id": "4359745e-6bf0-54d1-8889-bdc917844bc4"
     },
     {
       "command": "EVENT_ACTOR_SET_STATE",
       "args": {
-        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a",
+        "actorId": "5987aea2-3595-52eb-a8a1-64adf98fd14a",
         "spriteStateId": "Idle",
         "loopAnim": true
       },
-      "id": "dc19cb7d-cbd6-563a-835d-ac986fa7b312"
+      "id": "95845629-931b-5abc-a6d0-fda713e00926"
     },
     {
       "command": "EVENT_ACTOR_HIDE",
       "args": {
-        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a"
+        "actorId": "5987aea2-3595-52eb-a8a1-64adf98fd14a"
       },
-      "id": "07778e9c-d9b4-5395-9aa2-c369c01d0843"
+      "id": "414fc838-b0c6-5ebf-8b02-75c5ac66df96"
     },
     {
       "command": "EVENT_ACTOR_START_UPDATE",
       "args": {
-        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a"
+        "actorId": "5987aea2-3595-52eb-a8a1-64adf98fd14a"
       },
-      "id": "6f3052e9-4a00-59e0-a217-372dd9c25931"
+      "id": "0c72a647-1792-56ea-8d6d-54c34a183069"
     }
   ],
   "leaveScript": [
@@ -69,37 +69,37 @@
           "value": 0
         }
       },
-      "id": "62ee75d4-56dd-5003-bea5-054b8e184a31"
+      "id": "5f80b74b-ec3e-52c8-be53-a8361122664f"
     },
     {
       "command": "EVENT_ACTOR_STOP_UPDATE",
       "args": {
-        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a"
+        "actorId": "5987aea2-3595-52eb-a8a1-64adf98fd14a"
       },
-      "id": "00d077fc-ca38-5883-87c3-97a51f89cf6e"
+      "id": "a9cba186-44a6-54d8-b410-ee91346daaa2"
     },
     {
       "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
       "args": {
-        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a"
+        "actorId": "5987aea2-3595-52eb-a8a1-64adf98fd14a"
       },
-      "id": "348c71bf-b436-5624-9299-a077f79551e9"
+      "id": "0739faf4-20c1-51c7-9af3-da5922e49981"
     },
     {
       "command": "EVENT_ACTOR_SET_STATE",
       "args": {
-        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a",
+        "actorId": "5987aea2-3595-52eb-a8a1-64adf98fd14a",
         "spriteStateId": "Idle",
         "loopAnim": true
       },
-      "id": "0fd1095b-46d7-5c1b-8f1d-b000febe3ee1"
+      "id": "7c9c0a8e-8de1-568b-9b71-73607f776daa"
     },
     {
       "command": "EVENT_ACTOR_HIDE",
       "args": {
-        "actorId": "529cf6b6-f2f0-518b-a7b7-4c6418deb86a"
+        "actorId": "5987aea2-3595-52eb-a8a1-64adf98fd14a"
       },
-      "id": "92ec4d26-3ec6-5f9e-91a5-d479c0a1256e"
+      "id": "ec2e65dc-335e-5034-b1f2-b32d7450f49e"
     }
   ],
   "_index": 3

@@ -1,8 +1,8 @@
 """Storm Climb - deterministic contract for Amara's repair job (job 1, two scenes).
 
 Data only. Job 1 is two PLATFORM scenes (docs/LEVEL_REDESIGN.md §2, Job 1):
-1A ``storm_climb`` (20x36, the shaft Abe loved, unchanged up to pole 5) and 1B
-``climb_crest`` (56x18, the CREST section below: the end of carry 5, Amara's
+1A ``storm_climb`` (20x36, the pine service steps up to pole 5) and 1B
+``climb_crest`` (56x18, the damaged lakeside walkway: the end of carry 5, Amara's
 house and transformer 5). Power flows bottom -> top: the base substation feeds
 pole 1 on the bottom deck, and five lines climb the mountain in one continuous
 grid chain (Abe, 2026-10-29: "the hero must connect 5 lines"; "lines must show
@@ -22,9 +22,9 @@ checkpoint, var 0) only completes once all five are live.
     summit (5)       exit (top right) up to the crest; line 5's wire leaves there
     1B climb_crest   carry 5 across the crest to transformer 5, Amara's porch
 
-Every deck has rock slabs at both ends (the poles and transformers stand on
-them) and a one-way timber walk in the middle, so a full-height jump at a deck
-end bonks the slab above: carries go up the middle ledges and their hazards.
+The rock ends give the poles and transformers solid work pads. The staggered
+one-way timber shelves lead between those pads; their offset ends mark the
+approach and landing for each short jump.
 The wire serpentine (``WIRE_ROUTES``) lights stage by stage as the chain repairs.
 
 Transformers are background art, not actors (``TRANSFORMERS``): GB Studio keeps
@@ -75,13 +75,13 @@ SUMMIT_ROW = 5
 # Platforms are (row, x_start, x_end), inclusive one-way surfaces.
 PLATFORMS = [
     (DECK0_ROW, 0, 18),
-    (30, 7, 13),
+    (30, 7, 12),                  # keeps the first pole clear; approach at x7–8
     (27, *DECK_WALK),
-    (24, 6, 12),
+    (24, 7, 13),                  # return toward the uphill right work pad
     (21, *DECK_WALK),
-    (18, 7, 13),
+    (18, 6, 12),
     (15, *DECK_WALK),
-    (12, 6, 12),
+    (12, 7, 13),
     (9, *DECK_WALK),
     (SUMMIT_ROW, 7, 16),
 ]
@@ -96,10 +96,7 @@ SOLID_BLOCKS = [
 SOLID_BLOCKS += shaft.deck_solid_blocks(DECK_ROWS)
 
 # The route the hero climbs, bottom to summit: (surface row, x0, x1).
-ROUTE = [
-    (DECK0_ROW, 0, 18), (30, 7, 13), (27, 1, 18), (24, 6, 12), (21, 1, 18),
-    (18, 7, 13), (15, 1, 18), (12, 6, 12), (9, 1, 18), (SUMMIT_ROW, 7, 16),
-]
+ROUTE = [(row, 1, 18) if row in DECK_ROWS else (row, x0, x1) for row, x0, x1 in PLATFORMS]
 
 # The base substation and player begin on the bottom deck. START is the empty
 # tile the player stands in (feet row). Kept at (2, 32): the service opening
@@ -137,7 +134,7 @@ LINES = [
      "checkpoint": (4, 14), "live_var": "42", "pole_scene": CLIMB_SCENE, "box_scene": CLIMB_SCENE},
     {"key": "upper", "pole": (16, 14), "box": (17, 8), "reach": (14, 6, 5, 3),
      "checkpoint": (15, 8), "live_var": "43", "pole_scene": CLIMB_SCENE, "box_scene": CLIMB_SCENE},
-    {"key": "summit", "pole": (2, 8), "box": (39, 11), "reach": (36, 9, 5, 3),
+    {"key": "summit", "pole": (2, 8), "box": (39, 11), "reach": (38, 9, 3, 3),
      "checkpoint": (41, 11), "live_var": "7", "pole_scene": CLIMB_SCENE, "box_scene": CREST_SCENE},
 ]
 for _number, _line in enumerate(LINES, start=1):
@@ -522,47 +519,48 @@ def _self_check() -> None:
 # ===========================================================================
 # CREST: 1B climb_crest (56x18), the end of carry 5 (docs/LEVEL_REDESIGN.md §2 1B)
 #
-# A short run scene above the summit exit. Run-scene rows: floor 15 (feet 14),
-# rock B and the porch 12 (feet 11), catwalk C 9 (feet 8). The hero arrives on
-# the ledge x0-6 (feet 8) under the back exit, drops to the floor, passes the
-# fallen span (live once lines 1-4 are repaired, so it always arcs during carry
-# 5) and a hidden cable, taps onto rock B under a gust, taps onto catwalk C
-# (a cracked board on its landing, a whip at its end) and drops onto Amara's
-# porch: transformer 5, Amara, her house and door, then the porch exit to work
-# order 2 (gated on var 0, as the summit exit was).
+# Arrival previews an isolated fallen wire on the lower lakeside path. The
+# granite step leads onto the damaged timber walkway: a creaking plank on the
+# near end, a hanging cable across the far end, then a short jump to Amara's
+# lower stone porch. The notch under the missing planks has a safe catch ledge;
+# either end can be reached again without passing through a hazard below deck.
 # ===========================================================================
 CREST_W, CREST_H = 56, 18
 CREST_FLOOR_ROW = 15
 CREST_PORCH_ROW = 12
 CREST_CATWALK_ROW = 9
+CREST_WALKWAY = (CREST_CATWALK_ROW, 23, 34)
+CREST_GAP = (35, 37)                  # missing upper planks before the cabin pad
+CREST_CATCH_ROW = CREST_FLOOR_ROW
 CREST_PLATFORMS = [
     (9, 1, 6),                         # arrival timber: jump back through from the step below
-    (CREST_CATWALK_ROW, 25, 37),         # catwalk C, one-way timber
+    CREST_WALKWAY,
 ]
 CREST_SOLID_BLOCKS = [
     (0, 0, HUD_ROWS, CREST_H - 1),                        # left cliff wall
     (CREST_W - 1, CREST_W - 1, HUD_ROWS, CREST_H - 1),    # right cliff wall
     (0, 6, 12, 14),                                       # recovery step below the arrival timber
-    (0, CREST_W - 1, CREST_FLOOR_ROW, CREST_H - 1),       # floor and bedrock
-    (20, 24, CREST_PORCH_ROW, 14),                        # rock B
-    (38, CREST_W - 1, CREST_PORCH_ROW, 14),               # Amara's porch
+    (0, CREST_W - 1, CREST_FLOOR_ROW, CREST_H - 1),       # granite path and bedrock
+    (20, 24, CREST_PORCH_ROW, 14),                        # staging rock below the walkway
+    (31, 34, CREST_PORCH_ROW, 14),                        # intermediate recovery terrace
+    (33, 34, CREST_CATWALK_ROW + 1, 11),                 # granite abutment under broken end
+    (CREST_GAP[1] + 1, CREST_W - 1, CREST_PORCH_ROW, 14), # Amara's continuous stone pad
 ]
 CREST_START = (3, 8)                   # upstream entry "S" (from 1A's summit exit) and respawn fallback
 CREST_BACK_EXIT = (1, 6, 1, 3)         # back down to 1A, landing on SUMMIT_ARRIVAL
 CREST_PORCH_EXIT = (54, 9, 1, 3)       # on to work order 2 once Amara's door is reached (var 0)
 CREST_EXIT_NUDGE_TILES = 3             # refused: step back three tiles, then explain (ROM 147c23be)
 CREST_AMARA = (45, 11)
-CREST_HOUSE_RECT = (46, 49, 5, 11)     # (x0, x1, row0, row1) background house at porch height
+CREST_HOUSE_RECT = (46, 51, 5, 11)     # (x0, x1, row0, row1) background cabin at porch height
 CREST_DOOR = (47, 11)                  # door tile: Amara's checkpoint (var 0)
-CREST_WINDOW_TILES = ((46, 8), (49, 8))
+CREST_WINDOW_TILES = ((46, 8), (50, 8))
 CREST_DOOR_RECT = (CREST_DOOR[0], CREST_DOOR[1] - 2, 2, 3)   # arrival trigger at the door
 
-# Hazards (boards and the hidden cable: hazards.py's climb_crest keys). Lanes are
-# (chest row, x0, x1) as in 1A. 1B pushes a little harder than the shaft: the
-# gust rests less between bursts (Abe: keep 1A, the crest may be harder).
-CREST_GUST_LANES = [(10, 21, 23)]       # on rock B, guarding the tap onto catwalk C
+# Lanes are (chest row, x0, x1) as in 1A. Crest removes the overlapping wind
+# and hidden-cable beats; the exposed wire and footing are the focus here.
+CREST_GUST_LANES: list[tuple[int, int, int]] = []
 CREST_GUST_TIMINGS = (GUST_WARNING_FRAMES, GUST_ACTIVE_FRAMES, 70)
-CREST_WHIP_LANES = [(7, 33, 34)]        # at catwalk C's end, hanging from line 5's wire
+CREST_WHIP_LANES = [(7, 29, 30)]        # leaves four clear columns to line up the gap
 CREST_WHIP_START_DELAYS = [20]
 # R8 pilot: the fallen span goes live after lines 1-4, preserving the carry-5
 # challenge; its crest-specific chain makes it stay safe once line 5 is repaired.
@@ -573,6 +571,7 @@ CREST_FALLEN_SPANS = [{"live_after": 4, "arcs": [(13, 11, 12)], "delays": [0]}]
 CREST_WIRE_ROUTES = [
     (5, [(1, EDGE_PORT_ROW), (39, EDGE_PORT_ROW), (39, 9)]),
     (5, [(39, EDGE_PORT_ROW), (47, EDGE_PORT_ROW), (47, 4)]),
+    (5, [(39, EDGE_PORT_ROW), (29, EDGE_PORT_ROW), (29, 5)]),
 ]
 CREST_TRANSFORMERS = [line["box"] for line in boxes_in(CREST_SCENE)]
 
@@ -646,6 +645,13 @@ def _crest_self_check() -> None:
     assert all(grid[y][x] == COL_EMPTY for x in range(hx0, hx1 + 1) for y in range(hy0, hy1 + 1))
     nx = CREST_PORCH_EXIT[0] - CREST_EXIT_NUDGE_TILES
     assert _stands(grid, nx, CREST_DOOR[1], width=1) and nx + 2 < CREST_PORCH_EXIT[0]
+    gap0, gap1 = CREST_GAP
+    for x in range(gap0, gap1 + 1):
+        assert all(grid[y][x] == COL_EMPTY for y in range(CREST_CATWALK_ROW, CREST_CATCH_ROW))
+        assert grid[CREST_CATCH_ROW][x] == COL_SOLID, "catch basin below the missing planks"
+    [line] = boxes_in(CREST_SCENE)
+    assert line["reach"][0] > gap1, "B must reach the cabin side of the notch"
+    assert _stands(grid, *line["checkpoint"]), "full-width safe porch checkpoint"
     for row, x0, x1 in crest_play_lanes():
         assert all(grid[row][x] == COL_EMPTY for x in range(x0, x1 + 1)), "crest lane in rock"
         assert all(grid[row + 2][x] in (COL_SOLID, COL_TOP) for x in range(x0, x1 + 1)), "crest lane floor"

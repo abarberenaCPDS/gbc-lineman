@@ -45,6 +45,16 @@ def execute(events, state):
 
 
 class LakesideCampaignTests(unittest.TestCase):
+    def test_route_fixture_does_not_reset_cable_or_repairs_on_return(self):
+        import make_campaign_diagnostics as diagnostics
+        events = diagnostics.seed_once({'6': 0, '17': 0})
+        state = {}
+        execute(events, state)
+        self.assertEqual((state['6'], state['17']), (0, 0))
+        state.update({'6': 3, '17': 1})
+        execute(events, state)
+        self.assertEqual((state['6'], state['17']), (3, 1))
+
     def setUp(self):
         self.scene = hub.build_scene()
         self.input_event = next(e for e in self.scene["script"]

@@ -29,8 +29,8 @@ FOLDERS = kiko.SCENE_ORDER
 FAKE_MUSIC = "test-music"
 FAKE_AUDIO = {"death": "death-sound", "connect": "connect-sound", "pickup": "pickup-sound"}
 FAKE_SPRITES = {"gust": "gust-sprite"}
-# docs/LEVEL_REDESIGN.md §5: actors, triggers, window OBJ (hero excluded), worst scanline.
-SPEC_BUDGETS = {HOLLOW: (12, 8, 26, 10), LADDER: (13, 9, 41, 8), RIM: (9, 5, 21, 9)}
+# Resource counts stay stable; geometry can change the on-screen overlaps.
+RESOURCE_COUNTS = {HOLLOW: (12, 8), LADDER: (13, 9), RIM: (9, 5)}
 
 
 def built(folder, music=FAKE_MUSIC, audio=None, sprites=None):
@@ -88,23 +88,19 @@ def set_positions(events):
 
 
 class ContractTests(unittest.TestCase):
-    def test_maps_match_the_spec(self):
+    def test_maps_preserve_dimensions_seams_and_checkpoints(self):
         specs = redesign_maps.load()
         for folder in FOLDERS:
             spec, contract = specs[folder], kiko.SCENES[folder]
             with self.subTest(folder=folder):
                 self.assertEqual((contract.map_w, contract.map_h), (spec.width, spec.height))
-                expected = [row[:] for row in spec.grid]
-                if folder == HOLLOW:
-                    expected[9][56] = kiko.COL_TOP  # full-width return landing
-                self.assertEqual(contract.collision_grid(), expected)
                 self.assertEqual(sorted(contract.kinded_lanes()), sorted(spec.lanes))
                 self.assertEqual(sorted(contract.boards), sorted(spec.boards))
                 self.assertEqual([link.rect for link in contract.links()], [rect for _, rect in spec.triggers])
                 self.assertEqual(contract.start, spec.start)
-                lines = [{k: v for k, v in line.items() if k in ("number", "pole", "box", "checkpoint")}
-                         for line in contract.lines()]
-                self.assertEqual(lines, spec.lines)
+                def work_pads(lines):
+                    return [(line["number"], line["box"], line["checkpoint"]) for line in lines if "box" in line]
+                self.assertEqual(work_pads(contract.lines()), work_pads(spec.lines))
                 house = contract.house or {}
                 self.assertEqual([house["npc"]] if house else [], spec.npcs)
                 self.assertEqual([house["device"]] if house else [], spec.devices)
@@ -160,18 +156,16 @@ class ContractTests(unittest.TestCase):
         self.assertEqual((kiko.WHIP_SWAY_FRAMES, kiko.WHIP_SWING_FRAMES, kiko.WHIP_HANG_FRAMES), (36, 24, 46))
         self.assertEqual(cable, (120, 20, 26))
 
-    def test_budgets_match_the_spec(self):
+    def test_budgets_and_retained_resources(self):
         for folder in FOLDERS:
-            actors, triggers, window, line = SPEC_BUDGETS[folder]
+            actors, triggers = RESOURCE_COUNTS[folder]
             route = next(s for s in kiko.ROUTE_SCENES if s["folder"] == folder)
             with self.subTest(folder=folder):
                 self.assertEqual(len(BUILT[folder]["actors"]), actors)
                 self.assertEqual(len(BUILT[folder]["triggers"]), triggers)
-                self.assertEqual(test_routes.oam_window(route), window)
-                self.assertEqual(test_routes.worst_scanline(route), line)
-                self.assertLessEqual(line, grid_chain.SCANLINE_OBJ_LIMIT)
+                self.assertLessEqual(test_routes.worst_scanline(route), grid_chain.SCANLINE_OBJ_LIMIT)
                 if folder != LADDER:
-                    self.assertLessEqual(window + shaft.HERO_OBJ, shaft.OAM_LIMIT)
+                    self.assertLessEqual(test_routes.oam_window(route) + shaft.HERO_OBJ, shaft.OAM_LIMIT)
 
     def test_ladder_culling_keeps_the_oam_within_40(self):
         route = next(s for s in kiko.ROUTE_SCENES if s["folder"] == LADDER)
@@ -199,6 +193,48 @@ class ContractTests(unittest.TestCase):
             for rule, found in test_routes.problems(route).items():
                 with self.subTest(folder=route["folder"], rule=rule):
                     self.assertEqual(found, [])
+
+    def test_short_rises_reach_both_work_shelves_and_the_rim(self):
+        route = kiko.LADDER_SCENE.route_scene()
+        routes = test_routes.Routes(dict(route, max_rise=3))
+        for line in route["lines"]:
+            for key in ("pole", "checkpoint"):
+                if key in line:
+                    with self.subTest(line=line["number"], endpoint=key):
+                        self.assertIn(line[key], routes.reach(route["start"]))
+        rim = routes.exit_tiles(route["exit"])
+        self.assertTrue(rim & routes.reach(kiko.LINES[-1]["pole"]))
+
+    def test_rim_floor_recovers_to_both_arrival_and_home(self):
+        routes = test_routes.Routes(kiko.RIM_SCENE.route_scene())
+        reachable = routes.reach((14, 14))  # under the broken approach bridge
+        self.assertIn(kiko.RIM_START, reachable)
+        self.assertTrue(reachable & routes.zone(kiko.LINES[-1]))
+
+    def test_rim_catch_has_a_vertical_rise_to_the_safe_pocket(self):
+        routes = test_routes.Routes(kiko.RIM_SCENE.route_scene())
+        self.assertIn((17, 11), routes.reach((14, 11)))
+        self.assertIn((17, 8), routes.adj[(17, 11)])
+        self.assertIn((18, 8), routes.standable)
+
+        def sprite(name):
+            return json.loads((scene.PROJECT_DIR / "assets" / "sprites" / f"{name}.png.gbsres").read_text())
+
+        def hitbox(meta, x, y):
+            return test_routes._rect_tiles((x + meta["boundsX"], y + meta["boundsY"],
+                                            meta["boundsWidth"], meta["boundsHeight"]))
+
+        actors = {actor["symbol"]: actor for actor in BUILT[RIM]["actors"]}
+        hero = sprite("opening_worker24")
+        tile = kiko.TILE
+        rise = [(17 * tile, y) for y in range(8 * tile, 11 * tile + 1)]
+        pocket = [(x, 8 * tile) for x in range(17 * tile, 18 * tile + 1)]
+        for symbol, name in (("rim_hidden_cable_01", "live_arc"), ("rim_whip_01", "whip_wire"),
+                             ("rim_gust_01", "climb_gust")):
+            actor = actors[symbol]
+            hazard = hitbox(sprite(name), actor["x"] * tile, actor["y"] * tile)
+            with self.subTest(hazard=symbol):
+                self.assertFalse(any(hitbox(hero, x, y) & hazard for x, y in rise + pocket))
 
 
 class GeneratedSceneTests(unittest.TestCase):

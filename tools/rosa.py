@@ -7,16 +7,15 @@ comes back on (Blackout Grid: she can work and study online again):
 
     edge -> feeder -> west -> middle -> east -> house box
 
-  3A ``signal_hill`` (64x18, entry): up the hill. Lines 1-2 and pole 3; Priya's
-     own free-standing live arc on the floor, the upper walk doubling the floor.
+  3A ``signal_hill`` (64x18, entry): follow the service walk above the creek.
+     Lines 1-2 and pole 3; take the upper walk or the lower feeder path.
      Carry 3 leaves through the summit exit (62, 3).
-  3B ``signal_gully`` (20x36, down): the new idea. Every deck is rock slab plus
-     one-way timber across the full width, so the only way down is a Down+A
-     drop-through tap (B-07: one shelf per tap) with the cable in hand. T3 on
-     deck 9, pole 4 on deck 15, T4 on deck 27, pole 5 on the floor; carry 5
+  3B ``signal_gully`` (20x36, down): Down+A opens the descent after T3. The
+     lower banks alternate between rock, timber and open drops with catch
+     shelves. Pole 4 on deck 15, T4 on deck 27, pole 5 on the dry floor; carry 5
      leaves through the bottom-right exit (19, 30).
-  3C ``signal_porch`` (40x18): the end of carry 5 across the creek bed (span
-     arc, board, floor whip, gust on the rock), T5, Priya, her workstation,
+  3C ``signal_porch`` (40x18): the end of carry 5 across broken footbridges
+     or the creek bed and its return step, T5, Priya, her workstation,
      door and the gated exit to Emil's work order.
 
 Lines are global, actors are local (grid_chain "Multi-scene jobs"): each line
@@ -131,40 +130,54 @@ START = (2, GROUND_ROW - 1)    # entry from Hiroshi's porch (work order), facing
 HILL_EXIT = (62, 3, 1, 3)      # summit exit into the gully (scene_links)
 
 # ---------------------------------------------------------------------------
-# 3B signal_gully (20x36): the climb's shaft decks (shaft.py), all one-way walks.
+# 3B signal_gully (20x36): the intact head bridge teaches Down+A. Below it,
+# eroded banks create visible alternatives to dropping through another deck.
 # ---------------------------------------------------------------------------
 GULLY_W, GULLY_H = shaft.MAP_W, shaft.MAP_H
-GULLY_DECK_ROWS = list(shaft.DECK_ROWS)           # 27, 21, 15, 9: slabs + a one-way walk
-GULLY_ARRIVAL = (5, 1, 9)                         # the arrival shelf under the top-left exit
-GULLY_PLATFORMS: list[tuple[int, int, int]] = [
-    GULLY_ARRIVAL,
-    *[(row, *shaft.DECK_WALK) for row in GULLY_DECK_ROWS],
-    (12, 6, 12), (18, 7, 13), (24, 6, 12), (30, 7, 13),   # ledges between the decks
-    (shaft.DECK0_ROW, 1, GULLY_W - 2),                    # the floor: timber over bedrock
+GULLY_HEAD_BRIDGE = 9
+GULLY_ARRIVAL = (5, 1, 9)      # the arrival shelf under the top-left exit
+GULLY_FLOOR = 33
+GULLY_BRIDGES = [
+    (GULLY_HEAD_BRIDGE, 6, 13),  # intact bridge between T3 and the upper drop
+    (15, 6, 13),               # ruined right abutment: open fall onto row 18
+    (21, 6, 13),               # west side is now a dry spillway
+    (27, 6, 13),               # damaged bridge meets the lower repair bench
 ]
-GULLY_LEDGES = [GULLY_ARRIVAL, (12, 6, 12), (18, 7, 13), (24, 6, 12), (30, 7, 13)]
+GULLY_LEDGES = [
+    GULLY_ARRIVAL,
+    (12, 6, 12),                # after the first deliberate drop
+    (18, 6, 13), (18, 14, 18),  # central crossing and broad right bank landing
+    (24, 1, 4), (24, 6, 13),    # left catch and access to the lower repair bench
+    (30, 5, 8), (30, 10, 13),   # recovery steps beside pole 5, from the dry floor
+]
+GULLY_PLATFORMS = [*GULLY_BRIDGES, *GULLY_LEDGES, (GULLY_FLOOR, 1, GULLY_W - 2)]
 GULLY_SOLID_BLOCKS: list[tuple[int, int, int, int]] = [
     (0, GULLY_W - 1, 34, 35),        # bedrock
     (0, 0, 0, 1),                    # left wall above the entry
     (0, 0, 5, 35),                   # left wall below the entry (open rows 2-4)
     (GULLY_W - 1, GULLY_W - 1, 0, 29),   # right wall above the floor exit
     (GULLY_W - 1, GULLY_W - 1, 33, 35),  # (open rows 30-32)
-    *shaft.deck_solid_blocks(GULLY_DECK_ROWS),
+    (1, 5, 9, 10), (14, 18, 9, 10),  # stable upper banks
+    (1, 5, 15, 16),                  # pole 4 on the west bank
+    (14, 18, 21, 22),                # east bank above the lower repair
+    (14, 18, 27, 28),                # T4 and its checkpoint on the dry bench
 ]
 GULLY_START = (2, 4)            # entry from the hill's summit exit, facing right
-GULLY_FLOOR = shaft.DECK0_ROW
 
 # ---------------------------------------------------------------------------
-# 3C signal_porch (40x18): creek bed floor 15, the porch rock 12, a catwalk 9.
+# 3C signal_porch (40x18): broken footbridge fragments meet the porch rock.
+# A player who falls can reach the same work pad via the exposed bedrock step.
 # ---------------------------------------------------------------------------
 PORCH_W, PORCH_H = 40, 18
 PORCH_SOLID_BLOCKS = [
     (0, 0, 2, GROUND_ROW - 1),                        # left cliff wall
     (PORCH_W - 1, PORCH_W - 1, 2, GROUND_ROW - 1),    # right wall behind the exit
     (18, PORCH_W - 1, SURFACE_STEP, GROUND_ROW - 1),  # Priya's porch rock
+    (11, 13, GROUND_ROW - 2, GROUND_ROW - 1),        # dry creek-bed recovery step
 ]
 PORCH_ROCK = PORCH_SOLID_BLOCKS[2]
-PORCH_LEDGES: list[tuple[int, int, int]] = [(SURFACE_HIGH, 8, 16)]   # the creek catwalk (board)
+PORCH_RECOVERY_STEP = PORCH_SOLID_BLOCKS[3]
+PORCH_LEDGES = [(SURFACE_STEP, 5, 10), (SURFACE_STEP, 14, 17)]
 PORCH_START = (2, GROUND_ROW - 1)    # entry from the gully's floor exit
 PORCH_ROW = SURFACE_STEP - 1          # porch actors stand on row 11
 ROSA = (32, PORCH_ROW)               # four tiles clear of the house box, left of her door
@@ -237,14 +250,14 @@ LAYOUTS: dict[str, dict] = {
     },
     GULLY: {
         "arcs": [], "arc_delays": [],
-        "gusts": [(16, 9, 11), (31, 12, 14)], "gust_delays": [12, 36],
-        "whips": [(10, 8, 9), (28, 7, 8)], "whip_delays": [0, 24],
+        "gusts": [(16, 9, 11)], "gust_delays": [12],
+        "whips": [(10, 8, 9)], "whip_delays": [0],
         "spans": [{"columns": (6, 10), "live_after": 3, "arcs": [(19, 7, 8)], "delays": [20]}],
     },
     PORCH: {
         "arcs": [], "arc_delays": [],
-        "gusts": [(10, 21, 23)], "gust_delays": [12],
-        "whips": [(CHEST_LOW, 14, 15)], "whip_delays": [36],
+        "gusts": [], "gust_delays": [],
+        "whips": [(SURFACE_STEP - 2, 15, 16)], "whip_delays": [36],
         "spans": [{"columns": (5, 10), "live_after": 4, "arcs": [(CHEST_LOW, 7, 8)], "delays": [0]}],
     },
 }
@@ -284,8 +297,8 @@ def transformer_tiles(box: tuple[int, int]) -> tuple[list[tuple[int, int]], list
 # Routes are polylines of tile cells; a pole's top is (x, y - 3), a box's
 # hookup is the left tile of its transformer's top row. A cell in a map-edge
 # wall column is where the wire runs into the rock (not painted): power enters
-# 3A through its left wall, and in the gully the wire passes the full-width
-# decks inside the side walls.
+# 3A through its left wall, and in the gully the wire runs down the banks
+# inside the side walls.
 #
 # Wires cross scene edges (rule 5): stage 3 leaves 3A on row 3 through the
 # summit exit and enters the gully on row 3 above its arrival shelf; stage 5
@@ -621,11 +634,11 @@ def _self_check() -> None:
     for row, x0, x1 in LEDGES:
         assert all(grid[r][x] == COL_EMPTY for r in range(row - 3, row) for x in range(x0, x1 + 1)), \
             "head room over every catwalk"
-    # 3B: every deck is rock slab plus one-way timber wall to wall (Down+A is the only way down).
+    # 3B: only the upper bridge is intact wall to wall. The first drop still
+    # needs Down+A; open edges below catch the player on another shelf.
     gully = collision_grid(GULLY)
-    for row in [*GULLY_DECK_ROWS, GULLY_FLOOR]:
-        assert all(gully[row][x] != COL_EMPTY for x in range(1, GULLY_W - 1)), f"deck {row} spans the shaft"
-        assert any(gully[row][x] == COL_TOP for x in range(1, GULLY_W - 1)), f"deck {row} has a walk"
+    assert all(gully[GULLY_HEAD_BRIDGE][x] != COL_EMPTY for x in range(1, GULLY_W - 1))
+    assert all(gully[GULLY_FLOOR][x] == COL_TOP for x in range(1, GULLY_W - 1))
     # Pole k < box k < pole k+1, by scene order, then x (runs) or rows (the gully, downwards).
     grid_chain.check_chain_order(LINES, scene_order=SCENE_ORDER, axes=SCENE_AXES)
     # 3C: Priya's porch (today's pattern): box, four clear tiles, Priya, door, workstation, exit.
@@ -642,8 +655,8 @@ def _self_check() -> None:
     assert ex >= tx + tw and ey + eh - 1 == PORCH_ROW, "the work-order exit is past the door, on the porch"
     assert WIRE_ROUTES_BY_SCENE[PORCH][-1][1][-1] == (hx0, EDGE_PORTS[5][PORCH]) and EDGE_PORTS[5][PORCH] < hy0, \
         "the house wire meets the roof from above"
-    # Floor whips stay off screen from the porch (camera clamped at width - 20).
-    assert all(x1 < PORCH_W - 20 for row, _, x1 in LAYOUTS[PORCH]["whips"] if row == CHEST_LOW)
+    # The bridge whip stays behind the porch (camera clamped at width - 20).
+    assert all(x1 < PORCH_W - 20 for _, _, x1 in LAYOUTS[PORCH]["whips"])
     assert len({tuple(tuple(v) for _, v in sorted(c.items())) for c in CHAIN_PALETTES.values()}) == LINE_COUNT + 1
     ids = {SCENE_ID, BACKGROUND_ID, GULLY_SCENE_ID, PORCH_SCENE_ID, GULLY_BACKGROUND_ID, PORCH_BACKGROUND_ID,
            ROSA_SPRITE_ID, WORKSTATION_SPRITE_ID, ARC_SPRITE_ID}

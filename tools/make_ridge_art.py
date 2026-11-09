@@ -58,6 +58,7 @@ assert ridge.TRANSFORMER_BODY_SLOT == STONE, "transformer cans use the stone ram
 MAX_UNIQUE_TILES = {ridge.RIDGE: 249, ridge.SADDLE: 260}
 # Per-scene backdrop: pine columns and tops (px), skyline seeds.
 PINES = {ridge.RIDGE: [(2, 48), (22, 40), (33, 56)], ridge.SADDLE: [(7, 48), (48, 40)]}
+LAKESIDE_PINES = {ridge.RIDGE: [(2, 64), (12, 56)], ridge.SADDLE: [(6, 48), (23, 63)]}
 SKY_SEEDS = {ridge.RIDGE: (7, 19, 41), ridge.SADDLE: (11, 23, 43)}
 
 
@@ -194,8 +195,11 @@ class SceneArt:
         # -1..+2, so the two rows just above it are lane rows -3 and -2.
         self.BRACKET_CELLS = {(row + dr, x) for row, x0, x1 in c.WHIP_LANES
                               for x in range(x0 - 1, x1 + 2) for dr in (-3, -2)}
-        self.PLACARD_CELLS = self.LANE_CELLS | self.BRACKET_CELLS
-        self.PINES = [(tx * TILE, top, 16, ridge.GROUND_ROW * TILE) for tx, top in PINES[folder]]
+        masts = ({(row + 1, x) for row, x0, x1 in c.GUST_LANES for x in (x0, x1)}
+                 if c.LAKESIDE else set())
+        self.PLACARD_CELLS = self.LANE_CELLS | self.BRACKET_CELLS | masts
+        pines = LAKESIDE_PINES if c.LAKESIDE else PINES
+        self.PINES = [(tx * TILE, top, 16, ridge.GROUND_ROW * TILE) for tx, top in pines[folder]]
         far, near, decor = SKY_SEEDS[folder]
         self.FAR_RIDGE = _ridge_line(far, 40, 16, 28, 56)
         self.NEAR_RIDGE = _ridge_line(near, 80, 16, 64, 96)
@@ -338,6 +342,9 @@ class SceneArt:
 
     # -- painting ----------------------------------------------------------------
     def _draw_sky(self, cv: _Canvas) -> None:
+        if self.c.LAKESIDE:
+            self._draw_lake_view(cv)
+            return
         p = PALETTES[SKY]
         base = [(WIDTH, HEIGHT - 24), (0, HEIGHT - 24)]
         cv.polygon(SKY, self.FAR_RIDGE + base, p[1])
@@ -351,6 +358,53 @@ class SceneArt:
         for x, y, index in self.SPARKS:
             cv.point(SKY, (x, y), p[index])
         self._draw_wind(cv)
+
+    def _draw_lake_view(self, cv: _Canvas) -> None:
+        """A low-contrast skyline and lake below the traversable granite."""
+        p = PALETTES[SKY]
+        # Broad, distinct silhouettes behind the straight working wires.
+        clouds = ((58, 30, 67), (218, 27, 68), (386, 33, 73))
+        for x, y, w in clouds:
+            cv.polygon(SKY, [(x, y + 5), (x + 21, y), (x + w - 12, y + 1),
+                             (x + w, y + 5), (x + 32, y + 7)], p[1])
+            cv.line(SKY, [(x + 17, y + 1), (x + 37, y), (x + 49, y + 1)], p[2])
+        if self.c.HOUSE:
+            cv.polygon(SKY, [(429, 40), (435, 40), (440, 44), (440, 49), (436, 53),
+                             (429, 53), (425, 49), (425, 44)], p[3])
+            cv.polygon(SKY, [(433, 39), (441, 38), (444, 44), (440, 47), (433, 47),
+                             (430, 43)], p[0])
+            shore = [(0, 96), (80, 89), (143, 84), (203, 83), (252, 79), (298, 80),
+                     (327, 73), (362, 75), (397, 72), (439, 71), (512, 77)]
+        else:
+            shore = [(0, 95), (58, 91), (113, 98), (158, 92), (203, 88), (234, 86),
+                     (282, 90), (326, 88), (366, 84), (432, 88), (512, 89)]
+        skyline = [(0, 62), (35, 57), (72, 63), (108, 52), (146, 58), (175, 67),
+                   (210, 63), (247, 47), (278, 56), (308, 59), (346, 49), (377, 51),
+                   (413, 61), (446, 55), (474, 59), (512, 63)]
+        cv.polygon(SKY, skyline + [(WIDTH, 119), (0, 119)], p[1])
+        for i in (2, 6, 9, 13):
+            a, b = skyline[i:i + 2]
+            cv.line(SKY, [a, b], p[2])
+        # Dark distant bank separates mountains from the flat sheet of water.
+        bank = [(x, y - (6 + 2 * (i % 3))) for i, (x, y) in enumerate(shore)]
+        cv.polygon(SKY, bank + [(WIDTH, 119), (0, 119)], p[0])
+        cv.polygon(SKY, shore + [(WIDTH, 119), (0, 119)], p[1])
+        for i, ((x, y), (nx, ny)) in enumerate(zip(shore, shore[1:])):
+            cv.line(SKY, [(x, y), (nx, ny)], p[2])
+            # Use a small repeating set of horizontal wave tiles.
+            for tx in range((x + 7) // 8, nx // 8):
+                yshore = y + (tx * 8 - x) * (ny - y) // max(1, nx - x)
+                for row in range((yshore + 10) // 8, 15):
+                    if (tx + 3 * row) % 7 in (0, 1):
+                        cv.line(SKY, [(tx * 8 + 1, row * 8 + 3), (tx * 8 + 6, row * 8 + 3)], p[2])
+        if self.c.HOUSE:
+            # Far shore hamlet: tiny fixed roof clusters and dock, read as a view
+            # below the porch; only the household windows react to repairs.
+            for x, y, w in ((368, 74, 7), (384, 72, 10), (410, 72, 7), (424, 71, 8)):
+                cv.polygon(SKY, [(x, y - 1), (x + w // 2, y - 6), (x + w, y - 1),
+                                 (x + w - 1, y), (x + 1, y)], p[2])
+                cv.point(SKY, (x + w // 2, y - 2), p[3])
+            cv.line(SKY, [(402, 73), (402, 77), (413, 77)], p[2])
 
     def _draw_wind(self, cv: _Canvas) -> None:
         """Hiroshi's windy ridge: gust streaks, wind-bent pines on the near ridge, and per scene a
@@ -403,6 +457,26 @@ class SceneArt:
                 cv.rect(STONE, (x, y, x + 7, y + 7), ramp[1])
                 if ty == 0 or grid[ty - 1][tx] != climb.COL_SOLID:
                     cv.line(STONE, [(x, y), (x + 7, y)], ramp[3])
+                if self.c.LAKESIDE:
+                    # Exposed risers get a hard pale face. Fractures skip
+                    # between tiles instead of imposing a regular grid.
+                    phase = ((13 * tx + 7 * ty) ^ (tx // 3 + 5 * ty)) % 4
+                    top = ty == 0 or grid[ty - 1][tx] != climb.COL_SOLID
+                    if phase < 2 and not top:
+                        s = 1 + 2 * phase
+                        cv.line(STONE, [(x, y + s), (x + 3, y + s + 1),
+                                        (x + 7, y + s + 2)], ramp[0])
+                        cv.line(STONE, [(x + 2, y + s + 2), (x + 5, y + s + 3)], ramp[2])
+                    elif top and phase != 3:
+                        cv.line(STONE, [(x + 3, y + 6), (x + 5, y + 7)], ramp[0])
+                    elif phase == 2:
+                        cv.line(STONE, [(x, y + 5), (x + 3, y + 6), (x + 5, y + 7)], ramp[0])
+                        cv.line(STONE, [(x + 4, y + 2), (x + 6, y + 3)], ramp[2])
+                    if tx > 0 and grid[ty][tx - 1] != climb.COL_SOLID:
+                        cv.line(STONE, [(x, y + 1), (x, y + 4)], ramp[2])
+                    if tx + 1 < ridge.MAP_W and grid[ty][tx + 1] != climb.COL_SOLID:
+                        cv.line(STONE, [(x + 7, y + 3), (x + 7, y + 7)], ramp[0])
+                    continue
                 if (tx + ty) % 3 == 0:
                     cv.polygon(STONE, [(x, y + 2), (x + 3, y), (x + 4, y + 2), (x + 2, y + 4)], ramp[0])
                 else:
@@ -457,6 +531,13 @@ class SceneArt:
         cv.line(TIMBER, [(dx, dy0), (dx, bottom)], p[3])
         cv.line(TIMBER, [(dx + 7, dy0), (dx + 7, bottom)], p[3])
         cv.point(TIMBER, (dx + 5, dy0 + 12), p[3])
+        if self.c.LAKESIDE:
+            for y in range(top + 12, bottom - 1, 5):
+                for x, end in ((left + 1, dx - 2), (dx + 9, right - 1)):
+                    cv.line(TIMBER, [(x, y), (end, y)], p[0])
+            cv.line(TIMBER, [(left + 1, top + 6), (mid, top), (right - 1, top + 6)], p[3])
+            cv.line(TIMBER, [(dx - 3, dy0 - 1), (dx + 11, dy0 - 1)], p[2], 2)
+            cv.line(TIMBER, [(left, bottom), (right, bottom)], p[2])
 
     def _draw_windows(self, cv: _Canvas) -> None:
         p = PALETTES[WINDOW]
@@ -470,9 +551,19 @@ class SceneArt:
 
     def _draw_warnings(self, cv: _Canvas) -> None:
         p = PALETTES[STONE]
+        gust_lanes = self.c.GUST_LANES
         for row, x0, x1 in self.c.hazard_lanes():
             left, right = x0 * TILE, x1 * TILE + 7
             y = row * TILE
+            if self.c.LAKESIDE and (row, x0, x1) in gust_lanes:
+                # Two boundary stakes and pennants leave the air between them
+                # open. The gust actor supplies the actual warning and burst.
+                for x in (left + 1, right - 5):
+                    cv.line(STONE, [(x, y + 1), (x, y + 15)], p[2])
+                    cv.polygon(STONE, [(x + 1, y + 1), (x + 5, y + 2),
+                                       (x + 1, y + 4)], p[3])
+                cv.line(STONE, [(left + 9, y + 4), (right - 9, y + 4)], p[2])
+                continue
             cv.rect(STONE, (left + 2, y + 2, right - 2, y + 5), p[1])
             cv.line(STONE, [(left + 4, y + 2), (right - 4, y + 5)], p[3])
             cv.line(STONE, [(right - 4, y + 2), (left + 4, y + 5)], p[3])

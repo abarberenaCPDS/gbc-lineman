@@ -6,9 +6,8 @@ PNG is a grayscale index proxy that uses GB Studio's native index thresholds.
 This generator owns ``pine_hollow.png``, ``pine_ladder.png``, ``pine_rim.png``
 and their background sidecars.
 
-Functional art (WP4): it reuses the hollow's tiles and palettes everywhere, and
-the shaft (4B) draws its slabs, walks and posts with ``shaft_art.py``; an art
-pass may dress it later (docs/LEVEL_REDESIGN.md §4).
+The pine hollow frames the ascent with close trees. Timber switchbacks open
+onto the lake, with a trail pennant at both sides of the rim seam.
 
 Both metal BG slots hold wire pixels and the transformers' stage rows only;
 placards and whip brackets live in the stone slot. Every box is the shared
@@ -29,7 +28,6 @@ from PIL import Image, ImageDraw
 import climb
 import kiko
 import opening
-import shaft
 import shaft_art
 import transformer_art
 from make_climb_scene import collision_rle
@@ -52,6 +50,8 @@ assert kiko.WINDOW_BG_SLOT == WINDOW, "window slot must be the window family"
 assert kiko.TRANSFORMER_BODY_SLOT == STONE, "transformer cans use the stone ramp"
 
 FOLDERS = kiko.SCENE_ORDER
+WAYMARKS = {kiko.HOLLOW: ("right", 61, 9), kiko.LADDER: ("right", 16, 2),
+            kiko.RIM: ("left", 1, 6)}
 
 
 def output(folder: str) -> Path:
@@ -89,14 +89,18 @@ class SceneArt:
         self.placard_cells = self.lane_cells | self.bracket_cells
         self.transformer_tiles = {cell for line in self.scene.box_lines()
                                   for cell in transformer_art.all_tiles(line["box"])}
-        ledges = [p for p in self.scene.platforms if p[0] in (*shaft.LEDGE_ROWS, kiko.ARRIVAL_SHELF[0])]
-        # WP5: pine gates at the scene links, pine trunks (shaft) or standing pines (runs).
+        ledges = [*kiko.LADDER_STEPS[:-1], kiko.ARRIVAL_SHELF]
+        # Pine gates for the other links; the rim trail has matching pennants.
         self.markers = shaft_art.exit_markers(folder, self.scene.map_w, self.scene.map_h)
         self.claimed: set[tuple[int, int]] = set()
         self.tree_tiles: set[tuple[int, int]] = set()
         self.trees: list[tuple[int, int, int]] = []      # (first column, top row, bottom row) of 2-column pines
-        self.posts = (shaft_art.post_tiles(self.grid, ledges, self.scene.hazard_cells(), self.scene.map_h)
-                      if self.scene.shaft else [])
+        self.posts = []
+        if self.scene.shaft:
+            reserved = self.transformer_tiles | {(x // TILE, y // TILE) for stage in self.stages()
+                                                 for x, y in self.stage_pixels(stage)}
+            self.posts = [cell for cell in shaft_art.post_tiles(self.grid, ledges, self.scene.hazard_cells(),
+                                                               self.scene.map_h) if cell not in reserved]
 
     # -- wires -----------------------------------------------------------------
     def _polyline_pixels(self, route) -> frozenset[tuple[int, int]]:
@@ -208,6 +212,8 @@ class SceneArt:
     def _claim_trees(self, slots) -> None:
         """Pine trunks behind the shaft's slabs (4B) / tall standing pines on the runs (4A, 4C):
         foliage tiles on open sky only, never beside a hazard lane, never over wires or art."""
+        self.trees.clear()
+        self.tree_tiles.clear()
         avoid = self._lane_neighbourhood()
         marker_cols = {tx + dx for _s, tx, _t in self.markers for dx in (-3, -2, -1, 0, 1, 2, 3, 4)}
         width, height = self.scene.map_w, self.scene.map_h
@@ -215,7 +221,7 @@ class SceneArt:
             def runs(col):
                 out, run = [], []
                 for ty in range(height):
-                    if all(self._free(slots, col + dx, ty, avoid) for dx in (0, 1)):
+                    if ty >= 13 and all(self._free(slots, col + dx, ty, avoid) for dx in (0, 1)):
                         run.append(ty)
                     else:
                         out, run = (out + [run] if len(run) >= 3 else out), []
@@ -231,6 +237,8 @@ class SceneArt:
         else:
             chosen = []
             for col in range(3, width - 5):
+                if self.folder == kiko.RIM and 12 <= col <= 43:
+                    continue  # leave the lake visible above the rock and footbridges
                 if col in marker_cols or any(abs(col - other) < 11 for other in chosen):
                     continue
                 floor = next(ty for ty in range(height) if self.grid[ty][col] != climb.COL_EMPTY)
@@ -247,9 +255,14 @@ class SceneArt:
 
     # -- drawing ---------------------------------------------------------------
     def _draw_backdrop(self, c) -> None:
-        """Night forest: hill bands with pine silhouettes in the sky family (one band per run screen height)."""
+        """Closed pines below; open sky and the far shore at the top."""
+        if self.folder in (kiko.LADDER, kiko.RIM):
+            self._draw_lake(c, shore=43 if self.scene.shaft else 66,
+                            bottom=113 if self.scene.shaft else 132)
+        if self.folder == kiko.RIM:
+            return
         p = PALETTES[SKY]
-        bands = [58] if not self.scene.shaft else [58, 150, 242]
+        bands = [68] if not self.scene.shaft else [119, 207]
         for band, base in enumerate(bands):
             hill = [(x, base + ((x // 24 * 11 + x // 96 * 3 + band * 5) % 4) * 4)
                     for x in range(0, self.width + 1, 24)] + [(self.width, base + 8)]
@@ -266,8 +279,49 @@ class SceneArt:
                 c.line(SKY, [(center - 1, top + 7), (center - 3, top + 12)], p[2])
         for i in range(self.width // 40 * (len(bands))):
             x = (i * 53 + 24) % self.width
-            y = 18 + (i * 37) % 10 + (i % len(bands)) * 92
+            y = bands[i % len(bands)] - 42 + (i * 37) % 10
             c.point(SKY, (x, y), p[2])
+        if self.folder == kiko.HOLLOW:
+            # From the catwalk, a dark headland and the crooked spruce foreshadow the climb.
+            x = self.width - 152
+            bluff = [(x, 80), (x + 39, 69), (x + 63, 56), (x + 95, 44),
+                     (x + 126, 51), (self.width, 40)]
+            c.polygon(SKY, bluff + [(self.width, 119), (x, 119)], p[1])
+            c.line(SKY, bluff, p[2])
+            self._draw_far_spruce(c, x + 93, 25, 45)
+
+    def _draw_far_spruce(self, c, x: int, top: int, bottom: int) -> None:
+        p = PALETTES[SKY]
+        c.polygon(SKY, [(x, top), (x + 4, top + 7), (x + 3, top + 7),
+                        (x + 7, bottom - 2), (x - 6, bottom - 2),
+                        (x - 2, top + 8), (x - 4, top + 8)], p[1])
+        c.line(SKY, [(x, top + 2), (x + 1, bottom)], p[2])
+
+    def _draw_lake(self, c, *, shore: int, bottom: int) -> None:
+        p = PALETTES[SKY]
+        w = self.width
+        # Two continuous silhouettes behind the water, with a stepped bluff to the left.
+        far = [(0, shore - 9), (w // 12, shore - 18), (w // 5, shore - 23),
+               (w // 3, shore - 16), (w // 2, shore - 20), (2 * w // 3, shore - 13),
+               (4 * w // 5, shore - 17), (w, shore - 10)]
+        bank = [(0, shore - 4), (w // 6, shore - 9), (w // 3, shore - 6),
+                (w // 2, shore - 2), (2 * w // 3, shore), (5 * w // 6, shore - 5), (w, shore - 6)]
+        c.rect(SKY, (0, shore - 7, w - 1, bottom), p[1])
+        c.polygon(SKY, far + [(w, shore + 1), (0, shore + 1)], p[1])
+        c.line(SKY, far, p[2])
+        c.polygon(SKY, bank + [(w, shore + 1), (0, shore + 1)], p[0])
+        for y in range(shore + 7, bottom - 2, 9):
+            for x in range(12 + (y % 4) * 9, w - 13, 54):
+                c.line(SKY, [(x, y), (x + 11 + 5 * (y % 3), y)], p[2])
+        # Far houses and their pier, small enough to read as distant lights.
+        for x in (w // 2 - 27, w // 2 - 13, w // 2 + 1):
+            y = shore - 6 + (x % 3)
+            c.polygon(SKY, [(x, y), (x + 4, y - 3), (x + 8, y),
+                            (x + 7, y + 3), (x + 1, y + 3)], p[2])
+            c.point(SKY, (x + 4, y + 1), p[3])
+        x = w // 2 - 8
+        c.line(SKY, [(x, shore + 1), (x + 14, shore + 4), (x + 24, shore + 4)], p[0])
+        c.line(SKY, [(x + 14, shore + 5), (x + 24, shore + 5)], p[2])
 
     def _draw_trees(self, c) -> None:
         p = PALETTES[FOLIAGE]
@@ -335,6 +389,30 @@ class SceneArt:
             c.line(TIMBER, [(left, y), (right, y)], p[3])
             c.rect(TIMBER, (left, y + 1, right, y + 4), p[1])
             c.line(TIMBER, [(left, y + 5), (right, y + 5)], p[0])
+            for x in range(left + 4, right, 8):
+                c.point(TIMBER, (x, y + 3), p[2])
+
+    def _draw_waymarks(self, c) -> None:
+        mark = WAYMARKS[self.folder]
+        p = PALETTES[FOLIAGE]
+        shaft_art.paint_markers(c, [m for m in self.markers if m != mark], self.claimed,
+                                "pine", p, FOLIAGE)
+        # The same trail pennant at each threshold; its broad point indicates the opening.
+        cells = self.claimed & set(shaft_art.marker_tiles(mark))
+        masked = [[FOLIAGE if (x, y) in cells else -1 for x in range(len(row))]
+                  for y, row in enumerate(c.slots)]
+        m = shaft_art.Canvas(c.image, masked)
+        side, tx, ty = mark
+        x, y = tx * TILE, ty * TILE
+        def point(u, v):
+            return (x + (u if side == "right" else 15 - u), y + v)
+
+        m.line(FOLIAGE, [point(3, 3), point(3, 23)], p[2], 2)
+        m.point(FOLIAGE, point(3, 2), p[3])
+        m.polygon(FOLIAGE, [point(4, 5), point(14, 9), point(4, 13)], p[3])
+        m.line(FOLIAGE, [point(5, 12), point(13, 9)], p[2])
+        m.line(FOLIAGE, [point(2, 17), point(5, 17)], p[1])
+        m.line(FOLIAGE, [point(1, 23), point(7, 23)], p[1])
 
     def _draw_cabin(self, c) -> None:
         house = self.scene.house
@@ -345,10 +423,15 @@ class SceneArt:
         left, right = x0 * TILE, x1 * TILE + 7
         top, bottom = y0 * TILE, y1 * TILE + 7
         c.rect(TIMBER, (left, top + 8, right, bottom), p[1])
-        for x in range(left + 7, right, TILE):
-            c.line(TIMBER, [(x, top + 8), (x, bottom)], p[0])
+        for y in range(top + 11, bottom, 5):
+            c.line(TIMBER, [(left, y), (right, y)], p[0])
+            c.line(TIMBER, [(left + 1, y + 1), (left + 4, y + 1)], p[2])
         mid = (left + right) // 2
+        c.rect(TIMBER, (right - 8, top + 1, right - 5, top + 6), p[1])
+        c.line(TIMBER, [(right - 9, top + 1), (right - 4, top + 1)], p[2])
         c.polygon(TIMBER, [(left, top + 7), (mid, top), (right, top + 7)], p[2])
+        c.line(TIMBER, [(left, top + 7), (mid, top)], p[3])
+        c.line(TIMBER, [(mid, top), (right, top + 7)], p[1])
         c.line(TIMBER, [(left, top + 7), (right, top + 7)], p[3])
         dx = house["door"][0] * TILE
         dy0 = (house["door"][1] - 2) * TILE
@@ -428,7 +511,7 @@ class SceneArt:
         self._draw_rock(canvas)
         self._draw_timber(canvas)
         self._draw_storm_damage(canvas)
-        shaft_art.paint_markers(canvas, self.markers, self.claimed, "pine", PALETTES[FOLIAGE], FOLIAGE)
+        self._draw_waymarks(canvas)
         self._draw_cabin(canvas)
         self._draw_warnings(canvas)
         self._draw_boards(canvas)

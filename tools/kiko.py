@@ -5,9 +5,9 @@ five lines:
 
   4A ``pine_hollow`` (64x18, entry)  lines 1-2 and pole 3; line 3's cable leaves
                                      through the right-hand exit
-  4B ``pine_ladder`` (20x36, up)     a climb-style shaft: box 3, line 4, pole 5;
-                                     line 5's cable rises two decks and leaves
-                                     through the top-right exit (culling thread)
+  4B ``pine_ladder`` (20x36, up)     offset work shelves: box 3 on the west,
+                                     pole 4 on the east, box 4 back west and
+                                     pole 5 on the east approach to the rim
   4C ``pine_rim`` (56x18)            box 5 on Emil's porch, Emil, the stove, his
                                      door and the storm-report exit
 
@@ -79,7 +79,7 @@ WHIP_COLUMNS = ridge.WHIP_CANVAS[0] // TILE
 
 # ---------------------------------------------------------------------------
 # Scene geometry. Run scenes: floor row 15 (feet 14), step 12 (11), high 9 (8),
-# top 6 (5). The shaft reuses the climb's decks (shaft.py).
+# top 6 (5). The ascent retains the shaft camera and actor culling.
 # ---------------------------------------------------------------------------
 class Scene:
     """One scene of the job: geometry, hazards and wires (rows top-down, inclusive ranges)."""
@@ -191,14 +191,14 @@ ROCK_A = (4, 6, 12, 14)         # pole 1 (feeder)
 MESA = (16, 22, 9, 14)          # T1, pole 2
 ROCK_C = (36, 41, 12, 14)       # T2, pole 3
 C1 = (9, 8, 15)                 # catwalk: rock A -> mesa (board on the landing, hidden cable)
-D1 = (9, 43, 56)                # both columns of the (55, 8) return entry have footing
-F = (12, 57, 61)                # low catwalk to the ladder exit (board)
+HOLLOW_BRIDGES = [(9, 42, 48), (9, 51, 56)]  # separated by a view down to the return trail
+F = (12, 57, 62)                # low catwalk to the ladder exit (board, then firm landing)
 START = (2, 14)                 # entry from the work order card, facing right
 
 HOLLOW_SCENE = Scene(
     folder=HOLLOW, size=(MAP_W, MAP_H),
     solid_blocks=_run_blocks(MAP_W, [(0, 0, 2, 14), (MAP_W - 1, MAP_W - 1, 2, 14), ROCK_A, MESA, ROCK_C]),
-    platforms=[C1, D1, F], start=START,
+    platforms=[C1, (12, 24, 26), (12, 30, 31), *HOLLOW_BRIDGES, F], start=START,
     gusts=[(CHEST_HIGH, 44, 46), (CHEST_LOW, 47, 49)], gust_delays=[20, 0],
     whips=[(CHEST_LOW, 32, 33), (CHEST_HIGH, 51, 52)], whip_delays=[0, 45],
     spans=[
@@ -218,32 +218,33 @@ HOLLOW_SCENE = Scene(
     edge_ports={3: (MAP_W - 1, 3)},
 )
 
-# --- 4B pine_ladder (20x36): the long climb out -------------------------------
+# --- 4B pine_ladder (20x36): staggered work shelves to the lake rim -----------
 LADDER_W, LADDER_H = shaft.MAP_W, shaft.MAP_H
 LADDER_START = (2, 32)          # entry from the hollow, facing right
 ARRIVAL_SHELF = (5, 7, 16)      # top shelf under the exit to the rim (hidden cable 2)
+LADDER_STEPS = [(30, 5, 11), (21, 6, 12), (18, 3, 12), (8, 15, 16)]
 LADDER_SCENE = Scene(
     folder=LADDER, size=(LADDER_W, LADDER_H),
     solid_blocks=[
         (0, LADDER_W - 1, 34, 35),             # bedrock
         (0, 0, 0, 29), (0, 0, 33, 33),          # left wall, open at the hollow exit (rows 30-32)
         (LADDER_W - 1, LADDER_W - 1, 0, 33),    # right wall
-        *shaft.deck_solid_blocks(shaft.DECK_ROWS),
+        (18, 18, 24, 33),                     # rock backs the lower east work shelf
     ],
-    platforms=[(shaft.DECK0_ROW, 1, 18), (30, 7, 13), *[(row, *shaft.DECK_WALK) for row in shaft.DECK_ROWS],
-               (24, 6, 12), (18, 7, 13), (12, 6, 12), ARRIVAL_SHELF],
+    platforms=[(33, 1, 17), (27, 1, 11), (24, 9, 17), (15, 1, 12),
+               (12, 7, 10), (12, 13, 18), (9, 6, 14), *LADDER_STEPS, ARRIVAL_SHELF],
     start=LADDER_START,
     gusts=[(16, 8, 10), (7, 8, 10)], gust_delays=[0, 30],
     whips=[(31, 12, 13), (22, 9, 10), (10, 8, 9)], whip_delays=[0, 40, 20],
     spans=[{"columns": (6, 11), "row": 20, "live_after": 3, "arcs": [(19, 7, 8)], "delays": [0]}],
-    # Serpentine risers at the wall columns, as in the climb: where a riser crosses a
-    # slab the wire passes behind the rock (a gap).
+    # The service line draws the switchback across the open ledges. Where it
+    # crosses a support surface it passes behind the rock or timber.
     wire_routes=[
         (3, [(0, 29), (1, 29), (1, 23), (2, 23), (2, 24)]),
-        (3, [(2, 24), (2, 23), (16, 23)]),
-        (4, [(16, 23), (18, 23), (18, 17), (1, 17), (1, 11), (2, 11), (2, 12)]),
-        (4, [(2, 12), (2, 11), (16, 11)]),
-        (5, [(16, 11), (18, 11), (18, 2), (LADDER_W - 1, 2)]),
+        (3, [(2, 24), (2, 23), (14, 23), (14, 20), (16, 20)]),
+        (4, [(16, 20), (18, 20), (18, 17), (1, 17), (1, 11), (2, 11), (2, 12)]),
+        (4, [(2, 12), (2, 11), (12, 11), (12, 8), (17, 8)]),
+        (5, [(17, 8), (18, 8), (18, 2), (LADDER_W - 1, 2)]),
     ],
     edge_ports={3: (0, 29), 5: (LADDER_W - 1, 2)},
     shaft_scene=True,
@@ -265,8 +266,10 @@ RIM_SCENE = Scene(
     folder=RIM, size=(RIM_W, RIM_H),
     solid_blocks=_run_blocks(RIM_W, [(0, 0, 2, 14), (RIM_W - 1, RIM_W - 1, 2, 14), (0, 5, 9, 14),
                                      (21, 23, 12, 14),   # step out of the left pit (no softlock)
-                                     (24, 28, 6, 14), (40, RIM_W - 1, 12, 14)]),
-    platforms=[(9, 8, 22), (9, 29, 38)], start=RIM_START,
+                                     (24, 27, 6, 14), (28, 30, 9, 14), (38, RIM_W - 1, 12, 14)]),
+    # The second low catch reaches the open pocket between the upper cable and gust.
+    platforms=[(9, 8, 13), (9, 15, 22), (12, 6, 8), (12, 13, 18), (9, 31, 35), (9, 37, 38)],
+    start=RIM_START,
     gusts=[(7, 20, 22), (13, 34, 36)], gust_delays=[0, 25],
     whips=[(13, 18, 19), (7, 33, 34)], whip_delays=[10, 0],
     spans=[{"columns": (8, 14), "row": 14, "live_after": 4, "arcs": [(13, 11, 12)], "delays": [0]}],
@@ -324,9 +327,9 @@ LINES = [
      "pole_scene": HOLLOW, "box_scene": HOLLOW, "live_var": VAR_WEST_LIVE},
     {"key": "middle", "pole": (41, 11), "box": (2, 26), "reach": (2, 24, 4, 3), "checkpoint": (4, 26),
      "pole_scene": HOLLOW, "box_scene": LADDER, "live_var": VAR_MIDDLE_LIVE},
-    {"key": "east", "pole": (16, 26), "box": (2, 14), "reach": (2, 12, 4, 3), "checkpoint": (4, 14),
+    {"key": "east", "pole": (16, 23), "box": (2, 14), "reach": (2, 12, 4, 3), "checkpoint": (4, 14),
      "pole_scene": LADDER, "box_scene": LADDER, "live_var": VAR_EAST_LIVE},
-    {"key": "house", "pole": (16, 14), "box": (41, PORCH_ROW), "checkpoint": (43, PORCH_ROW),
+    {"key": "house", "pole": (17, 11), "box": (41, PORCH_ROW), "checkpoint": (43, PORCH_ROW),
      "pole_scene": LADDER, "box_scene": RIM, "live_var": VAR_LINE_LIVE},
 ]
 for _number, _line in enumerate(LINES, start=1):

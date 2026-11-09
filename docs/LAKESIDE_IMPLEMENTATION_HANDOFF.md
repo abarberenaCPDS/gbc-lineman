@@ -1,3 +1,50 @@
+## Household route increment complete — November 9, 2026
+
+✅ Items 1 and 2: revised training/town playtest and all four household route
+redesigns are implemented and checked as
+`0.24.0-dev`; training/town normal-boot pickup, repair and job dispatch passed.
+573 source tests and the official ROM/web builds passed. Physics files remain
+byte-identical to the accepted baseline, with four jobs and five repairs each.
+The field guide now reads “Live arcs spark. Stay clear. Cross when dark.”
+
+✅ Native route evidence now includes all five Amara repairs and cabin→town,
+all five Hiroshi repairs across focused runs and home→town, Priya's revised
+gully/porch repairs 3–5 and home→town, and Emil's revised ladder/rim repairs
+3–5, stove and Storm Report exit. Actual failures and retries are preserved.
+The prior Emil recording's premature exit claim is corrected in the evidence
+report; a fresh run reaches Storm Report at frame1755.
+
+✅ Pine Hollow now passes repairs1/2, cable3 loss/retrieval and the lower recovery
+route through its forward seam. Final bounded review found no residual issues.
+Full uninterrupted campaign and human feel/audio/hardware acceptance remain
+separate later gates. This increment is ready for local commit; no new tag or
+0.24 cartridge flash is requested.
+
+Evidence, hashes and preview/save details: [LAKESIDE_ROUTE_PLAYTEST.md](LAKESIDE_ROUTE_PLAYTEST.md).
+Official preview export is `build/web-lakeside-routes-v024`; the Codex browser
+host is unavailable, so browser UI is unverified. The previous paused save and
+its exact old export are retained. The cartridge remains approved0.23.1-dev.
+Source review sheets: `docs/review-assets/lakeside-routes/`.
+Workers: GPT-6.1 Sol implemented disjoint routes; GPT-6 Luna handled bounded
+source/evidence audits. Main owns generation, integration and native playback.
+
+---
+
+## Approved patch cartridge — November 9, 2026
+
+✅ At Abe's explicit request, `0.23.1-dev` was built from an isolated archive of
+commit `8afdd1b`, excluding ongoing route edits, then flashed to Chromatic Player01
+USB bus00/port1. Official build/header validation passed; vendor write succeeded
+and process exited0/closed normally. No physical boot/play assertion.
+ROM: `build/rom/lineman-v0.23.1-dev-approved.gbc`, 524288 bytes, SHA256
+`1afe434ca09f839a12245d653efb63ba6dfe8b160b986d3341dcf5d77d679c8d`.
+Operation: `a979021b2333ef1d8085b7ffdec3fdb3fb792cb358287fd5a71fe3c2ae8ae8be`.
+Earlier v0.22 write request was rejected before dispatch by automatic approval
+review because Abe corrected the requested version to0.23.1-dev. No older write
+occurred. Existing device erase/write consent was reused. No new tag created.
+
+---
+
 ## Hero patch approved — November 9, 2026
 
 ✅ Abe approved the shoulder-coil hero changes. Patch version is `0.23.1-dev`

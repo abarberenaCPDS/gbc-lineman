@@ -1,16 +1,16 @@
 {
   "_resourceType": "actor",
-  "id": "008a35e5-6bf2-5b01-81cb-35233ca8e2e5",
-  "_index": 6,
-  "symbol": "ridge_whip_01",
+  "id": "8973aae5-b91f-5bd3-8c54-cd4f6250821d",
+  "_index": 4,
+  "symbol": "ridge_gust_02",
   "prefabId": "",
-  "name": "Whipping Live Wire 1",
+  "name": "Telegraphed Gust 2",
   "coordinateType": "tiles",
-  "x": 12,
-  "y": 14,
+  "x": 31,
+  "y": 10,
   "frame": 0,
   "animate": true,
-  "spriteSheetId": "a44718b5-97ba-5d0e-88db-18455b018bed",
+  "spriteSheetId": "31b39167-ad7a-5152-8387-976ca2d50655",
   "paletteId": "",
   "direction": "down",
   "moveSpeed": 1,
@@ -27,16 +27,7 @@
       "args": {
         "actorId": "$self$"
       },
-      "id": "b76ddb10-abbd-5545-bd58-581d8a67af3d"
-    },
-    {
-      "command": "EVENT_ACTOR_SET_STATE",
-      "args": {
-        "actorId": "$self$",
-        "spriteStateId": "Hang",
-        "loopAnim": true
-      },
-      "id": "821e6d38-b3aa-5d15-a8ec-4719b859ab12"
+      "id": "02817c75-0b68-5c54-aba8-69559fc95e3f"
     }
   ],
   "updateScript": [
@@ -49,7 +40,7 @@
           "value": "down"
         }
       },
-      "id": "a9dfe009-aa56-565e-af0c-7106b014b91d",
+      "id": "5d1398d9-8cdc-54ec-8662-0259643564e9",
       "children": {
         "true": [
           {
@@ -61,7 +52,25 @@
                 "value": "up"
               }
             },
-            "id": "7bf02d70-651b-554f-9162-cd594c846695"
+            "id": "18c87be6-fedb-57e1-ae3b-9bbfa4b8bce7"
+          },
+          {
+            "command": "EVENT_ACTOR_HIDE",
+            "args": {
+              "actorId": "$self$"
+            },
+            "id": "6bd0a4c8-abce-5f74-8891-11cab1d89728"
+          },
+          {
+            "command": "EVENT_WAIT",
+            "args": {
+              "units": "frames",
+              "frames": {
+                "type": "number",
+                "value": 20
+              }
+            },
+            "id": "9c919c53-206d-5c76-a839-943a4b84338f"
           }
         ],
         "false": []
@@ -72,16 +81,23 @@
       "args": {
         "actorId": "$self$"
       },
-      "id": "308dd839-cbb1-5c74-b606-ab65738902b9"
+      "id": "ba9562d5-f0f0-5bfd-af82-a05cd7ce0e5d"
     },
     {
       "command": "EVENT_ACTOR_SET_STATE",
       "args": {
         "actorId": "$self$",
-        "spriteStateId": "Sway",
+        "spriteStateId": "Warning",
         "loopAnim": true
       },
-      "id": "cc1a9977-e3b9-55be-a1ae-f2d9bfcc4140"
+      "id": "00c36aed-54b9-5ea9-ad98-90a44b738029"
+    },
+    {
+      "command": "EVENT_ACTOR_SHOW",
+      "args": {
+        "actorId": "$self$"
+      },
+      "id": "23915fa2-3275-59bc-bf8a-d9bea2fb78ce"
     },
     {
       "command": "EVENT_WAIT",
@@ -89,26 +105,26 @@
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 40
+          "value": 48
         }
       },
-      "id": "ba0c8a6e-85d9-5e94-9814-d1ead06429e1"
+      "id": "92889304-31bb-53c8-b751-2af725a9e733"
     },
     {
       "command": "EVENT_ACTOR_SET_STATE",
       "args": {
         "actorId": "$self$",
-        "spriteStateId": "Swing",
+        "spriteStateId": "Burst",
         "loopAnim": true
       },
-      "id": "dfb63cc4-b02c-502a-925d-ed0d0251e71c"
+      "id": "4d1a5521-a40d-513d-89ff-a7641ec61b70"
     },
     {
       "command": "EVENT_ACTOR_COLLISIONS_ENABLE",
       "args": {
         "actorId": "$self$"
       },
-      "id": "c7d1a03f-81d5-550c-bf7d-96b8d477d24f"
+      "id": "f5e3b1f8-09aa-5a04-881a-c2c7155d370a"
     },
     {
       "command": "EVENT_WAIT",
@@ -119,23 +135,21 @@
           "value": 22
         }
       },
-      "id": "58cca253-7072-5fd5-92e0-c07d578499ce"
+      "id": "9268315d-cb90-5c64-a01a-5e9c370ce542"
     },
     {
       "command": "EVENT_ACTOR_COLLISIONS_DISABLE",
       "args": {
         "actorId": "$self$"
       },
-      "id": "7d9a4433-c321-5748-a381-1fd0f2455ddc"
+      "id": "80f885bb-54cb-5334-9184-e7e8b67bad85"
     },
     {
-      "command": "EVENT_ACTOR_SET_STATE",
+      "command": "EVENT_ACTOR_HIDE",
       "args": {
-        "actorId": "$self$",
-        "spriteStateId": "Hang",
-        "loopAnim": true
+        "actorId": "$self$"
       },
-      "id": "b359cd4d-985b-5d39-a667-eb8ead55b6f8"
+      "id": "92e5ecae-f3f5-5486-b907-c56c8b011d6b"
     },
     {
       "command": "EVENT_WAIT",
@@ -143,10 +157,10 @@
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 62
+          "value": 70
         }
       },
-      "id": "f773b7a3-3dfb-5504-ad25-9d455af157f4"
+      "id": "c7e94e2d-9c42-5ac5-8026-7b72657be212"
     }
   ],
   "hit1Script": [],

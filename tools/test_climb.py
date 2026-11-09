@@ -106,8 +106,7 @@ class ClimbContractTests(unittest.TestCase):
         self.assertEqual([line["key"] for line in scene.CHAIN.pole_lines()], [line["key"] for line in climb.LINES])
         self.assertEqual([line["key"] for line in scene.CHAIN.box_lines()], ["base", "lower", "middle", "upper"])
 
-    def test_lines_one_to_four_and_hazards_are_unchanged(self):
-        """Abe loved the climb: lines 1-4 and the nine hazards stay where they were."""
+    def test_pine_steps_preserve_the_shaft_work_pads_and_hazard_positions(self):
         self.assertEqual([(line["pole"], line["box"], line["reach"], line["checkpoint"], line["live_var"])
                           for line in climb.LINES[:4]], [
             ((5, 32), (2, 26), (2, 24, 4, 3), (4, 26), "40"),
@@ -122,9 +121,16 @@ class ClimbContractTests(unittest.TestCase):
         self.assertEqual((climb.GUST_WARNING_FRAMES, climb.GUST_ACTIVE_FRAMES, climb.GUST_REST_FRAMES),
                          (50, 22, 80))
 
-    def test_contract_matches_the_spec_map(self):
+    def test_pine_step_changes_stay_between_the_original_work_decks(self):
         spec = redesign_maps.load()["storm_climb"]
-        self.assertEqual(climb.collision_grid(), spec.grid)
+        grid = climb.collision_grid()
+        for y, row in enumerate(grid):
+            if y not in climb.LEDGE_ROWS:
+                self.assertEqual(row, spec.grid[y], f"unexpected change to deck, wall or footing row {y}")
+        # The first pickup approaches from the left, clear of the hidden cable.
+        # Wires, prop support and both ends of the ascent stay in place.
+        self.assertTrue(all(grid[30][x] == climb.COL_TOP for x in (7, 8)))
+        self.assertFalse({(28, 7), (28, 8)} & climb.hazard_cells())
         self.assertEqual(spec.start, climb.START)
         [route] = [s for s in climb.ROUTE_SCENES if s["folder"] == climb.CLIMB_SCENE]
         self.assertEqual(sorted(route["lanes"]), sorted(spec.lanes))
@@ -139,7 +145,7 @@ class ClimbContractTests(unittest.TestCase):
         rises = [a[0] - b[0] for a, b in zip(climb.ROUTE, climb.ROUTE[1:])]
         self.assertEqual(rises, [3] * 8 + [4])
 
-    def test_deck_ends_are_rock_so_a_long_jump_cannot_skip_a_carry(self):
+    def test_deck_ends_keep_the_existing_rock_work_pads(self):
         grid = climb.collision_grid()
         for line in climb.LINES[:4]:
             for x, y in (line["pole"], line["box"]):

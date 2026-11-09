@@ -524,7 +524,7 @@ class ContractRoutes(unittest.TestCase):
 
     def test_recovery_rule_detects_the_original_arrival_traps(self) -> None:
         cases = {"climb_crest": (6, (7, 14), "storm_climb"),
-                 "ridge_saddle": (4, (5, 14), "wind_ridge")}
+                 "ridge_saddle": (6, (7, 14), "wind_ridge")}
         for _, scene, _ in contract_scenes():
             if scene["folder"] not in cases:
                 continue
@@ -532,6 +532,10 @@ class ContractRoutes(unittest.TestCase):
             grid = [cells[:] for cells in scene["grid"]]
             for row in (9, 10, 11):
                 grid[row][1:x1 + 1] = [shaft.COL_SOLID] * x1
+            if scene["folder"] == "ridge_saddle":
+                # Remove the new recovery step to recreate the original trap.
+                for row in (12, 13, 14):
+                    grid[row][7:9] = [shaft.COL_EMPTY] * 2
             broken = Routes({**scene, "grid": grid})
             link = scene_links.link(scene["folder"], target, scene_links.table("redesign"))
             with self.subTest(folder=scene["folder"]):
@@ -567,9 +571,14 @@ class SpecMapRoutes(unittest.TestCase):
         for folder, spec in self.specs.items():
             boards, cables, delays = hazards.placement(folder, redesign=True)
             with self.subTest(folder=folder):
-                self.assertEqual(sorted(boards), sorted(spec.boards))
-                self.assertEqual(sorted(cables), sorted((row, x0, x1) for kind, row, x0, x1 in spec.lanes
-                                                        if kind == "cable"))
+                expected_boards = {"signal_porch": [(12, 7, 9)],
+                                   "climb_crest": [(9, 24, 26)]}.get(folder, spec.boards)
+                self.assertEqual(sorted(boards), sorted(expected_boards))
+                # The lakeside crest replaces the old redundant ground cable with
+                # one readable live-wire crossing and a damaged cabin walkway.
+                expected_cables = [] if folder == "climb_crest" else [
+                    (row, x0, x1) for kind, row, x0, x1 in spec.lanes if kind == "cable"]
+                self.assertEqual(sorted(cables), sorted(expected_cables))
                 self.assertEqual(len(delays), len(cables))
 
     def test_rules_reject_broken_layouts(self) -> None:

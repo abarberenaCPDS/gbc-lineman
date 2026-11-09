@@ -1,4 +1,4 @@
-"""Hiroshi's ridge - deterministic contract for job 2 (docs/LEVEL_REDESIGN.md §2, WP2).
+"""Hiroshi's lakeside ridge: job 2 (docs/terrain/HIROSHI_ROUTE.md).
 
 Data only for two 64x18-tile PLATFORM scenes joined by an ungated edge:
 
@@ -6,7 +6,7 @@ Data only for two 64x18-tile PLATFORM scenes joined by an ungated edge:
   2B ``ridge_saddle`` (Hiroshi's porch and the hand-off to work order 3)
 
 Five lines form one continuous grid chain. Lines 1-2 stand in 2A; line 3's pole
-stands on rock C in 2A and its transformer is the first thing in 2B, so its
+stands on the granite service pad in 2A and its transformer is in 2B, so its
 cable is carried across the scene edge (the job's new idea). Lines 4-5 and the
 house are in 2B. Lines are global, actors are local (§3 rule 3): each line names
 the folder of its pole and box, and each scene builds its own
@@ -58,15 +58,14 @@ SCENE_ORDER = (RIDGE, SADDLE)
 assert SCENE_ORDER == scenes.JOB_SCENES[JOB]
 
 # ---------------------------------------------------------------------------
-# Tiers (spec §2 legend): floor row 15 (feet 14), step 12 (11), high 9 (8), top 6 (5).
+# Tiers: floor row 15 (feet 14), step 12 (11), and the high seam shelf 9 (8).
 # ---------------------------------------------------------------------------
 GROUND_ROW = 15
 SURFACE_LOW = GROUND_ROW          # floor
-SURFACE_STEP = GROUND_ROW - 3     # one tap up: rocks A, C, the T3 rock and the porch
-SURFACE_HIGH = GROUND_ROW - 6     # plateau B, the arrival rock and the catwalks
-SURFACE_TOP = GROUND_ROW - 9      # summit rock D (2B)
-CHEST_LOW = SURFACE_LOW - 2       # hazard lanes on the floor
-CHEST_HIGH = SURFACE_HIGH - 2     # hazard lanes on a catwalk
+SURFACE_STEP = GROUND_ROW - 3     # service pads, exposed crossings and porch
+SURFACE_HIGH = GROUND_ROW - 6     # feeder catwalk and the inter-scene shelf
+CHEST_LOW = SURFACE_LOW - 2
+CHEST_STEP = SURFACE_STEP - 2
 PORCH_ROW = SURFACE_STEP - 1      # Hiroshi's porch feet row (2B)
 _WALLS = [(0, 0, 2, GROUND_ROW - 1), (MAP_W - 1, MAP_W - 1, 2, GROUND_ROW - 1)]
 
@@ -78,17 +77,12 @@ _WALLS = [(0, 0, 2, GROUND_ROW - 1), (MAP_W - 1, MAP_W - 1, 2, GROUND_ROW - 1)]
 # cable a trip). A stretch of wire is live only when every line upstream of it is
 # repaired. Left to right:
 #
-#   2A 1 feeder  rock A pole 1 -> tap onto catwalk C1 (board on the landing, whip
-#                over the floor below) -> plateau B, T1
-#      2 west    plateau B pole 2 -> drop to the floor: fallen span 1 arcs, then a
-#                hidden cable before the tap onto rock C, T2
-#      3 middle  rock C pole 3 -> catwalk D: hidden cable, gust, whip -> ledge F
-#                (board) -> the edge; the floor under D is a fall penalty (gust)
-#   2B 3 middle  arrival rock -> drop past a hidden cable -> T3 on its rock
-#      4 east    pole 4 -> catwalk C (board, gust) -> summit rock D, T4
-#      5 house   summit pole 5 -> catwalk E (board on the landing, whip) or the
-#                floor (fallen span 2, gust) -> Hiroshi's porch: box E, Hiroshi,
-#                door, concentrator, exit
+#   2A 1 feeder  first rock -> cracked timber bridge -> T1 feeder pad
+#      2 west    lower step -> visible fallen span -> T2 granite pad
+#      3 middle  granite pad -> exposed gust shelf -> high seam
+#   2B 3 middle  matched high landing -> hidden cable -> T3
+#      4 east    cracked traverse -> island gust -> T4 sheltered work pad
+#      5 house   island pole 5 -> final exposed landing -> T5 and lakeside cabin
 # ---------------------------------------------------------------------------
 LINES = [
     {"key": "feeder", "pole": (6, SURFACE_STEP - 1), "box": (16, SURFACE_HIGH - 1),
@@ -97,14 +91,16 @@ LINES = [
     {"key": "west", "pole": (20, SURFACE_HIGH - 1), "box": (36, SURFACE_STEP - 1),
      "box_kind": "transformer", "checkpoint": (38, SURFACE_STEP - 1), "live_var": "28",
      "pole_scene": RIDGE, "box_scene": RIDGE},
-    {"key": "middle", "pole": (40, SURFACE_STEP - 1), "box": (14, SURFACE_STEP - 1),
-     "box_kind": "transformer", "checkpoint": (16, SURFACE_STEP - 1), "live_var": "19",
+    {"key": "middle", "pole": (40, SURFACE_STEP - 1), "box": (17, SURFACE_STEP - 1),
+     "box_kind": "transformer", "checkpoint": (19, SURFACE_STEP - 1), "live_var": "19",
      "pole_scene": RIDGE, "box_scene": SADDLE},
-    {"key": "east", "pole": (18, SURFACE_STEP - 1), "box": (33, SURFACE_TOP - 1),
-     "box_kind": "transformer", "checkpoint": (35, SURFACE_TOP - 1), "live_var": "29",
+    {"key": "east", "pole": (21, SURFACE_STEP - 1), "box": (36, SURFACE_STEP - 1),
+     # The wider default reach would start inside the island gust.
+     "reach": (35, SURFACE_STEP - 3, 3, 3),
+     "box_kind": "transformer", "checkpoint": (38, SURFACE_STEP - 1), "live_var": "29",
      "pole_scene": SADDLE, "box_scene": SADDLE},
-    {"key": "house", "pole": (37, SURFACE_TOP - 1), "box": (52, PORCH_ROW),
-     "box_kind": "transformer", "checkpoint": (51, PORCH_ROW), "live_var": "8",
+    {"key": "house", "pole": (39, SURFACE_STEP - 1), "box": (52, PORCH_ROW),
+     "box_kind": "transformer", "checkpoint": (56, PORCH_ROW), "live_var": "8",
      "pole_scene": SADDLE, "box_scene": SADDLE},
 ]
 for _number, _line in enumerate(LINES, start=1):
@@ -185,8 +181,7 @@ def _box_top(cell: tuple[int, int]) -> tuple[int, int]:
 _P1, _P2, _P3, _P4, _P5 = (line["pole"] for line in LINES)
 _T1, _T2, _T3, _T4, _HOUSE_BOX = (line["box"] for line in LINES)
 _PORT = EDGE_PORTS[3]
-# Overhead rows sit above every pole top and transformer top they reach, below the
-# HUD, and clear of the whip brackets (two rows above each catwalk whip lane).
+# Overhead rows sit above the pole tops and transformer caps, below the HUD.
 # A route leaving a pole top steps one column right, so stages never share a column.
 RIDGE_ROUTES = [
     (1, [(0, 4), (_P1[0], 4), _top(_P1)]),
@@ -199,8 +194,8 @@ RIDGE_ROUTES = [
 SADDLE_ROUTES = [
     (3, [(0, _PORT), (_T3[0], _PORT), _box_top(_T3)]),
     (3, [_box_top(_T3), (_T3[0], _PORT), (_P4[0], _PORT), _top(_P4)]),
-    (4, [_top(_P4), (_P4[0] + 1, _top(_P4)[1]), (_P4[0] + 1, 2), (_T4[0], 2), _box_top(_T4)]),
-    (4, [_box_top(_T4), (_T4[0], 2), (_P5[0], 2), _top(_P5)]),
+    (4, [_top(_P4), (_P4[0] + 1, _top(_P4)[1]), (_P4[0] + 1, 4), (_T4[0], 4), _box_top(_T4)]),
+    (4, [_box_top(_T4), (_T4[0], 4), (_P5[0], 4), _top(_P5)]),
     (5, [_top(_P5), (_P5[0] + 1, _top(_P5)[1]), (_P5[0] + 1, 3), (_HOUSE_BOX[0], 3),
          _box_top(_HOUSE_BOX), (_HOUSE_BOX[0], 3), (HOUSE_RECT[0], 3)]),
 ]
@@ -269,7 +264,7 @@ TRANSFORMER_SPRITE_ID = resource_id("sprite:transformer")
 # Per-scene layouts
 # ---------------------------------------------------------------------------
 class Layout:
-    """One scene of the job: geometry, hazards, wires and links (spec §2 maps).
+    """One scene of the job: geometry, hazards, wires and links.
 
     It also serves as the per-scene "contract" the background checks read
     (``collision_grid()``, ``MAP_W``, ``LEDGES``, ``hazard_lanes()``...).
@@ -284,6 +279,8 @@ class Layout:
                  blocks: list[tuple[int, int, int, int]], ledges: list[tuple[int, int, int]],
                  gusts: list[tuple[int, int, int]], gust_delays: list[int],
                  whips: list[tuple[int, int, int]], whip_delays: list[int],
+                 boards: list[tuple[int, int, int]], cables: list[tuple[int, int, int]],
+                 cable_delays: list[int],
                  spans: list[dict[str, Any]], routes: list[tuple[int, list[tuple[int, int]]]],
                  house: bool, first_hazard: dict[str, int]) -> None:
         self.folder = folder
@@ -301,8 +298,11 @@ class Layout:
         self.WIRE_ROUTES = routes
         self.STAGES = sorted({stage for stage, _ in routes})
         self.HOUSE = house
+        self.LAKESIDE = True
         self.HOUSE_WINDOWS = HOUSE_WINDOWS if house else []
-        self.BOARDS, self.HIDDEN_CABLES, self.CABLE_START_DELAYS = hazards.placement(folder, redesign=True)
+        # These placements move with our terrain; shared hazards.py still supplies the
+        # scripts, timing constants and historical spec/legacy placements.
+        self.BOARDS, self.HIDDEN_CABLES, self.CABLE_START_DELAYS = boards, cables, cable_delays
         # Job-wide hazard numbering (actor/trigger keys and board values stay unique per job).
         self.first_hazard = first_hazard
         self.LINES = grid_chain.scene_lines(LINES, folder)
@@ -397,32 +397,34 @@ class Layout:
 LAYOUTS = {
     RIDGE: Layout(
         RIDGE, scene_id=SCENE_ID, background_id=BACKGROUND_ID, name="Wind Ridge",
-        blocks=[(5, 7, SURFACE_STEP, GROUND_ROW - 1),      # rock A: pole 1 (feeder)
-                (15, 20, SURFACE_HIGH, GROUND_ROW - 1),    # plateau B: T1, pole 2
-                (35, 40, SURFACE_STEP, GROUND_ROW - 1)],   # rock C: T2, pole 3
-        ledges=[(SURFACE_HIGH, 9, 14),     # C1: rock A -> plateau B (board, whip below)
-                (SURFACE_HIGH, 42, 57),    # D: support both columns of the (56, 8) return entry
-                (SURFACE_HIGH, 58, 61)],   # F: the board before the edge
-        gusts=[(CHEST_HIGH, 47, 49), (CHEST_LOW, 49, 51)], gust_delays=[30, 0],
-        whips=[(CHEST_LOW, 12, 13), (CHEST_HIGH, 53, 54)], whip_delays=[0, 50],
-        spans=[{"columns": (23, 29), "live_after": 1, "arcs": [(CHEST_LOW, 26, 27)], "delays": [0]}],
+        blocks=[(5, 7, SURFACE_STEP, GROUND_ROW - 1),       # pole 1
+                (15, 22, SURFACE_HIGH, GROUND_ROW - 1),    # feeder pad: T1, pole 2
+                (23, 26, SURFACE_STEP, GROUND_ROW - 1),    # descent/recovery step
+                (36, 42, SURFACE_STEP, GROUND_ROW - 1),    # service island: T2, pole 3
+                (46, 53, SURFACE_STEP, GROUND_ROW - 1),    # gust landing and lee
+                (54, 62, SURFACE_HIGH, GROUND_ROW - 1)],   # level return entry and seam
+        ledges=[(SURFACE_HIGH, 9, 14)],
+        gusts=[(CHEST_STEP, 47, 49)], gust_delays=[30],
+        whips=[], whip_delays=[],
+        boards=[(SURFACE_HIGH, 9, 11)], cables=[], cable_delays=[],
+        spans=[{"columns": (29, 33), "live_after": 1, "arcs": [(CHEST_LOW, 31, 32)], "delays": [0]}],
         routes=RIDGE_ROUTES, house=False,
         first_hazard={"gust": 1, "whip": 1, "span": 1, "cable": 1, "board": 1},
     ),
     SADDLE: Layout(
         SADDLE, scene_id=SADDLE_SCENE_ID, background_id=SADDLE_BACKGROUND_ID, name="Ridge Saddle",
-        blocks=[(1, 4, SURFACE_STEP, GROUND_ROW - 1),      # recovery step below arrival timber
-                (13, 18, SURFACE_STEP, GROUND_ROW - 1),    # T3 and pole 4
-                (32, 37, SURFACE_TOP, GROUND_ROW - 1),     # summit rock D: T4, pole 5
-                (50, MAP_W - 2, SURFACE_STEP, GROUND_ROW - 1)],   # Hiroshi's porch
-        ledges=[(SURFACE_HIGH, 1, 4),     # jump back through to the upstream exit after a fall
-                (SURFACE_HIGH, 20, 31),    # C: pole 4 -> summit (board, gust)
-                (SURFACE_HIGH, 38, 47)],   # E: summit -> porch (board, whip)
-        gusts=[(CHEST_HIGH, 26, 28), (CHEST_LOW, 47, 49)], gust_delays=[20, 0],
-        whips=[(CHEST_HIGH, 43, 44)], whip_delays=[20],
-        spans=[{"columns": (40, 46), "live_after": 4, "arcs": [(CHEST_LOW, 42, 43)], "delays": [40]}],
+        blocks=[(1, 6, SURFACE_HIGH, GROUND_ROW - 1),       # safe upper arrival
+                (7, 8, SURFACE_STEP, GROUND_ROW - 1),      # reverse climb below seam
+                (17, 22, SURFACE_STEP, GROUND_ROW - 1),    # T3 and pole 4
+                (31, 43, SURFACE_STEP, GROUND_ROW - 1),    # gust, T4, pole 5
+                (47, MAP_W - 2, SURFACE_STEP, GROUND_ROW - 1)],  # gust lip and Hiroshi's porch
+        ledges=[(SURFACE_STEP, 24, 27)],
+        gusts=[(CHEST_STEP, 31, 33), (CHEST_STEP, 47, 49)], gust_delays=[20, 0],
+        whips=[], whip_delays=[],
+        boards=[(SURFACE_STEP, 24, 26)], cables=[(CHEST_LOW, 13, 14)], cable_delays=[40],
+        spans=[],
         routes=SADDLE_ROUTES, house=True,
-        first_hazard={"gust": 3, "whip": 3, "span": 2, "cable": 3, "board": 3},
+        first_hazard={"gust": 2, "whip": 1, "span": 2, "cable": 1, "board": 2},
     ),
 }
 RIDGE_LAYOUT, SADDLE_LAYOUT = LAYOUTS[RIDGE], LAYOUTS[SADDLE]
@@ -490,7 +492,7 @@ def _self_check_layout(layout: Layout) -> None:
     assert len(layout.GUST_START_DELAYS) == len(layout.GUST_LANES)
     assert len(layout.WHIP_START_DELAYS) == len(layout.WHIP_LANES)
     assert len(layout.CABLE_START_DELAYS) == len(layout.HIDDEN_CABLES)
-    assert {s[0] for s in layout.surfaces()} <= {SURFACE_STEP, SURFACE_HIGH, SURFACE_TOP}
+    assert {s[0] for s in layout.surfaces()} <= {SURFACE_STEP, SURFACE_HIGH}
     for row, x0, x1 in layout.LEDGES:
         assert all(grid[r][x] == COL_EMPTY for r in range(row - 3, row) for x in range(x0, x1 + 1)), \
             "head room over every catwalk"

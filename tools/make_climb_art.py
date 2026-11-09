@@ -4,9 +4,9 @@
 The RGB images returned by :func:`make_background` / :func:`make_crest_background`
 are the artist-facing sources. The compiler-facing PNGs are grayscale index
 proxies, matching the native GB Studio color-index thresholds. This generator
-owns only those two PNGs and their background sidecars. The crest is functional
-art from the climb's own pieces (sky, stone, timber, transformer, house); an
-art pass may dress it later.
+owns only those two PNGs and their background sidecars. The backdrop uses cool
+pine and lake silhouettes; timber edges and the cabin stay warmer so collision
+surfaces and the destination read in front of the scenery.
 
 BG palette slots: 0 night sky, 1 stone (walls, deck slabs, bedrock), 2 timber
 (walks, ledges, posts, Amara's house on the crest), 3 window (Amara's windows
@@ -174,18 +174,42 @@ _Canvas = shaft_art.Canvas
 
 def _draw_sky(c: _Canvas) -> None:
     p = PALETTES[SKY]
-    # Distant ranges in the night family stay low-contrast atmosphere behind the route.
-    for base, color in ((52, 1), (130, 2), (210, 1)):
-        pts = [(-2, base + 14)]
-        for i, x in enumerate(range(0, WIDTH + 24, 24)):
-            pts.append((x, base + (0, 10, 4, 14, 6)[i % 5]))
-        pts += [(WIDTH + 2, base + 30), (-2, base + 30)]
-        c.polygon(SKY, pts, p[color])
-    for x, y, color in [(20, 18, 2), (52, 22, 3), (126, 14, 2), (148, 66, 3), (28, 112, 2),
-                        (100, 126, 3), (44, 182, 2), (92, 204, 3), (140, 228, 2), (60, 252, 3)]:
+    # In the lower trail, trunks frame the service steps while a lake glimpse
+    # between them foreshadows the view from the crest. Keep behind the play lane.
+    _draw_lake(c, WIDTH, 146, 245)
+    for x, bottom, size in ((28, 156, 3), (42, 172, 2), (128, 139, 3), (140, 160, 2),
+                            (24, 252, 3), (40, 256, 2), (136, 254, 3)):
+        _draw_pine(c, x, bottom, size)
+    for x, y, color in [(20, 18, 2), (52, 22, 3), (126, 19, 2), (148, 66, 2), (28, 112, 2),
+                        (100, 126, 2), (44, 182, 2), (140, 228, 2)]:
         c.point(SKY, (x, y), p[color])
-    for x, y in [(71, 30), (121, 78), (92, 110), (67, 158), (112, 190), (53, 236)]:
-        c.line(SKY, [(x, y), (x - 2, y + 4)], p[1])
+
+
+def _draw_lake(c: _Canvas, width: int, shore: int, bottom: int) -> None:
+    """Repeated native-size details in a quiet value range behind wires and sprites."""
+    p = PALETTES[SKY]
+    ridge = [(-1, shore - 9)]
+    for i, x in enumerate(range(0, width + 32, 32)):
+        ridge.append((x, shore - (10, 24, 17, 33, 25, 12)[i % 6]))
+    c.polygon(SKY, ridge + [(width, shore - 1), (0, shore - 1)], p[1])
+    c.line(SKY, ridge, p[2])
+    c.rect(SKY, (0, shore + 2, width - 1, bottom), p[1])
+    for x in range(0, width, 24):
+        c.line(SKY, [(x, shore + 3), (x + 14, shore + 3)], p[2])
+        for y in range(shore + 12, bottom, 16):
+            c.line(SKY, [(x + 4, y), (x + 12, y)], p[0])
+            c.line(SKY, [(x + 14, y + 2), (x + 21, y + 2)], p[2])
+
+
+def _draw_pine(c: _Canvas, x: int, bottom: int, unit: int) -> None:
+    p = PALETTES[SKY]
+    c.line(SKY, [(x, bottom - 4 * unit), (x, bottom)], p[0], 2)
+    for height, spread in ((11, 2), (9, 3), (7, 4)):
+        tip = bottom - height * unit
+        skirt = tip + 5 * unit
+        c.polygon(SKY, [(x, tip), (x - spread * unit, skirt), (x, skirt - unit),
+                        (x + spread * unit, skirt)], p[0])
+        c.line(SKY, [(x, tip), (x - spread * unit + 1, skirt - 1)], p[2])
 
 
 def _clear_cells(cells: set[tuple[int, int]]) -> set[tuple[int, int]]:
@@ -205,10 +229,10 @@ def _draw_posts(c: _Canvas, grid: list[list[int]]) -> None:
     shaft_art.draw_posts(c, _post_tiles(grid), PALETTES[TIMBER], TIMBER)
 
 
-def _draw_boards(c: _Canvas) -> None:
+def _draw_boards(c: _Canvas, scene: str = climb.CLIMB_SCENE) -> None:
     """Cracked planks (the board actor only shows while it creaks)."""
     p = PALETTES[TIMBER]
-    for row, x0, x1 in hazards.BOARDS["storm_climb"]:
+    for row, x0, x1 in hazards.BOARDS[scene]:
         y = row * TILE
         for tx in range(x0, x1 + 1):
             x = tx * TILE
@@ -216,31 +240,39 @@ def _draw_boards(c: _Canvas) -> None:
             c.point(TIMBER, (x + 6, y + 4), p[0])
 
 
-def _draw_house(c: _Canvas, house_rect: tuple[int, int, int, int] = climb.CREST_HOUSE_RECT,
-                door: tuple[int, int] = climb.CREST_DOOR,
-                window_tiles: tuple[tuple[int, int], ...] = CREST_WINDOW_TILES) -> None:
-    """Amara's house (moved from the summit to the crest porch, same drawing)."""
+def _draw_house(c: _Canvas) -> None:
+    """A lakeside log cabin with shingled gable, chimney and two powerable windows."""
     p = PALETTES
-    hx0, hx1, hy0, hy1 = house_rect
+    hx0, hx1, hy0, hy1 = climb.CREST_HOUSE_RECT
     left, right = hx0 * TILE, hx1 * TILE + 7
     top, bottom = hy0 * TILE, hy1 * TILE + 7
     mid = (left + right) // 2
-    c.polygon(TIMBER, [(left - 2, top + 15), (mid, top), (right + 2, top + 15)], p[TIMBER][0])
-    c.polygon(TIMBER, [(left + 2, top + 14), (mid, top + 3), (right - 2, top + 14)], p[TIMBER][2])
-    c.rect(TIMBER, (left + 1, top + 15, right - 1, bottom), p[TIMBER][1])
-    c.line(TIMBER, [(left + 1, top + 16), (left + 1, bottom)], p[TIMBER][3])
-    c.line(TIMBER, [(right - 1, top + 16), (right - 1, bottom)], p[TIMBER][0])
-    door_x = door[0] * TILE
-    c.rect(TIMBER, (door_x + 2, bottom - 12, door_x + 13, bottom), p[TIMBER][0])
-    c.point(TIMBER, (door_x + 11, bottom - 6), p[TIMBER][3])
+    bark = p[TIMBER]
+    c.rect(TIMBER, (right - 10, top + 5, right - 5, top + 20), bark[1])
+    c.line(TIMBER, [(right - 11, top + 5), (right - 4, top + 5)], bark[2], 2)
+    c.rect(TIMBER, (left, top + 18, right, bottom), bark[1])
+    for y in range(top + 21, bottom, 4):
+        c.line(TIMBER, [(left, y), (right, y)], bark[2])
+        c.point(TIMBER, (left + 2, y + 1), bark[3])
+        c.point(TIMBER, (right - 2, y + 1), bark[3])
+    c.polygon(TIMBER, [(left, top + 17), (mid, top), (right, top + 17)], bark[1])
+    for offset in (6, 10, 14):
+        c.line(TIMBER, [(mid - offset, top + offset), (mid + offset, top + offset)], bark[2])
+    c.line(TIMBER, [(left, top + 17), (mid, top), (right, top + 17)], bark[3], 2)
+    c.line(TIMBER, [(left, top + 18), (right, top + 18)], bark[0], 2)
+    c.rect(TIMBER, (mid - 2, top + 9, mid + 3, top + 13), bark[0])
+    door_x = climb.CREST_DOOR[0] * TILE
+    c.rect(TIMBER, (door_x + 2, bottom - 19, door_x + 13, bottom), bark[0])
+    c.line(TIMBER, [(door_x + 2, bottom), (door_x + 2, bottom - 19), (door_x + 13, bottom - 19)], bark[3])
+    c.point(TIMBER, (door_x + 11, bottom - 8), bark[3])
     # Slot 3 is the selective power/window family: the checkpoint warms it.
-    for tx, ty in window_tiles:
+    for tx, ty in CREST_WINDOW_TILES:
         x, y = tx * TILE, ty * TILE
         c.rect(WINDOW, (x, y, x + 7, y + 7), p[WINDOW][0])
-        c.rect(WINDOW, (x + 1, y + 1, x + 6, y + 6), p[WINDOW][1])
+        c.rect(WINDOW, (x + 1, y + 1, x + 6, y + 6), p[WINDOW][2])
         c.rect(WINDOW, (x + 2, y + 2, x + 5, y + 5), p[WINDOW][3])
-        c.line(WINDOW, [(x + 3, y + 2), (x + 3, y + 5)], p[WINDOW][2])
-        c.line(WINDOW, [(x + 2, y + 4), (x + 5, y + 4)], p[WINDOW][2])
+        c.line(WINDOW, [(x + 3, y + 2), (x + 3, y + 5)], p[WINDOW][1])
+        c.line(WINDOW, [(x + 2, y + 4), (x + 5, y + 4)], p[WINDOW][1])
 
 
 def _draw_substation(c: _Canvas) -> None:
@@ -345,43 +377,46 @@ def crest_slots(grid: list[list[int]]) -> list[list[int]]:
 
 
 def _draw_crest_sky(c: _Canvas) -> None:
-    """Night sky over the town, all in the night slot: receding storm cloud, a far range with
-    two pylons on its crest, and a mostly dark town in the valley (a few windows still lit,
-    the neighbours waiting on the power). Stars, rain streaks and the HUD rows stay clear."""
+    """Visible water, a low far shore, and dark pines around the cabin."""
     p = PALETTES[SKY]
-    base = 60
-    for x0 in range(30, CREST_WIDTH - 40, 150):               # storm cloud banks (p1 slabs)
-        y = 28 + (x0 // 150) % 2 * 10
-        c.polygon(SKY, [(x0, y + 8), (x0 + 10, y + 2), (x0 + 30, y), (x0 + 52, y + 4), (x0 + 70, y + 9),
-                        (x0 + 40, y + 12), (x0 + 12, y + 12)], p[1])
-        c.line(SKY, [(x0 + 12, y + 3), (x0 + 30, y + 1), (x0 + 50, y + 5)], p[2])
-    pts = [(-2, base + 14)]
-    for i, x in enumerate(range(0, CREST_WIDTH + 24, 24)):
-        pts.append((x, base + (0, 10, 4, 14, 6)[i % 5]))
-    pts += [(CREST_WIDTH + 2, base + 60), (-2, base + 60)]
-    c.polygon(SKY, pts, p[1])
-    c.line(SKY, pts[:-2], p[2])
-    for x in range(100, CREST_WIDTH - 40, 190):               # pylons on the range crest
-        top = base - 6
-        foot = base + 18
-        c.line(SKY, [(x - 6, foot), (x, top), (x + 6, foot)], p[2], 2)
-        c.line(SKY, [(x - 5, top + 9), (x + 5, top + 9)], p[2], 2)
-        c.line(SKY, [(x - 8, top + 3), (x + 8, top + 3)], p[2], 2)
-    for k, x in enumerate(range(6, CREST_WIDTH - 6, 14)):     # the dark town: roofs and lit windows
-        h = 6 + (k * 5) % 7
-        w = 7 + (k * 3) % 4
-        y1 = base + 56
-        y0 = y1 - h - (k % 3) * 3
-        c.rect(SKY, (x, y0, x + w, y1), p[0])
-        c.polygon(SKY, [(x - 1, y0), (x + w // 2, y0 - 4), (x + w + 1, y0)], p[0])
-        if k % 3 == 1:                                         # a lit window in every third house
-            c.rect(SKY, (x + 2, y0 + 3, x + 3, y0 + 4), p[3])
-    for x, y, color in [(20, 26, 2), (76, 34, 3), (132, 22, 2), (188, 44, 3), (244, 28, 2),
-                        (300, 40, 3), (356, 24, 2), (412, 36, 3)]:
+    _draw_lake(c, CREST_WIDTH, 83, 118)
+    for x, bottom, size in ((35, 105, 3), (51, 111, 2), (151, 117, 3),
+                            (181, 115, 2), (205, 115, 3), (339, 110, 2),
+                            (355, 111, 3), (427, 99, 3), (442, 96, 2)):
+        _draw_pine(c, x, bottom, size)
+    for x, y, color in ((20, 20, 2), (74, 42, 3), (116, 19, 2), (164, 41, 2),
+                        (222, 21, 2), (280, 41, 3), (344, 23, 2), (414, 25, 2)):
         c.point(SKY, (x, y), p[color])
-    for x, y in [(52, 60), (164, 52), (276, 64), (388, 56)]:
-        c.line(SKY, [(x, y), (x - 2, y + 4)], p[1])
+    for x, y in ((58, 40), (146, 44), (243, 39), (370, 24)):
+        c.line(SKY, [(x, y), (x + 11, y), (x + 15, y + 1), (x + 31, y + 1)], p[1])
 
+
+def _draw_crest_damage(c: _Canvas) -> None:
+    # The static severed ends preview the arc even in its dark phase. The
+    # break is aligned with the actual chest-height actor and clear of the
+    # safe standing tiles beyond it. Its animation owns the brightest color.
+    for row, x0, x1 in climb.crest_span_arc_lanes():
+        x, y = x0 * TILE, row * TILE
+        end = (x1 + 1) * TILE
+        p = PALETTES[SKY]
+        c.line(SKY, [(x - 13, y - 13), (x - 9, y - 8), (x - 7, y + 5),
+                     (x - 2, y + 11), (x + 4, y + 11)], p[0], 3)
+        c.line(SKY, [(x - 13, y - 13), (x - 9, y - 8), (x - 7, y + 5),
+                     (x - 2, y + 11), (x + 4, y + 11)], p[2])
+        c.line(SKY, [(end - 4, y + 11), (end + 4, y + 11),
+                     (end + 10, y + 6), (end + 10, y + 2)], p[0], 3)
+        c.line(SKY, [(end - 4, y + 11), (end + 4, y + 11),
+                     (end + 10, y + 6), (end + 10, y + 2)], p[2])
+
+    # Splinter pixels stay on their solid edge; there's no decorative
+    # platform in the gap. The lower granite lip remains visible below it.
+    gap_left = climb.CREST_GAP[0] * TILE
+    deck_y = climb.CREST_CATWALK_ROW * TILE
+    bark = PALETTES[TIMBER]
+    c.line(TIMBER, [(gap_left - 7, deck_y + 4), (gap_left - 4, deck_y + 6),
+                    (gap_left - 1, deck_y + 3)], bark[3])
+    c.line(TIMBER, [(gap_left - 4, deck_y + 1), (gap_left - 2, deck_y + 3),
+                    (gap_left - 1, deck_y + 5)], bark[0])
 
 def make_crest_background() -> tuple[Image.Image, list[list[int]]]:
     """Return authored 448x144 RGB art and its 56x18 tile-palette map (climb_crest)."""
@@ -403,6 +438,8 @@ def make_crest_background() -> tuple[Image.Image, list[list[int]]]:
                        PALETTES[SKY], SKY)
     shaft_art.draw_platforms(canvas, climb.CREST_PLATFORMS, PALETTES[TIMBER], TIMBER)
     shaft_art.draw_posts(canvas, crest_post_tiles(grid), PALETTES[TIMBER], TIMBER)
+    _draw_boards(canvas, climb.CREST_SCENE)
+    _draw_crest_damage(canvas)
     _draw_house(canvas)
     shaft_art.paint_markers(canvas, MARKERS["climb_crest"], CLAIMED["climb_crest"], "arch", PALETTES[TIMBER], TIMBER)
     _draw_transformers(canvas, climb.boxes_in(climb.CREST_SCENE))

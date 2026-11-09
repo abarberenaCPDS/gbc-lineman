@@ -45,48 +45,46 @@ def ids(node):
 
 
 class CrestContractTests(unittest.TestCase):
-    def test_contract_matches_the_spec_map(self):
+    def test_redesign_keeps_the_cable_destination_and_scene_boundaries(self):
         spec = redesign_maps.load()["climb_crest"]
         self.assertEqual((climb.CREST_W, climb.CREST_H), (spec.width, spec.height))
-        expected = [row[:] for row in spec.grid]
-        # Arrival rock becomes timber over a lower step, preserving its clear approach.
-        expected[9][1:7] = [climb.COL_TOP] * 6
-        for row in (10, 11):
-            expected[row][1:7] = [climb.COL_EMPTY] * 6
-        self.assertEqual(climb.crest_collision_grid(), expected)
         self.assertEqual(climb.CREST_START, spec.start)
         self.assertEqual([climb.CREST_AMARA], spec.npcs)
         self.assertEqual(spec.rows[climb.CREST_DOOR[1]][climb.CREST_DOOR[0]], "d")
-        self.assertEqual(sorted(Fixture.route["lanes"]), sorted(spec.lanes))
-        self.assertEqual(sorted(Fixture.route["boards"]), sorted(spec.boards))
         self.assertEqual(Fixture.route["exits"], [r for _, r in spec.triggers])
         [line] = Fixture.route["lines"]
         self.assertEqual({k: v for k, v in line.items() if k in ("number", "box", "checkpoint")}, spec.lines[0])
         self.assertNotIn("pole", line, "pole 5 stays on the climb's L8 deck")
-        hx0, hx1, _, _ = climb.CREST_HOUSE_RECT
-        self.assertEqual({x for x, y in spec.cells("H") + spec.cells("d")}, set(range(hx0, hx1 + 1)))
 
-    def test_budgets_match_spec_section_five(self):
-        self.assertEqual(climb.crest_actor_count(), 6)
-        self.assertEqual(len(Fixture.actors), 6)
-        self.assertEqual(len(Fixture.triggers), 6)
-        self.assertEqual(test_routes.oam_window(Fixture.route), 16)
-        self.assertEqual(test_routes.worst_scanline(Fixture.route), 9)
-        self.assertEqual(climb.crest_scanline_worst(), 9)
-        self.assertEqual(test_routes.budget_problems(Fixture.route), [])
+    def test_broken_walkway_has_a_local_recovery_and_reverse_route(self):
+        grid = Fixture.route["grid"]
+        routes = test_routes.Routes(Fixture.route)
+        x0, x1 = climb.CREST_GAP
+        catch_row = climb.CREST_CATCH_ROW - 1
+        [line] = Fixture.route["lines"]
+        recover_to_porch = routes.can_reach(routes.zone(line))
+        recover_to_entry = routes.can_reach(routes.exit_tiles(climb.CREST_BACK_EXIT))
+        for x in range(x0, x1 + 1):
+            self.assertTrue(all(grid[y][x] == climb.COL_EMPTY for y in range(climb.CREST_CATWALK_ROW, catch_row + 1)))
+            self.assertIn((x, catch_row), recover_to_porch)
+            self.assertIn((x, catch_row), recover_to_entry)
+        self.assertGreater(line["reach"][0], x1, "the repair belongs on the cabin side")
 
     def test_route_rules(self):
         for rule, found in test_routes.problems(Fixture.route).items():
             with self.subTest(rule=rule):
                 self.assertEqual(found, [])
 
-    def test_crest_is_a_little_harder_than_the_shaft(self):
-        """Every crest hazard is on the line-5 carry; the span arc is live for all of it."""
+    def test_approach_is_a_single_wire_then_walkway_damage(self):
+        """Rest pad precedes the timber hazards; the span is live during carry 5."""
         self.assertEqual([span["live_after"] for span in climb.CREST_FALLEN_SPANS], [4])
-        warning, active, rest = climb.CREST_GUST_TIMINGS
-        self.assertEqual((warning, active), (climb.GUST_WARNING_FRAMES, climb.GUST_ACTIVE_FRAMES))
-        self.assertLess(rest, climb.GUST_REST_FRAMES)
-        self.assertEqual(len(climb.crest_play_lanes()) + len(hazards.placement("climb_crest", redesign=True)[0]), 5)
+        [(row, arc0, arc1)] = climb.crest_span_arc_lanes()
+        [(plank_row, _, board1)] = Fixture.route["boards"]
+        [(whip_row, whip0, whip1)] = climb.CREST_WHIP_LANES
+        self.assertEqual(climb.crest_play_lanes(), [(whip_row, whip0, whip1), (row, arc0, arc1)])
+        self.assertGreaterEqual(whip0 - board1 - 1, 2, "waiting space between the plank and wire")
+        self.assertGreaterEqual(climb.CREST_GAP[0] - whip1 - 1, 4, "launch space past the whip")
+        self.assertEqual(plank_row, whip_row + 2, "both threats belong to the elevated walkway")
 
 
 class CrestSceneTests(unittest.TestCase):
@@ -124,12 +122,11 @@ class CrestSceneTests(unittest.TestCase):
 
     def test_roster_and_trigger_order(self):
         self.assertEqual([x["symbol"] for x in Fixture.actors], [
-            "marta_checkpoint", "crest_gust_01", "crest_span_arc_01", "crest_whip_01",
-            "climb_crest_hidden_cable_01", "climb_crest_board_01"])
+            "marta_checkpoint", "crest_span_arc_01", "crest_whip_01", "climb_crest_board_01"])
         self.assertEqual([x["symbol"] for x in Fixture.triggers], [
             "trigger_crest_back_exit", "trigger_crest_porch_exit", "trigger_marta_arrival",
             "climb_crest_trigger_cracked_board_01", "trigger_grid_junction_zone", "trigger_marta_zone"])
-        self.assertEqual([x["_index"] for x in Fixture.actors], list(range(6)))
+        self.assertEqual([x["_index"] for x in Fixture.actors], list(range(4)))
         self.assertEqual([x["_index"] for x in Fixture.triggers], list(range(6)))
         live = [tr for tr in Fixture.triggers if tr["script"] or tr["leaveScript"]]
         for i, first in enumerate(live):
@@ -297,11 +294,6 @@ class CrestSceneTests(unittest.TestCase):
 
     def test_hazards(self):
         a = Fixture.by_symbol
-        gust = a["crest_gust_01"]
-        row, x0, _ = climb.CREST_GUST_LANES[0]
-        self.assertEqual((gust["x"], gust["y"], gust["collisionGroup"]), (x0, row, "1"))
-        waits = [e["args"]["frames"]["value"] for e in flatten(gust["updateScript"]) if e["command"] == "EVENT_WAIT"]
-        self.assertEqual(waits, list(climb.CREST_GUST_TIMINGS))
         arc = a["crest_span_arc_01"]
         self.assertEqual(arc["spriteSheetId"], rosa.ARC_SPRITE_ID)
         upstream = arc["updateScript"][0]
@@ -309,13 +301,11 @@ class CrestSceneTests(unittest.TestCase):
         self.assertEqual(upstream["args"]["condition"]["valueB"]["value"], 4)
         self.assertEqual((arc["x"], arc["y"]), (11, 13))
         whip = a["crest_whip_01"]
-        self.assertEqual((whip["x"], whip["y"], whip["collisionGroup"]), (33, 8, "1"))
-        cable = a["climb_crest_hidden_cable_01"]
-        self.assertEqual((cable["x"], cable["y"]), (16, 13))
+        self.assertEqual((whip["x"], whip["y"], whip["collisionGroup"]), (29, 8, "1"))
         board = a["climb_crest_board_01"]
-        self.assertEqual((board["x"], board["y"]), (26, 9))
+        self.assertEqual((board["x"], board["y"]), (24, 9))
         board_trigger = Fixture.triggers_by_symbol["climb_crest_trigger_cracked_board_01"]
-        self.assertEqual(rect(board_trigger), hazards.board_trigger_rect((9, 26, 28)))
+        self.assertEqual(rect(board_trigger), hazards.board_trigger_rect((9, 24, 26)))
 
     def test_in_play_text_lifts_the_hud_cutoff_first(self):
         scripts = [Fixture.script, *[x["script"] for x in Fixture.actors], *[t["script"] for t in Fixture.triggers],

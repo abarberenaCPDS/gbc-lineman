@@ -1,8 +1,8 @@
 """Generate 4B ``pine_ladder`` (Emil's job): the long climb out, a 20x36 climb-style shaft.
 
 Run with ``python3 tools/make_ladder_scene.py`` from any working directory.
-Geometry, hazards and wires come from ``kiko.LADDER_SCENE`` (the climb's decks,
-``shaft.py``); every builder is ``make_kiko_scene``'s, in this scene's
+Geometry, hazards and wires come from ``kiko.LADDER_SCENE`` (staggered
+work shelves and granite pads); every builder is ``make_kiko_scene``'s, in this scene's
 namespace (``ladder:`` event/actor keys, ``ladder_`` symbols).
 
 Line 3's cable arrives from the hollow through the bottom-left exit and plugs

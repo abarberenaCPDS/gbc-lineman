@@ -302,7 +302,7 @@ def wind_recovery_events() -> list[dict]:
 def field_training() -> list[dict]:
     """Optional B-button field notes; these are never shown during scene entry."""
     pages = [
-        "Live arcs: stay\nclear. Wait for\nwarning.",
+        "Live arcs spark.\nStay clear. Cross\nwhen dark.",
         "Loose wires whip.\nStay back.",
         "Cracked boards?\nStep around them.",
         "Gust: heed signs.\nMove in calm.",

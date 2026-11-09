@@ -14,7 +14,6 @@ import intro
 import make_climb_scene as shared
 import make_ridge_scene as scene
 import opening
-import redesign_maps
 import ridge
 import rosa
 import scene_links
@@ -174,33 +173,49 @@ def local(folder, field):
 
 
 class ContractTests(unittest.TestCase):
-    def test_contract_is_the_spec_map(self):
-        specs = redesign_maps.load()
+    def test_lakeside_preserves_map_extent_and_opens_the_sky(self):
+        self.assertEqual((ridge.MAP_W, ridge.MAP_H), (64, 18))
         for folder in FOLDERS:
-            layout, spec = ridge.LAYOUTS[folder], specs[folder]
+            layout = ridge.LAYOUTS[folder]
+            grid = layout.collision_grid()
             with self.subTest(folder=folder):
-                self.assertEqual((ridge.MAP_W, ridge.MAP_H), (spec.width, spec.height))
-                expected = [row[:] for row in spec.grid]
-                if folder == ridge.RIDGE:
-                    expected[9][57] = ridge.COL_TOP  # full-width return landing
-                else:
-                    expected[9][1:5] = [ridge.COL_TOP] * 4  # timber over the recovery step
-                    for row in (10, 11):
-                        expected[row][1:5] = [ridge.COL_EMPTY] * 4
-                self.assertEqual(layout.collision_grid(), expected)
-                self.assertEqual(sorted(layout.lanes()), sorted(spec.lanes))
-                self.assertEqual(sorted(layout.BOARDS), sorted(spec.boards))
-                self.assertEqual([{k: v for k, v in line.items() if k in ("number", "pole", "box", "checkpoint")}
-                                  for line in layout.LINES], spec.lines)
-                self.assertEqual(layout.EXITS, [r for _, r in spec.triggers])
-                self.assertEqual(layout.START, spec.start)
-                self.assertLessEqual(set(spec.entries), set(layout.ENTRIES))
-                route = layout.route_scene()
-                self.assertEqual((route["npcs"], route["devices"]), (spec.npcs, spec.devices))
-                cols = {x for y, row in enumerate(spec.rows) for x, c in enumerate(row) if c in "tABCDE"}
-                for line in ridge.LINES:
-                    if line["box_scene"] == folder:
-                        self.assertIn(line["box"][0], cols)
+                self.assertTrue(all(cell == ridge.COL_EMPTY
+                                    for row in grid[:ridge.SURFACE_HIGH] for cell in row[1:-1]))
+                self.assertTrue(all(grid[y + 1][tx] == ridge.COL_SOLID
+                                    for x, y in layout.ENTRIES for tx in (x, x + 1)))
+
+    def test_gust_approaches_and_island_box_allow_clear_stops(self):
+        # The historical playtest measured ~23 px coast from full speed. With
+        # collision bounds x+2..x+13, stopping after pickup must leave clear air.
+        approaches = [(ridge.RIDGE_LAYOUT, ridge.LINES[2]),
+                      (ridge.SADDLE_LAYOUT, ridge.LINES[3]),
+                      (ridge.SADDLE_LAYOUT, ridge.LINES[4])]
+        for layout, line in approaches:
+            x, _ = line["pole"]
+            first = min(x0 for _, x0, _ in layout.GUST_LANES if x0 > x)
+            with self.subTest(line=line["key"]):
+                # Leave a tile of tolerance beyond the tile-aligned pickup.
+                self.assertGreater(first * 8, x * 8 + 8 + 13 + 23)
+        island = ridge.LINES[3]
+        rx, _, rw, _ = island["reach"]
+        lx, _, _, _ = grid_chain.pole_zone_rect(ridge.LINES[4]["pole"])
+        _, _, gust_end = ridge.SADDLE_LAYOUT.GUST_LANES[0]
+        self.assertGreaterEqual(rx - gust_end, 2)
+        self.assertLessEqual(rx + rw, lx)
+
+    def test_falls_land_on_clear_footing_next_to_a_recovery_step(self):
+        pockets = [(ridge.RIDGE_LAYOUT, 43, 45, 46),
+                   (ridge.SADDLE_LAYOUT, 28, 30, 31),
+                   (ridge.SADDLE_LAYOUT, 44, 46, 47)]
+        for layout, start, end, step in pockets:
+            grid = layout.collision_grid()
+            with self.subTest(folder=layout.folder, start=start):
+                self.assertTrue(all(grid_chain.stands(grid, x, ridge.GROUND_ROW - 1)
+                                    for x in range(start, end + 1)))
+                self.assertEqual(grid[ridge.SURFACE_STEP][step], ridge.COL_SOLID)
+                self.assertTrue(all(not (x0 <= end and start <= x1)
+                                    for row, x0, x1 in layout.all_hazard_lanes()
+                                    if row >= ridge.CHEST_LOW))
 
     def test_route_scenes_are_declared(self):
         self.assertEqual([s["folder"] for s in ridge.ROUTE_SCENES], list(FOLDERS))
@@ -209,24 +224,15 @@ class ContractTests(unittest.TestCase):
             self.assertEqual(route["exits"], [link.rect for link in
                                               scene_links.from_scene(folder, scene_links.table("redesign"))])
 
-    def test_lines_tiers_and_hazard_kit(self):
+    def test_five_line_chain_and_local_actor_budgets(self):
         self.assertEqual([line["key"] for line in ridge.LINES], ["feeder", "west", "middle", "east", "house"])
         self.assertEqual([line["live_var"] for line in ridge.LINES], ["17", "28", "19", "29", "8"])
         self.assertEqual(ridge.STAGE_COLOR_INDEX, [1, 3, 2, 1, 3])
         self.assertEqual([(line["pole_scene"], line["box_scene"]) for line in ridge.LINES],
                          [(RIDGE, RIDGE)] * 2 + [(RIDGE, SADDLE)] + [(SADDLE, SADDLE)] * 2)
-        feet = {line["pole"][1] for line in ridge.LINES} | {line["box"][1] for line in ridge.LINES}
-        self.assertEqual(feet, {ridge.SURFACE_STEP - 1, ridge.SURFACE_HIGH - 1, ridge.SURFACE_TOP - 1})
-        # Spec §1: 16 hazards for Hiroshi (was 11), every kind in both scenes.
-        self.assertEqual(ridge.hazard_count(), 16)
-        for layout in ridge.LAYOUTS.values():
-            with self.subTest(folder=layout.folder):
-                self.assertTrue(layout.GUST_LANES and layout.WHIP_LANES and layout.FALLEN_SPANS
-                                and layout.HIDDEN_CABLES and layout.BOARDS)
-                self.assertTrue(any(row == ridge.CHEST_HIGH for row, _, _ in layout.hazard_lanes()))
-                self.assertTrue(any(row == ridge.CHEST_LOW for row, _, _ in layout.hazard_lanes()))
-        self.assertEqual((ridge.actor_count(RIDGE), ridge.actor_count(SADDLE)), (12, 11))
-        self.assertEqual((ridge.LAYOUTS[RIDGE].trigger_count(), ridge.LAYOUTS[SADDLE].trigger_count()), (8, 10))
+        self.assertEqual(ridge.hazard_count(), 7)
+        self.assertEqual((ridge.actor_count(RIDGE), ridge.actor_count(SADDLE)), (6, 8))
+        self.assertEqual((ridge.LAYOUTS[RIDGE].trigger_count(), ridge.LAYOUTS[SADDLE].trigger_count()), (7, 9))
 
     def test_difficulty_sits_between_amara_and_priya(self):
         self.assertEqual((ridge.GUST_WARNING_FRAMES, ridge.GUST_ACTIVE_FRAMES, ridge.GUST_REST_FRAMES), (48, 22, 70))
@@ -556,12 +562,10 @@ class SceneTests(unittest.TestCase):
 
     def test_actor_rosters(self):
         expected = {
-            RIDGE: ["ridge_feeder_pole", "ridge_west_pole", "ridge_middle_pole", "ridge_gust_01", "ridge_gust_02",
-                    "ridge_span_arc_01", "ridge_whip_01", "ridge_whip_02", "ridge_hidden_cable_01",
-                    "ridge_hidden_cable_02", "ridge_board_01", "ridge_board_02"],
+            RIDGE: ["ridge_feeder_pole", "ridge_west_pole", "ridge_middle_pole", "ridge_gust_01",
+                    "ridge_span_arc_01", "ridge_board_01"],
             SADDLE: [scene.TOMAS_SYMBOL, scene.CONCENTRATOR_SYMBOL, "ridge_east_pole", scene.POLE_SYMBOL,
-                     "ridge_gust_03", "ridge_gust_04", "ridge_span_arc_02", "ridge_whip_03",
-                     "ridge_hidden_cable_03", "ridge_board_03", "ridge_board_04"],
+                     "ridge_gust_02", "ridge_gust_03", "ridge_hidden_cable_01", "ridge_board_02"],
         }
         for folder in FOLDERS:
             actors = built_actors(folder)

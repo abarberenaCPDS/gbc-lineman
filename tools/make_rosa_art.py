@@ -1,10 +1,8 @@
 """Generate the three Signal Hill job backgrounds from the ``rosa.py`` contract.
 
-Scenes (docs/LEVEL_REDESIGN.md §2 Job 3): 3A ``signal_hill`` (64x18, same
-background ID as before), 3B ``signal_gully`` (20x36 shaft, drawn with
-``shaft_art.py``) and 3C ``signal_porch`` (40x18, Priya's house). This is the
-functional pass: existing tiles, palettes and drawing reused; an art-polish
-worker may dress it later (§4 "Minimal new art").
+Scenes: 3A ``signal_hill`` (64x18, upper creek approach), 3B ``signal_gully``
+(20x36, eroded banks and timber drops) and 3C ``signal_porch`` (40x18,
+broken footbridges over the dry path to Priya's house).
 
 The RGB image returned by :func:`make_background` is the artist-facing source;
 the compiler-facing PNG is a grayscale index proxy that uses GB Studio's native
@@ -344,10 +342,13 @@ def _draw_sky(c: _Canvas, folder: str) -> None:
         c.polygon(SKY, line + [(width, height - 24), (0, height - 24)], p[0])
         c.line(SKY, line, p[2])
     else:
-        # Gully: slate strata slanting down the shaft, paler than the night behind them.
-        for y in range(40, height - 16, 56):
-            c.polygon(SKY, [(0, y), (width, y + 22), (width, y + 34), (0, y + 12)], p[1])
-            c.line(SKY, [(0, y), (width, y + 22)], p[2])
+        # Receding banks frame the spillway; keep contrast lower than the
+        # rock edges and bridge lips in the foreground.
+        west = [(0, 36), (31, 43), (64, 77), (52, 115), (38, 155), (18, 177), (0, 214)]
+        east = [(width - 1, 58), (121, 69), (103, 102), (116, 138), (96, 166),
+                (108, 197), (129, 226), (width - 1, 248)]
+        c.polygon(SKY, west + [(0, 36)], p[1])
+        c.polygon(SKY, east + [(width - 1, 58)], p[1])
     for x, y in STARS:
         if x < width:
             c.point(SKY, (x, y), p[2])
@@ -359,6 +360,28 @@ def _draw_sky(c: _Canvas, folder: str) -> None:
         shaft_art.mast(c, SKY, 17 * TILE + 4, MAST_TOP, MAST_BOTTOM + 6, p)
     else:
         shaft_art.mast(c, SKY, width - 5 * TILE - 4, 26, 118, p)
+
+
+def _draw_creek(c: _Canvas, folder: str) -> None:
+    """Distant runoff behind the route, using the quiet night ramp."""
+    p = PALETTES[SKY]
+    if folder == rosa.GULLY:
+        path = [(106, 65), (82, 101), (86, 127), (67, 155), (57, 183), (68, 216),
+                (101, 242), (151, 254)]
+        bank = [(x + offset, y + 3) for (x, y), offset in zip(path, (4, 7, 9, 11, 11, 13, 15, 5))]
+        c.polygon(SKY, path + bank[::-1], p[1])
+        for x, y in ((82, 104), (67, 156), (59, 183), (89, 229), (121, 246)):
+            c.line(SKY, [(x, y), (x + 5, y + 1)], p[2])
+        return
+    width, _ = size_px(folder)
+    end = 32 if folder == rosa.PORCH else 54
+    lip = [(0, 113), (24, 108), (56, 106), (88, 103),
+           (121, 99), (width - end, 105)]
+    c.polygon(SKY, lip + [(width - end, 119), (0, 119)], p[1])
+    for x in range(15, width - end, 24):
+        y = 111 + ((x // 24) % 3) * 2
+        c.line(SKY, [(x, y), (x + 3, y)], p[2])
+        c.line(SKY, [(x + 8, y + 3), (x + 12, y + 3)], p[0])
 
 
 def _draw_rock(c: _Canvas, grid: list[list[int]]) -> None:
@@ -388,6 +411,16 @@ def _draw_ledges(c: _Canvas, folder: str) -> None:
         c.line(TIMBER, [(left, y), (right, y)], p[3])
         c.rect(TIMBER, (left, y + 1, right, y + 4), p[1])
         c.line(TIMBER, [(left, y + 5), (right, y + 5)], p[0])
+
+
+def _draw_split_bridge(c: _Canvas) -> None:
+    """Fractured inner ends; the walkable lip remains visible end to end."""
+    p = PALETTES[TIMBER]
+    for (row, x0, x1), side in zip(rosa.PORCH_LEDGES, (-1, 1)):
+        edge = x0 * TILE if side == 1 else (x1 + 1) * TILE - 1
+        y = row * TILE
+        c.polygon(TIMBER, [(edge, y + 2), (edge + 4 * side, y + 4), (edge, y + 6)], p[0])
+        c.line(TIMBER, [(edge, y + 1), (edge + 4 * side, y + 3)], p[2])
 
 
 def _draw_posts(c: _Canvas, folder: str) -> None:
@@ -524,6 +557,7 @@ def make_background(folder: str = rosa.HILL) -> tuple[Image.Image, list[list[int
                     pixels[x, y] = color
     canvas = _Canvas(image, slots)
     _draw_sky(canvas, folder)
+    _draw_creek(canvas, folder)
     if rosa.LAYOUTS[folder]["vertical"]:
         shaft_art.draw_stone(canvas, grid, PALETTES[STONE], STONE)
         shaft_art.runoff(canvas, grid, PALETTES[STONE], STONE, seed=3)
@@ -533,6 +567,8 @@ def make_background(folder: str = rosa.HILL) -> tuple[Image.Image, list[list[int
     else:
         _draw_rock(canvas, grid)
         _draw_ledges(canvas, folder)
+        if folder == rosa.PORCH:
+            _draw_split_bridge(canvas)
         _draw_posts(canvas, folder)
     _draw_storm_damage(canvas, grid, folder)
     shaft_art.paint_markers(canvas, MARKERS[folder], CLAIMED[folder], "sign", PALETTES[TIMBER], TIMBER)
