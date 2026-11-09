@@ -1,3 +1,19 @@
+## Cartridge checkpoint — November 8, 2026
+
+✅ User requested tag and cartridge flash. Local annotated tag `v0.22.0-dev`
+points to implementation commit `710c6d3`. The exact validated ROM
+`build/rom/lineman-lakeside-v0.22.0-dev.gbc` (524288 bytes, SHA256
+`3eb0526113b0688a62600374195eba87f12e6115e3dfa4a64bb507541ee149cd`)
+was flashed successfully to Chromatic Player 01, USB bus00/port1, using existing
+explicit erase/write consent recorded in RELEASE_v0.21.0.md. Discovery had no
+diagnostics. Original operation:
+`baa633accebb4560b443da4c5517edbedbb651c0b791c68e88edba612905f8f4`.
+Vendor reported success; write process exited0 and closed normally. Physical
+boot, gameplay and audio remain unverified. Tag is local; nothing pushed.
+This supersedes earlier "no flash requested" notes below.
+
+---
+
 ## Lakeside intro and town implemented — November 8, 2026
 
 ✅ Intro cable pickup/repair/gust recovery and walkable 32×32 lakeside town are
