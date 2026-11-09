@@ -52,14 +52,50 @@ def _poly(draw: ImageDraw.ImageDraw, points: list[tuple[int, int]], shade: int) 
     draw.polygon(points, fill=PROXY[shade])
 
 
-CARRY_VARIANT = "C"  # Abe's pick; "B" kept as the alternative (docs/carry-variants.png)
+CARRY_VARIANT = "D"  # Shoulder coil; B (trailing plug) and C (overhead plug) remain available.
 SHOCK_FRAMES = 3
+
+# Two pale windings share a dark edge. The upper right meets the leading
+# glove; the lower turn hangs off the back so it reads against the jacket.
+SHOULDER_COIL_ROWS = (
+    "...333333.",
+    "..31111133",
+    ".313333333",
+    ".313111333",
+    "313133313",
+    "313133313",
+    "313133133",
+    "31313133.",
+    ".3131133..",
+    ".331133...",
+    "..333.....",
+)
 
 
 def _carry_art(variant: str, pose: str, phase: int, rect, point) -> None:
     """24px carry overlay. Shades: 1 pale, 2 orange, 3 dark; rect/point are body-space."""
     dy = -1 if pose == "jump" else 0
-    if variant == "B":
+    if variant == "D":
+        # The weight lifts on the second idle cel and the two passing steps.
+        # Keep the silhouette of the hard hat and the feet fixed.
+        passing = pose == "walk" and phase % 2
+        breathing = pose == "idle" and phase == 1
+        lift = -1 if passing or breathing else dy
+        for y, row in enumerate(SHOULDER_COIL_ROWS, start=8 + lift):
+            for x, shade in enumerate(row):
+                if shade != ".":
+                    if y == 7 and x >= 6:
+                        continue  # Leave the face intact at the top of the bounce.
+                    point(x, y, 3 if y == 8 and x == 7 else int(shade))
+
+        # Bent sleeve crosses the jacket. A dark wrist edge separates the
+        # pale glove from the pale winding it grips.
+        rect((8, 11 + lift, 12, 14 + lift), 3)
+        rect((9, 12 + lift, 10, 13 + lift), 2)
+        rect((10, 13 + lift, 12, 14 + lift), 2)
+        rect((8, 9 + lift, 11, 12 + lift), 3)
+        rect((9, 10 + lift, 10, 11 + lift), 1)
+    elif variant == "B":
         # Plug in the leading hand; a bright cable drags back to the pole.
         rect((9, 11 + dy, 11, 12 + dy), 3)
         rect((11, 10 + dy, 14, 14 + dy), 3)
@@ -73,7 +109,7 @@ def _carry_art(variant: str, pose: str, phase: int, rect, point) -> None:
             point(x, y, 1)
             point(x - 1 if x > 1 else 0, y, 1)
         rect((0, 22, 3, 22), 3)
-    else:
+    elif variant == "C":
         # Plug held straight overhead with a flickering spark.
         rect((12, 0 + dy, 13, 11), 3)
         rect((12, 1 + dy, 12, 10), 2)
@@ -90,6 +126,8 @@ def _carry_art(variant: str, pose: str, phase: int, rect, point) -> None:
             point(9, -2 + dy, 2)
             point(15, -5 + dy, 2)
             point(10, -7 + dy, 2)
+    else:
+        raise ValueError(f"unsupported carry variant: {variant}")
 
 
 def _shock_frame(phase: int) -> Image.Image:

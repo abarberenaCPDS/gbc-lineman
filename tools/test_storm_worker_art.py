@@ -16,7 +16,11 @@ class StormWorkerArtTest(unittest.TestCase):
                     self.assertEqual(frame.size, (16, 32))
                     self.assertEqual(frame.getpixel((6, 9)), art.PROXY[1])
                     stripe = [frame.getpixel((x, y)) for y in (20, 21) for x in range(4, 12)]
-                    self.assertGreaterEqual(stripe.count(art.PROXY[1]), 8)
+                    if not pose.startswith("carry_"):
+                        self.assertGreaterEqual(stripe.count(art.PROXY[1]), 8)
+                    else:
+                        # Coil and gripping glove occlude the vest stripe.
+                        self.assertGreaterEqual(stripe.count(art.PROXY[1]), 2)
                     boots = [frame.getpixel((x, y)) for y in range(29, 32) for x in range(2, 14)]
                     self.assertGreaterEqual(boots.count(art.PROXY[2]), 4)
                     self.assertLessEqual(set(frame.get_flattened_data()), set(art.PROXY.values()))

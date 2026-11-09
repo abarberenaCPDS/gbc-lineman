@@ -1,3 +1,27 @@
+## Shoulder-coil Carry complete — November 8, 2026
+
+✅ Replaced the raised plug with the user's shoulder-coil reference in all14
+Carry idle/walk/jump cels, both facings. GPT-6.1 Sol authored the native pixels;
+GPT-6 Luna audited regression scope; main integrated and verified. Default,
+Repair and Shock cels, state metadata, collision bounds and physics are unchanged.
+Source: `tools/make_opening_characters.py`, Carry variant D; B/C remain selectable.
+
+✅ 45 focused tests passed. Official ROM build and inspection passed (512KB GBC):
+`build/rom/lineman-shoulder-coil-v0.23.0-dev.gbc`, SHA256
+`f26d00f1199b85872e0b5bfbd3dda714e29f7b9552af3265f7ddd1c05cf37dea`.
+Native normal boot/pickup confirmed carry flag1 at frame1190; leftward jump
+shows the coil at frame1211. Recording: `build/playtests/shoulder-coil`.
+Authored sheet: `docs/review-assets/hero-variants/shoulder-coil-native-sheet.png`;
+genuine emulator frame: `docs/review-assets/hero-variants/native-shoulder-coil.png`.
+No cartridge flash performed for this revision.
+
+🔄 Official web export succeeded at `build/web-shoulder-coil`; browser UI remains
+unverified because the browser access host was unavailable in this session.
+Current process-local URL:
+http://127.0.0.1:51125/61fdebbf5b8d25c72963e39af5f7c8730c338c23cc681cf508124f5a794ccfb7/
+
+---
+
 ## Training and town revision complete — November 8, 2026
 
 ✅ `0.23.0-dev` implements the cartridge feedback: richer lakeside town with
