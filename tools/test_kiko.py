@@ -19,6 +19,7 @@ import redesign_maps
 import rosa
 import scene_links
 import scenes
+import shock
 import shaft
 import test_routes
 import tickets
@@ -279,8 +280,11 @@ class GeneratedSceneTests(unittest.TestCase):
         for folder in FOLDERS:
             hit = BUILT[folder]["scene"]["playerHit1Script"]
             with self.subTest(folder=folder):
-                self.assertEqual(hit[0]["command"], "EVENT_ACTOR_SET_STATE")
-                self.assertEqual(hit[1]["command"], "EVENT_SOUND_PLAY_EFFECT")
+                prefix = shock.shock_events("expected")
+                self.assertEqual([e["command"] for e in hit[:len(prefix)]],
+                                 [e["command"] for e in prefix])
+                self.assertEqual(hit[1]["args"]["spriteStateId"], "Shock")
+                self.assertEqual(hit[3]["command"], "EVENT_SOUND_PLAY_EFFECT")
                 drops = [i for i, e in enumerate(hit) if is_var_if(e, kiko.VAR_CARRYING_CABLE, 1)]
                 moves = [i for i, e in enumerate(hit) if set_positions([e])]
                 self.assertTrue(drops and moves and max(drops) < min(moves))

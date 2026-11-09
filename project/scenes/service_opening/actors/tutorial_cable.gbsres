@@ -185,12 +185,76 @@
   ],
   "startScript": [
     {
-      "id": "a27e7e6d-e448-5ab2-a84b-6ad6abdbf6ee",
-      "command": "EVENT_ACTOR_SET_STATE",
+      "id": "2661e3b1-46e2-5808-9ad0-554235f22f7e",
+      "command": "EVENT_IF",
       "args": {
-        "actorId": "$self$",
-        "spriteStateId": "Snapped+Cable",
-        "loopAnim": true
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "4"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 1
+          }
+        }
+      },
+      "children": {
+        "true": [
+          {
+            "id": "851f9ff1-702a-5e40-9138-b55eafcb7e0b",
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "$self$",
+              "spriteStateId": "Standing",
+              "loopAnim": true
+            }
+          }
+        ],
+        "false": [
+          {
+            "id": "595148cd-214a-5b36-90ed-9a3c898d8b2d",
+            "command": "EVENT_IF",
+            "args": {
+              "condition": {
+                "type": "eq",
+                "valueA": {
+                  "type": "variable",
+                  "value": "6"
+                },
+                "valueB": {
+                  "type": "number",
+                  "value": 1
+                }
+              }
+            },
+            "children": {
+              "true": [
+                {
+                  "id": "a2ca8cfb-9dc2-591f-ad78-92e83c2125e2",
+                  "command": "EVENT_ACTOR_SET_STATE",
+                  "args": {
+                    "actorId": "$self$",
+                    "spriteStateId": "Snapped",
+                    "loopAnim": true
+                  }
+                }
+              ],
+              "false": [
+                {
+                  "id": "a27e7e6d-e448-5ab2-a84b-6ad6abdbf6ee",
+                  "command": "EVENT_ACTOR_SET_STATE",
+                  "args": {
+                    "actorId": "$self$",
+                    "spriteStateId": "Snapped+Cable",
+                    "loopAnim": true
+                  }
+                }
+              ]
+            }
+          }
+        ]
       }
     }
   ],

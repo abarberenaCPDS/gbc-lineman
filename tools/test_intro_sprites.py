@@ -47,7 +47,7 @@ class IntroSpriteTests(unittest.TestCase):
         self.assertEqual([s["name"] for s in _meta("intro_pole")["states"]], intro.POLE_STATES)
 
     def test_hero_variants_are_independent_and_preserve_contract(self):
-        self.assertEqual(set(neighborhood_hero.VARIANTS), set(intro.HERO_VARIANTS))
+        self.assertEqual(set(neighborhood_hero.VARIANTS) | {"storm"}, set(intro.HERO_VARIANTS))
         for variant, frames in neighborhood_hero.VARIANTS.items():
             self.assertEqual(len(frames), 6)
             self.assertTrue(all(len(frame) == 32 and all(len(row) == 16 and
@@ -61,11 +61,12 @@ class IntroSpriteTests(unittest.TestCase):
         make_intro_sprites.configure_heroes(intro.DEFAULT_HERO_VARIANT)
         _, intro_meta, intro_frames = make_intro_sprites.build("intro_hero")
         _, reusable_meta, reusable_frames = make_intro_sprites.build("neighborhood_hero")
-        self.assertEqual(intro_frames, reusable_frames)
+        self.assertNotEqual(intro_frames, reusable_frames)
+        self.assertEqual(intro.DEFAULT_HERO_VARIANT, "storm")
         self.assertNotEqual(intro_meta["id"], reusable_meta["id"])
         generated = [frame.tobytes() for frame in _frames("intro_hero")]
         known = [[make_intro_sprites._render(frame, 32).tobytes() for frame in frames]
-                 for frames in neighborhood_hero.VARIANTS.values()]
+                 for frames in [*neighborhood_hero.VARIANTS.values(), intro_frames]]
         self.assertIn(generated, known)
         self.assertEqual([frame.tobytes() for frame in _frames("neighborhood_hero")],
                          [make_intro_sprites._render(frame, 32).tobytes()

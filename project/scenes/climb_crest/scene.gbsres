@@ -32,8 +32,8 @@
   "collisions": "0070+0f!0036+0f2+0036+0f2+0036+0f2+0036+0f2+0036+0f2+0036+0f2+0036+0f2+016+0012+01d+0011+0f2+0036+0f2+0036+0f8+00d+0f5+00d+0f19+00d+0f5+00d+0f19+00d+0f5+00d+0fba+",
   "autoFadeSpeed": 1,
   "symbol": "scene_climb_crest",
-  "x": 240,
-  "y": 0,
+  "x": 320,
+  "y": 480,
   "script": [
     {
       "command": "EVENT_PLAYER_SET_SPRITE",
@@ -233,7 +233,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -309,7 +309,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -424,7 +424,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -500,7 +500,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -615,7 +615,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -691,7 +691,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -806,7 +806,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -882,7 +882,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -997,7 +997,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -1073,7 +1073,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -1193,7 +1193,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -1313,7 +1313,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -1433,7 +1433,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -1553,7 +1553,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -1673,7 +1673,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -2142,7 +2142,7 @@
     {
       "command": "EVENT_TEXT_DRAW",
       "args": {
-        "text": "v0.22.0-dev",
+        "text": "v0.23.0-dev",
         "x": 9,
         "y": 1,
         "location": "overlay"
@@ -2152,6 +2152,14 @@
   ],
   "playerHit1Script": [
     {
+      "command": "EVENT_ACTOR_SET_ANIMATION_SPEED",
+      "args": {
+        "actorId": "player",
+        "speed": 4
+      },
+      "id": "99626eef-99da-5623-a806-59fcbaea87dc"
+    },
+    {
       "command": "EVENT_ACTOR_SET_STATE",
       "args": {
         "actorId": "player",
@@ -2159,6 +2167,17 @@
         "loopAnim": true
       },
       "id": "1dfde5eb-c3d7-5eea-be54-4daaea9cab53"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_FRAME",
+      "args": {
+        "actorId": "player",
+        "frame": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "b895f931-b395-571e-997c-fb4142670896"
     },
     {
       "command": "EVENT_SOUND_PLAY_EFFECT",
@@ -2206,6 +2225,14 @@
         "loopAnim": true
       },
       "id": "09d3f38c-b9f6-5dd9-be99-90dcf3f4bf8f"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_ANIMATION_SPEED",
+      "args": {
+        "actorId": "player",
+        "speed": 10
+      },
+      "id": "f43b0baa-9c2f-5933-883d-6566110708ab"
     },
     {
       "command": "EVENT_IF",
@@ -2311,7 +2338,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.22.0-dev",
+              "text": "v0.23.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"
@@ -2426,7 +2453,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.22.0-dev",
+              "text": "v0.23.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"
@@ -2541,7 +2568,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.22.0-dev",
+              "text": "v0.23.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"
@@ -2656,7 +2683,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.22.0-dev",
+              "text": "v0.23.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"
@@ -2771,7 +2798,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.22.0-dev",
+              "text": "v0.23.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"
@@ -2957,7 +2984,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.22.0-dev",
+              "text": "v0.23.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"
@@ -3077,7 +3104,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.22.0-dev",
+              "text": "v0.23.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"
@@ -3197,7 +3224,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.22.0-dev",
+              "text": "v0.23.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"
@@ -3317,7 +3344,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.22.0-dev",
+              "text": "v0.23.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"
@@ -3437,7 +3464,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.22.0-dev",
+              "text": "v0.23.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"

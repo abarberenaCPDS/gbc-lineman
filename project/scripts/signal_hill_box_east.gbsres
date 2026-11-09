@@ -99,7 +99,7 @@
           {
             "command": "EVENT_TEXT_DRAW",
             "args": {
-              "text": "v0.22.0-dev",
+              "text": "v0.23.0-dev",
               "x": 9,
               "y": 1,
               "location": "overlay"
@@ -127,6 +127,84 @@
             "children": {
               "true": [
                 {
+                  "command": "EVENT_ACTOR_SET_STATE",
+                  "args": {
+                    "actorId": "player",
+                    "spriteStateId": "Repair",
+                    "loopAnim": false
+                  },
+                  "id": "ab1a77ad-2bb8-5084-9e54-16a78eb13444"
+                },
+                {
+                  "command": "EVENT_ACTOR_SET_ANIMATION_SPEED",
+                  "args": {
+                    "actorId": "player",
+                    "speed": 255
+                  },
+                  "id": "95c929a3-c702-5306-9e73-ddc7af917a9a"
+                },
+                {
+                  "command": "EVENT_ACTOR_SET_FRAME",
+                  "args": {
+                    "actorId": "player",
+                    "frame": {
+                      "type": "number",
+                      "value": 0
+                    }
+                  },
+                  "id": "08b874a0-49b4-5b4d-b825-67cf26b18285"
+                },
+                {
+                  "command": "EVENT_WAIT",
+                  "args": {
+                    "units": "frames",
+                    "frames": {
+                      "type": "number",
+                      "value": 8
+                    }
+                  },
+                  "id": "60e4c720-3886-5988-9b0f-796b4e02fc8a"
+                },
+                {
+                  "command": "EVENT_ACTOR_SET_FRAME",
+                  "args": {
+                    "actorId": "player",
+                    "frame": {
+                      "type": "number",
+                      "value": 1
+                    }
+                  },
+                  "id": "7adfb7a1-9d2c-5ff6-877d-63ce4ed02f56"
+                },
+                {
+                  "command": "EVENT_WAIT",
+                  "args": {
+                    "units": "frames",
+                    "frames": {
+                      "type": "number",
+                      "value": 8
+                    }
+                  },
+                  "id": "2c398a8b-4070-52f7-8cf5-ca93a40318a3"
+                },
+                {
+                  "command": "EVENT_ACTOR_SET_STATE",
+                  "args": {
+                    "actorId": "player",
+                    "spriteStateId": "",
+                    "loopAnim": true
+                  },
+                  "id": "6e4c411f-a295-5e94-9484-86da6ea9e826"
+                },
+                {
+                  "command": "EVENT_ACTOR_SET_ANIMATION_SPEED",
+                  "args": {
+                    "actorId": "player",
+                    "speed": 10
+                  },
+                  "id": "f4a6b016-9b18-52a2-84cc-c17030f4ad8d"
+                },
+                {
                   "command": "EVENT_SET_VALUE",
                   "args": {
                     "variable": "6",
@@ -136,15 +214,6 @@
                     }
                   },
                   "id": "bde66ca8-d11e-55f6-97c9-a91a0914c2de"
-                },
-                {
-                  "command": "EVENT_ACTOR_SET_STATE",
-                  "args": {
-                    "actorId": "player",
-                    "spriteStateId": "",
-                    "loopAnim": true
-                  },
-                  "id": "1d041920-1bcf-5c11-8bba-5026b2b97f84"
                 },
                 {
                   "command": "EVENT_SET_VALUE",
@@ -539,7 +608,7 @@
                       {
                         "command": "EVENT_TEXT_DRAW",
                         "args": {
-                          "text": "v0.22.0-dev",
+                          "text": "v0.23.0-dev",
                           "x": 9,
                           "y": 1,
                           "location": "overlay"
@@ -664,7 +733,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -706,7 +775,7 @@
                                   {
                                     "command": "EVENT_TEXT_DRAW",
                                     "args": {
-                                      "text": "v0.22.0-dev",
+                                      "text": "v0.23.0-dev",
                                       "x": 9,
                                       "y": 1,
                                       "location": "overlay"
@@ -787,7 +856,7 @@
                             {
                               "command": "EVENT_TEXT_DRAW",
                               "args": {
-                                "text": "v0.22.0-dev",
+                                "text": "v0.23.0-dev",
                                 "x": 9,
                                 "y": 1,
                                 "location": "overlay"
@@ -889,7 +958,7 @@
                       {
                         "command": "EVENT_TEXT_DRAW",
                         "args": {
-                          "text": "v0.22.0-dev",
+                          "text": "v0.23.0-dev",
                           "x": 9,
                           "y": 1,
                           "location": "overlay"
@@ -967,7 +1036,7 @@
                       {
                         "command": "EVENT_TEXT_DRAW",
                         "args": {
-                          "text": "v0.22.0-dev",
+                          "text": "v0.23.0-dev",
                           "x": 9,
                           "y": 1,
                           "location": "overlay"

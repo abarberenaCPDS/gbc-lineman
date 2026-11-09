@@ -2,7 +2,7 @@
   "_resourceType": "scene",
   "id": "8524d1f9-7d48-5747-9f1b-4392d56fdf02",
   "_index": 3,
-  "name": "Service Opening - M-V1",
+  "name": "Lineman Training",
   "symbol": "scene_service_opening",
   "backgroundId": "408a65fd-5ae3-564b-a8d0-23989a75d9e3",
   "tilesetId": "",
@@ -32,8 +32,8 @@
   ],
   "collisions": "00d3+018+0036+014+0f3+0011+0f3+0011+0f2b+",
   "autoFadeSpeed": 1,
-  "x": 0,
-  "y": 360,
+  "x": 720,
+  "y": 0,
   "script": [
     {
       "id": "3b7fce96-2b31-50c8-b325-82e3c7a96112",
@@ -162,7 +162,7 @@
             "command": "EVENT_TEXT",
             "args": {
               "text": [
-                "D-pad: move.\nTap A: short hop"
+                "LINEMAN TRAINING\nD-pad: move.\nTap A: short hop"
               ],
               "avatarId": "",
               "minHeight": 4,
@@ -186,7 +186,7 @@
             "command": "EVENT_TEXT",
             "args": {
               "text": [
-                "Hold A: rise.\nClear overhead."
+                "Hold A: rise.\nCheck above.\nB: Amara tips."
               ],
               "avatarId": "",
               "minHeight": 4,
@@ -210,7 +210,7 @@
             "command": "EVENT_TEXT",
             "args": {
               "text": [
-                "B: pick up cable.\nB: use cable."
+                "B: take cable.\nB: fit at panel."
               ],
               "avatarId": "",
               "minHeight": 4,
@@ -232,6 +232,37 @@
         ],
         "false": []
       }
+    },
+    {
+      "id": "f9aa2f1f-2bf5-53d2-8ab8-77e302c89fa2",
+      "command": "EVENT_IF",
+      "args": {
+        "condition": {
+          "type": "eq",
+          "valueA": {
+            "type": "variable",
+            "value": "6"
+          },
+          "valueB": {
+            "type": "number",
+            "value": 0
+          }
+        }
+      },
+      "children": {
+        "true": [],
+        "false": [
+          {
+            "id": "3e6a43f4-d9ab-58e4-a987-cc23e95c44c1",
+            "command": "EVENT_ACTOR_SET_STATE",
+            "args": {
+              "actorId": "player",
+              "spriteStateId": "Carry",
+              "loopAnim": true
+            }
+          }
+        ]
+      }
     }
   ],
   "playerHit1Script": [
@@ -243,60 +274,28 @@
       }
     },
     {
-      "command": "EVENT_ACTOR_SET_STATE",
-      "args": {
-        "actorId": "player",
-        "spriteStateId": "Shock",
-        "loopAnim": true
-      },
-      "id": "74353519-f70b-57f9-902e-a48cb9270540"
-    },
-    {
-      "command": "EVENT_SOUND_PLAY_EFFECT",
-      "args": {
-        "units": "time",
-        "type": "6262153d-bc4a-50ed-ba26-13c2f3bf5e57",
-        "priority": "high",
-        "pitch": 4,
-        "frequency": 200,
-        "duration": 0.5,
-        "wait": false,
-        "effect": 0
-      },
-      "id": "9b5b235e-4443-5129-bfc0-10ce907434d0"
-    },
-    {
+      "id": "aebe69b5-d24a-5567-84e4-5aa6e7f17e15",
       "command": "EVENT_CAMERA_SHAKE",
       "args": {
         "units": "frames",
-        "frames": 12,
+        "frames": 4,
         "shakeDirection": "horizontal",
         "magnitude": {
           "type": "number",
-          "value": 2
+          "value": 1
         }
-      },
-      "id": "b0c86a49-a1a7-5163-a4ae-cba4cb9be8f3"
+      }
     },
     {
+      "id": "303386ff-3c7c-5521-9581-7ca95fef4f1b",
       "command": "EVENT_WAIT",
       "args": {
         "units": "frames",
         "frames": {
           "type": "number",
-          "value": 12
+          "value": 4
         }
-      },
-      "id": "7e24810f-286a-561a-b41c-9a6ed28690a2"
-    },
-    {
-      "command": "EVENT_ACTOR_SET_STATE",
-      "args": {
-        "actorId": "player",
-        "spriteStateId": "",
-        "loopAnim": true
-      },
-      "id": "c1fd6968-5aa2-5f7b-ac50-0ac73de4b05c"
+      }
     },
     {
       "id": "ca232c3a-92a9-5ad1-ab1d-771909a6cce5",

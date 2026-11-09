@@ -33,7 +33,7 @@
   "autoFadeSpeed": 1,
   "symbol": "scene_lab_hazard_gallery",
   "x": 0,
-  "y": 1200,
+  "y": 2400,
   "script": [
     {
       "command": "EVENT_PLAYER_SET_SPRITE",
@@ -103,6 +103,14 @@
   ],
   "playerHit1Script": [
     {
+      "command": "EVENT_ACTOR_SET_ANIMATION_SPEED",
+      "args": {
+        "actorId": "player",
+        "speed": 4
+      },
+      "id": "7d47bca1-4ad5-5c7a-8270-4c447ce43dbb"
+    },
+    {
       "command": "EVENT_ACTOR_SET_STATE",
       "args": {
         "actorId": "player",
@@ -110,6 +118,17 @@
         "loopAnim": true
       },
       "id": "eaf18851-9cf3-5a99-b62f-4bd90c8e6542"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_FRAME",
+      "args": {
+        "actorId": "player",
+        "frame": {
+          "type": "number",
+          "value": 0
+        }
+      },
+      "id": "70f477e2-784c-59da-8c4f-3a95c62f8da2"
     },
     {
       "command": "EVENT_SOUND_PLAY_EFFECT",
@@ -157,6 +176,14 @@
         "loopAnim": true
       },
       "id": "859237e3-8d76-59ca-92d0-40fc62ac4591"
+    },
+    {
+      "command": "EVENT_ACTOR_SET_ANIMATION_SPEED",
+      "args": {
+        "actorId": "player",
+        "speed": 10
+      },
+      "id": "f3363820-bdd3-5520-bf19-d1bd13dcf5e4"
     },
     {
       "command": "EVENT_SET_VALUE",

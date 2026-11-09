@@ -17,3 +17,10 @@ Abe selected Storm Worker for all active gameplay and Neighborhood Hero for stor
 - `native-carry-jump.png`, `native-shock.png`: exact direct-start test-ROM captures using production gameplay.
 
 See ../../HERO_VARIANTS.md for generation, variant selection and evidence.
+
+## Training/town revision (2026-11-08)
+
+Storm Worker now also supplies the intro story and full four-direction town
+animation. Neighborhood Hero is retained as an alternative illustration source,
+not switched during gameplay. See ../training-town/town-and-worker.png for the
+authored town and directional review; it is not an emulator capture.

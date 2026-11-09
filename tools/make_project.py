@@ -63,8 +63,8 @@ def main() -> None:
     parser.add_argument("--render-music", action="store_true", help="offline local uge-builder render before scene generation")
     parser.add_argument("--fixtures", action="store_true", help="opening only: authored size/power comparison PNGs")
     parser.add_argument("--verify", action="store_true", help="run focused profile unit tests after generation")
-    parser.add_argument("--intro-hero", choices=("neighborhood", "classic"),
-                        help="intro only: hero art variant; default is Neighborhood Hero")
+    parser.add_argument("--intro-hero", choices=("storm", "neighborhood", "classic"),
+                        help="intro only: hero art variant; default is Storm Worker")
     args = parser.parse_args()
     if args.intro_hero and args.profile != "intro":
         parser.error("--intro-hero applies only to the intro profile")

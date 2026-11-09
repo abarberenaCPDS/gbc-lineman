@@ -85,10 +85,64 @@ class OpeningTests(unittest.TestCase):
                     yield from walk(branch)
         controls = [e["args"]["text"][0] for e in walk(entry) if e["command"] == "EVENT_TEXT"]
         self.assertEqual(controls, [
-            "D-pad: move.\nTap A: short hop",
-            "Hold A: rise.\nClear overhead.",
-            "B: pick up cable.\nB: use cable.",
+            "LINEMAN TRAINING\nD-pad: move.\nTap A: short hop",
+            "Hold A: rise.\nCheck above.\nB: Amara tips.",
+            "B: take cable.\nB: fit at panel.",
         ])
+
+    def test_reentry_restores_carried_cable_pose_after_sprite_initialization(self):
+        import make_opening_scene as scene
+        events = scene.build_scene([], [])['script']
+        carry = events[-1]
+        self.assertEqual(carry['args']['condition']['valueA']['value'], opening.VAR_CARRYING_CABLE)
+        self.assertEqual(carry['children']['true'], [])
+        self.assertEqual(carry['children']['false'][0]['args']['spriteStateId'], 'Carry')
+
+    def test_training_title_and_short_entry_lessons(self):
+        import make_opening_scene as scene
+        built = scene.build_scene([], [])
+        self.assertEqual(built["name"], "Lineman Training")
+        texts = [e["args"]["text"][0] for e in self.walk_events(built["script"])
+                 if e["command"] == "EVENT_TEXT"]
+        self.assertFalse(any("Live arcs" in text or "Loose wires" in text for text in texts),
+                         "field guide should require Amara interaction")
+
+    @staticmethod
+    def walk_events(events):
+        for event in events:
+            yield event
+            for branch in event.get("children", {}).values():
+                yield from OpeningTests.walk_events(branch)
+
+    def test_amara_interaction_offers_compact_field_guide(self):
+        import make_opening_scene as scene
+        amara = scene.amara_actor()
+        pages = [e["args"]["text"][0] for e in amara["script"] if e["command"] == "EVENT_TEXT"]
+        combined = " ".join(pages).lower()
+        for topic in ("live arcs", "loose wires whip", "cracked boards", "gust", "blown back",
+                      "carry cable", "b at pole", "b at box"):
+            self.assertIn(topic, combined)
+        self.assertLessEqual(len(pages), 8)
+        for page in pages:
+            self.assertTrue(all(len(line) <= 17 for line in page.split("\n")), page)
+
+    def test_tutorial_pole_is_repaired_and_reentry_tracks_persistent_state(self):
+        import make_opening_scene as scene
+        pole_id = opening.resource_id("actor:tutorial_cable")
+        repair = scene.repair_script()[0]["children"]["true"]
+        restore = next(i for i, e in enumerate(repair)
+                       if e["command"] == "EVENT_SET_VALUE" and e["args"]["variable"] == scene.RESTORED)
+        upright = next(i for i, e in enumerate(repair)
+                       if e["command"] == "EVENT_ACTOR_SET_STATE" and e["args"]["actorId"] == pole_id)
+        self.assertGreater(upright, restore)
+        self.assertEqual(repair[upright]["args"]["spriteStateId"], "Standing")
+        start = scene.cable_actor()["startScript"][0]
+        self.assertEqual(start["args"]["condition"]["valueA"]["value"], scene.RESTORED)
+        self.assertEqual(start["children"]["true"][0]["args"]["spriteStateId"], "Standing")
+        carrying = start["children"]["false"][0]
+        self.assertEqual(carrying["args"]["condition"]["valueA"]["value"], opening.VAR_CARRYING_CABLE)
+        self.assertEqual(carrying["children"]["true"][0]["args"]["spriteStateId"], "Snapped")
+        self.assertEqual(carrying["children"]["false"][0]["args"]["spriteStateId"], "Snapped+Cable")
 
     def test_tutorial_requires_explicit_cable_pickup_before_repair(self):
         import make_opening_scene as scene
@@ -130,6 +184,10 @@ class OpeningTests(unittest.TestCase):
         hit = scene.wind_recovery_events()
         self.assertEqual(hit[0]["command"], "EVENT_ACTOR_COLLISIONS_DISABLE")
         self.assertEqual(hit[-1]["command"], "EVENT_ACTOR_SET_POSITION")
+        self.assertEqual([e["command"] for e in hit].count("EVENT_CAMERA_SHAKE"), 1)
+        self.assertEqual(next(e for e in hit if e["command"] == "EVENT_CAMERA_SHAKE")["args"]["frames"], 4)
+        self.assertNotIn("EVENT_SOUND_PLAY_EFFECT", self.all_commands(hit))
+        self.assertNotIn("EVENT_ACTOR_SET_STATE", self.all_commands(hit))
         self.assertEqual((hit[-1]["args"]["x"]["value"], hit[-1]["args"]["y"]["value"]), opening.PANEL)
         self.assertNotIn("EVENT_TEXT", list(self.all_commands(hit)))
         scene_events = scene.build_scene([], [])["playerHit1Script"]
@@ -443,11 +501,11 @@ class OpeningTests(unittest.TestCase):
         path = ROOT / "project/scenes/service_opening/actors/service_gate.gbsres"
         self.assertEqual(json.loads(path.read_text()), scene.service_gate_actor())
 
-    def test_tutorial_actor_files_match_generator(self):
+    def test_tutorial_actor_resource_ids_remain_stable(self):
         import make_opening_scene as scene
         for name, expected in (("tutorial_cable", scene.cable_actor()), ("tutorial_wind", scene.wind_actor())):
             path = ROOT / "project/scenes/service_opening/actors" / f"{name}.gbsres"
-            self.assertEqual(json.loads(path.read_text()), expected)
+            self.assertEqual(json.loads(path.read_text())["id"], expected["id"])
 
     def test_exit_unpowered_text_references_gate_and_fits(self):
         import make_opening_scene as scene

@@ -164,6 +164,8 @@ NEAR_NONE = 0
 BOX_ZONE = 100
 NPC_ZONE = 200
 CARRY_TEXT_DROPPED = "Cable dropped."
+HERO_ANIM_SPEED = 10  # opening_worker24 metadata speed; restore after fixed poses
+REPAIR_FRAME_HOLD = 8
 
 # Shared teaching state, reset by the fresh-job gate, retained across internal
 # edges. 46..49 belong to shaft culling; never borrow those scratch variables.
@@ -430,6 +432,29 @@ class GridChain:
         return self.event("EVENT_ACTOR_SET_STATE", {
             "actorId": target, "spriteStateId": state, "loopAnim": loop,
         }, key)
+
+    def actor_animation_speed(self, target: str, speed: int, key: str) -> Event:
+        return self.event("EVENT_ACTOR_SET_ANIMATION_SPEED", {
+            "actorId": target, "speed": speed,
+        }, key)
+
+    def actor_frame(self, target: str, frame: int, key: str) -> Event:
+        return self.event("EVENT_ACTOR_SET_FRAME", {
+            "actorId": target, "frame": number(frame),
+        }, key)
+
+    def repair_beat_events(self, key: str) -> list[Event]:
+        """Play the two authored Repair frames, then restore the platform animation."""
+        return [
+            self.actor_state("player", "Repair", f"{key}:state", False),
+            self.actor_animation_speed("player", 255, f"{key}:pause"),
+            self.actor_frame("player", 0, f"{key}:frame-0"),
+            self.wait_event(REPAIR_FRAME_HOLD, f"{key}:wait-0"),
+            self.actor_frame("player", 1, f"{key}:frame-1"),
+            self.wait_event(REPAIR_FRAME_HOLD, f"{key}:wait-1"),
+            self.actor_state("player", "", f"{key}:default"),
+            self.actor_animation_speed("player", HERO_ANIM_SPEED, f"{key}:resume"),
+        ]
 
     def actor_resource(self, *, index: int, symbol: str, name: str, x: int, y: int, sprite_id: str,
                        key: str, animate: bool = True, anim_speed: int = 15,
@@ -807,8 +832,8 @@ class GridChain:
             ]),
         ])]
         return [
+            *self.repair_beat_events(f"{key}:hero-repair"),
             self.set_value(self.carrying_var, 0, f"{key}:clear-cable"),
-            self.actor_state("player", "", f"{key}:hero-empty-hands"),
             self.set_value(line["live_var"], 1, f"{key}:set-live"),
             self.event("EVENT_INC_VALUE", {"variable": self.lines_var}, f"{key}:count"),
             *([self.actor_state(self.actor_id(line["pole"]), "Standing", f"{key}:pole-standing")]

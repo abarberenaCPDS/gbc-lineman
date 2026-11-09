@@ -14,7 +14,7 @@ import make_campaign_diagnostics as diagnostics
 import make_intro_sprites as sprite_art
 import make_ticket_scene as ticket
 import make_climb_scene as shared
-import neighborhood_hero
+import storm_worker_topdown
 
 W = H = 32
 START = (15, 13)
@@ -28,6 +28,10 @@ HERO_ID = contract.tickets.resource_id('sprite:dispatch-walkable-hero')
 WATER_PALETTE_ID = contract.tickets.resource_id('dispatch-hub:palette:lakeside-water')
 PALETTE_IDS = [contract.PALETTE_IDS[0], contract.PALETTE_IDS[1], WATER_PALETTE_ID,
                *[contract.palette_id('off')]*4, 'default-ui']
+# Solid footprints are declared once for the renderer and collision map.
+BUILDINGS = ((4, 10, 7, 'DEPOT'), (20, 10, 6, 'WORKS'))
+PLANTERS = ((2, 11, 2), (27, 11, 2), (8, 18, 4), (20, 18, 4),
+            (8, 23, 4), (20, 23, 4), (5, 29, 6), (21, 29, 6))
 WATER_COLORS = ['0B101E', '173B50', '39728A', '9BC6C2']
 
 def rid(key):
@@ -77,72 +81,141 @@ def build_art():
         elif (x//8) % 3 == 0:
             d.line((x+5,68,x+7,68), fill=1)
 
-    # Promenade and its plaza share stonework; thinner paths lead to signs.
-    d.line((128,72,128,239), fill=2, width=16)
-    d.rectangle((112,128,143,183), fill=2)
-    d.line((48,156,208,156), fill=2, width=16)
-    d.line((48,176,208,176), fill=2, width=16)
-    d.line((48,156,48,231), fill=2, width=16)
-    d.line((208,156,208,231), fill=2, width=16)
-    for y in range(72, 248, 8):
-        for x in range(8, 248, 8):
-            pattern = ((x//8 + y//8)**2 + y//8) % 9
-            if idx.getpixel((x,y)) == idx.getpixel((x+7,y+7)) == 2:
-                if pattern in (0, 2, 5):
-                    d.line((x+2,y+3,x+4,y+3), fill=3)
-                    d.point((x+4,y+4), fill=1)
-            elif idx.getpixel((x+3,y+3)) == 1:
-                if pattern == 1:
-                    d.point((x+3,y+5), fill=2)
-                    d.line((x+4,y+4,x+5,y+4), fill=2)
-                elif pattern == 3:
-                    d.point((x+1,y+3), fill=2)
-                    d.line((x+2,y+5,x+4,y+5), fill=2)
+    # Repeat a few native stone, timber and turf motifs. Tile-aligned streets
+    # connect the waterfront, both rows of kiosks, and the southern green.
+    paving = {(x, 9) for x in range(1, 31)}
+    paving |= {(x, y) for x in range(13, 19) for y in range(9, 29)}
+    paving |= {(x, y) for x in range(2, 30) for y in (15, 16, 17, 20, 21, 22, 25, 26, 27)}
+    for ty in range(9, 32):
+        for tx in range(32):
+            x, y = tx*8, ty*8
+            pattern = (tx*3+ty*5) % 7
+            if (tx, ty) in paving:
+                slots[ty][tx] = 0
+                d.rectangle((x,y,x+7,y+7), fill=1)
+                d.line((x,y+1,x+7,y+1), fill=2)
+                d.point((x+3+(ty%2)*3,y+2), fill=2)
+                if pattern < 2:
+                    d.line((x+2,y+5,x+5,y+5), fill=2)
+            elif pattern in (1, 3, 5):
+                d.line((x+2,y+5,x+4,y+5), fill=2)
+                d.point((x+4,y+4), fill=2)
 
-    # Shore pines and rocks are set into the impassable bank, with the
-    # silhouettes repeated at tile-aligned offsets.
-    for x in (8, 32, 64, 216, 240):
-        d.rectangle((x+6,65,x+8,71), fill=0)
-        for y, half_width in ((45,4), (51,6), (57,7)):
-            d.polygon([(x+7,y),(x+7-half_width,y+9),(x+7+half_width,y+9)], fill=0)
-            d.line((x+7,y+1,x+4,y+6), fill=3)
-    for x in (16, 48, 80, 200, 224):
-        d.polygon([(x+1,70),(x+2,66),(x+5,65),(x+7,68),(x+7,70)], fill=0)
-        d.line((x+2,67,x+5,66), fill=3)
+    # Boardwalk on the north edge of the street; only the center dock crosses
+    # the shoreline. Rail posts occupy solid tiles on either side.
+    for tx in range(1,31):
+        x = tx*8
+        slots[8][tx] = 0
+        d.rectangle((x,64,x+7,71), fill=1)
+        d.line((x,66,x+7,66), fill=3)
+        d.line((x,69,x+7,69), fill=2)
+        if tx % 2:
+            d.rectangle((x+1,64,x+2,71), fill=0)
+    for ty in range(5,9):
+        for tx in range(14,18):
+            x,y = tx*8,ty*8
+            slots[ty][tx] = 0
+            d.rectangle((x,y,x+7,y+7),fill=2)
+            d.line((x,y+3,x+7,y+3),fill=1)
+            d.line((x,y+7,x+7,y+7),fill=1)
+            d.point((x+2,y+5), fill=0)
+    for x in (112,143):
+        d.line((x,40,x,71),fill=0)
+    d.line((112,40,143,40),fill=0)
+    # Two tied skiffs read as local boats rather than another walkable route.
+    for x, y in ((82,48),(159,43)):
+        d.polygon([(x,y),(x+14,y),(x+22,y+4),(x+15,y+8),(x+3,y+8)],fill=0)
+        d.polygon([(x+2,y+2),(x+14,y+2),(x+19,y+4),(x+14,y+6),(x+4,y+6)],fill=3)
+        d.line((x+7,y+3,x+7,y+5),fill=1)
+        d.line((x+13,y+3,x+13,y+5),fill=1)
 
-    # Power shed. A lightning sign and roll-up work bay distinguish it
-    # from the households. Its footprint stays north of the district paths.
-    d.rectangle((152,104,199,111), fill=2)
-    d.rectangle((154,88,197,108), fill=0)
-    d.rectangle((156,91,195,104), fill=3)
-    d.polygon([(152,88),(158,80),(193,80),(199,88),(199,90),(152,90)], fill=0)
-    d.polygon([(155,87),(160,81),(191,81),(196,87)], fill=2)
-    d.line((160,82,191,82), fill=3)
-    d.rectangle((163,93,179,104), fill=0)
-    for y in (95, 98, 101):
-        d.line((165,y,177,y), fill=2)
-    d.rectangle((183,93,192,102), fill=2)
-    d.polygon([(189,94),(185,98),(188,98),(187,101),(191,97),(188,97)], fill=3)
-    # Trailheads are signs and route lamps, never copies of the residents' homes.
-    for name, variable, slot, x, y in DISTRICTS:
-        cx=x+16
-        d.rectangle((cx-1,y+13,cx+1,y+31),fill=0)
-        d.rectangle((x,y,x+31,y+14),fill=0)
-        d.rectangle((x+1,y+1,x+30,y+13),fill=2)
-        text(idx, name, cx, y+3)
-        # Lamp is a flag-driven palette tile; restored routes glow warm yellow.
-        d.rectangle((cx-4,y+31,cx+4,y+39),fill=0)
-        d.rectangle((cx-2,y+33,cx+2,y+37),fill=3)
-        slots[(y+32)//8][cx//8] = slot
-    # A quiet lake-facing bench gives the arrival a natural pause/view.
-    d.rectangle((91,119,115,124),fill=0)
-    d.rectangle((94,120,112,122),fill=3)
-    d.rectangle((94,123,96,128),fill=0); d.rectangle((110,123,112,128),fill=0)
+    def building(tx, ty, width, label):
+        # Ridge, metal roofing, overhanging eave, and a timber shop front.
+        # The footprint is shared with collision; no roof over a street.
+        x,y=tx*8,ty*8
+        end=x+width*8-1
+        for row in range(ty,ty+4):
+            slots[row][tx:tx+width] = [0]*width
+        d.polygon([(x,y+8),(x+5,y+1),(end-5,y+1),(end,y+8),
+                   (end,y+31),(x,y+31)],fill=0)
+        d.polygon([(x+2,y+8),(x+6,y+2),(end-6,y+2),(end-2,y+8),
+                   (end-2,y+14),(x+2,y+14)],fill=2)
+        d.line((x+6,y+3,end-6,y+3),fill=3)
+        for ix in range(x+8,end-3,8):
+            d.line((ix,y+5,ix,y+14),fill=1)
+        d.line((x+2,y+14,end-2,y+14),fill=3)
+        d.rectangle((x+2,y+17,end-2,y+29),fill=1)
+        for yy in (19,23,27):
+            d.line((x+3,y+yy,end-3,y+yy),fill=2)
+        mid=(x+end)//2
+        d.rectangle((mid-7,y+23,mid+7,y+30),fill=0)
+        d.line((mid-6,y+26,mid+6,y+26),fill=2)
+        d.line((mid-6,y+28,mid+6,y+28),fill=2)
+        d.rectangle((mid-13,y+16,mid+13,y+22),fill=0)
+        text(idx,label,mid,y+17)
+        for xx in (x+4,end-11):
+            d.rectangle((xx,y+22,xx+7,y+27),fill=0)
+            d.rectangle((xx+1,y+23,xx+6,y+26),fill=2)
+            d.line((xx+1,y+23,xx+6,y+23),fill=3)
+            d.line((xx+3,y+23,xx+3,y+26),fill=1)
+
+    for tx, ty, width, label in BUILDINGS:
+        building(tx, ty, width, label)
+
+    def planter(tx,ty,width):
+        # Walled beds and their repeated rows of pale new growth.
+        for i in range(width):
+            x,y=(tx+i)*8,ty*8
+            d.rectangle((x,y+1,x+7,y+6),fill=0)
+            d.rectangle((x,y+2,x+7,y+4),fill=2)
+            d.line((x+1,y+5,x+6,y+5),fill=2)
+            d.line((x+2,y+3,x+3,y+2),fill=3)
+            d.point((x+5,y+3),fill=3)
+            if i in (0,width-1):
+                edge = x if i==0 else x+7
+                d.line((edge,y+1,edge,y+6),fill=0)
+
+    for box in PLANTERS:
+        planter(*box)
+    for y in (14,29,30):
+        for x in (1,2,3,28,29,30):
+            # Flat wildflowers leave the outer circulation lane open.
+            px,py=x*8,y*8
+            d.line((px+2,py+5,px+3,py+2),fill=2)
+            d.point((px+3,py+2),fill=3)
+            d.point((px+6,py+4),fill=3)
+
+    # Put each flag-controlled lamp on the kiosk counter. A clipped work
+    # order, two ink lines and the name header make the station readable.
+    for name, _, slot, x, y in DISTRICTS:
+        slots[y//8][x//8:x//8+4] = [0]*4
+        slots[y//8+1][x//8:x//8+4] = [0,0,slot,0]
+        d.rectangle((x,y,x+31,y+15),fill=0)
+        d.line((x+1,y,x+30,y),fill=2)
+        text(idx, name, x+16, y+2)
+        d.rectangle((x+1,y+8,x+30,y+14),fill=1)
+        d.line((x+1,y+15,x+30,y+15),fill=2)
+        d.rectangle((x+5,y+8,x+12,y+13),fill=3)
+        d.line((x+7,y+8,x+10,y+8),fill=2)
+        d.line((x+7,y+10,x+10,y+10),fill=0)
+        d.line((x+7,y+12,x+9,y+12),fill=1)
+        d.rectangle((x+16,y+8,x+23,y+15),fill=0)
+        d.rectangle((x+17,y+9,x+22,y+14),fill=1)
+        d.rectangle((x+18,y+10,x+21,y+13),fill=3)
+
+    # A brass compass set flat in the center square gives the crossing a
+    # landmark without changing movement or hiding the player's feet.
+    d.polygon([(127,165),(138,176),(127,187),(116,176)],outline=3)
+    d.line((127,168,127,184),fill=2)
+    d.line((119,176,135,176),fill=2)
+    d.polygon([(127,168),(124,177),(127,175),(130,177)],fill=3)
     return idx, slots
 
 def text(image,word,cx,y):
     """Render small district labels into the background, without runtime fonts."""
     font={
+        'D':['110','101','101','101','110'],'T':['111','010','010','010','010'],
+        'W':['101','101','111','111','101'],'K':['101','101','110','101','101'],
         'A':['010','101','111','101','101'],'E':['111','100','110','100','111'],
         'H':['101','101','111','101','101'],'I':['111','010','010','010','111'],
         'M':['101','111','111','101','101'],'N':['101','111','111','111','101'],
@@ -161,14 +234,21 @@ def text(image,word,cx,y):
 
 def collision_grid():
     grid = [[0]*W for _ in range(H)]
-    # Foot collision only: shoreline, depot, signboards, and perimeter.
+    # Tile-aligned footprints leave clear approaches to all kiosk triggers.
     for y in range(H):
         for x in range(W):
             if x in (0,W-1) or y < 3 or y == H-1: grid[y][x] = 15
             if 2 <= y <= 8: grid[y][x] = 15
-    for y in range(10, 14):
-        for x in range(19, 25):
-            grid[y][x] = 15
+    for y in range(6, 9):
+        for x in range(14, 18):
+            grid[y][x] = 0
+    for tx, ty, width, _ in BUILDINGS:
+        for y in range(ty, ty+4):
+            for x in range(tx, tx+width):
+                grid[y][x] = 15
+    for tx, ty, width in PLANTERS:
+        for x in range(tx, tx+width):
+            grid[ty][x] = 15
     for _,_,_,px,py in DISTRICTS:
         # Signboards and lamps are solid visual landmarks, but leave the approach
         # tile open so the player can stand directly in front of each sign.
@@ -221,10 +301,13 @@ def interactions():
         name, variable=home[:2]
         target=contract.tickets.TICKETS[n]
         remove_a=ev('EVENT_REMOVE_INPUT_SCRIPT',{'input':['a']},'restore-a-default-'+str(n))
-        accept=[ticket.dialogue(target['pages'],'hub:accept-'+str(n)),
-                set_near(0,'leave-zone-'+str(n)),remove_a,
+        depart=[set_near(0,'leave-zone-'+str(n)),remove_a,
                 ticket.fade_out('hub:fade-'+str(n)),
                 ticket.switch_scene(target['scene_id'],*target['start'],'right','hub:job-'+str(n))]
+        accept=[ticket.dialogue(target['pages'],'hub:accept-'+str(n)),
+                ev('EVENT_CHOICE', {'variable':'L0','trueText':'Accept job',
+                   'falseText':'Keep exploring'}, 'choose-'+str(n)),
+                ticket.if_value('L0',1,'hub:accepted-'+str(n),depart,[])]
         unavailable=[ticket.dialogue([name+'\nStill waiting.'],'hub:waiting-'+str(n)),
                      *assignment_hint('hub:unavailable-'+str(n))]
         events=[ticket.if_value(variable,1,'hub:home-'+str(n),
@@ -243,29 +326,7 @@ def build_triggers():
     return triggers
 
 def hero_frames():
-    """Keep right-facing source exact; author front/back faces and mirror left.
-
-    The hard hat, jacket and walk timing remain the accepted Neighborhood Hero.
-    Separate asset avoids modifying any intro frames or platformer bounds.
-    """
-    right = [neighborhood_hero.NEIGHBORHOOD_FRAMES[i] for i in (0,2,4)]
-    left = [tuple(row[::-1] for row in frame) for frame in right]
-    front, back = [], []
-    for frame in right:
-        f=list(frame); b=list(frame)
-        # Preserve the accepted side frames; give vertical views a centered
-        # helmet and face instead of painting a face across the side brim.
-        helmet=('.....333333.....','....33111133....','...3311111133...',
-                '...3111111113...','..333333333333..')
-        f[8:17]=helmet+('....31111113....','....31311313....',
-                       '.....311113.....','.....333333.....')
-        b[8:17]=helmet+('....33333333....','....33333333....',
-                       '.....333333.....','.....333333.....')
-        # Back has a reflective jacket band, no front pockets or belt buckle.
-        b[18]='.3222222222223..'; b[20]='.3311111111133..'
-        b[24]='.3113333333313..'
-        front.append(tuple(f));back.append(tuple(b))
-    return right+left+back+front
+    return storm_worker_topdown.frames()
 
 def build_hero():
     frames=hero_frames()

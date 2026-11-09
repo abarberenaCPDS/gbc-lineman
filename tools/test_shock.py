@@ -22,8 +22,11 @@ def walk_events(value):
 class ShockTests(unittest.TestCase):
     def test_events_shape_and_return_to_default(self):
         events = shock.shock_events("t")
-        self.assertEqual(events[0]["args"]["spriteStateId"], "Shock")
-        self.assertEqual(events[-1]["args"]["spriteStateId"], "")
+        self.assertEqual(events[0]["args"]["speed"], shock.SHOCK_ANIM_SPEED)
+        self.assertEqual(events[1]["args"]["spriteStateId"], "Shock")
+        self.assertEqual(events[2]["args"]["frame"]["value"], 0)
+        self.assertEqual(events[-2]["args"]["spriteStateId"], "")
+        self.assertEqual(events[-1]["args"]["speed"], shock.HERO_ANIM_SPEED)
         self.assertTrue(all(e["args"].get("actorId", "player") == "player" for e in events))
         self.assertIn("EVENT_SOUND_PLAY_EFFECT", [e["command"] for e in events])
         ids = [e["id"] for e in events]
@@ -75,10 +78,13 @@ class ShockTests(unittest.TestCase):
                 self.assertFalse(any(event["command"] in {"EVENT_MUSIC_PLAY", "EVENT_MUSIC_STOP"}
                                      for event in events))
                 self.assertEqual([event["command"] for event in hit[:len(expected)]], expected_commands)
-                self.assertEqual(hit[0]["args"]["spriteStateId"], "Shock")
-                self.assertEqual(hit[2]["args"]["frames"], shock.SHAKE_FRAMES)
-                self.assertEqual(hit[3]["args"]["frames"]["value"], shock.SHOCK_FRAMES)
-                self.assertEqual(hit[4]["args"]["spriteStateId"], "")
+                self.assertEqual(hit[0]["args"]["speed"], shock.SHOCK_ANIM_SPEED)
+                self.assertEqual(hit[1]["args"]["spriteStateId"], "Shock")
+                self.assertEqual(hit[2]["args"]["frame"]["value"], 0)
+                self.assertEqual(hit[4]["args"]["frames"], shock.SHAKE_FRAMES)
+                self.assertEqual(hit[5]["args"]["frames"]["value"], shock.SHOCK_FRAMES)
+                self.assertEqual(hit[6]["args"]["spriteStateId"], "")
+                self.assertEqual(hit[7]["args"]["speed"], shock.HERO_ANIM_SPEED)
 
 if __name__ == "__main__":
     unittest.main()

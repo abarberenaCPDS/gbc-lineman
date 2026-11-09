@@ -32,6 +32,9 @@ def execute(events, state):
             expected = condition["valueB"]["value"]
             branch = "true" if state.get(self_value, 0) == expected else "false"
             output.extend(execute(event.get("children", {}).get(branch, []), state))
+        elif command == "EVENT_CHOICE":
+            state[args["variable"]] = state.get("test_accept", 1)
+            output.append(event)
         elif command == "EVENT_SET_VALUE":
             raw = args["value"]
             state[args["variable"]] = raw["value"]
@@ -48,8 +51,8 @@ class LakesideCampaignTests(unittest.TestCase):
                                 if e["command"] == "EVENT_SET_INPUT_SCRIPT")
         self.interaction = self.input_event["children"]["true"]
 
-    def simulate(self, signed_trail, next_job, completed=()):
-        state = {hub.NEAR_VAR: signed_trail, "16": next_job}
+    def simulate(self, signed_trail, next_job, completed=(), accept=True):
+        state = {hub.NEAR_VAR: signed_trail, "16": next_job, "test_accept": int(accept)}
         state.update({variable: int(variable in completed) for variable in COMPLETIONS})
         events = execute(self.interaction, state)
         return events, state
@@ -84,6 +87,14 @@ class LakesideCampaignTests(unittest.TestCase):
                 self.assertFalse(any(e["command"] == "EVENT_SWITCH_SCENE" for e in events))
         events, _ = self.simulate(0, 1)
         self.assertFalse(any(e["command"] == "EVENT_SWITCH_SCENE" for e in events))
+
+    def test_reading_without_accepting_keeps_the_order_and_town_controls(self):
+        for n in range(1, 5):
+            events, state = self.simulate(n, n, accept=False)
+            self.assertTrue(any(e["command"] == "EVENT_CHOICE" for e in events))
+            self.assertFalse(any(e["command"] in ("EVENT_SWITCH_SCENE", "EVENT_REMOVE_INPUT_SCRIPT") for e in events))
+            self.assertEqual(state["16"], n)
+            self.assertEqual(state[hub.NEAR_VAR], n)
 
     def test_dispatch_releases_a_override_before_leaving(self):
         self.assertEqual(self.input_event["args"], {"input": ["a"], "override": True})

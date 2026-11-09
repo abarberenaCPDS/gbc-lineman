@@ -256,6 +256,26 @@ class TwoActorChainTests(unittest.TestCase):
     def test_connect_sets_live_and_standing_pole(self):
         events = self.chain.box_connect_events(self.item, "connect", "connect-sound")
         self.assertIn("Standing", actor_states(events, self.pole_id))
+        repair = next(i for i, event in enumerate(events)
+                      if event["command"] == "EVENT_ACTOR_SET_STATE"
+                      and event["args"] == {"actorId": "player", "spriteStateId": "Repair",
+                                             "loopAnim": False})
+        clear = next(i for i, event in enumerate(events)
+                     if event["command"] == "EVENT_SET_VALUE"
+                     and event["args"]["variable"] == "carrying")
+        live = next(i for i, event in enumerate(events)
+                    if event["command"] == "EVENT_SET_VALUE"
+                    and event["args"]["variable"] == "live-1")
+        self.assertLess(repair, clear)
+        self.assertLess(clear, live)
+        repair_events = events[repair:clear]
+        self.assertEqual([e["args"]["frame"]["value"] for e in repair_events
+                          if e["command"] == "EVENT_ACTOR_SET_FRAME"], [0, 1])
+        speeds = [e["args"]["speed"] for e in repair_events
+                  if e["command"] == "EVENT_ACTOR_SET_ANIMATION_SPEED"]
+        self.assertEqual(speeds, [255, grid_chain.HERO_ANIM_SPEED])
+        self.assertEqual([e["args"]["frames"]["value"] for e in repair_events
+                          if e["command"] == "EVENT_WAIT"], [8, 8])
         self.assertTrue(any(event["command"] == "EVENT_SET_VALUE"
                             and event["args"]["variable"] == "live-1"
                             and event["args"]["value"]["value"] == 1

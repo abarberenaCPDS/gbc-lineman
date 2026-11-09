@@ -45,84 +45,84 @@ def _lab_id(folder: str) -> str:
 REGISTRY: dict[str, dict] = {
     "intro_logo": {
         "id": "8f0deaff-d588-56a3-97a8-ea67a2a84555", "name": "Abe's Games Logo",
-        "tag": GAME, "editor": (0, -240), "generator": "make_intro_scene.py",
+        "tag": GAME, "editor": (0, 0), "generator": "make_intro_scene.py",
     },
     "intro_story": {
         "id": "a57805cb-ca4c-5b69-8a7b-eb20a18cf415", "name": "Intro Story",
-        "tag": GAME, "editor": (240, -240), "generator": "make_intro_scene.py",
+        "tag": GAME, "editor": (240, 0), "generator": "make_intro_scene.py",
     },
     "title": {
         "id": "1688d107-3ca8-5b04-8574-611c1abf292f", "name": "Title",
-        "tag": GAME, "editor": (480, -240), "generator": "make_intro_scene.py",
+        "tag": GAME, "editor": (480, 0), "generator": "make_intro_scene.py",
     },
     "work_order": {
         "id": "6d76ca16-f510-5fd7-bb1c-c915a1367045", "name": "Lakeside Town",
-        "tag": GAME, "editor": (720, -240), "generator": "make_ticket_scene.py",
+        "tag": GAME, "editor": (960, 0), "generator": "make_ticket_scene.py",
     },
     "storm_report": {
         "id": "87eb95ce-7a29-5e5f-a362-e92762f6cb26", "name": "Storm Report",
-        "tag": GAME, "editor": (960, -240), "generator": "make_ticket_scene.py",
+        "tag": GAME, "editor": (1320, 0), "generator": "make_ticket_scene.py",
     },
     "service_opening": {
-        "id": "8524d1f9-7d48-5747-9f1b-4392d56fdf02", "name": "Service Opening - M-V1",
-        "tag": GAME, "editor": (0, 360), "generator": "make_opening_scene.py",
+        "id": "8524d1f9-7d48-5747-9f1b-4392d56fdf02", "name": "Lineman Training",
+        "tag": GAME, "editor": (720, 0), "generator": "make_opening_scene.py",
     },
     "storm_climb": {
         "id": "e8778f37-44a7-5d3a-ad39-49d52fe4c5c7", "name": "Storm Climb",
-        "tag": GAME, "editor": (0, 0), "generator": "make_climb_scene.py",
+        "tag": GAME, "editor": (0, 480), "generator": "make_climb_scene.py",
     },
     "wind_ridge": {
         "id": "20ae4686-7e62-5a4d-b3ab-0fddf0ad0d19", "name": "Wind Ridge",
-        "tag": GAME, "editor": (400, 360), "generator": "make_ridge_scene.py",
+        "tag": GAME, "editor": (0, 960), "generator": "make_ridge_scene.py",
     },
     "signal_hill": {
         "id": "7c856987-bbdf-5d75-a97e-327259a90956", "name": "Signal Hill",
-        "tag": GAME, "editor": (800, 360), "generator": "make_rosa_scene.py",
+        "tag": GAME, "editor": (0, 1360), "generator": "make_rosa_scene.py",
     },
     "pine_hollow": {
         "id": "4d9329db-9c79-52dd-8372-d215a891bcb8", "name": "Pine Hollow",
-        "tag": GAME, "editor": (1200, 360), "generator": "make_kiko_scene.py",
+        "tag": GAME, "editor": (0, 1840), "generator": "make_kiko_scene.py",
     },
     # Multi-scene redesign (planned; docs/LEVEL_REDESIGN.md). Editor positions from §7.
     "climb_crest": {
         "id": "1e6699bd-6450-5e78-ae39-e75a00c5d127", "name": "Climb Crest",
-        "tag": GAME, "editor": (240, 0), "generator": "make_crest_scene.py", "planned": "WP1",
+        "tag": GAME, "editor": (320, 480), "generator": "make_crest_scene.py", "planned": "WP1",
     },
     "ridge_saddle": {
         "id": "25260587-51f0-5445-ba85-4b6373ad58a8", "name": "Ridge Saddle",
-        "tag": GAME, "editor": (400, 600), "generator": "make_ridge_scene.py", "planned": "WP2",
+        "tag": GAME, "editor": (640, 960), "generator": "make_ridge_scene.py", "planned": "WP2",
     },
     "signal_gully": {
         "id": "6714200c-748d-50ea-9ab8-f41beb918c15", "name": "Signal Gully",
-        "tag": GAME, "editor": (800, 600), "generator": "make_gully_scene.py", "planned": "WP3",
+        "tag": GAME, "editor": (640, 1360), "generator": "make_gully_scene.py", "planned": "WP3",
     },
     "signal_porch": {
         "id": "915170c4-cfb7-50bf-a6ab-e68f626bd6fc", "name": "Signal Porch",
-        "tag": GAME, "editor": (800, 960), "generator": "make_rosa_scene.py", "planned": "WP3",
+        "tag": GAME, "editor": (960, 1360), "generator": "make_rosa_scene.py", "planned": "WP3",
     },
     "pine_ladder": {
         "id": "260e1781-da9f-5323-bc93-5ee7f73af3c7", "name": "Pine Ladder",
-        "tag": GAME, "editor": (1200, 600), "generator": "make_ladder_scene.py", "planned": "WP4",
+        "tag": GAME, "editor": (640, 1840), "generator": "make_ladder_scene.py", "planned": "WP4",
     },
     "pine_rim": {
         "id": "c25308db-8f10-5a6a-ada8-1fa748e4541f", "name": "Pine Rim",
-        "tag": GAME, "editor": (1200, 960), "generator": "make_kiko_scene.py", "planned": "WP4",
+        "tag": GAME, "editor": (960, 1840), "generator": "make_kiko_scene.py", "planned": "WP4",
     },
     "lab_hazard_gallery": {
         "id": _lab_id("lab_hazard_gallery"), "name": "LAB_Hazard Gallery",
-        "tag": LAB, "editor": (0, 1200), "generator": "make_lab_scene.py",
+        "tag": LAB, "editor": (0, 2400), "generator": "make_lab_scene.py",
     },
     "lab_movement_room": {
         "id": _lab_id("lab_movement_room"), "name": "LAB_Movement Room",
-        "tag": LAB, "editor": (400, 1200), "generator": "make_lab_scene.py",
+        "tag": LAB, "editor": (480, 2400), "generator": "make_lab_scene.py",
     },
     "storm_night": {
         "id": "5c63c0a8-2c82-5e99-b4fd-2da097e09bd4", "name": "Storm Night",
-        "tag": LEGACY, "editor": (0, 2400), "generator": None,
+        "tag": LEGACY, "editor": (0, 3000), "generator": None,
     },
     "after_the_storm_-_village": {
         "id": "cfe-village-topdown-2026", "name": "After the Storm - Village",
-        "tag": LEGACY, "editor": (400, 2400), "generator": None,
+        "tag": LEGACY, "editor": (400, 3000), "generator": None,
     },
 }
 

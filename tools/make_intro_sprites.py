@@ -291,7 +291,16 @@ def preview(path: Path) -> None:
 def configure_heroes(variant: str) -> None:
     def states(frames):
         return [("Idle", list(frames[:2])), ("Walk", list(frames[2:]))]
-    ASSETS["intro_hero"]["states"] = states(neighborhood_hero.VARIANTS[variant])
+    if variant == "storm":
+        import make_opening_characters as worker
+        reverse = {color: str(index) if index else "." for index, color in worker.PROXY.items()}
+        images = [worker._worker_frame(24, "idle", "right", p) for p in range(2)]
+        images += [worker._worker_frame(24, "walk", "right", p) for p in range(4)]
+        frames = [tuple("".join(reverse[im.getpixel((x, y))] for x in range(16))
+                        for y in range(32)) for im in images]
+    else:
+        frames = neighborhood_hero.VARIANTS[variant]
+    ASSETS["intro_hero"]["states"] = states(frames)
     ASSETS["neighborhood_hero"]["states"] = states(neighborhood_hero.NEIGHBORHOOD_FRAMES)
 
 

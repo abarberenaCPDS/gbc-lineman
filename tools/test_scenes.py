@@ -129,7 +129,7 @@ class RegistryTests(unittest.TestCase):
                     self.assertTrue(load(SCENES_DIR / folder / "scene.gbsres")["name"].startswith("LAB_"))
 
     def test_helpers(self):
-        self.assertEqual(scenes.editor_position("service_opening"), (0, 360))
+        self.assertEqual(scenes.editor_position("service_opening"), (720, 0))
         self.assertEqual(sorted(scenes.by_tag(scenes.LAB)), ["lab_hazard_gallery", "lab_movement_room"])
         self.assertEqual(scenes.ids(scenes.LAB), [scenes.REGISTRY[f]["id"] for f in scenes.by_tag(scenes.LAB)])
         self.assertIn(scenes.REGISTRY["storm_night"]["id"], scenes.ids(scenes.LEGACY))

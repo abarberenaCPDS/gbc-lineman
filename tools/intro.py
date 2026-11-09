@@ -222,8 +222,8 @@ CAPTION_OVERLAY_COLOR = "white"  # fills with UI index 0 (dark): verify in build
 # ---------------------------------------------------------------------------
 # The hero uses independent native cels and a fixed-type intro sprite.
 # The classic variant preserves the original pixels, independent of gameplay.
-HERO_VARIANTS = ("neighborhood", "classic")
-DEFAULT_HERO_VARIANT = "neighborhood"
+HERO_VARIANTS = ("storm", "neighborhood", "classic")
+DEFAULT_HERO_VARIANT = "storm"
 NEIGHBORHOOD_HERO_SPRITE_ID = resource_id("sprite:neighborhood_hero")
 HERO_SPRITE_ID = resource_id("sprite:intro_hero")       # 16x32, states below
 HERO_STATES = {"Idle": [0, 16], "Walk": [96, 112, 128, 144]}   # facing right

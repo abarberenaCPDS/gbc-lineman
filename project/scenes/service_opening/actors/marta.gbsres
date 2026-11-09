@@ -3,7 +3,7 @@
   "id": "01d84e24-371a-5d23-a51f-4f8d9be33899",
   "_index": 0,
   "symbol": "opening_marta",
-  "name": "Amara - waiting for light",
+  "name": "Amara - lineman guide",
   "prefabId": "",
   "coordinateType": "tiles",
   "x": 6,
@@ -21,6 +21,170 @@
   "collisionExtraFlags": [],
   "prefabScriptOverrides": {},
   "script": [
+    {
+      "id": "a015b7b3-dcf2-519a-b95c-4be61652d09b",
+      "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+      "args": {
+        "type": "tone",
+        "frequency": 660,
+        "duration": 0.03,
+        "units": "time"
+      }
+    },
+    {
+      "id": "60be9473-0d6f-548a-a38d-f36a039bde7e",
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": [
+          "Live arcs: stay\nclear. Wait for\nwarning."
+        ],
+        "avatarId": "",
+        "minHeight": 4,
+        "maxHeight": 5,
+        "textX": 1,
+        "textY": 1,
+        "textHeight": 3,
+        "position": "bottom",
+        "clearPrevious": true,
+        "showFrame": true,
+        "speedIn": -1,
+        "speedOut": -1,
+        "closeWhen": "key",
+        "closeButton": "a",
+        "closeDelayUnits": "frames",
+        "closeDelayFrames": 8
+      }
+    },
+    {
+      "id": "a2336b36-b85e-5f27-bb53-c60c3e431800",
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": [
+          "Loose wires whip.\nStay back."
+        ],
+        "avatarId": "",
+        "minHeight": 4,
+        "maxHeight": 5,
+        "textX": 1,
+        "textY": 1,
+        "textHeight": 3,
+        "position": "bottom",
+        "clearPrevious": true,
+        "showFrame": true,
+        "speedIn": -1,
+        "speedOut": -1,
+        "closeWhen": "key",
+        "closeButton": "a",
+        "closeDelayUnits": "frames",
+        "closeDelayFrames": 8
+      }
+    },
+    {
+      "id": "618f3d3a-148b-5a41-83d6-e1a5b437c154",
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": [
+          "Cracked boards?\nStep around them."
+        ],
+        "avatarId": "",
+        "minHeight": 4,
+        "maxHeight": 5,
+        "textX": 1,
+        "textY": 1,
+        "textHeight": 3,
+        "position": "bottom",
+        "clearPrevious": true,
+        "showFrame": true,
+        "speedIn": -1,
+        "speedOut": -1,
+        "closeWhen": "key",
+        "closeButton": "a",
+        "closeDelayUnits": "frames",
+        "closeDelayFrames": 8
+      }
+    },
+    {
+      "id": "f79fc485-7a38-5273-ba84-295806365e29",
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": [
+          "Gust: heed signs.\nMove in calm."
+        ],
+        "avatarId": "",
+        "minHeight": 4,
+        "maxHeight": 5,
+        "textX": 1,
+        "textY": 1,
+        "textHeight": 3,
+        "position": "bottom",
+        "clearPrevious": true,
+        "showFrame": true,
+        "speedIn": -1,
+        "speedOut": -1,
+        "closeWhen": "key",
+        "closeButton": "a",
+        "closeDelayUnits": "frames",
+        "closeDelayFrames": 8
+      }
+    },
+    {
+      "id": "51f97c06-88d5-5b2a-a379-9fb6b959d137",
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": [
+          "Blown back?\nReturn to panel."
+        ],
+        "avatarId": "",
+        "minHeight": 4,
+        "maxHeight": 5,
+        "textX": 1,
+        "textY": 1,
+        "textHeight": 3,
+        "position": "bottom",
+        "clearPrevious": true,
+        "showFrame": true,
+        "speedIn": -1,
+        "speedOut": -1,
+        "closeWhen": "key",
+        "closeButton": "a",
+        "closeDelayUnits": "frames",
+        "closeDelayFrames": 8
+      }
+    },
+    {
+      "id": "807e9d92-b805-5fa3-9b81-074b3e28d753",
+      "command": "EVENT_TEXT",
+      "args": {
+        "text": [
+          "Carry cable.\nB at pole, then\nB at box."
+        ],
+        "avatarId": "",
+        "minHeight": 4,
+        "maxHeight": 5,
+        "textX": 1,
+        "textY": 1,
+        "textHeight": 3,
+        "position": "bottom",
+        "clearPrevious": true,
+        "showFrame": true,
+        "speedIn": -1,
+        "speedOut": -1,
+        "closeWhen": "key",
+        "closeButton": "a",
+        "closeDelayUnits": "frames",
+        "closeDelayFrames": 8
+      }
+    },
+    {
+      "id": "ccb813d4-638d-5304-8a02-68aa9c69779d",
+      "command": "EVENT_TEXT_SET_SOUND_EFFECT",
+      "args": {
+        "type": "tone",
+        "frequency": 880,
+        "duration": 0.03,
+        "units": "time"
+      }
+    },
     {
       "id": "559751e7-8b1e-5238-ad88-f76d97d059e3",
       "command": "EVENT_IF",

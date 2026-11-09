@@ -14,7 +14,6 @@ import climb
 import intro
 import opening
 import scenes
-import shock
 import tickets
 import voices
 from make_climb_scene import collision_rle
@@ -217,6 +216,7 @@ def repair_script() -> list[dict]:
         palette_state(True, "repair:local-amber"),
         actor_state(marta_id, "Powered", "repair:marta-relieved"),
         actor_state("$self$", "On", "repair:terminal-lit"),
+        actor_state(opening.resource_id("actor:tutorial_cable"), "Standing", "repair:pole-restored"),
         # The gate opens on the same beat as the existing connect sound; no second sound.
         actor_state(gate_id(), "Open", "repair:gate-open"),
         sound("connect", "repair:connect-sound"),
@@ -231,7 +231,11 @@ def cable_actor() -> dict:
     """The cable end is an explicit B pickup; the existing pole art supplies its cue."""
     cable = actor("tutorial_cable", "Loose service cable", opening.CABLE, "unused", 3,
                   sprite_id=json.loads((ROOT / "assets/sprites/intro_pole.png.gbsres").read_text())["id"])
-    cable["startScript"] = [actor_state("$self$", "Snapped+Cable", "cable:initial")]
+    cable["startScript"] = [if_value(RESTORED, 1, "cable:restored", [
+        actor_state("$self$", "Standing", "cable:upright"),
+    ], [if_value(opening.VAR_CARRYING_CABLE, 1, "cable:carried", [
+        actor_state("$self$", "Snapped", "cable:empty"),
+    ], [actor_state("$self$", "Snapped+Cable", "cable:initial")])])]
     pickup = if_value(opening.VAR_CARRYING_CABLE, 0, "cable:pickup", [
         set_value(opening.VAR_CARRYING_CABLE, 1, "cable:carry-value"),
         actor_state("$self$", "Snapped", "cable:empty-pole"),
@@ -278,17 +282,48 @@ def wind_actor() -> dict:
 
 
 def wind_recovery_events() -> list[dict]:
-    """A gust hit returns the player to the repaired panel, without resetting service."""
+    """A gust knocks the player back to the panel without an electrical hit beat."""
     return [
         event("EVENT_ACTOR_COLLISIONS_DISABLE", {"actorId": opening.resource_id("actor:tutorial_wind")},
               "wind-hit:disable"),
-        *shock.shock_events("wind-hit"),
+        event("EVENT_CAMERA_SHAKE", {
+            "units": "frames", "frames": 4, "shakeDirection": "horizontal",
+            "magnitude": number(1),
+        }, "wind-hit:bump"),
+        wait(4, "wind-hit:recover-beat"),
         set_value(opening.VAR_CARRYING_CABLE, 0, "wind-hit:clear-carry"),
         event("EVENT_ACTOR_SET_POSITION", {
             "actorId": "player", "units": "tiles",
             "x": number(opening.PANEL[0]), "y": number(opening.PANEL[1]),
         }, "wind-hit:panel-checkpoint"),
     ]
+
+
+def field_training() -> list[dict]:
+    """Optional B-button field notes; these are never shown during scene entry."""
+    pages = [
+        "Live arcs: stay\nclear. Wait for\nwarning.",
+        "Loose wires whip.\nStay back.",
+        "Cracked boards?\nStep around them.",
+        "Gust: heed signs.\nMove in calm.",
+        "Blown back?\nReturn to panel.",
+        "Carry cable.\nB at pole, then\nB at box.",
+    ]
+    return [event("EVENT_TEXT_SET_SOUND_EFFECT", voices.sound_args("marta"), "training:voice"),
+            *[dialogue(page, f"training:page:{i}") for i, page in enumerate(pages)],
+            event("EVENT_TEXT_SET_SOUND_EFFECT", voices.sound_args(None), "training:narrator")]
+
+
+def amara_actor() -> dict:
+    """Amara's field guide is available only through her interaction."""
+    marta = actor("marta", "Amara - lineman guide", opening.MARTA, "opening_marta", 0)
+    marta["startScript"] = [if_value(RESTORED, 0, "marta:entry", [
+        actor_state("$self$", "Waiting", "marta:waiting"),
+    ], [actor_state("$self$", "Powered", "marta:powered")])]
+    marta["script"] = [*field_training(), if_value(RESTORED, 0, "marta:talk", [
+        *spoken("marta", "Power's out all\nover. Start here.", "marta:dark-talk"),
+    ], spoken("marta", "Panel's alive!\nNow, my hilltop.", "marta:lit-talk"))]
+    return marta
 
 
 def hero_speed(size: int) -> int:
@@ -336,7 +371,7 @@ def build_scene(backgrounds: list[str], sprites: list[str]) -> dict:
     editor_x, editor_y = scenes.editor_position("service_opening")
     return {
         "_resourceType": "scene", "id": opening.resource_id("scene:service-opening"),
-        "_index": 3, "name": "Service Opening - M-V1", "symbol": "scene_service_opening",
+        "_index": 3, "name": "Lineman Training", "symbol": "scene_service_opening",
         "backgroundId": opening.resource_id("background:service-opening"), "tilesetId": "",
         "width": 20, "height": 18, "type": "PLATFORM", "colorModeOverride": "none",
         "paletteIds": backgrounds, "spritePaletteIds": sprites,
@@ -351,9 +386,12 @@ def build_scene(backgrounds: list[str], sprites: list[str]) -> dict:
             event("EVENT_MUSIC_PLAY", {"musicId": music}, "entry:music"),
             if_value(RESTORED, 0, "entry:tutorial", [
                 set_value(opening.VAR_CARRYING_CABLE, 0, "entry:empty-hands"),
-                dialogue("D-pad: move.\nTap A: short hop", "entry:move-and-tap"),
-                dialogue("Hold A: rise.\nClear overhead.", "entry:hold-a"),
-                dialogue("B: pick up cable.\nB: use cable.", "entry:cable-controls"),
+                dialogue("LINEMAN TRAINING\nD-pad: move.\nTap A: short hop", "entry:move-and-tap"),
+                dialogue("Hold A: rise.\nCheck above.\nB: Amara tips.", "entry:hold-a"),
+                dialogue("B: take cable.\nB: fit at panel.", "entry:cable-controls"),
+            ]),
+            if_value(opening.VAR_CARRYING_CABLE, 0, "entry:restore-carry", [], [
+                actor_state("player", "Carry", "entry:carry-pose"),
             ]),
         ],
         "playerHit1Script": wind_recovery_events(), "playerHit2Script": [], "playerHit3Script": [],
@@ -370,13 +408,7 @@ def main() -> None:
             raise ValueError(f"unexpected resource identity in {path}")
     backgrounds, sprites = write_palettes()
     write_variables()
-    marta = actor("marta", "Amara - waiting for light", opening.MARTA, "opening_marta", 0)
-    marta["startScript"] = [if_value(RESTORED, 0, "marta:entry", [
-        actor_state("$self$", "Waiting", "marta:waiting"),
-    ], [actor_state("$self$", "Powered", "marta:powered")])]
-    marta["script"] = [if_value(RESTORED, 0, "marta:talk", [
-        *spoken("marta", "Power's out all\nover. Start here.", "marta:dark-talk"),
-    ], spoken("marta", "Panel's alive!\nNow, my hilltop.", "marta:lit-talk"))]
+    marta = amara_actor()
     terminal = actor("terminal", "Substation repair panel", opening.PANEL, "opening_terminal", 1)
     terminal["startScript"] = [if_value(RESTORED, 0, "terminal:entry", [
         actor_state("$self$", "Off", "terminal:off"),

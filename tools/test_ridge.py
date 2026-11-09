@@ -19,6 +19,7 @@ import ridge
 import rosa
 import scene_links
 import scenes
+import shock
 import tickets
 from test_grid_chain import actor_profile, sprite_budget, sprite_profiles
 
@@ -438,8 +439,11 @@ class SceneTests(unittest.TestCase):
         """Abe (§9): a hit in another scene sends the carried cable back to its pole, as now."""
         for folder in FOLDERS:
             hit = built_scene(folder)["playerHit1Script"]
-            self.assertEqual(hit[0]["command"], "EVENT_ACTOR_SET_STATE")
-            self.assertEqual(hit[1]["command"], "EVENT_SOUND_PLAY_EFFECT")
+            prefix = shock.shock_events("expected")
+            self.assertEqual([e["command"] for e in hit[:len(prefix)]],
+                             [e["command"] for e in prefix])
+            self.assertEqual(hit[1]["args"]["spriteStateId"], "Shock")
+            self.assertEqual(hit[3]["command"], "EVENT_SOUND_PLAY_EFFECT")
             respawn = next(i for i, e in enumerate(hit) if positions([e]))
             for line in LINES:
                 drop = next(i for i, e in enumerate(hit) if is_var_if(e, ridge.VAR_CARRYING_CABLE, line["number"]))

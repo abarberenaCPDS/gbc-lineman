@@ -19,6 +19,7 @@ import redesign_maps
 import ridge
 import rosa
 import scene_links
+import shock
 
 CLIMB_AUDIO = {"death": "death-sfx", "connect": "connect-sfx", "pickup": "pickup-sfx"}
 SPRITES = {"marta": opening.resource_id("sprite:opening_marta"), "gust": "gust-sprite"}
@@ -366,7 +367,8 @@ class ClimbSceneTests(unittest.TestCase):
                           [e["args"] for e in events if e["command"] == "EVENT_INC_VALUE"])
             states = {(e["args"]["actorId"], e["args"]["spriteStateId"]) for e in events
                       if e["command"] == "EVENT_ACTOR_SET_STATE"}
-            self.assertEqual(states, {("player", ""), ("0", "Standing")}, "no box actor to set")
+            self.assertEqual(states, {("player", "Repair"), ("player", ""), ("0", "Standing")},
+                             "the successful connection includes the repair pose")
             palettes = [e for e in events if e["command"] == "EVENT_PALETTE_SET_BACKGROUND"]
             self.assertEqual(len(palettes), 6)
             self.assertTrue(all(p["args"]["palette5"] != "keep" and p["args"]["palette6"] != "keep"
@@ -400,10 +402,11 @@ class ClimbSceneTests(unittest.TestCase):
 
     def test_respawn_drops_the_cable_then_returns_to_the_furthest_repaired_line(self):
         hit = Fixture.resource["playerHit1Script"]
-        commands = [e["command"] for e in hit]
-        self.assertEqual(commands[0], "EVENT_ACTOR_SET_STATE")
-        self.assertEqual(hit[0]["args"]["spriteStateId"], "Shock")
-        self.assertEqual(commands[1], "EVENT_SOUND_PLAY_EFFECT")
+        prefix = shock.shock_events("expected")
+        self.assertEqual([e["command"] for e in hit[:len(prefix)]],
+                         [e["command"] for e in prefix])
+        self.assertEqual(hit[1]["args"]["spriteStateId"], "Shock")
+        self.assertEqual(hit[3]["command"], "EVENT_SOUND_PLAY_EFFECT")
         drops = [i for i, e in enumerate(hit) if e["command"] == "EVENT_IF"
                  and e["args"]["condition"]["valueA"]["value"] == climb.VAR_CARRYING_CABLE]
         self.assertEqual(len(drops), 5)

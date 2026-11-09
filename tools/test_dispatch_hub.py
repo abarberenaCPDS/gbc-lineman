@@ -3,7 +3,7 @@ from collections import deque
 import unittest
 import make_dispatch_hub as hub
 import make_ticket_scene as tickets
-import neighborhood_hero
+from make_opening_characters import _worker_frame
 
 class DispatchHubTests(unittest.TestCase):
     def test_all_district_trailheads_reachable_around_solid_lake(self):
@@ -16,7 +16,15 @@ class DispatchHubTests(unittest.TestCase):
                 # Player occupies two horizontal cells; keep both clear.
                 if 0<=p[0]<hub.W-1 and 0<=p[1]<hub.H and p not in seen and not any(grid[p[1]][p[0]+k] for k in (0,1)):
                     seen.add(p);todo.append(p)
-        self.assertTrue(all(grid[y][x] for y in range(2,9) for x in range(hub.W)))
+        for y in range(2,9):
+            for x in range(hub.W):
+                self.assertEqual(not grid[y][x], 6 <= y <= 8 and 14 <= x < 18)
+        self.assertIn((15,6),seen)   # Walkable pier
+        self.assertIn((15,28),seen)  # Southern green
+        for x,y,width,_ in hub.BUILDINGS:
+            self.assertTrue(all(grid[yy][xx] for yy in range(y,y+4) for xx in range(x,x+width)))
+        for x,y,width in hub.PLANTERS:
+            self.assertTrue(all(grid[y][xx] for xx in range(x,x+width)))
         for trigger in hub.build_triggers():
             self.assertIn((trigger['x']+1,trigger['y']+1),seen)
         self.assertEqual(len(hub.build_triggers()),4)
@@ -41,6 +49,17 @@ class DispatchHubTests(unittest.TestCase):
         removes=[e for e in tickets.walk([input_event]) if e['command']=='EVENT_REMOVE_INPUT_SCRIPT']
         self.assertEqual(len(removes),4)
         self.assertTrue(all(e['args']['input']==['a'] for e in removes))
+        choices=[e for e in tickets.walk([input_event]) if e['command']=='EVENT_CHOICE']
+        self.assertEqual(len(choices),4)
+        self.assertTrue(all(e['args']=={'variable':'L0','trueText':'Accept job',
+                                       'falseText':'Keep exploring'} for e in choices))
+        confirmations=[e for e in tickets.walk([input_event]) if e['command']=='EVENT_IF' and
+                       e['args']['condition']['valueA'].get('value')=='L0']
+        self.assertEqual(len(confirmations),4)
+        for confirmation in confirmations:
+            self.assertEqual(confirmation['children']['false'],[])
+            self.assertTrue(any(e['command']=='EVENT_SWITCH_SCENE'
+                                for e in confirmation['children']['true']))
         for trigger in hub.build_triggers():
             self.assertEqual(trigger['leaveScript'][0]['args']['value']['value'],0)
 
@@ -51,7 +70,8 @@ class DispatchHubTests(unittest.TestCase):
         image,slots=hub.build_art()
         self.assertEqual(image.size,(256,256))
         for _,_,slot,x,y in hub.DISTRICTS:
-            self.assertEqual(slots[(y+32)//8][(x+16)//8],slot)
+            self.assertEqual(slots[(y+8)//8][(x+16)//8],slot)
+            self.assertEqual(sum(row.count(slot) for row in slots),1)
         tiles={image.crop((x*8,y*8,x*8+8,y*8+8)).tobytes() for y in range(hub.H) for x in range(hub.W)}
         self.assertLess(len(tiles),192)
         self.assertEqual(scene['paletteIds'][2],hub.WATER_PALETTE_ID)
@@ -82,10 +102,19 @@ class DispatchHubTests(unittest.TestCase):
 
     def test_directional_derivative_preserves_accepted_side_frames(self):
         frames=hub.hero_frames();sheet,meta=hub.build_hero()
-        self.assertEqual(frames[0],neighborhood_hero.NEIGHBORHOOD_FRAMES[0])
-        self.assertEqual(frames[1],neighborhood_hero.NEIGHBORHOOD_FRAMES[2])
-        self.assertEqual(frames[2],neighborhood_hero.NEIGHBORHOOD_FRAMES[4])
+        native_poses = (_worker_frame(24, "idle", "right"),
+                        _worker_frame(24, "walk", "right", 1),
+                        _worker_frame(24, "walk", "right", 3))
+        for i,native in enumerate(native_poses):
+            self.assertEqual(sheet.crop((i*16,0,i*16+16,32)).convert("RGB").tobytes(),
+                             native.tobytes())
+        for i in range(3):
+            self.assertEqual(frames[i+3],tuple(row[::-1] for row in frames[i]))
         self.assertNotEqual(frames[6],frames[9])
+        for group in (frames[6:9],frames[9:12]):
+            self.assertEqual(len(set(group)),3)
+            self.assertTrue(all(frame[8:16]==group[0][8:16] for frame in group))
+            self.assertTrue(all(frame[-1]!='.'*16 for frame in group))
         self.assertEqual(meta['states'][0]['animationType'],'multi_movement')
         self.assertEqual([len(a['frames']) for a in meta['states'][0]['animations']],[1]*4+[4]*4)
         self.assertEqual((meta['boundsY'],meta['boundsHeight']),(0,8))

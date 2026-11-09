@@ -1,3 +1,48 @@
+## Training and town revision complete — November 8, 2026
+
+✅ `0.23.0-dev` implements the cartridge feedback: richer lakeside town with
+pier/boats, depot/workshop, planters, paved routes and paper work-order kiosks.
+A reads the job; Accept job dispatches and Keep exploring leaves it intact.
+Storm Worker now owns town side/front/back cels and intro story animation;
+Neighborhood Hero stays available as an unused alternative illustration asset.
+Repair animates only a valid cable connection; pickup shows Carry; Shock
+explicitly resets frame/speed and restores normal animation. Training introduces
+controls and optional B-at-Amara field guidance for arcs, wires, boards and gusts.
+The tutorial pole stands after repair and on restored reentry; wind uses bump
+recovery rather than electrical feedback. Carry pose is restored on street return.
+Jump physics and household geometry remain unchanged.
+
+✅ GB Studio canvas: opening flow across top, separate mission rows for each
+household, labs beneath and legacy references last. All20 scene rectangles are
+nonoverlapping. `tools/organize_world_canvas.py` applies registry positions by ID.
+Legacy village motifs are reused; its old five-house mission structure and
+16px player remain archived rather than reactivated. Storm Night stays as a
+required generator template. No legacy scenes were deleted.
+
+✅ Full suite564 passed, plus35 opening tests after the final Carry-reentry fix.
+Official final ROM valid512KB GBC MBC5:
+`build/rom/lineman-training-town-v0.23.0-dev.gbc`, SHA256
+`e87bd20ee59c2c34d4e31be2ad545d86f3bfb992c306c8dfe7ac829cb5b774ed`.
+Project health0/0/0. Exact final-ROM normal boot reaches Lineman Training.
+The immediately preceding build (only lacking final reentry Carry restoration)
+recorded real title→training→pickup→repair→field guide→town, cancel/accept→Amara.
+Native isolated checks verify two Repair frames and line1 powered, and actual
+arc-triggered flashing Shock frames309/319 followed by recovery. Evidence:
+`build/playtests/training-town-v023`, `training-repair-check`,
+`training-shock-visible`, `training-town-final-boot`. Seeded checks do not prove
+an uninterrupted full campaign. No new hardware flash performed.
+
+🔄 Final official web export: `build/web-training-town`, ROM SHA256
+`70cb07dd46b7f16f8d654667f0d6dca7ba66c10256bad54fb89f8b4d0e14ebd2`.
+Server runs, but Codex browser access host is unavailable; browser UI and human
+acceptance of this revision remain pending. Current process-local URL:
+http://127.0.0.1:63887/ccf1db1ef9ef8898e58c563705b87518ac6da303459dd872f1a68a00e6f8d52a/
+Authored review sheet: `docs/review-assets/training-town/town-and-worker.png`.
+Three GPT-6 Luna workers handled source audits/coding/tests; GPT-6.1 Sol handled
+town art. Main integrated, reconciled editor saves, and serialized builds/play.
+
+---
+
 ## Cartridge checkpoint — November 8, 2026
 
 ✅ User requested tag and cartridge flash. Local annotated tag `v0.22.0-dev`
