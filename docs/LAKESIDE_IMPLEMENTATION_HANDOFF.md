@@ -1,3 +1,20 @@
+## Hero patch approved — November 9, 2026
+
+✅ Abe approved the shoulder-coil hero changes. Patch version is `0.23.1-dev`
+(previously `0.23.0-dev`); art implementation is commit `a73d51a`.
+Regenerated title and HUD version labels through their owning generators;
+all resource changes are version strings only. All565 tests passed.
+Existing ROM/web evidence below predates this label bump; no new flash or tag.
+
+Next: obtain player feedback on revised training/town, then apply the selected
+lakeside baseline to Amara, Hiroshi, Priya and Emil's routes one at a time.
+Preserve accepted jump physics, four jobs and five repairs per job; validate
+crossings, recovery, work pads, return flow and visual budgets before expanding.
+Final gates remain full campaign play, browser/human feel/audio review and a
+user-requested cartridge build/flash.
+
+---
+
 ## Shoulder-coil Carry complete — November 8, 2026
 
 ✅ Replaced the raised plug with the user's shoulder-coil reference in all14
